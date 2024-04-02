@@ -1,2 +1,3 @@
-# No external dependencies are required for this project.
-# The project is compatible with Python 3.1 and above due to the use of tkinter.
+# README.md
+## System Requirements
+- Python >= 3.6

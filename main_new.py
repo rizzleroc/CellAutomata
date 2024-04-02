@@ -18,7 +18,7 @@ class Application(tk.Frame):
         self.step_button = tk.Button(self, text="Step", command=self.step)
         self.step_button.grid(row=1, column=0)
         # Add a speed control slider
-        self.speed_slider = tk.Scale(self, from_=0.01, to=10.0, resolution=0.01, orient='horizontal', label='Speed')
+        self.speed_slider = tk.Scale(self, from_=0.01, to=1.0, resolution=0.01, orient='horizontal', label='Speed')
         self.speed_slider.set(0.5)  # Default speed
         self.speed_slider.grid(row=1, column=1)
         # Add a play button
