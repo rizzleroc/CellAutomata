@@ -1,0 +1,55 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "cellauto"
+version = "2.0.0"
+description = "Pluggable cellular-automata sandbox (natural-selection, Conway, Wolfram 1D)."
+readme = "README.md"
+license = { file = "LICENSE" }
+requires-python = ">=3.10"
+authors = [{ name = "rizzleroc" }]
+keywords = ["cellular automata", "conway", "wolfram", "simulation", "tkinter"]
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+    "Topic :: Scientific/Engineering :: Artificial Life",
+]
+dependencies = [
+    "Pillow>=10.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.0",
+    "pytest-cov>=4.0",
+    "ruff>=0.4",
+]
+
+[project.scripts]
+cellauto = "cellauto.__main__:main"
+
+[project.urls]
+Homepage = "https://github.com/rizzleroc/CellAutomata"
+Issues = "https://github.com/rizzleroc/CellAutomata/issues"
+
+[tool.setuptools.packages.find]
+include = ["cellauto*"]
+exclude = ["tests*", "exports*", "snapshots*"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-q"
+
+[tool.ruff]
+line-length = 110
+target-version = "py310"
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "B", "UP"]
+ignore = ["E501"]
