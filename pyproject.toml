@@ -4,8 +4,8 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "cellauto"
-version = "2.0.0"
-description = "Pluggable cellular-automata sandbox (natural-selection, Conway, Wolfram 1D)."
+version = "3.0.0"
+description = "Scientifically-grounded abiogenesis sandbox (5-stage chemistry-to-life pipeline + Conway + Wolfram)."
 readme = "README.md"
 license = { file = "LICENSE" }
 requires-python = ">=3.10"
@@ -22,6 +22,7 @@ classifiers = [
 ]
 dependencies = [
     "Pillow>=10.0",
+    "numpy>=1.26",
 ]
 
 [project.optional-dependencies]

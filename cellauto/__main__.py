@@ -1,9 +1,14 @@
-"""CLI entry: `python -m cellauto <subcommand>` (or just `cellauto` after install).
+"""CLI entry: `python -m cellauto <subcommand>`.
 
 Subcommands:
     gui       launch the Tk sandbox
-    simulate  headless: run N steps and print final population (and optionally save)
-    export    headless: run N steps and write a GIF
+    simulate  headless: run N steps, print final population (and optionally save)
+    export    headless: run N steps and write an animated GIF
+
+Common flags: --rule, --grid, --seed, --load. --rule-config accepts repeated
+key=value pairs to set rule-specific parameters (e.g. rule_number=110 for
+Wolfram, amoeba_lifespan=10 for stage 0). --stage N is a convenience for
+abiogenesis-pipeline (sets starting_stage).
 """
 
 from __future__ import annotations
@@ -12,11 +17,37 @@ import argparse
 import json
 import logging
 import sys
-from pathlib import Path
 
 from cellauto.engine import Engine
 from cellauto.export import export_gif
 from cellauto.rules import REGISTRY
+
+
+def _parse_value(s: str):
+    """Parse a CLI key=value's value into the most natural Python type."""
+    if s.lower() in ("true", "false"):
+        return s.lower() == "true"
+    try:
+        return int(s)
+    except ValueError:
+        pass
+    try:
+        return float(s)
+    except ValueError:
+        pass
+    return s
+
+
+def _rule_kwargs(args: argparse.Namespace) -> dict:
+    kwargs = {}
+    for entry in (args.rule_config or []):
+        if "=" not in entry:
+            raise SystemExit(f"--rule-config expects key=value, got: {entry!r}")
+        k, v = entry.split("=", 1)
+        kwargs[k.strip()] = _parse_value(v.strip())
+    if args.stage is not None and args.rule.startswith("abiogenesis-pipeline"):
+        kwargs.setdefault("starting_stage", args.stage)
+    return kwargs
 
 
 def _make_engine(args: argparse.Namespace) -> Engine:
@@ -24,7 +55,8 @@ def _make_engine(args: argparse.Namespace) -> Engine:
         return Engine.load(args.load, REGISTRY)
     if args.rule not in REGISTRY:
         raise SystemExit(f"unknown rule '{args.rule}'. Available: {', '.join(REGISTRY)}")
-    rule = REGISTRY[args.rule]()
+    rule_cls = REGISTRY[args.rule]
+    rule = rule_cls(**_rule_kwargs(args))
     kwargs = {"width": args.grid, "height": args.grid, "rule": rule}
     if args.seed is not None:
         kwargs["seed"] = args.seed
@@ -33,6 +65,24 @@ def _make_engine(args: argparse.Namespace) -> Engine:
 
 def cmd_gui(args: argparse.Namespace) -> None:
     from cellauto.app import run
+    # GUI ignores --rule-config / --stage at construction time but the rule
+    # picker can switch to any rule once running. (P1 followup: pass kwargs.)
+    if args.load:
+        # Easiest path: launch GUI and immediately load snapshot. The GUI's
+        # File>Open does this anyway, but for scripted launches we wire it.
+        from tkinter import Tk
+
+        from cellauto.app import App
+        root = Tk()
+        app = App(root, rule_name=args.rule, grid_size=args.grid, seed=args.seed)
+        app._stop()
+        app.engine = Engine.load(args.load, REGISTRY)
+        app.rule_var.set(app.engine.rule.name)
+        app._init_renderer()
+        app._render()
+        app._update_status()
+        root.mainloop()
+        return
     run(rule_name=args.rule, grid_size=args.grid, seed=args.seed)
 
 
@@ -40,12 +90,9 @@ def cmd_simulate(args: argparse.Namespace) -> None:
     engine = _make_engine(args)
     for _ in range(args.steps):
         engine.step()
-    out = {
-        "rule": engine.rule.name,
-        "seed": engine.seed,
-        "step_count": engine.step_count,
-        "population": dict(engine.population()),
-    }
+    out = {"rule": engine.rule.name, "seed": engine.seed,
+           "step_count": engine.step_count,
+           "population": dict(engine.population())}
     print(json.dumps(out, indent=2))
     if args.save:
         engine.save(args.save)
@@ -53,13 +100,20 @@ def cmd_simulate(args: argparse.Namespace) -> None:
 
 def cmd_export(args: argparse.Namespace) -> None:
     engine = _make_engine(args)
+    from pathlib import Path
     frames: list[dict] = []
     for _ in range(args.steps):
-        rule = engine.rule
-        cells = [[rule.render_cell(engine.grid.cells[y][x]) for x in range(engine.grid.width)]
-                 for y in range(engine.grid.height)]
-        frames.append({"width": engine.grid.width, "height": engine.grid.height,
-                       "cells": cells, "canvas_size": args.canvas})
+        kind = getattr(engine.rule, "renderer_kind", "discrete")
+        if kind == "field":
+            rgb = engine.rule.render_rgb(engine.state)
+            frames.append({"kind": "field", "rgb": rgb.tolist(),
+                           "canvas_size": args.canvas})
+        else:
+            w, h = engine.grid.width, engine.grid.height
+            cells = [[engine.rule.render_cell(engine.state, x, y) for x in range(w)]
+                     for y in range(h)]
+            frames.append({"kind": "discrete", "width": w, "height": h,
+                           "cells": cells, "canvas_size": args.canvas})
         engine.step()
     out = Path(args.out)
     export_gif(frames, out, fps=args.fps)
@@ -67,34 +121,39 @@ def cmd_export(args: argparse.Namespace) -> None:
 
 
 def build_parser() -> argparse.ArgumentParser:
-    p = argparse.ArgumentParser(prog="cellauto", description="Pluggable cellular automata sandbox.")
+    p = argparse.ArgumentParser(prog="cellauto",
+                                 description="Pluggable cellular automata + abiogenesis sandbox.")
     p.add_argument("--log-level", default="INFO", help="DEBUG, INFO, WARNING, ERROR")
     sub = p.add_subparsers(dest="cmd", required=True)
 
     def add_common(sp: argparse.ArgumentParser) -> None:
-        sp.add_argument("--rule", default="natural-selection", choices=list(REGISTRY))
+        sp.add_argument("--rule", default="abiogenesis-pipeline", choices=list(REGISTRY))
         sp.add_argument("--grid", type=int, default=60, help="grid edge size (square)")
-        sp.add_argument("--seed", type=int, default=None, help="RNG seed for reproducibility")
-        sp.add_argument("--load", default=None, help="load a snapshot.json instead of starting fresh")
+        sp.add_argument("--seed", type=int, default=None, help="RNG seed")
+        sp.add_argument("--load", default=None, help="load snapshot.json instead of new")
+        sp.add_argument("--rule-config", action="append", default=[],
+                        metavar="key=value",
+                        help="repeatable rule-specific parameter, e.g. rule_number=110")
+        sp.add_argument("--stage", type=int, default=None,
+                        help="for abiogenesis-pipeline: starting stage 0-4")
 
     sp_gui = sub.add_parser("gui", help="launch the Tk sandbox")
     add_common(sp_gui)
     sp_gui.set_defaults(func=cmd_gui)
 
-    sp_sim = sub.add_parser("simulate", help="run N steps headlessly and print stats")
+    sp_sim = sub.add_parser("simulate", help="run N steps headlessly")
     add_common(sp_sim)
     sp_sim.add_argument("--steps", type=int, default=100)
-    sp_sim.add_argument("--save", default=None, help="optional path to save final snapshot.json")
+    sp_sim.add_argument("--save", default=None, help="optional snapshot.json path")
     sp_sim.set_defaults(func=cmd_simulate)
 
-    sp_exp = sub.add_parser("export", help="run N steps and write an animated GIF")
+    sp_exp = sub.add_parser("export", help="run N steps and write animated GIF")
     add_common(sp_exp)
     sp_exp.add_argument("--steps", type=int, default=60)
     sp_exp.add_argument("--fps", type=int, default=8)
-    sp_exp.add_argument("--canvas", type=int, default=600, help="output GIF size in px")
+    sp_exp.add_argument("--canvas", type=int, default=600, help="output GIF size px")
     sp_exp.add_argument("--out", default="exports/run.gif")
     sp_exp.set_defaults(func=cmd_export)
-
     return p
 
 

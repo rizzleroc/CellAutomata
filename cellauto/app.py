@@ -1,13 +1,9 @@
 """Tk GUI sandbox app.
 
-Fixes from the v1 GUI:
-  - Window close button actually closes the window.
-  - "Speed" slider value is FPS (steps/sec), not a misleading delay.
-  - Step button is disabled while the simulation is running.
-  - Canvas reuses item IDs via `itemconfigure` instead of `delete("all")` each
-    frame — 10x faster, supports much larger grids.
-  - Rule, seed, and step count are all visible in the status bar.
-  - File menu: New, Open snapshot, Save snapshot, Export GIF, Quit.
+Dispatches between two renderers based on ``rule.renderer_kind``:
+  - "discrete" → DiscreteRenderer (canvas items per cell; v3.0 P0 perf fix
+    tracks shapes in our own list rather than calling canvas.type per cell)
+  - "field"    → FieldRenderer (numpy → PhotoImage blit, fast for continuous fields)
 """
 
 from __future__ import annotations
@@ -19,8 +15,9 @@ from typing import Any
 
 from cellauto.engine import Engine
 from cellauto.export import export_gif
+from cellauto.renderer import DiscreteRenderer, FieldRenderer
 from cellauto.rules import REGISTRY
-from cellauto.tutorial import TUTORIAL_STEPS
+from cellauto.tutorial import tutorial_for
 
 log = logging.getLogger(__name__)
 
@@ -30,11 +27,11 @@ DEFAULT_FPS = 8.0
 
 
 class App(tk.Frame):
-    def __init__(self, master: tk.Tk, rule_name: str = "natural-selection",
+    def __init__(self, master: tk.Tk, rule_name: str = "abiogenesis-pipeline",
                  grid_size: int = DEFAULT_GRID, seed: int | None = None) -> None:
         super().__init__(master)
         self.master_window = master
-        self.master_window.title("cellauto sandbox")
+        self.master_window.title("cellauto — abiogenesis sandbox")
         self.pack(fill="both", expand=True)
         self._tutorial_index: int = -1
         self._gif_frames: list = []
@@ -43,9 +40,8 @@ class App(tk.Frame):
 
         self._build_widgets()
         self._build_menu()
+        self._renderer = None
         self._new_engine(rule_name=rule_name, grid_size=grid_size, seed=seed)
-
-    # ---- Engine lifecycle ---------------------------------------------------
 
     def _new_engine(self, rule_name: str, grid_size: int, seed: int | None) -> None:
         if rule_name not in REGISTRY:
@@ -57,47 +53,57 @@ class App(tk.Frame):
         self.engine = Engine(**kwargs)
         self.rule_var.set(rule_name)
         self.grid_size_var.set(str(grid_size))
-        self._cell_items: list[list[int]] = []  # persistent canvas item IDs
-        self.canvas.delete("all")
-        self._build_cell_items()
+        self._init_renderer()
         self._render()
         self._update_status()
 
-    def _build_cell_items(self) -> None:
-        w = self.engine.grid.width
-        h = self.engine.grid.height
-        cw = CANVAS_SIZE / w
-        ch = CANVAS_SIZE / h
-        self._cell_items = [[0] * w for _ in range(h)]
-        for y in range(h):
-            for x in range(w):
-                # Create a placeholder rect; render() updates fill + shape.
-                self._cell_items[y][x] = self.canvas.create_rectangle(
-                    x * cw, y * ch, (x + 1) * cw, (y + 1) * ch,
-                    fill="#000000", outline="",
-                )
+    def _state_dims(self) -> tuple[int, int]:
+        state = self.engine.state
+        if hasattr(state, "width") and hasattr(state, "height"):
+            return state.width, state.height
+        if hasattr(state, "concentrations"):
+            h, w = state.concentrations.shape[:2]
+            return w, h
+        if hasattr(state, "inner_state"):
+            inner = state.inner_state
+            if hasattr(inner, "width") and hasattr(inner, "height"):
+                return inner.width, inner.height
+            if hasattr(inner, "concentrations"):
+                h, w = inner.concentrations.shape[:2]
+                return w, h
+        return self.engine.width, self.engine.height
 
-    # ---- Build UI -----------------------------------------------------------
+    def _init_renderer(self) -> None:
+        kind = getattr(self.engine.rule, "renderer_kind", "discrete")
+        w, h = self._state_dims()
+        if kind == "field":
+            self._renderer = FieldRenderer(canvas=self.canvas, canvas_size=CANVAS_SIZE)
+        else:
+            self._renderer = DiscreteRenderer(canvas=self.canvas, canvas_size=CANVAS_SIZE)
+        self._renderer.reset(w, h)
 
     def _build_widgets(self) -> None:
         top = ttk.Frame(self)
         top.pack(side="top", fill="x", padx=8, pady=6)
 
         ttk.Label(top, text="Rule:").pack(side="left")
-        self.rule_var = tk.StringVar(value="natural-selection")
+        self.rule_var = tk.StringVar(value="abiogenesis-pipeline")
         rule_picker = ttk.Combobox(top, textvariable=self.rule_var, values=list(REGISTRY),
-                                   width=20, state="readonly")
+                                   width=30, state="readonly")
         rule_picker.pack(side="left", padx=4)
         rule_picker.bind("<<ComboboxSelected>>", lambda _e: self._on_rule_change())
 
         ttk.Label(top, text="Grid:").pack(side="left", padx=(12, 0))
         self.grid_size_var = tk.StringVar(value=str(DEFAULT_GRID))
-        grid_picker = ttk.Combobox(top, textvariable=self.grid_size_var, values=["30", "60", "100", "150"],
+        grid_picker = ttk.Combobox(top, textvariable=self.grid_size_var,
+                                   values=["30", "60", "100", "150"],
                                    width=5, state="readonly")
         grid_picker.pack(side="left", padx=4)
         grid_picker.bind("<<ComboboxSelected>>", lambda _e: self._on_rule_change())
 
         ttk.Button(top, text="Reseed", command=self._reseed).pack(side="left", padx=12)
+        ttk.Button(top, text="Promote stage",
+                   command=self._promote_stage).pack(side="left", padx=4)
 
         self.canvas = tk.Canvas(self, width=CANVAS_SIZE, height=CANVAS_SIZE,
                                 background="#ffffff", highlightthickness=1,
@@ -109,11 +115,10 @@ class App(tk.Frame):
 
         self.step_button = ttk.Button(controls, text="Step", command=self._step_once)
         self.step_button.pack(side="left")
-
         self.play_button = ttk.Button(controls, text="Play", command=self._play)
         self.play_button.pack(side="left", padx=4)
-
-        self.stop_button = ttk.Button(controls, text="Stop", command=self._stop, state="disabled")
+        self.stop_button = ttk.Button(controls, text="Stop",
+                                       command=self._stop, state="disabled")
         self.stop_button.pack(side="left")
 
         ttk.Label(controls, text="FPS:").pack(side="left", padx=(16, 2))
@@ -121,8 +126,10 @@ class App(tk.Frame):
         ttk.Scale(controls, from_=1, to=60, variable=self.fps_var,
                   orient="horizontal", length=160).pack(side="left")
 
-        ttk.Button(controls, text="Tutorial", command=self._tutorial_next).pack(side="left", padx=(16, 4))
-        self.record_button = ttk.Button(controls, text="Record GIF", command=self._toggle_gif_record)
+        ttk.Button(controls, text="Tutorial",
+                   command=self._tutorial_next).pack(side="left", padx=(16, 4))
+        self.record_button = ttk.Button(controls, text="Record GIF",
+                                        command=self._toggle_gif_record)
         self.record_button.pack(side="left")
 
         self.status_var = tk.StringVar(value="")
@@ -133,14 +140,15 @@ class App(tk.Frame):
         self.tutorial_label = ttk.Label(self, textvariable=self.tutorial_var, anchor="w",
                                          padding=(8, 4), background="#fff8c4",
                                          wraplength=CANVAS_SIZE)
-        # Hidden until tutorial starts.
 
     def _build_menu(self) -> None:
         menubar = tk.Menu(self.master_window)
         filemenu = tk.Menu(menubar, tearoff=0)
         filemenu.add_command(label="New", command=self._reseed, accelerator="Ctrl+N")
-        filemenu.add_command(label="Open snapshot…", command=self._open_snapshot, accelerator="Ctrl+O")
-        filemenu.add_command(label="Save snapshot…", command=self._save_snapshot, accelerator="Ctrl+S")
+        filemenu.add_command(label="Open snapshot…", command=self._open_snapshot,
+                             accelerator="Ctrl+O")
+        filemenu.add_command(label="Save snapshot…", command=self._save_snapshot,
+                             accelerator="Ctrl+S")
         filemenu.add_separator()
         filemenu.add_command(label="Export GIF…", command=self._export_gif)
         filemenu.add_separator()
@@ -159,26 +167,31 @@ class App(tk.Frame):
         self.master_window.bind_all("<Control-q>", lambda _e: self._quit())
         self.master_window.protocol("WM_DELETE_WINDOW", self._quit)
 
-    # ---- Event handlers -----------------------------------------------------
-
     def _on_rule_change(self) -> None:
         self._stop()
-        self._new_engine(
-            rule_name=self.rule_var.get(),
-            grid_size=int(self.grid_size_var.get()),
-            seed=None,
-        )
+        self._new_engine(rule_name=self.rule_var.get(),
+                         grid_size=int(self.grid_size_var.get()), seed=None)
 
     def _reseed(self) -> None:
         self._stop()
-        self._new_engine(
-            rule_name=self.rule_var.get(),
-            grid_size=int(self.grid_size_var.get()),
-            seed=None,
-        )
+        self._new_engine(rule_name=self.rule_var.get(),
+                         grid_size=int(self.grid_size_var.get()), seed=None)
+
+    def _promote_stage(self) -> None:
+        rule = self.engine.rule
+        if hasattr(rule, "promote") and hasattr(self.engine.state, "current_stage"):
+            rule.promote(self.engine.state)
+            self._init_renderer()
+            self._render()
+            self._update_status()
 
     def _step_once(self) -> None:
         self.engine.step()
+        # Pipeline rule may swap renderer kind on promote.
+        expected_kind = getattr(self.engine.rule, "renderer_kind", "discrete")
+        current_kind = "field" if isinstance(self._renderer, FieldRenderer) else "discrete"
+        if expected_kind != current_kind:
+            self._init_renderer()
         self._render()
         self._update_status()
         self._maybe_capture_frame()
@@ -201,10 +214,7 @@ class App(tk.Frame):
     def _loop(self) -> None:
         if not self.running:
             return
-        self.engine.step()
-        self._render()
-        self._update_status()
-        self._maybe_capture_frame()
+        self._step_once()
         delay_ms = max(int(1000 / max(self.fps_var.get(), 1)), 16)
         self.canvas.after(delay_ms, self._loop)
 
@@ -212,12 +222,9 @@ class App(tk.Frame):
         self.running = False
         self.master_window.destroy()
 
-    # ---- Snapshots ----------------------------------------------------------
-
     def _save_snapshot(self) -> None:
         path = filedialog.asksaveasfilename(
-            defaultextension=".json",
-            initialdir="snapshots",
+            defaultextension=".json", initialdir="snapshots",
             initialfile=f"{self.engine.rule.name}-step{self.engine.step_count}.json",
             filetypes=[("JSON snapshot", "*.json")],
         )
@@ -234,13 +241,9 @@ class App(tk.Frame):
         self._stop()
         self.engine = Engine.load(path, REGISTRY)
         self.rule_var.set(self.engine.rule.name)
-        self.grid_size_var.set(str(self.engine.grid.width))
-        self.canvas.delete("all")
-        self._build_cell_items()
+        self._init_renderer()
         self._render()
         self._update_status()
-
-    # ---- GIF export ---------------------------------------------------------
 
     def _toggle_gif_record(self) -> None:
         if self._recording_gif:
@@ -260,8 +263,7 @@ class App(tk.Frame):
             messagebox.showinfo("No frames", "No frames captured.")
             return
         path = filedialog.asksaveasfilename(
-            defaultextension=".gif",
-            initialdir="exports",
+            defaultextension=".gif", initialdir="exports",
             initialfile=f"{self.engine.rule.name}-seed{self.engine.seed}.gif",
             filetypes=[("GIF", "*.gif")],
         )
@@ -272,10 +274,8 @@ class App(tk.Frame):
         messagebox.showinfo("Exported", f"GIF saved to\n{path}")
 
     def _export_gif(self) -> None:
-        """Run N frames headlessly and save."""
         path = filedialog.asksaveasfilename(
-            defaultextension=".gif",
-            initialdir="exports",
+            defaultextension=".gif", initialdir="exports",
             initialfile=f"{self.engine.rule.name}-seed{self.engine.seed}.gif",
             filetypes=[("GIF", "*.gif")],
         )
@@ -295,13 +295,17 @@ class App(tk.Frame):
             self._gif_frames.append(self._snapshot_frame())
 
     def _snapshot_frame(self) -> dict:
-        """Produce a serializable frame the export module can render."""
         rule = self.engine.rule
-        w, h = self.engine.grid.width, self.engine.grid.height
-        cells = [[rule.render_cell(self.engine.grid.cells[y][x]) for x in range(w)] for y in range(h)]
-        return {"width": w, "height": h, "cells": cells, "canvas_size": CANVAS_SIZE}
-
-    # ---- Tutorial -----------------------------------------------------------
+        kind = getattr(rule, "renderer_kind", "discrete")
+        if kind == "field":
+            return {"kind": "field",
+                    "rgb": rule.render_rgb(self.engine.state).tolist(),
+                    "canvas_size": CANVAS_SIZE}
+        w, h = self._state_dims()
+        cells = [[rule.render_cell(self.engine.state, x, y) for x in range(w)]
+                 for y in range(h)]
+        return {"kind": "discrete", "width": w, "height": h,
+                "cells": cells, "canvas_size": CANVAS_SIZE}
 
     def _tutorial_start(self) -> None:
         self._tutorial_index = -1
@@ -309,46 +313,36 @@ class App(tk.Frame):
         self._tutorial_next()
 
     def _tutorial_next(self) -> None:
+        steps = tutorial_for(self.engine.rule.name)
         self._tutorial_index += 1
-        if self._tutorial_index >= len(TUTORIAL_STEPS):
+        if self._tutorial_index >= len(steps):
             self._tutorial_index = -1
             self.tutorial_label.pack_forget()
             return
-        step = TUTORIAL_STEPS[self._tutorial_index]
-        self.tutorial_var.set(f"[{self._tutorial_index + 1}/{len(TUTORIAL_STEPS)}] {step}")
+        self.tutorial_var.set(
+            f"[{self._tutorial_index + 1}/{len(steps)}] {steps[self._tutorial_index]}"
+        )
 
     def _about(self) -> None:
         messagebox.showinfo(
             "About cellauto",
-            "cellauto sandbox v2.0\n"
-            "Pluggable cellular automata: natural-selection, Conway, Wolfram 1D.\n"
-            "MIT licensed.",
+            "cellauto sandbox\n"
+            "Abiogenesis pipeline: primordial soup → reaction-diffusion → autocatalytic\n"
+            "sets → vesicles → protocell selection.\n"
+            "Reference automata: Conway, Wolfram 1D.\n"
+            "MIT licensed. See PRD.md and docs/science.md for citations.",
         )
-
-    # ---- Render -------------------------------------------------------------
 
     def _render(self) -> None:
         rule = self.engine.rule
-        cw = CANVAS_SIZE / self.engine.grid.width
-        ch = CANVAS_SIZE / self.engine.grid.height
-        for y in range(self.engine.grid.height):
-            for x in range(self.engine.grid.width):
-                cell = self.engine.grid.cells[y][x]
-                color, shape = rule.render_cell(cell)
-                item = self._cell_items[y][x]
-                self.canvas.itemconfigure(item, fill=color)
-                # If shape switched (rect <-> oval), we need to recreate the item.
-                current_type = self.canvas.type(item)
-                desired_type = "oval" if shape == "oval" else "rectangle"
-                if current_type != desired_type:
-                    self.canvas.delete(item)
-                    x1, y1 = x * cw, y * ch
-                    x2, y2 = x1 + cw, y1 + ch
-                    if shape == "oval":
-                        new_id = self.canvas.create_oval(x1, y1, x2, y2, fill=color, outline="")
-                    else:
-                        new_id = self.canvas.create_rectangle(x1, y1, x2, y2, fill=color, outline="")
-                    self._cell_items[y][x] = new_id
+        kind = getattr(rule, "renderer_kind", "discrete")
+        if kind == "field" and isinstance(self._renderer, FieldRenderer):
+            self._renderer.render(rule.render_rgb(self.engine.state))
+        elif isinstance(self._renderer, DiscreteRenderer):
+            self._renderer.render(lambda x, y: rule.render_cell(self.engine.state, x, y))
+        else:
+            self._init_renderer()
+            self._render()
 
     def _update_status(self) -> None:
         pop = ", ".join(f"{k}={v}" for k, v in self.engine.population().items())
@@ -358,9 +352,10 @@ class App(tk.Frame):
         )
 
 
-def run(rule_name: str = "natural-selection", grid_size: int = DEFAULT_GRID,
+def run(rule_name: str = "abiogenesis-pipeline", grid_size: int = DEFAULT_GRID,
         seed: int | None = None) -> None:
-    logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s %(message)s")
+    logging.basicConfig(level=logging.INFO,
+                        format="%(asctime)s %(levelname)s %(name)s %(message)s")
     root = tk.Tk()
     App(root, rule_name=rule_name, grid_size=grid_size, seed=seed)
     root.mainloop()

@@ -1,40 +1,39 @@
-"""Rule protocol shared by every automaton ruleset."""
+"""Rule protocol shared by every automaton ruleset.
+
+A Rule owns its data shape (Grid for discrete-cell rules; Field for
+continuous-concentration rules) and tells the Engine how to:
+  - construct its initial state from (width, height)
+  - advance it one step
+  - render the current state (shape and color per cell, or an RGB array)
+  - report a stats breakdown
+  - serialize / deserialize for snapshots
+  - report its own config so snapshots round-trip rule parameters
+
+This is the only contract the Engine knows about.
+"""
 
 from __future__ import annotations
 
 from collections.abc import Mapping
 from typing import Any, Protocol, runtime_checkable
 
-from cellauto.grid import Grid
-
 
 @runtime_checkable
 class Rule(Protocol):
-    """A pluggable rule set.
-
-    `name` is shown in the UI / CLI. `state_factory` produces the initial cell
-    state for a given (x, y) — used by Grid.filled at engine start. `step`
-    advances the grid one tick in-place or returns a new one (engine uses
-    whatever it gets back). `render_cell` produces a (hex_color, shape) tuple
-    the renderer can draw; shape is "rect" or "oval".
-    """
-
     name: str
+    renderer_kind: str  # "discrete" or "field"
 
-    def state_factory(self, x: int, y: int) -> Any: ...
+    def init_state(self, width: int, height: int) -> Any: ...
+    def step(self, state: Any) -> Any: ...
+    def population(self, state: Any) -> Mapping[str, int]: ...
 
-    def step(self, grid: Grid[Any]) -> Grid[Any]: ...
+    # Discrete renderer path: render_cell returns (color_hex, shape) per (x, y).
+    # Field renderer path: render_rgb returns an (H, W, 3) uint8 numpy array.
+    def render_cell(self, state: Any, x: int, y: int) -> tuple[str, str]: ...
 
-    def render_cell(self, cell: Any) -> tuple[str, str]: ...
+    def render_rgb(self, state: Any) -> Any: ...
 
-    def population(self, grid: Grid[Any]) -> Mapping[str, int]:
-        """Return counts keyed by state-label, for the stats overlay."""
-        ...
-
-    def serialize_cell(self, cell: Any) -> Any:
-        """Return a JSON-safe representation of a single cell."""
-        ...
-
-    def deserialize_cell(self, data: Any) -> Any:
-        """Inverse of serialize_cell."""
-        ...
+    # Snapshot round-trip.
+    def serialize_state(self, state: Any) -> Any: ...
+    def deserialize_state(self, data: Any) -> Any: ...
+    def to_config(self) -> dict: ...
