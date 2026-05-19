@@ -1,3 +1,1 @@
-# README.md
-## System Requirements
-- Python >= 3.6
+Pillow>=10.0
