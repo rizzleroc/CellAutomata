@@ -55,7 +55,7 @@ class VesicleState:
 class AbiogenesisStage3Vesicles:
     name: str = "abiogenesis-stage3-vesicles"
     renderer_kind: str = "field"
-    cmc_threshold: float = 0.55     # critical micelle concentration (toy units)
+    cmc_threshold: float = 0.3      # critical micelle concentration (toy units, calibrated to GS v range)
     F: float = 0.04
     k: float = 0.06
     Du: float = 0.16
