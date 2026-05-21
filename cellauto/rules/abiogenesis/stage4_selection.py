@@ -60,20 +60,25 @@ class Protocell:
     alive: bool = True
 
     def fitness(self) -> float:
-        """Toy fitness: diversity (entropy) × total concentration.
+        """Eigen-Schuster hypercycle fitness: cyclic catalytic coupling.
 
-        A protocell with one species at high concentration has low fitness
-        (degenerate); a protocell with even mix has high fitness. This is
-        a placeholder for proper RAF-based fitness — see PHASE2_BRUTAL §29.
+        In the hypercycle each species i catalyses the replication of
+        species (i+1) mod n.  The catalytic rate is proportional to the
+        product g[i] * g[(i+1) % n], so the total hypercycle flux is the
+        sum of those pairwise products around the ring.  This goes to zero
+        if *any* species is absent and is maximised when all n species are
+        present in equal concentration — the cooperatively stable state
+        Eigen & Schuster (1977) identified.
+
+        References:
+            Eigen, M., & Schuster, P. (1977). The hypercycle. A principle
+            of natural self-organization. Naturwissenschaften 64, 541–565.
         """
         g = self.genome
-        total = float(g.sum())
-        if total <= 1e-6:
+        if float(g.sum()) <= 1e-6:
             return 0.0
-        p = g / total
-        # Shannon entropy in nats; small log offset prevents log(0).
-        entropy = float(-np.sum(p * np.log(p + 1e-12)))
-        return entropy * total
+        n = len(g)
+        return float(sum(g[i] * g[(i + 1) % n] for i in range(n)))
 
 
 @dataclass
@@ -132,7 +137,7 @@ class AbiogenesisStage4Selection:
             cell.age += 1
             fit = cell.fitness()
             # Grow if fitness is high, shrink otherwise.
-            cell.radius += 0.2 if fit > 1.0 else -0.1
+            cell.radius += 0.2 if fit > 0.05 else -0.1
             cell.radius = max(0.0, cell.radius)
             # Genome drift (mutation).
             cell.genome = cell.genome + np.array(
@@ -192,7 +197,7 @@ class AbiogenesisStage4Selection:
                 & ((xx - cell.cx) ** 2 + (yy - cell.cy) ** 2 >= (cell.radius - 1) ** 2)
             )
             # Fitness → hue (low = red, high = green).
-            fit = min(cell.fitness() / 5.0, 1.0)
+            fit = min(cell.fitness() / 0.25, 1.0)  # hypercycle max ≈ n*(0.5)^2/n = 0.25 for n=4
             r = int(255 * (1 - fit))
             g = int(255 * fit)
             img[disc] = (r, g, 0)
@@ -205,7 +210,7 @@ class AbiogenesisStage4Selection:
         return {
             "protocells": len(alive),
             "avg_radius": int(round(np.mean([c.radius for c in alive]) if alive else 0)),
-            "avg_fitness_x100": int(round(avg_fit * 100)),
+            "avg_fitness_x1000": int(round(avg_fit * 1000)),
         }
 
     def serialize_state(self, state: SelectionState) -> dict:

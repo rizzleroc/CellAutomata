@@ -1,19 +1,42 @@
+<p align="center">
+  <img src="docs/icon.png" width="128" alt="cellauto app icon — protocell mid-division" />
+</p>
+
 # cellauto
 
 [![CI](https://github.com/rizzleroc/CellAutomata/actions/workflows/ci.yml/badge.svg)](https://github.com/rizzleroc/CellAutomata/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 ![Python](https://img.shields.io/badge/python-3.10%2B-blue)
+![Version](https://img.shields.io/badge/version-3.1.0-brightgreen)
 
 A scientifically-grounded cellular sandbox exploring the **chemistry-to-life
 transition** — the abiogenesis problem — across five stages, plus the two
 canonical reference cellular automata (Conway, Wolfram 1D) for comparison.
 
-![Gray-Scott reaction-diffusion at step 400 — self-replicating spots](docs/hero.png)
+![Self-replicating Gray-Scott spots — protocell-like division](docs/hero.png)
 
-*Stage 1 — Gray-Scott reaction-diffusion at step 400. Pearson (1993)
-"spots" preset (F=0.035, k=0.065). The self-replicating spots are the
-project's hero result: a four-parameter PDE producing emergent
-protocell-like division.*
+*The project's hero result: Stage 1 Gray-Scott reaction-diffusion produces
+self-replicating, dividing "protocell" spots. Pearson (1993) "spots" preset
+(F=0.035, k=0.065). A four-parameter PDE is enough to manufacture emergent
+cellular division — the central mystery of the chemistry-to-life transition,
+visualised.*
+
+![Five stages of abiogenesis — primordial soup → reaction-diffusion → autocatalytic sets → vesicles → protocell selection](docs/pipeline.png)
+
+*The five stages of the `abiogenesis-pipeline` rule, left → right: primordial
+soup, Gray-Scott reaction-diffusion, Kauffman autocatalytic sets, lipid
+vesicles, protocell selection. The pipeline rule walks all five end-to-end;
+each can also be run in isolation. See [docs/science.md](docs/science.md) for
+the math and citations.*
+
+![Prima Materia — an observational plate from the Annals of Catalytic Silence](docs/prima-materia.png)
+
+*Prima Materia (Plate XII, Series MMXXVI) — a museum-style scientific
+plate composed from real cellauto simulations. The hero specimen is Stage 1
+(Gray-Scott) caught at step 600; the four supporting specimens are Stages
+0, 2, 3, 4 each captured at the moment its characteristic pattern emerges.
+Design philosophy: [Catalytic Silence](docs/design/catalytic-silence.md).
+Render script: [render_prima_materia.py](docs/design/render_prima_materia.py).*
 
 ## What this project actually is
 
@@ -135,9 +158,14 @@ The project's history is its own gap analysis:
   v2.0 left as a no-op. Stages 1–4 add real reaction-diffusion (Turing /
   Gray-Scott), Kauffman RAFs, lipid self-assembly, and hypercycle-based
   protocell selection with citations to the original literature.
+- **v3.1** (2026-05-19): AAA polish pass. GIF export threaded with a
+  progress bar and Cancel button. Stage 4 fitness replaced with the
+  Eigen-Schuster hypercycle coupling (PHASE2_BRUTAL §29 closed). CI adds
+  Windows job, mypy, ruff format, 80% coverage threshold, pip-audit, and
+  concurrency cancellation.
 
-45 tests, all passing. See [docs/science.md](docs/science.md) for the math
-and citations.
+49 tests, all passing. See [docs/science.md](docs/science.md) for the math
+and citations. Full version history in [CHANGELOG.md](CHANGELOG.md).
 
 ## License
 

@@ -5,25 +5,62 @@ on:
     branches: [main]
   pull_request:
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   test:
-    runs-on: ubuntu-latest
+    runs-on: ${{ matrix.os }}
     strategy:
+      fail-fast: false
       matrix:
+        os: [ubuntu-latest, windows-latest]
         python-version: ["3.10", "3.11", "3.12"]
     steps:
       - uses: actions/checkout@v4
+
       - name: Set up Python ${{ matrix.python-version }}
         uses: actions/setup-python@v5
         with:
           python-version: ${{ matrix.python-version }}
+
       - name: Install
         run: |
           python -m pip install --upgrade pip
           pip install -e ".[dev]"
-      - name: Lint (ruff)
+
+      - name: Lint — ruff check
         run: ruff check cellauto tests
-      - name: Tests (pytest)
-        run: pytest --cov=cellauto --cov-report=term-missing
-      - name: Headless smoke test (CLI simulate)
+
+      - name: Lint — ruff format
+        run: ruff format --check cellauto tests
+
+      - name: Type check — mypy
+        run: mypy cellauto --ignore-missing-imports --no-error-summary
+
+      - name: Tests (pytest + coverage)
+        run: pytest --cov=cellauto --cov-report=term-missing --cov-fail-under=80
+
+      - name: Headless smoke — CLI simulate
         run: python -m cellauto simulate --rule natural-selection --grid 30 --steps 25 --seed 1
+
+      - name: Headless smoke — CLI export
+        run: python -m cellauto export --rule conway --grid 30 --steps 20 --fps 8 --out /tmp/ci-smoke.gif
+        if: runner.os != 'Windows'
+
+      - name: Headless smoke — CLI export (Windows)
+        run: python -m cellauto export --rule conway --grid 30 --steps 20 --fps 8 --out $env:TEMP\ci-smoke.gif
+        if: runner.os == 'Windows'
+
+  security:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install pip-audit
+        run: pip install pip-audit
+      - name: Audit dependencies
+        run: pip-audit -r requirements.txt

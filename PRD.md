@@ -157,7 +157,9 @@ Repo is public with no license. Legally, nobody can use, fork, or contribute to 
 
 ## 4. Recommended Product Roadmap
 
-### v1.1 — Honesty release (1 day)
+> **Status (2026-05-21):** v1.1 → v3.1 are **shipped**. v3.0's original "web build" stretch was deliberately descoped (platform change, not a feature). The live roadmap is now **v3.2 — Living colony & visual identity**, below. See [PHASE2_BRUTAL.md §POST2](../PHASE2_BRUTAL.md) for the verified punch-list checkoff.
+
+### v1.1 — Honesty release ✅ shipped
 - Delete `main_new.py`.
 - Fix `requirements.txt` (either remove or make valid).
 - Add LICENSE, `.gitignore`, screenshot in README.
@@ -166,14 +168,14 @@ Repo is public with no license. Legally, nobody can use, fork, or contribute to 
 - Configure `logging.basicConfig`.
 - Reconcile Python version claims (commit to 3.9+).
 
-### v1.2 — Make the simulation actually do what it claims (2–3 days)
+### v1.2 — Make the simulation actually do what it claims ✅ shipped
 - **F1:** Implement neighbor-color propagation (sample from 8-neighborhood).
 - **F2:** Quantize colors to a ~16-color palette so "same color" actually happens.
 - **F3:** Decide whether `is_new` means anything; if yes, gate it correctly; if no, delete.
 - **F4:** Give amoebas a real lifecycle — stop recoloring them, give them a lifespan or reproduction rule.
 - Add `--seed` CLI flag; show seed in UI.
 
-### v2.0 — Real cellular-automata sandbox (1–2 weeks)
+### v2.0 — Real cellular-automata sandbox ✅ shipped
 - Pluggable rule engine (`Rule` interface; ship Wolfram 1D, Conway's Life, and the current "natural selection" rule as three of N).
 - Stats overlay: step count, FPS, population counts per state.
 - Save/load `.json` snapshots.
@@ -182,10 +184,28 @@ Repo is public with no license. Legally, nobody can use, fork, or contribute to 
 - Unit tests for each rule; CI on push.
 - Optional: swap Tk for `pygame` or web-based (HTML canvas) so it's actually shareable.
 
-### v3.0 — Educational artifact (stretch)
-- Add inline tutorial mode that explains each rule as it fires.
-- Export run as MP4/GIF for sharing.
-- Web build (Pyodide or rewrite in JS) so people don't have to install Python.
+### v3.0 — Educational artifact ✅ shipped (web build descoped)
+- Inline per-rule tutorial mode. ✅
+- Export run as GIF for sharing (non-blocking, progress + cancel). ✅
+- Abiogenesis pipeline (5 stages, citation-backed origin-of-life concepts). ✅
+- ~~Web build (Pyodide / JS rewrite)~~ — descoped: platform change, not a feature.
+
+### v3.1 — Honest infrastructure ✅ shipped (2026-05-20)
+- Eigen-Schuster hypercycle fitness replaces the Stage-4 placeholder.
+- Windows+Ubuntu CI matrix, mypy, ruff format, `--cov-fail-under=80`, pip-audit.
+- Catalytic Silence visual identity: bundled fonts, museum-plate sections, app icon, About dialog.
+- CHANGELOG.md, version 3.1.0.
+
+### v3.2 — Living colony & visual identity (the UI is not there yet) ← **current**
+The infrastructure is honest but the *experience* is unfinished. The signature "cuddly cartoon amoeba" exists only as the header mascot; the colony renders as flat colored dots with faces that never appear at the default grid. And we surface only 4 of ~16 generated art assets.
+- **Living colony:** port the mascot's wobble / blink / 3D-highlight / blobby-body animation into the colony renderer, driven by a continuous tick so it's alive even when paused.
+- **Visible faces by default:** fix the `FACE_MIN_CELL_PX` vs default-grid mismatch so the amoebas read as characters out of the box.
+- **Organic bodies:** smoothed blob polygons with subtle membrane motion instead of perfect circles.
+- **Use the art we generated:** surface orphaned `whipgen-out` plates, pick one canonical icon, generate the missing amoeba hero/sprite.
+- **UI polish:** apply Catalytic Silence consistently to the canvas frame; review spacing/typography.
+- **Residual test/doc nits:** Wolfram rule-110 test, CLI-subprocess tests, fix the stale Stage-4 fitness string in the tutorial.
+
+See [PHASE2_BRUTAL.md §POST2](../PHASE2_BRUTAL.md) for the prioritized V0–V2 punch list.
 
 ---
 

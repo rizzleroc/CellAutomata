@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "cellauto"
-version = "3.0.0"
+version = "3.1.0"
 description = "Scientifically-grounded abiogenesis sandbox (5-stage chemistry-to-life pipeline + Conway + Wolfram)."
 readme = "README.md"
 license = { file = "LICENSE" }
@@ -30,6 +30,7 @@ dev = [
     "pytest>=8.0",
     "pytest-cov>=4.0",
     "ruff>=0.4",
+    "mypy>=1.10",
 ]
 
 [project.scripts]
@@ -42,6 +43,9 @@ Issues = "https://github.com/rizzleroc/CellAutomata/issues"
 [tool.setuptools.packages.find]
 include = ["cellauto*"]
 exclude = ["tests*", "exports*", "snapshots*"]
+
+[tool.setuptools.package-data]
+cellauto = ["assets/*.png", "assets/*.ico", "assets/fonts/*.ttf"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
