@@ -52,23 +52,30 @@ from cellauto.rules.abiogenesis.science import gray_scott_step
 
 @dataclass
 class Protocell:
-    cx: float          # center x
-    cy: float          # center y
+    cx: float  # center x
+    cy: float  # center y
     radius: float
     genome: np.ndarray  # vector of internal species concentrations, length S
     age: int = 0
     alive: bool = True
 
     def fitness(self) -> float:
-        """Eigen-Schuster hypercycle fitness: cyclic catalytic coupling.
+        """Static fitness proxy inspired by the Eigen-Schuster hypercycle.
 
-        In the hypercycle each species i catalyses the replication of
-        species (i+1) mod n.  The catalytic rate is proportional to the
-        product g[i] * g[(i+1) % n], so the total hypercycle flux is the
-        sum of those pairwise products around the ring.  This goes to zero
-        if *any* species is absent and is maximised when all n species are
-        present in equal concentration — the cooperatively stable state
-        Eigen & Schuster (1977) identified.
+        In a hypercycle each species i catalyses the replication of species
+        (i+1) mod n, so a complete ring requires every member to be present.
+        We score that completeness with the cyclic coupling sum
+        ``Σ g[i] * g[(i+1) % n]``: it goes to zero if *any* species is absent
+        and is maximised when all n species are present in equal concentration
+        — the cooperatively stable configuration Eigen & Schuster (1977)
+        identified.
+
+        This is a scalar *proxy*, not the hypercycle itself: the genuine model
+        is a coupled replicator ODE ``dx_i/dt = x_i (k_i x_{i-1} - Φ)`` with a
+        global dilution flux Φ holding Σx_i constant. We do not integrate that
+        system — the genome drifts by Gaussian mutation and this score only
+        gates growth — so the stage demonstrates selection on a
+        hypercycle-flavoured fitness, not hypercycle dynamics proper.
 
         References:
             Eigen, M., & Schuster, P. (1977). The hypercycle. A principle
@@ -83,8 +90,8 @@ class Protocell:
 
 @dataclass
 class SelectionState:
-    chemistry: np.ndarray             # H x W x S float32 — underlying chemistry
-    cells: list[Protocell]            # population of protocells
+    chemistry: np.ndarray  # H x W x S float32 — underlying chemistry
+    cells: list[Protocell]  # population of protocells
 
 
 @dataclass
@@ -102,6 +109,17 @@ class AbiogenesisStage4Selection:
     substeps_per_frame: int = 6
     rng: random.Random = field(default_factory=random.Random)
 
+    @property
+    def error_threshold(self) -> float:
+        """Eigen's quasispecies error threshold ≈ 1/L, where L is the genome
+        length (here ``n_species``). Above this per-digit mutation rate the
+        master sequence can no longer be maintained against copying errors and
+        the population melts into a random ensemble — the "error catastrophe."
+        The default ``mutation_rate`` sits well below 1/n_species, so the
+        population stays organized; raise it past the threshold to watch the
+        catastrophe set in. Eigen (1971); Eigen & Schuster (1977)."""
+        return 1.0 / self.n_species
+
     def init_state(self, width: int, height: int) -> SelectionState:
         chem = np.zeros((height, width, self.n_species), dtype=np.float32)
         # Seed each species with a Gray-Scott-style perturbation.
@@ -110,15 +128,14 @@ class AbiogenesisStage4Selection:
             cx = self.rng.randrange(width // 4, width * 3 // 4)
             cy = self.rng.randrange(height // 4, height * 3 // 4)
             r = max(2, min(width, height) // 16)
-            chem[cy - r:cy + r, cx - r:cx + r, s] = 0.4
+            chem[cy - r : cy + r, cx - r : cx + r, s] = 0.4
 
         # Initial protocell population: 3 cells with random genomes.
         cells = []
         for _ in range(3):
             cx = self.rng.uniform(width * 0.25, width * 0.75)
             cy = self.rng.uniform(height * 0.25, height * 0.75)
-            genome = np.array([self.rng.uniform(0.05, 0.4) for _ in range(self.n_species)],
-                              dtype=np.float32)
+            genome = np.array([self.rng.uniform(0.05, 0.4) for _ in range(self.n_species)], dtype=np.float32)
             cells.append(Protocell(cx=cx, cy=cy, radius=4.0, genome=genome))
         return SelectionState(chemistry=chem, cells=cells)
 
@@ -176,7 +193,7 @@ class AbiogenesisStage4Selection:
     def render_cell(self, state: SelectionState, x: int, y: int) -> tuple[str, str]:
         # Discrete view: are we inside any protocell?
         for cell in state.cells:
-            if (x - cell.cx) ** 2 + (y - cell.cy) ** 2 <= cell.radius ** 2:
+            if (x - cell.cx) ** 2 + (y - cell.cy) ** 2 <= cell.radius**2:
                 return "#ffcc00", "oval"
         intensity = float(state.chemistry[y, x, 1])
         gray = int(np.clip(intensity * 255, 0, 255))
@@ -191,10 +208,9 @@ class AbiogenesisStage4Selection:
                 continue
             # Paint a disc for each protocell.
             yy, xx = np.ogrid[:H, :W]
-            disc = (xx - cell.cx) ** 2 + (yy - cell.cy) ** 2 <= cell.radius ** 2
-            ring = (
-                ((xx - cell.cx) ** 2 + (yy - cell.cy) ** 2 <= cell.radius ** 2)
-                & ((xx - cell.cx) ** 2 + (yy - cell.cy) ** 2 >= (cell.radius - 1) ** 2)
+            disc = (xx - cell.cx) ** 2 + (yy - cell.cy) ** 2 <= cell.radius**2
+            ring = ((xx - cell.cx) ** 2 + (yy - cell.cy) ** 2 <= cell.radius**2) & (
+                (xx - cell.cx) ** 2 + (yy - cell.cy) ** 2 >= (cell.radius - 1) ** 2
             )
             # Fitness → hue (low = red, high = green).
             fit = min(cell.fitness() / 0.25, 1.0)  # hypercycle max ≈ n*(0.5)^2/n = 0.25 for n=4
@@ -211,27 +227,50 @@ class AbiogenesisStage4Selection:
             "protocells": len(alive),
             "avg_radius": int(round(np.mean([c.radius for c in alive]) if alive else 0)),
             "avg_fitness_x1000": int(round(avg_fit * 1000)),
+            "mutation_rate_x1000": int(round(self.mutation_rate * 1000)),
+            "error_threshold_x1000": int(round(self.error_threshold * 1000)),
         }
 
     def serialize_state(self, state: SelectionState) -> dict:
         return {
             "chemistry": np.round(state.chemistry, 4).tolist(),
             "cells": [
-                {"cx": c.cx, "cy": c.cy, "radius": c.radius,
-                 "genome": c.genome.tolist(), "age": c.age, "alive": c.alive}
+                {
+                    "cx": c.cx,
+                    "cy": c.cy,
+                    "radius": c.radius,
+                    "genome": c.genome.tolist(),
+                    "age": c.age,
+                    "alive": c.alive,
+                }
                 for c in state.cells
             ],
         }
 
     def deserialize_state(self, data: dict) -> SelectionState:
         chem = np.array(data["chemistry"], dtype=np.float32)
-        cells = [Protocell(cx=c["cx"], cy=c["cy"], radius=c["radius"],
-                           genome=np.array(c["genome"], dtype=np.float32),
-                           age=c["age"], alive=c["alive"]) for c in data["cells"]]
+        cells = [
+            Protocell(
+                cx=c["cx"],
+                cy=c["cy"],
+                radius=c["radius"],
+                genome=np.array(c["genome"], dtype=np.float32),
+                age=c["age"],
+                alive=c["alive"],
+            )
+            for c in data["cells"]
+        ]
         return SelectionState(chemistry=chem, cells=cells)
 
     def to_config(self) -> dict:
-        return {"n_species": self.n_species, "mutation_rate": self.mutation_rate,
-                "division_radius": self.division_radius, "decay_age": self.decay_age,
-                "F": self.F, "k": self.k, "Du": self.Du, "Dv": self.Dv,
-                "substeps_per_frame": self.substeps_per_frame}
+        return {
+            "n_species": self.n_species,
+            "mutation_rate": self.mutation_rate,
+            "division_radius": self.division_radius,
+            "decay_age": self.decay_age,
+            "F": self.F,
+            "k": self.k,
+            "Du": self.Du,
+            "Dv": self.Dv,
+            "substeps_per_frame": self.substeps_per_frame,
+        }

@@ -13,3 +13,9 @@ venv/
 snapshots/*.json
 exports/*.gif
 exports/*.png
+
+# Local-only dev artefacts (visual audits + MCP server config).
+.ruff_cache/
+audit-*.png
+v32-*.png
+.mcp.json

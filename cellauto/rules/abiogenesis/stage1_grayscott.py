@@ -71,11 +71,12 @@ class AbiogenesisStage1GrayScott:
         v = np.zeros((height, width), dtype=np.float32)
         cx, cy = width // 2, height // 2
         r = max(2, min(width, height) // 16)
-        u[cy - r:cy + r, cx - r:cx + r] = 0.5
-        v[cy - r:cy + r, cx - r:cx + r] = 0.25
+        u[cy - r : cy + r, cx - r : cx + r] = 0.5
+        v[cy - r : cy + r, cx - r : cx + r] = 0.25
         # Small random noise so symmetric initial conditions break.
-        noise = np.array([[self.rng.uniform(-0.02, 0.02) for _ in range(width)]
-                          for _ in range(height)], dtype=np.float32)
+        noise = np.array(
+            [[self.rng.uniform(-0.02, 0.02) for _ in range(width)] for _ in range(height)], dtype=np.float32
+        )
         v += noise
         np.clip(v, 0.0, 1.0, out=v)
         return GrayScottState(u=u, v=v)
@@ -105,8 +106,7 @@ class AbiogenesisStage1GrayScott:
         total = state.v.size
         active = int((state.v > 0.2).sum())
         spots = int((state.v > 0.5).sum())
-        return {"active": active, "high_concentration": spots,
-                "inactive": total - active}
+        return {"active": active, "high_concentration": spots, "inactive": total - active}
 
     def serialize_state(self, state: GrayScottState) -> dict:
         return {"u": state.u.tolist(), "v": state.v.tolist()}
@@ -118,6 +118,11 @@ class AbiogenesisStage1GrayScott:
         )
 
     def to_config(self) -> dict:
-        return {"preset": self.preset, "F": self.F, "k": self.k,
-                "Du": self.Du, "Dv": self.Dv,
-                "substeps_per_frame": self.substeps_per_frame}
+        return {
+            "preset": self.preset,
+            "F": self.F,
+            "k": self.k,
+            "Du": self.Du,
+            "Dv": self.Dv,
+            "substeps_per_frame": self.substeps_per_frame,
+        }

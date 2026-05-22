@@ -15,12 +15,10 @@ from cellauto.engine import Engine
 from cellauto.export import export_gif
 from cellauto.rules import REGISTRY
 from cellauto.rules.abiogenesis import (
-    AbiogenesisStage0Soup,
     AbiogenesisStage1GrayScott,
 )
 from cellauto.rules.conway import ConwaysLifeRule
 from cellauto.rules.natural_selection import NaturalSelectionRule
-
 
 # ── GIF export validity (P2-18) ─────────────────────────────────────────────
 
@@ -31,8 +29,9 @@ def _build_distinct_discrete_frames(n: int, width: int, height: int) -> list[dic
     for i in range(n):
         shade = f"#{(20 + i * 40) % 255:02x}aa00"
         cells = [[(shade, "rect") for _ in range(width)] for _ in range(height)]
-        frames.append({"kind": "discrete", "width": width, "height": height,
-                       "cells": cells, "canvas_size": 120})
+        frames.append(
+            {"kind": "discrete", "width": width, "height": height, "cells": cells, "canvas_size": 120}
+        )
     return frames
 
 

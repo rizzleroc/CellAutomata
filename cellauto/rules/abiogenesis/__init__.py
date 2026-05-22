@@ -8,7 +8,7 @@ scientifically-grounded stages:
     Stage 0  Primordial soup       Oparin (1924), Haldane (1929), Miller-Urey (1953)
     Stage 1  Reaction-diffusion    Turing (1952), Gray-Scott (1980s), Pearson (1993)
     Stage 2  Autocatalytic sets    Kauffman (1986), Hordijk & Steel (RAF algorithm)
-    Stage 3  Vesicle formation     Oparin coacervates; Deamer (lipid vesicles)
+    Stage 3  Vesicle formation     Deamer & Szostak (fatty-acid lipid vesicles)
     Stage 4  Protocell selection   Eigen-Schuster hypercycle (1977), Szostak Lab
 
 Each stage is an independently runnable Rule with its own visualization. The
@@ -25,6 +25,11 @@ from cellauto.rules.abiogenesis.stage1_grayscott import AbiogenesisStage1GraySco
 from cellauto.rules.abiogenesis.stage2_raf import AbiogenesisStage2RAF
 from cellauto.rules.abiogenesis.stage3_vesicles import AbiogenesisStage3Vesicles
 from cellauto.rules.abiogenesis.stage4_selection import AbiogenesisStage4Selection
+from cellauto.rules.abiogenesis.stage_chirality import AbiogenesisStageHomochirality
+from cellauto.rules.abiogenesis.stage_coacervate import AbiogenesisStageCoacervate
+from cellauto.rules.abiogenesis.stage_minerals import AbiogenesisStageMinerals
+from cellauto.rules.abiogenesis.stage_rna import AbiogenesisStageRNAWorld
+from cellauto.rules.abiogenesis.stage_vents import AbiogenesisStageVents
 
 __all__ = [
     "AbiogenesisPipelineRule",
@@ -33,4 +38,9 @@ __all__ = [
     "AbiogenesisStage2RAF",
     "AbiogenesisStage3Vesicles",
     "AbiogenesisStage4Selection",
+    "AbiogenesisStageRNAWorld",
+    "AbiogenesisStageHomochirality",
+    "AbiogenesisStageVents",
+    "AbiogenesisStageCoacervate",
+    "AbiogenesisStageMinerals",
 ]

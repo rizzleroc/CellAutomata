@@ -1,4 +1,5 @@
 """Tests for the abiogenesis pipeline composite rule."""
+
 from cellauto.engine import Engine
 from cellauto.rules.abiogenesis.pipeline import (
     STAGE_CLASSES,

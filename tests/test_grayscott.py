@@ -1,4 +1,5 @@
 """Tests for the Gray-Scott reaction-diffusion stage."""
+
 import numpy as np
 
 from cellauto.engine import Engine

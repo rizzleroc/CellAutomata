@@ -20,13 +20,13 @@ import random
 import tkinter as tk
 from typing import Any
 
-BODY_TEAL    = "#39d4c8"
+BODY_TEAL = "#39d4c8"
 BODY_TEAL_HI = "#5ee7dc"
 BODY_MAGENTA = "#d439a4"
-EYE_WHITE    = "#fdf6e3"
-PUPIL        = "#0a0e16"
-HIGHLIGHT    = "#ffffff"
-BG           = "#0a0e16"
+EYE_WHITE = "#fdf6e3"
+PUPIL = "#0a0e16"
+HIGHLIGHT = "#ffffff"
+BG = "#0a0e16"
 
 
 class AmoebaMascot(tk.Canvas):
@@ -34,8 +34,13 @@ class AmoebaMascot(tk.Canvas):
 
     def __init__(self, master: Any, size: int = 64, **kwargs: Any) -> None:
         super().__init__(
-            master, width=size, height=size,
-            background=BG, highlightthickness=0, borderwidth=0, **kwargs,
+            master,
+            width=size,
+            height=size,
+            background=BG,
+            highlightthickness=0,
+            borderwidth=0,
+            **kwargs,
         )
         self._size = size
         self._cx = size / 2
@@ -78,15 +83,22 @@ class AmoebaMascot(tk.Canvas):
 
         # Soft outer body.
         self._body = self.create_oval(
-            cx - r, cy - r, cx + r, cy + r,
-            fill=BODY_TEAL, outline="",
+            cx - r,
+            cy - r,
+            cx + r,
+            cy + r,
+            fill=BODY_TEAL,
+            outline="",
         )
         # Subtle inner highlight — gives a 3D feel.
         h_r = r * 0.55
         self._highlight = self.create_oval(
-            cx - h_r * 0.9, cy - r * 0.85,
-            cx + h_r * 0.4, cy - r * 0.10,
-            fill=BODY_TEAL_HI, outline="",
+            cx - h_r * 0.9,
+            cy - r * 0.85,
+            cx + h_r * 0.4,
+            cy - r * 0.10,
+            fill=BODY_TEAL_HI,
+            outline="",
         )
 
         # Eyes (whites). Positioned in the upper half.
@@ -98,18 +110,34 @@ class AmoebaMascot(tk.Canvas):
         for side, attr in ((-1, "_eye_l"), (1, "_eye_r")):
             ex = cx + side * self._eye_dx
             ey = cy + self._eye_dy
-            setattr(self, attr, self.create_oval(
-                ex - ew, ey - ew, ex + ew, ey + ew,
-                fill=EYE_WHITE, outline="",
-            ))
+            setattr(
+                self,
+                attr,
+                self.create_oval(
+                    ex - ew,
+                    ey - ew,
+                    ex + ew,
+                    ey + ew,
+                    fill=EYE_WHITE,
+                    outline="",
+                ),
+            )
         for side, attr in ((-1, "_pupil_l"), (1, "_pupil_r")):
             ex = cx + side * self._eye_dx
             ey = cy + self._eye_dy
             pr = self._pupil_r
-            setattr(self, attr, self.create_oval(
-                ex - pr, ey - pr, ex + pr, ey + pr,
-                fill=PUPIL, outline="",
-            ))
+            setattr(
+                self,
+                attr,
+                self.create_oval(
+                    ex - pr,
+                    ey - pr,
+                    ex + pr,
+                    ey + pr,
+                    fill=PUPIL,
+                    outline="",
+                ),
+            )
 
         self._draw_mouth()
 
@@ -124,16 +152,26 @@ class AmoebaMascot(tk.Canvas):
         if self._happy:
             # Smile arc.
             self._mouth = self.create_arc(
-                cx - mw / 2, my, cx + mw / 2, my + mh,
-                start=200, extent=140, style="arc",
-                outline=PUPIL, width=max(1, int(s / 32)),
+                cx - mw / 2,
+                my,
+                cx + mw / 2,
+                my + mh,
+                start=200,
+                extent=140,
+                style="arc",
+                outline=PUPIL,
+                width=max(1, int(s / 32)),
             )
         else:
             # Neutral O.
             r = s * 0.05
             self._mouth = self.create_oval(
-                cx - r, my + r, cx + r, my + 3 * r,
-                fill=PUPIL, outline="",
+                cx - r,
+                my + r,
+                cx + r,
+                my + 3 * r,
+                fill=PUPIL,
+                outline="",
             )
 
     # ── Animation tick (~30 fps via 33 ms after()) ──────────────────────────
@@ -180,9 +218,7 @@ class AmoebaMascot(tk.Canvas):
         # Body + highlight follow the bob.
         self.coords(self._body, cx - r, cy - r, cx + r, cy + r)
         h_r = r * 0.55
-        self.coords(self._highlight,
-                    cx - h_r * 0.9, cy - r * 0.85,
-                    cx + h_r * 0.4, cy - r * 0.10)
+        self.coords(self._highlight, cx - h_r * 0.9, cy - r * 0.85, cx + h_r * 0.4, cy - r * 0.10)
 
         ew = self._eye_white_r
         pr = self._pupil_r
@@ -197,17 +233,14 @@ class AmoebaMascot(tk.Canvas):
             ey = cy + self._eye_dy
             if blinking:
                 # Squash the eye white to a thin slit.
-                self.coords(eye_id,
-                            ex - ew, ey - 0.6, ex + ew, ey + 0.6)
+                self.coords(eye_id, ex - ew, ey - 0.6, ex + ew, ey + 0.6)
                 self.coords(pup_id, ex, ey, ex, ey)
                 self.itemconfigure(pup_id, fill="")
             else:
-                self.coords(eye_id,
-                            ex - ew, ey - ew, ex + ew, ey + ew)
+                self.coords(eye_id, ex - ew, ey - ew, ex + ew, ey + ew)
                 px = ex + gx * max_off
                 py = ey + gy * max_off
-                self.coords(pup_id,
-                            px - pr, py - pr, px + pr, py + pr)
+                self.coords(pup_id, px - pr, py - pr, px + pr, py + pr)
                 self.itemconfigure(pup_id, fill=PUPIL)
 
         # Mouth follows the body bob.
@@ -215,9 +248,7 @@ class AmoebaMascot(tk.Canvas):
         mh = s * 0.14
         my = cy + s * 0.10
         if self._happy:
-            self.coords(self._mouth,
-                        cx - mw / 2, my, cx + mw / 2, my + mh)
+            self.coords(self._mouth, cx - mw / 2, my, cx + mw / 2, my + mh)
         else:
             r2 = s * 0.05
-            self.coords(self._mouth,
-                        cx - r2, my + r2, cx + r2, my + 3 * r2)
+            self.coords(self._mouth, cx - r2, my + r2, cx + r2, my + 3 * r2)

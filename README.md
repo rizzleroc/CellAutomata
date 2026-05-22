@@ -52,13 +52,15 @@ math behind each stage. The short version:
 
 | Stage | Concept | Science |
 |---|---|---|
-| 0 — primordial soup | Discrete molecules mixing, condensing into protocells | Oparin (1924), Haldane (1929), Miller-Urey (1953) |
+| 0 — primordial soup | Molecules mixing/condensing; initial mix weighted by **Miller's 1953 measured yields** | Oparin (1924), Haldane (1929), Miller-Urey (1953) |
 | 1 — reaction-diffusion | Gray-Scott PDE producing self-replicating spots | Turing (1952), Gray-Scott (1985), Pearson (1993) |
-| 2 — autocatalytic sets | Kauffman RAFs — closed catalytic cycles in random networks | Kauffman (1986), Hordijk & Steel (2004) |
-| 3 — vesicle formation | Lipid self-assembly above the critical micelle concentration | Helfrich (1973), Deamer, Szostak Lab |
-| 4 — protocell selection | Hypercycle dynamics: variation, inheritance, selection | Eigen & Schuster (1977), Szostak |
+| 2 — autocatalytic sets | Kauffman RAFs via the **correct Hordijk-Steel layered closure** (catalysis mandatory) | Kauffman (1986), Hordijk & Steel (2004) |
+| 3 — vesicle formation | Lipid self-assembly above the **measured CMC** of a named fatty acid | Helfrich (1973), Deamer, Hanczyc & Szostak (2003) |
+| 4 — protocell selection | Hypercycle-flavoured fitness; **Eigen error threshold ≈ 1/L** | Eigen & Schuster (1977), Szostak |
 
-The `abiogenesis-pipeline` rule walks all five stages end to end.
+Every constant traces to a published measurement; see
+[docs/science.md](docs/science.md) for the values and citations. The
+`abiogenesis-pipeline` rule walks all five stages end to end.
 
 ## Install
 
@@ -126,15 +128,27 @@ than v1 in practice.
 
 ## GUI controls
 
+The window is a fixed-width "museum plate"; its content **scrolls vertically**
+so every control is reachable on any screen size.
+
 - **Rule / Grid dropdowns** — pick a rule and grid size.
 - **Reseed** — fresh RNG seed (shown in the status bar).
 - **Promote stage** — for the pipeline rule, manually advance to the next stage.
 - **Step / Play / Stop** — single-step or run at the FPS slider's rate.
+- **Live stage caption** — the current stage name and a colour legend are drawn
+  on the canvas; entering a new stage announces its governing principle and
+  citations in the marginalia, so the science isn't buried in the docs.
 - **Tutorial** — per-rule walkthrough with citations.
 - **Record GIF** — capture live frames + save.
+- **Gallery menu** — nine museum plates, including a per-stage hero illustration
+  for each of the five stages and a full-arc "chemistry into life" poster
+  (`docs/generated/`).
 - **File ▸ Save / Open snapshot** — persist state to JSON (RNG state + rule
   config round-trip exactly — load-then-step matches continuous run).
 - **File ▸ Export GIF** — render N frames headlessly to a GIF.
+
+See [docs/ROADMAP.md](docs/ROADMAP.md) for the full feature inventory,
+punchlist, and roadmap.
 
 ## Reproducibility
 
@@ -163,9 +177,18 @@ The project's history is its own gap analysis:
   Eigen-Schuster hypercycle coupling (PHASE2_BRUTAL §29 closed). CI adds
   Windows job, mypy, ruff format, 80% coverage threshold, pip-audit, and
   concurrency cancellation.
+- **v3.2** (2026-05-22): scientific-rigor + AAA overhaul. Fixed a genuine
+  bug — the RAF detector was not the Hordijk-Steel algorithm and reported
+  false-positive autocatalytic sets; rewrote it to the correct layered
+  food-generated closure with mandatory catalysis. Replaced toy constants
+  with published data (Miller-Urey yields, fatty-acid CMCs, Eigen error
+  threshold). Surfaced the science in the UI (live stage captions +
+  transition citations). Generated six museum-quality stage plates via the
+  whipgen MCP. Made the GUI content scrollable so controls are never clipped.
 
-49 tests, all passing. See [docs/science.md](docs/science.md) for the math
-and citations. Full version history in [CHANGELOG.md](CHANGELOG.md).
+72 tests, all passing. See [docs/science.md](docs/science.md) for the math
+and citations, and [docs/ROADMAP.md](docs/ROADMAP.md) for the feature
+inventory and roadmap. Full version history in [CHANGELOG.md](CHANGELOG.md).
 
 ## License
 

@@ -23,6 +23,7 @@ class Field:
     S is the number of chemical species tracked. concentrations[y, x, i] is
     the concentration of species i at cell (x, y).
     """
+
     width: int
     height: int
     species: int
@@ -30,8 +31,12 @@ class Field:
 
     @classmethod
     def zeros(cls, width: int, height: int, species: int) -> Field:
-        return cls(width=width, height=height, species=species,
-                   concentrations=np.zeros((height, width, species), dtype=np.float32))
+        return cls(
+            width=width,
+            height=height,
+            species=species,
+            concentrations=np.zeros((height, width, species), dtype=np.float32),
+        )
 
     @classmethod
     def filled(cls, width: int, height: int, species: int, value: float) -> Field:
@@ -46,8 +51,10 @@ class Field:
         """
         c = self.concentrations[:, :, species_index]
         return (
-            np.roll(c, 1, axis=0) + np.roll(c, -1, axis=0)
-            + np.roll(c, 1, axis=1) + np.roll(c, -1, axis=1)
+            np.roll(c, 1, axis=0)
+            + np.roll(c, -1, axis=0)
+            + np.roll(c, 1, axis=1)
+            + np.roll(c, -1, axis=1)
             - 4 * c
         )
 
@@ -57,12 +64,13 @@ class Field:
     def to_dict(self) -> dict:
         """Lossy-but-compact serialization: round to 4 decimals."""
         return {
-            "width": self.width, "height": self.height, "species": self.species,
+            "width": self.width,
+            "height": self.height,
+            "species": self.species,
             "concentrations": np.round(self.concentrations, 4).tolist(),
         }
 
     @classmethod
     def from_dict(cls, data: dict) -> Field:
         arr = np.array(data["concentrations"], dtype=np.float32)
-        return cls(width=data["width"], height=data["height"],
-                   species=data["species"], concentrations=arr)
+        return cls(width=data["width"], height=data["height"], species=data["species"], concentrations=arr)

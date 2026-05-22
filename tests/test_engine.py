@@ -76,9 +76,12 @@ def test_step_count_round_trips(tmp_path: Path):
 
 def test_load_rejects_unknown_rule(tmp_path: Path):
     path = tmp_path / "bogus.json"
-    path.write_text('{"version":2,"rule":"does-not-exist","rule_config":{},'
-                    '"seed":1,"width":2,"height":2,"step_count":0,'
-                    '"rng_state":null,"state":{}}')
+    path.write_text(
+        '{"version":2,"rule":"does-not-exist","rule_config":{},'
+        '"seed":1,"width":2,"height":2,"step_count":0,'
+        '"rng_state":null,"state":{}}'
+    )
     import pytest
+
     with pytest.raises(ValueError, match="unknown rule"):
         Engine.load(path, REGISTRY)

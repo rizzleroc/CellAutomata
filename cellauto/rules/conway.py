@@ -31,8 +31,7 @@ class ConwaysLifeRule:
     rng: random.Random = field(default_factory=random.Random)
 
     def init_state(self, width: int, height: int) -> Grid[bool]:
-        return Grid.filled(width, height,
-                           lambda x, y: self.rng.random() < self.initial_density)
+        return Grid.filled(width, height, lambda x, y: self.rng.random() < self.initial_density)
 
     def step(self, grid: Grid[bool]) -> Grid[bool]:
         w, h = grid.width, grid.height
@@ -63,13 +62,23 @@ class ConwaysLifeRule:
         return {"alive": alive, "dead": grid.width * grid.height - alive}
 
     def serialize_state(self, grid: Grid[bool]) -> dict:
-        return {"width": grid.width, "height": grid.height,
-                "cells": [[bool(c) for c in row] for row in grid.cells]}
+        return {
+            "width": grid.width,
+            "height": grid.height,
+            "cells": [[bool(c) for c in row] for row in grid.cells],
+        }
 
     def deserialize_state(self, data: dict) -> Grid[bool]:
-        return Grid(width=data["width"], height=data["height"],
-                    cells=[[bool(c) for c in row] for row in data["cells"]])
+        return Grid(
+            width=data["width"],
+            height=data["height"],
+            cells=[[bool(c) for c in row] for row in data["cells"]],
+        )
 
     def to_config(self) -> dict:
-        return {"initial_density": self.initial_density, "wrap": self.wrap,
-                "alive_color": self.alive_color, "dead_color": self.dead_color}
+        return {
+            "initial_density": self.initial_density,
+            "wrap": self.wrap,
+            "alive_color": self.alive_color,
+            "dead_color": self.dead_color,
+        }

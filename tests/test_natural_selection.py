@@ -4,6 +4,7 @@ Each test corresponds to a gap from CellAutomata_PRD.md (the original) and/or
 PHASE2_BRUTAL.md (the self-audit). F3 in particular was claimed-fixed in v2.0
 but the regression test is new in v3.0.
 """
+
 from cellauto.engine import Engine
 from cellauto.rules.natural_selection import PALETTE, NaturalSelectionRule
 
@@ -36,8 +37,9 @@ def test_rule1_color_propagates_from_neighbor():
                     nx, ny = x + dx, y + dy
                     if 0 <= nx < 4 and 0 <= ny < 4:
                         neighbors.append(before[ny][nx])
-            assert cell.color in neighbors or cell.color == before[y][x], \
+            assert cell.color in neighbors or cell.color == before[y][x], (
                 f"cell ({x},{y}) color {cell.color} not from neighbor"
+            )
 
 
 def test_rule2_combinations_fire_within_50_steps():
@@ -68,8 +70,7 @@ def test_rule3_settled_cells_cannot_combine():
     # The settled-cells-can't-combine clause forbids combinations.
     amoebas = sum(1 for row in engine.grid.cells for c in row if c.is_ameba)
     assert amoebas == 0, f"settled same-color cells must not combine, got {amoebas} amoebas"
-    all_settled = all(not c.is_new and not c.is_ameba
-                      for row in engine.grid.cells for c in row)
+    all_settled = all(not c.is_new and not c.is_ameba for row in engine.grid.cells for c in row)
     assert all_settled, "all-same-color step should leave every cell settled"
 
 

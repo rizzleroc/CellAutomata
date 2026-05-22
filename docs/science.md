@@ -31,6 +31,14 @@ molecules. Stanley Miller and Harold Urey's famous 1953 experiment
 demonstrated that lightning-driven discharges in a reducing atmosphere
 produce amino acids, validating the soup framework.
 
+**Real data:** the 16 molecular "species" are not abstract — they are the 16
+most abundant products Miller actually recovered in 1953, and the initial soup
+is sampled weighted by his reported yields (formic acid ≈ 49%, glycine ≈ 13%,
+glycolic acid ≈ 12%, alanine ≈ 7%, with everything else in the tail). So the
+starting grid reflects the measured composition of a spark-discharge soup
+rather than a uniform rainbow — a real soup is dominated by a few simple
+molecules. (See `MILLER_UREY_SPECIES` in `natural_selection.py`.)
+
 **What this implementation captures:** mass-action mixing, condensation of
 like monomers, kinetic activation lifetime.
 **What it doesn't:** real thermodynamics, real reaction kinetics, the
@@ -65,9 +73,29 @@ different regimes**:
 |---|---|---|
 | Spots | Self-replicating spots, mitosis-like division | (0.035, 0.065) |
 | Stripes | Long meandering stripes | (0.04, 0.06) |
-| Mitosis | Cells split and migrate | (0.037, 0.065) |
+| Mitosis | Cells split and migrate | (0.0367, 0.0649) |
 | Waves | Travelling wavefronts | (0.014, 0.045) |
 | Labyrinth | Maze-like patterns | (0.039, 0.058) |
+
+**Numerics.** We integrate with forward Euler on a unit grid (dx = 1, dt = 1)
+and a 5-point Laplacian — the standard non-dimensional "xmorphia"
+parameterization with `Du = 0.16, Dv = 0.08`. These are *rescaled* values, not
+Pearson's original `Du = 2×10⁻⁵, Dv = 10⁻⁵` on the unit square; space and time
+are non-dimensionalized, so the patterns are faithful while the raw constants
+differ. The explicit-diffusion stability bound for a 2D 5-point stencil is
+`D·dt/dx² ≤ 1/4`; here the largest term is `0.16 ≤ 0.25`, so the scheme is
+stable with margin. (The integrator clips `u, v` to `[0, 1]`, which keeps a
+demo well-behaved but would also mask a true instability if you pushed `dt`
+past the bound.)
+
+The `Du : Dv = 2 : 1` ratio is a *modelling* choice, not a measured chemical
+ratio: Turing patterns require the inhibitor to diffuse faster than the
+activator, and a ratio around 2 reliably lands in the pattern-forming regime.
+Real small-molecule aqueous diffusion coefficients are all of order
+`10⁻⁹ m²/s` (glycine `D ≈ 1.06×10⁻⁹ m²/s`; most metabolites cluster in
+`0.5–1×10⁻⁹`), differing by far less than 2× — so the qualitative requirement
+"inhibitor diffuses faster" is the physically meaningful part, while the exact
+factor is tuned for the demonstration.
 
 Reaction-diffusion is the mechanism Alan Turing proposed in 1952 to explain
 biological pattern formation (zebra stripes, leopard spots, fingerprint
@@ -144,6 +172,14 @@ species, then marks regions where lipid concentration exceeds the CMC as
 membrane. Connected high-lipid regions become discrete vesicles tracked by
 flood-fill connected-component labelling.
 
+**Real data:** the membrane is identified with a named fatty acid whose
+*measured* critical micelle concentration anchors the threshold (`decanoic
+acid (C10)` ≈ 85 mM, `octanoic (C8)` ≈ 250 mM, `oleic (C18:1)` ≈ 0.1 mM; see
+`AMPHIPHILE_CMC_MM`). C8–C10 monocarboxylic acids are the prebiotic sweet
+spot — the species Deamer extracted from the Murchison meteorite that form
+vesicles under early-Earth conditions. The simulation field is normalized so
+1.0 corresponds to the chosen amphiphile's CMC.
+
 **What this captures:** threshold-based self-assembly, vesicle counting.
 **What it cuts:** real lipid bilayer dynamics involve Helfrich curvature
 elasticity, surface tension, and fluid mechanics (Lipowsky & Sackmann 1995).
@@ -208,6 +244,202 @@ selection, replication — are all present.
   synthesis inside model protocells. *Science*, 342(6162), 1098–1100.
 - Szostak, J. W. (2017). The narrow road to the deep past: in search of the
   chemistry of the origin of life. *Angew. Chem.*, 56(37), 11037–11043.
+
+---
+
+## RNA world — spatial quasispecies and the error catastrophe
+
+Selectable directly as the `abiogenesis-rna-world` rule (not yet woven into the
+auto-promoting pipeline). Walter Gilbert's 1986 **RNA world** hypothesis is the
+dominant modern picture of early life: RNA served as both genotype (a copyable
+template) and catalyst (a ribozyme) before the DNA/protein division of labour.
+The quantitative law that governs any such self-replicator is Eigen's
+**quasispecies** theory.
+
+For a single-peak fitness landscape — a "master" sequence of length *L* that
+replicates with superiority σ, every mutant replicating at rate 1 — the master
+is maintained only while the per-base copy-error rate stays below the
+**error threshold**:
+
+```
+ε_c  =  ln(σ) / L
+```
+
+Below ε_c the population is a quasispecies: a mutant cloud centred on the
+master. Above ε_c the master is lost and the population melts into random
+sequences — the **error catastrophe**. This stage is a spatial Eigen model:
+each cell holds an RNA strand over a 4-letter alphabet (or is empty); empty
+cells are colonised by a *fitness-weighted* occupied neighbour (selection), and
+the copy is made base-by-base with per-base error ε (mutation); occupied cells
+die at a fixed rate. Cells are coloured by Hamming distance to the master
+(bright = master, dark = far mutant). Dragging the error-rate slider past
+ε_c ≈ ln(10)/16 ≈ 0.14 reproduces the catastrophe live.
+
+**What this captures:** selection on a single-peak landscape, per-base
+mutation, and the Eigen error threshold as an observable phase transition.
+**What it cuts:** real base-pairing/templated copying chemistry, ribozyme
+folding, and sequence-dependent fitness landscapes.
+
+**Citations**
+- Gilbert, W. (1986). The RNA World. *Nature*, 319, 618.
+- Eigen, M. (1971). Selforganization of matter… *Naturwissenschaften*, 58(10),
+  465–523.
+- Spiegelman, S. (1971). An approach to the experimental analysis of
+  precellular evolution. *Q. Rev. Biophys.*, 4(2–3), 213–253.
+- Joyce, G. F. (2002). The antiquity of RNA-based evolution. *Nature*,
+  418(6894), 214–221.
+
+---
+
+## Homochirality — spontaneous mirror-symmetry breaking
+
+Selectable as the `abiogenesis-homochirality` rule. Life is **homochiral**: it
+uses only L-amino acids and D-sugars, never their mirror images. A racemic
+prebiotic soup has equal amounts of each enantiomer, so something broke the
+mirror symmetry and amplified one hand to exclusivity. F. C. Frank's 1953 model
+shows the mechanism: **autocatalysis** (each enantiomer catalyses its own
+formation) plus **mutual antagonism** (opposite hands annihilate) makes the
+racemic state unstable — any tiny fluctuation is amplified until one hand wins.
+
+```
+A + L → 2L      (autocatalysis,    rate k_a)
+A + R → 2R      (autocatalysis,    rate k_a)
+L + R → inert   (mutual antagonism, rate k_x)
+```
+
+On the 2D reaction-diffusion field, local patches spontaneously break to
+opposite handedness, forming **chiral domains** (teal = L-dominant, magenta =
+R-dominant) that then compete. Turning the antagonism rate k_x toward zero
+restores a stable racemic state — no symmetry breaking. The **Soai reaction**
+(1995) is the laboratory realisation of asymmetric autocatalysis amplifying a
+tiny enantiomeric excess to near-homochirality.
+
+**What this captures:** autocatalysis + mutual antagonism, spontaneous
+symmetry breaking, and spatial chiral-domain formation/competition.
+**What it cuts:** the actual chemistry of a specific autocatalyst, and the
+proposed sources of the initial bias (Kondepudi & Nelson 1985 on parity
+violation; circularly polarised light; mineral surfaces).
+
+**Citations**
+- Frank, F. C. (1953). On spontaneous asymmetric synthesis. *Biochim. Biophys.
+  Acta*, 11, 459–463.
+- Soai, K., et al. (1995). Asymmetric autocatalysis and amplification of
+  enantiomeric excess. *Nature*, 378, 767–768.
+- Blackmond, D. G. (2004). Asymmetric autocatalysis and its implications for
+  the origin of homochirality. *PNAS*, 101(16), 5732–5736.
+- Kondepudi, D. K., & Nelson, G. W. (1985). Weak neutral currents and the
+  origin of biomolecular chirality. *Nature*, 314, 438–441.
+
+---
+
+## Alkaline hydrothermal vents — a proton gradient does the work
+
+Selectable as the `abiogenesis-hydrothermal-vent` rule. This is the
+**metabolism-first** alternative to the lightning-powered soup. Serpentinisation
+of ocean crust produces warm, alkaline (pH ~9–11), H₂-rich vent fluid; the early
+ocean was mildly acidic (CO₂-rich, pH ~5–7). Where the two meet across the thin
+catalytic (FeS) walls of a vent chimney there is a natural **proton gradient** of
+~3–4 pH units — a built-in proton-motive force, the very same kind of gradient
+every living cell still uses to make ATP (chemiosmosis).
+
+Lane & Martin (2012) argue that this geochemical gradient, *not* a hand-set feed
+rate, is the free-energy source for the first carbon fixation. The stage models
+exactly that: the chimney interior is held alkaline and the ocean edges acidic
+(Dirichlet sources), a steady gradient forms between them, and organic matter is
+synthesised in proportion to the **steepness** of the local gradient — so
+synthesis ignites along the chimney wall (the interface), not uniformly. Flatten
+the gradient (vent pH = ocean pH) and synthesis stops entirely: no gradient, no
+free energy, no chemistry. Blue = alkaline, orange = acidic, teal-green glow =
+organic synthesis.
+
+**What this captures:** a fixed geochemical proton gradient as the energy
+source, and interface-localised synthesis driven by the proton-motive force.
+**What it cuts:** the actual carbon-fixation chemistry (acetyl-CoA / Wood-
+Ljungdahl pathway), real FeS/FeNi mineral catalysis, and fluid flow.
+
+**Citations**
+- Russell, M. J., & Hall, A. J. (1997). The emergence of life from iron
+  monosulphide bubbles… *J. Geol. Soc.*, 154(3), 377–402.
+- Martin, W., & Russell, M. J. (2007). On the origin of biochemistry at an
+  alkaline hydrothermal vent. *Phil. Trans. R. Soc. B*, 362, 1887–1925.
+- Lane, N., & Martin, W. F. (2012). The origin of membrane bioenergetics.
+  *Cell*, 151(7), 1406–1416.
+- Sojo, V., et al. (2016). The origin of life in alkaline hydrothermal vents.
+  *Astrobiology*, 16(2), 181–197.
+
+---
+
+## Coacervates — membraneless compartments by phase separation
+
+Selectable as the `abiogenesis-coacervate` rule. This is the *original*
+protocell idea — Alexander Oparin's 1924 **coacervates**: dense, membraneless
+droplets that form when macromolecules spontaneously separate from solution.
+It's a different answer to "how did chemistry get a boundary?" than Stage 3's
+lipid vesicles: no membrane at all, just liquid-liquid phase separation. The
+same physics underlies modern **biomolecular condensates** (membraneless
+organelles), which has revived coacervates as a serious origin-of-life model.
+
+The dynamics are the **Cahn-Hilliard equation** — phase separation with a
+*conserved* order parameter φ (local composition):
+
+```
+μ      =  φ³ − φ − κ ∇²φ      (double-well chemistry + interface energy)
+∂φ/∂t  =  M ∇²μ               (conserved: total φ is preserved)
+```
+
+From a near-uniform, slightly off-critical mixture, φ separates into a
+coacervate-rich phase (gold droplets) and a dilute phase (dark), then
+**coarsens**: small droplets dissolve to feed larger ones (Ostwald ripening)
+and neighbours fuse, so the droplet count peaks and then declines — exactly as
+real coacervates do. κ sets the line tension (bigger → fewer, larger droplets)
+and the mean composition controls how much rich phase forms.
+
+**What this captures:** conserved liquid-liquid phase separation, droplet
+nucleation, and coarsening.
+**What it cuts:** the specific macromolecules (polypeptide/polynucleotide
+complex coacervation), electrostatics, and selective partitioning of solutes.
+
+**Citations**
+- Oparin, A. I. (1924). *The Origin of Life*. (Coacervate hypothesis.)
+- Bungenberg de Jong, H. G. (1932). Coacervation. *(original coacervate work)*
+- Cahn, J. W., & Hilliard, J. E. (1958). Free energy of a nonuniform system.
+  *J. Chem. Phys.*, 28(2), 258–267.
+- Banani, S. F., et al. (2017). Biomolecular condensates. *Nat. Rev. Mol. Cell
+  Biol.*, 18, 285–298.
+
+---
+
+## Mineral-surface catalysis — the first polymers form on clay
+
+Selectable as the `abiogenesis-mineral-catalysis` rule. **Condensation
+polymerisation** (joining monomers into chains, releasing water) is uphill in
+bulk water, so dilute monomers don't spontaneously form long polymers in the
+open ocean. Mineral surfaces fix this. James Ferris showed **montmorillonite
+clay** catalyses RNA-nucleotide polymerisation into 30–50-unit chains by
+concentrating monomers on its charged surface and templating bond formation;
+A. G. Cairns-Smith proposed clay crystals as the first "genetic" material.
+
+The stage models surface catalysis directly: a static **clay mask** sits on the
+grid; monomers diffuse and are fed; polymer forms at a rate that is high *on*
+the clay and near-zero *off* it; polymer slowly hydrolyses everywhere. Long
+polymer accumulates on the clay patches (teal-green) while the bulk (dark) stays
+monomeric — the chemistry is localised to the mineral surface. Raise the
+bulk-water rate to equal the clay rate and the localisation vanishes.
+
+**What this captures:** surface-localised polymerisation, the bulk-water vs
+mineral-surface contrast, and slow hydrolysis.
+**What it cuts:** the real templating geometry of the clay interlayer, monomer
+activation chemistry, and sequence selectivity.
+
+**Citations**
+- Ferris, J. P., Hill, A. R., Liu, R., & Orgel, L. E. (1996). Synthesis of long
+  prebiotic oligomers on mineral surfaces. *Nature*, 381, 59–61.
+- Cairns-Smith, A. G. (1982). *Genetic Takeover and the Mineral Origins of
+  Life*. Cambridge University Press.
+- Hanczyc, M. M., Fujikawa, S. M., & Szostak, J. W. (2003). Experimental models
+  of primitive cellular compartments. *Science*, 302, 618–622.
+- Hazen, R. M., & Sverjensky, D. A. (2010). Mineral surfaces… and the origins of
+  life. *CSH Perspect. Biol.*, 2, a002162.
 
 ---
 

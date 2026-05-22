@@ -43,7 +43,10 @@ class Engine:
         self.state = self.rule.init_state(self.width, self.height)
         log.info(
             "engine init width=%d height=%d rule=%s seed=%d",
-            self.width, self.height, self.rule.name, self.seed,
+            self.width,
+            self.height,
+            self.rule.name,
+            self.seed,
         )
 
     # Backward compat: existing tests reference engine.grid.
@@ -85,7 +88,8 @@ class Engine:
             "height": self.height,
             "step_count": self.step_count,
             "rng_state": base64.b64encode(pickle.dumps(self.rule.rng.getstate())).decode("ascii")
-                         if hasattr(self.rule, "rng") else None,
+            if hasattr(self.rule, "rng")
+            else None,
             "state": self.rule.serialize_state(self.state),
         }
 
@@ -105,8 +109,10 @@ class Engine:
         rule_config = data.get("rule_config", {})
         rule = rule_cls(**rule_config) if rule_config else rule_cls()
         engine = cls(
-            width=data["width"], height=data["height"],
-            rule=rule, seed=data["seed"],
+            width=data["width"],
+            height=data["height"],
+            rule=rule,
+            seed=data["seed"],
         )
         engine.step_count = data["step_count"]
         engine.state = rule.deserialize_state(data["state"])

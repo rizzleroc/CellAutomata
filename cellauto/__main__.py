@@ -40,7 +40,7 @@ def _parse_value(s: str):
 
 def _rule_kwargs(args: argparse.Namespace) -> dict:
     kwargs = {}
-    for entry in (args.rule_config or []):
+    for entry in args.rule_config or []:
         if "=" not in entry:
             raise SystemExit(f"--rule-config expects key=value, got: {entry!r}")
         k, v = entry.split("=", 1)
@@ -65,6 +65,7 @@ def _make_engine(args: argparse.Namespace) -> Engine:
 
 def cmd_gui(args: argparse.Namespace) -> None:
     from cellauto.app import run
+
     # GUI ignores --rule-config / --stage at construction time but the rule
     # picker can switch to any rule once running. (P1 followup: pass kwargs.)
     if args.load:
@@ -73,6 +74,7 @@ def cmd_gui(args: argparse.Namespace) -> None:
         from tkinter import Tk
 
         from cellauto.app import App
+
         root = Tk()
         app = App(root, rule_name=args.rule, grid_size=args.grid, seed=args.seed)
         app._stop()
@@ -90,9 +92,12 @@ def cmd_simulate(args: argparse.Namespace) -> None:
     engine = _make_engine(args)
     for _ in range(args.steps):
         engine.step()
-    out = {"rule": engine.rule.name, "seed": engine.seed,
-           "step_count": engine.step_count,
-           "population": dict(engine.population())}
+    out = {
+        "rule": engine.rule.name,
+        "seed": engine.seed,
+        "step_count": engine.step_count,
+        "population": dict(engine.population()),
+    }
     print(json.dumps(out, indent=2))
     if args.save:
         engine.save(args.save)
@@ -101,19 +106,19 @@ def cmd_simulate(args: argparse.Namespace) -> None:
 def cmd_export(args: argparse.Namespace) -> None:
     engine = _make_engine(args)
     from pathlib import Path
+
     frames: list[dict] = []
     for _ in range(args.steps):
         kind = getattr(engine.rule, "renderer_kind", "discrete")
         if kind == "field":
             rgb = engine.rule.render_rgb(engine.state)
-            frames.append({"kind": "field", "rgb": rgb.tolist(),
-                           "canvas_size": args.canvas})
+            frames.append({"kind": "field", "rgb": rgb.tolist(), "canvas_size": args.canvas})
         else:
             w, h = engine.grid.width, engine.grid.height
-            cells = [[engine.rule.render_cell(engine.state, x, y) for x in range(w)]
-                     for y in range(h)]
-            frames.append({"kind": "discrete", "width": w, "height": h,
-                           "cells": cells, "canvas_size": args.canvas})
+            cells = [[engine.rule.render_cell(engine.state, x, y) for x in range(w)] for y in range(h)]
+            frames.append(
+                {"kind": "discrete", "width": w, "height": h, "cells": cells, "canvas_size": args.canvas}
+            )
         engine.step()
     out = Path(args.out)
     export_gif(frames, out, fps=args.fps)
@@ -121,8 +126,9 @@ def cmd_export(args: argparse.Namespace) -> None:
 
 
 def build_parser() -> argparse.ArgumentParser:
-    p = argparse.ArgumentParser(prog="cellauto",
-                                 description="Pluggable cellular automata + abiogenesis sandbox.")
+    p = argparse.ArgumentParser(
+        prog="cellauto", description="Pluggable cellular automata + abiogenesis sandbox."
+    )
     p.add_argument("--log-level", default="INFO", help="DEBUG, INFO, WARNING, ERROR")
     sub = p.add_subparsers(dest="cmd", required=True)
 
@@ -131,11 +137,16 @@ def build_parser() -> argparse.ArgumentParser:
         sp.add_argument("--grid", type=int, default=60, help="grid edge size (square)")
         sp.add_argument("--seed", type=int, default=None, help="RNG seed")
         sp.add_argument("--load", default=None, help="load snapshot.json instead of new")
-        sp.add_argument("--rule-config", action="append", default=[],
-                        metavar="key=value",
-                        help="repeatable rule-specific parameter, e.g. rule_number=110")
-        sp.add_argument("--stage", type=int, default=None,
-                        help="for abiogenesis-pipeline: starting stage 0-4")
+        sp.add_argument(
+            "--rule-config",
+            action="append",
+            default=[],
+            metavar="key=value",
+            help="repeatable rule-specific parameter, e.g. rule_number=110",
+        )
+        sp.add_argument(
+            "--stage", type=int, default=None, help="for abiogenesis-pipeline: starting stage 0-4"
+        )
 
     sp_gui = sub.add_parser("gui", help="launch the Tk sandbox")
     add_common(sp_gui)
@@ -159,8 +170,10 @@ def build_parser() -> argparse.ArgumentParser:
 
 def main(argv: list[str] | None = None) -> None:
     args = build_parser().parse_args(argv)
-    logging.basicConfig(level=getattr(logging, args.log_level.upper()),
-                        format="%(asctime)s %(levelname)s %(name)s %(message)s")
+    logging.basicConfig(
+        level=getattr(logging, args.log_level.upper()),
+        format="%(asctime)s %(levelname)s %(name)s %(message)s",
+    )
     args.func(args)
 
 

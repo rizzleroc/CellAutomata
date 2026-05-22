@@ -39,7 +39,10 @@ from cellauto.rules.wolfram1d import Wolfram1DRule
 __version__ = "3.1.0"
 
 __all__ = [
-    "Engine", "Field", "Grid", "Rule",
+    "Engine",
+    "Field",
+    "Grid",
+    "Rule",
     "AbiogenesisPipelineRule",
     "AbiogenesisStage0Soup",
     "AbiogenesisStage1GrayScott",

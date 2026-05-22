@@ -38,6 +38,7 @@ class Reaction:
     at toy-model scales, so we don't bother with Arrhenius temperature
     dependence — the rate is a single number per reaction.
     """
+
     reactants: tuple[int, int]
     product: int
     rate_constant: float = 0.1
@@ -53,6 +54,7 @@ class ReactionNetwork:
     subsets of reactions whose products can all be built from food + each
     other, with every reaction catalyzed by some species in the same set.
     """
+
     n_species: int
     reactions: tuple[Reaction, ...]
     food_set: frozenset[int]
@@ -61,19 +63,45 @@ class ReactionNetwork:
         return tuple(r for r in self.reactions if r.product == species)
 
 
-def find_raf(network: ReactionNetwork) -> frozenset[Reaction]:
-    """Hordijk-Steel closure: largest subset R of reactions where every
-    reaction's reactants and catalyst are either in the food set or produced
-    by some other reaction in R.
+def _closure(food: frozenset[int], reactions: set[Reaction]) -> set[int]:
+    """Food-generated closure — Hordijk & Steel (2004) Algorithm 2.
 
-    Iteratively prune reactions whose requirements aren't met until the set
-    stabilizes. The result is the maximal RAF — empty if none exists.
+    Start from the food set and repeatedly add a reaction's product *only*
+    once both of its reactants are already producible, iterating to a
+    fixpoint. The key invariant the older one-pass version got wrong: a
+    product is reachable only when the reaction that makes it can actually
+    run, so producibility must propagate layer by layer from the food set —
+    you cannot assume every candidate's product is available up front.
+    """
+    producible = set(food)
+    changed = True
+    while changed:
+        changed = False
+        for r in reactions:
+            if r.product not in producible and all(reactant in producible for reactant in r.reactants):
+                producible.add(r.product)
+                changed = True
+    return producible
+
+
+def find_raf(network: ReactionNetwork) -> frozenset[Reaction]:
+    """Maximal RAF via the Hordijk-Steel closure.
+
+    Hordijk & Steel (2004); formalized in Hordijk (2023), arXiv:2303.01809,
+    Algorithms 1 & 2. A Reflexively Autocatalytic Food-generated (RAF) set R
+    is the largest set of reactions such that, using only the food set plus
+    the products of reactions in R, every reaction in R has (a) both reactants
+    producible and (b) at least one catalyst that is itself producible.
+
+    The "reflexively autocatalytic" requirement makes catalysis mandatory: an
+    uncatalyzed reaction can never belong to a RAF (that is the "R"). We
+    recompute the food-generated closure of the current candidate set, prune
+    any reaction whose reactants or catalyst fall outside that closure, and
+    repeat until the set stabilizes. Returns the empty set if no RAF exists.
     """
     candidates = set(network.reactions)
     while True:
-        # The "closure" reachable from food + current candidates' products.
-        producible = set(network.food_set)
-        producible.update(r.product for r in candidates)
+        producible = _closure(network.food_set, candidates)
         next_candidates = {r for r in candidates if _viable(r, producible)}
         if next_candidates == candidates:
             break
@@ -82,23 +110,31 @@ def find_raf(network: ReactionNetwork) -> frozenset[Reaction]:
 
 
 def _viable(r: Reaction, producible: set[int]) -> bool:
-    """A reaction is viable iff all reactants AND any catalyst are producible."""
-    for reactant in r.reactants:
-        if reactant not in producible:
-            return False
-    if r.catalyst is not None and r.catalyst not in producible:
+    """RAF-viable iff both reactants are producible AND the reaction has a
+    catalyst that is itself producible. Catalysis is mandatory (the "R" in
+    RAF) — an uncatalyzed reaction is excluded by definition, even if its
+    reactants are available."""
+    if any(reactant not in producible for reactant in r.reactants):
+        return False
+    if r.catalyst is None or r.catalyst not in producible:
         return False
     return True
 
 
-def random_reaction_network(n_species: int, n_reactions: int, food_fraction: float,
-                            rng: random.Random) -> ReactionNetwork:
+def random_reaction_network(
+    n_species: int, n_reactions: int, food_fraction: float, rng: random.Random
+) -> ReactionNetwork:
     """Construct a random reaction network for sandbox experiments.
 
     A random subset of species are flagged as food. Random A+B->C reactions
-    are generated; ~half are catalyzed by a random other species. Kauffman's
-    1986 paper analyses exactly this construction and shows RAFs emerge
-    spontaneously above a threshold connectivity.
+    are generated, each catalyzed by a random species. Catalysis is assigned
+    to every reaction because under the formal RAF definition an uncatalyzed
+    reaction can never belong to a RAF (Hordijk & Steel 2004) — leaving half
+    the reactions uncatalyzed, as an earlier version did, simply made them
+    dead weight that could never join an autocatalytic set. Kauffman's 1986
+    paper analyses exactly this construction and shows RAFs emerge
+    spontaneously once the average catalysis level crosses a threshold of
+    roughly one to two reactions catalyzed per species.
     """
     food_size = max(1, int(n_species * food_fraction))
     food_set = frozenset(rng.sample(range(n_species), food_size))
@@ -106,12 +142,10 @@ def random_reaction_network(n_species: int, n_reactions: int, food_fraction: flo
     for _ in range(n_reactions):
         a, b = rng.sample(range(n_species), 2)
         c = rng.randrange(n_species)
-        catalyst = rng.randrange(n_species) if rng.random() < 0.5 else None
+        catalyst = rng.randrange(n_species)
         rate = round(rng.uniform(0.05, 0.5), 3)
-        reactions.append(Reaction(reactants=(a, b), product=c,
-                                  rate_constant=rate, catalyst=catalyst))
-    return ReactionNetwork(n_species=n_species, reactions=tuple(reactions),
-                           food_set=food_set)
+        reactions.append(Reaction(reactants=(a, b), product=c, rate_constant=rate, catalyst=catalyst))
+    return ReactionNetwork(n_species=n_species, reactions=tuple(reactions), food_set=food_set)
 
 
 # ---------------------------------------------------------------------------
@@ -127,16 +161,24 @@ def laplacian_5pt(arr: np.ndarray) -> np.ndarray:
     boundary-condition headaches.
     """
     return (
-        np.roll(arr, 1, axis=0) + np.roll(arr, -1, axis=0)
-        + np.roll(arr, 1, axis=1) + np.roll(arr, -1, axis=1)
+        np.roll(arr, 1, axis=0)
+        + np.roll(arr, -1, axis=0)
+        + np.roll(arr, 1, axis=1)
+        + np.roll(arr, -1, axis=1)
         - 4 * arr
     )
 
 
-def gray_scott_step(u: np.ndarray, v: np.ndarray, *,
-                    Du: float = 0.16, Dv: float = 0.08,
-                    F: float = 0.035, k: float = 0.065,
-                    dt: float = 1.0) -> tuple[np.ndarray, np.ndarray]:
+def gray_scott_step(
+    u: np.ndarray,
+    v: np.ndarray,
+    *,
+    Du: float = 0.16,
+    Dv: float = 0.08,
+    F: float = 0.035,
+    k: float = 0.065,
+    dt: float = 1.0,
+) -> tuple[np.ndarray, np.ndarray]:
     """One forward-Euler step of the Gray-Scott reaction-diffusion system.
 
     The Gray-Scott model:
@@ -161,30 +203,52 @@ def gray_scott_step(u: np.ndarray, v: np.ndarray, *,
 
 # Pearson's parameter regions, useful as presets.
 GRAY_SCOTT_PRESETS: dict[str, tuple[float, float]] = {
-    "spots":    (0.035, 0.065),
-    "stripes":  (0.04, 0.06),
-    "mitosis":  (0.0367, 0.0649),
-    "waves":    (0.014, 0.045),
-    "labyrinth":(0.039, 0.058),
+    "spots": (0.035, 0.065),
+    "stripes": (0.04, 0.06),
+    "mitosis": (0.0367, 0.0649),
+    "waves": (0.014, 0.045),
+    "labyrinth": (0.039, 0.058),
 }
 
 
 # ---------------------------------------------------------------------------
-# Lipid self-assembly (toy)
+# Lipid self-assembly
 # ---------------------------------------------------------------------------
 
+# Measured critical aggregation concentrations (mM, ~pH 7-8) for
+# prebiotically-plausible single-chain fatty-acid amphiphiles, drawn from the
+# Szostak/Deamer protocell literature. Chain length sets the scale: short
+# chains need very high concentrations to aggregate; long chains aggregate at
+# trace levels. The prebiotic "sweet spot" is C8-C10 monocarboxylic acids —
+# the very species Deamer extracted from the Murchison meteorite that form
+# vesicles under plausible early-Earth conditions. The critical *vesicle*
+# concentration (CVC) is typically a few-fold below the CMC.
+#
+#   Deamer, D. W. (2008). How leaky were primitive cells? Nature 454, 37-38.
+#   Hanczyc, Fujikawa & Szostak (2003). Science 302, 618-622.
+#   Apel, Deamer & Mautner (2002). Biochim. Biophys. Acta 1559, 1-9.
+AMPHIPHILE_CMC_MM: dict[str, float] = {
+    "octanoic acid (C8)": 250.0,
+    "decanoic acid (C10)": 85.0,
+    "dodecanoic acid (C12)": 12.0,
+    "oleic acid (C18:1)": 0.1,
+}
 
-def vesicle_indicator(amphiphile_concentration: np.ndarray,
-                      threshold: float = 0.6) -> np.ndarray:
-    """Threshold-based protocell marker.
+
+def vesicle_indicator(amphiphile_concentration: np.ndarray, threshold: float = 0.6) -> np.ndarray:
+    """Critical-micelle-concentration membrane marker.
 
     Real lipid bilayers self-assemble above a critical micelle concentration
-    (CMC). Below CMC the lipids stay dispersed; above CMC they cluster into
-    bilayers and eventually close into vesicles. This toy implementation
-    just checks where the amphiphile concentration exceeds a threshold —
-    sufficient for a visual demo, way short of the real fluid mechanics.
+    (CMC): below it the amphiphiles stay dispersed; above it they cluster into
+    bilayers and eventually close into vesicles. ``AMPHIPHILE_CMC_MM`` lists
+    measured CMCs for the prebiotically-relevant fatty acids. The simulation's
+    field is in normalized units calibrated so 1.0 corresponds to the chosen
+    amphiphile's CMC, and ``threshold`` is therefore that normalized value; we
+    flag where concentration meets or exceeds it.
 
-    For a real implementation see Lipowsky & Sackmann's *Structure and
-    Dynamics of Membranes* (1995) or Szostak's recent protocell work.
+    This is a thermodynamic threshold model — it captures the existence of a
+    sharp self-assembly transition but not the fluid mechanics of the bilayer
+    (curvature elasticity, surface tension). For the full treatment see
+    Lipowsky & Sackmann's *Structure and Dynamics of Membranes* (1995).
     """
     return amphiphile_concentration >= threshold

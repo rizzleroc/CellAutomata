@@ -39,6 +39,7 @@ import numpy as np
 
 from cellauto.renderer import cmap_viridis
 from cellauto.rules.abiogenesis.science import (
+    AMPHIPHILE_CMC_MM,
     gray_scott_step,
     vesicle_indicator,
 )
@@ -46,8 +47,8 @@ from cellauto.rules.abiogenesis.science import (
 
 @dataclass
 class VesicleState:
-    lipid: np.ndarray       # amphiphile concentration, H x W float32
-    substrate: np.ndarray   # substrate concentration that feeds lipid synthesis
+    lipid: np.ndarray  # amphiphile concentration, H x W float32
+    substrate: np.ndarray  # substrate concentration that feeds lipid synthesis
     membrane_mask: np.ndarray  # H x W bool — True where a membrane exists
 
 
@@ -55,7 +56,10 @@ class VesicleState:
 class AbiogenesisStage3Vesicles:
     name: str = "abiogenesis-stage3-vesicles"
     renderer_kind: str = "field"
-    cmc_threshold: float = 0.3      # critical micelle concentration (toy units, calibrated to GS v range)
+    # Which fatty acid the membrane is made of (see AMPHIPHILE_CMC_MM for the
+    # measured CMCs). C8-C10 is the prebiotic sweet spot (Deamer, Murchison).
+    amphiphile: str = "decanoic acid (C10)"
+    cmc_threshold: float = 0.3  # normalized field value where 1.0 == this amphiphile's CMC
     F: float = 0.04
     k: float = 0.06
     Du: float = 0.16
@@ -71,13 +75,13 @@ class AbiogenesisStage3Vesicles:
             cx = self.rng.randrange(width // 4, width * 3 // 4)
             cy = self.rng.randrange(height // 4, height * 3 // 4)
             r = max(2, min(width, height) // 20)
-            u[cy - r:cy + r, cx - r:cx + r] = 0.5
-            v[cy - r:cy + r, cx - r:cx + r] = 0.25
-        v += np.array([[self.rng.uniform(-0.01, 0.01) for _ in range(width)]
-                       for _ in range(height)], dtype=np.float32)
+            u[cy - r : cy + r, cx - r : cx + r] = 0.5
+            v[cy - r : cy + r, cx - r : cx + r] = 0.25
+        v += np.array(
+            [[self.rng.uniform(-0.01, 0.01) for _ in range(width)] for _ in range(height)], dtype=np.float32
+        )
         np.clip(v, 0.0, 1.0, out=v)
-        return VesicleState(substrate=u, lipid=v,
-                            membrane_mask=np.zeros_like(v, dtype=bool))
+        return VesicleState(substrate=u, lipid=v, membrane_mask=np.zeros_like(v, dtype=bool))
 
     def step(self, state: VesicleState) -> VesicleState:
         # Step the underlying Gray-Scott chemistry to grow lipid concentration.
@@ -108,8 +112,13 @@ class AbiogenesisStage3Vesicles:
         membrane_cells = int(state.membrane_mask.sum())
         n_vesicles = self._count_connected(state.membrane_mask)
         active_lipid = int((state.lipid > 0.2).sum())
-        return {"membrane_cells": membrane_cells, "vesicles": n_vesicles,
-                "active_lipid": active_lipid}
+        cmc_mM = int(round(AMPHIPHILE_CMC_MM.get(self.amphiphile, 0.0)))
+        return {
+            "membrane_cells": membrane_cells,
+            "vesicles": n_vesicles,
+            "active_lipid": active_lipid,
+            "cmc_mM": cmc_mM,
+        }
 
     @staticmethod
     def _count_connected(mask: np.ndarray) -> int:
@@ -129,14 +138,15 @@ class AbiogenesisStage3Vesicles:
                         if seen[cy, cx] or not mask[cy, cx]:
                             continue
                         seen[cy, cx] = True
-                        stack.extend(((cx + 1, cy), (cx - 1, cy),
-                                      (cx, cy + 1), (cx, cy - 1)))
+                        stack.extend(((cx + 1, cy), (cx - 1, cy), (cx, cy + 1), (cx, cy - 1)))
         return count
 
     def serialize_state(self, state: VesicleState) -> dict:
-        return {"substrate": np.round(state.substrate, 4).tolist(),
-                "lipid": np.round(state.lipid, 4).tolist(),
-                "membrane_mask": state.membrane_mask.astype(int).tolist()}
+        return {
+            "substrate": np.round(state.substrate, 4).tolist(),
+            "lipid": np.round(state.lipid, 4).tolist(),
+            "membrane_mask": state.membrane_mask.astype(int).tolist(),
+        }
 
     def deserialize_state(self, data: dict) -> VesicleState:
         return VesicleState(
@@ -146,6 +156,12 @@ class AbiogenesisStage3Vesicles:
         )
 
     def to_config(self) -> dict:
-        return {"cmc_threshold": self.cmc_threshold, "F": self.F, "k": self.k,
-                "Du": self.Du, "Dv": self.Dv,
-                "substeps_per_frame": self.substeps_per_frame}
+        return {
+            "amphiphile": self.amphiphile,
+            "cmc_threshold": self.cmc_threshold,
+            "F": self.F,
+            "k": self.k,
+            "Du": self.Du,
+            "Dv": self.Dv,
+            "substeps_per_frame": self.substeps_per_frame,
+        }

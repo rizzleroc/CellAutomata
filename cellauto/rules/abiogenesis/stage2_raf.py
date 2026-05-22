@@ -48,9 +48,9 @@ from cellauto.rules.abiogenesis.science import (
 
 @dataclass
 class RAFState:
-    concentrations: np.ndarray   # shape (H, W, S), float32
+    concentrations: np.ndarray  # shape (H, W, S), float32
     network: ReactionNetwork
-    raf: frozenset[Reaction]     # the precomputed RAF
+    raf: frozenset[Reaction]  # the precomputed RAF
 
 
 @dataclass
@@ -60,7 +60,7 @@ class AbiogenesisStage2RAF:
     n_species: int = 8
     n_reactions: int = 16
     food_fraction: float = 0.4
-    food_supply: float = 0.05    # food concentration injected per cell per step
+    food_supply: float = 0.05  # food concentration injected per cell per step
     diffusion_rate: float = 0.05
     rng: random.Random = field(default_factory=random.Random)
 
@@ -80,8 +80,10 @@ class AbiogenesisStage2RAF:
                 break
         else:
             network = random_reaction_network(
-                n_species=self.n_species, n_reactions=self.n_reactions,
-                food_fraction=self.food_fraction, rng=self.rng,
+                n_species=self.n_species,
+                n_reactions=self.n_reactions,
+                food_fraction=self.food_fraction,
+                rng=self.rng,
             )
             raf = frozenset()
 
@@ -94,7 +96,7 @@ class AbiogenesisStage2RAF:
         # Localised perturbation in the center to break symmetry.
         cx, cy = width // 2, height // 2
         r = max(3, min(width, height) // 12)
-        c[cy - r:cy + r, cx - r:cx + r, :] += 0.3 / self.n_species
+        c[cy - r : cy + r, cx - r : cx + r, :] += 0.3 / self.n_species
         return RAFState(concentrations=c, network=network, raf=raf)
 
     def step(self, state: RAFState) -> RAFState:
@@ -111,10 +113,14 @@ class AbiogenesisStage2RAF:
             new_c[:, :, s] += self.food_supply
             new_c[:, :, s] *= 0.995  # mild outflow to keep totals bounded
 
-        # Reactions. We run only the RAF reactions — those are the ones that
-        # form a closed self-sustaining loop. Non-RAF reactions are present
-        # in the network but can't fire indefinitely without external input.
-        for r in (state.raf if state.raf else state.network.reactions):
+        # Reactions. We fire the RAF reactions and highlight them as the
+        # self-sustaining core. Note the RAF is a *topological* property of the
+        # network (it is closed and food-generated); dynamic realizability is a
+        # related but distinct notion (a CAF — constructively autocatalytic
+        # set), since a mutually-catalysing pair may need one reaction to fire
+        # uncatalysed first. Our mass-action term keeps a baseline (the 1.0
+        # below) so that bootstrap firing can occur.
+        for r in state.raf if state.raf else state.network.reactions:
             a, b = r.reactants
             ca = new_c[:, :, a]
             cb = new_c[:, :, b]
@@ -148,29 +154,78 @@ class AbiogenesisStage2RAF:
     def population(self, state: RAFState) -> Mapping[str, int]:
         active = int((state.concentrations.sum(axis=2) > 0.5).sum())
         ignited = int((state.concentrations.sum(axis=2) > 2.0).sum())
+        # Kauffman's connectivity metric: the mean number of reactions each
+        # species catalyzes. RAFs appear with high probability once this
+        # crosses roughly 1-2 (Hordijk & Steel 2004; Mossel & Steel 2005).
+        net = state.network
+        n_catalyzed = sum(1 for r in net.reactions if r.catalyst is not None)
+        catalysis_level = n_catalyzed / net.n_species if net.n_species else 0.0
         return {
             "active_cells": active,
             "ignited_cells": ignited,
             "raf_size": len(state.raf),
             "network_size": len(state.network.reactions),
+            "catalysis_level_x100": int(round(catalysis_level * 100)),
         }
 
     def serialize_state(self, state: RAFState) -> dict:
-        # Reaction network identity is in to_config; here we just snapshot the field.
-        return {"concentrations": np.round(state.concentrations, 4).tolist()}
+        # Snapshot the field AND the exact reaction network. Without the
+        # network a resumed run would evolve under a *different* random
+        # chemistry than the one that produced the saved field, making the
+        # restored state scientifically meaningless. The RAF is derived from
+        # the network, so we recompute it on load rather than storing it.
+        net = state.network
+        return {
+            "concentrations": np.round(state.concentrations, 4).tolist(),
+            "network": {
+                "n_species": net.n_species,
+                "food_set": sorted(net.food_set),
+                "reactions": [
+                    {
+                        "reactants": list(r.reactants),
+                        "product": r.product,
+                        "rate_constant": r.rate_constant,
+                        "catalyst": r.catalyst,
+                    }
+                    for r in net.reactions
+                ],
+            },
+        }
 
     def deserialize_state(self, data: dict) -> RAFState:
-        # We can't fully restore the random network without saving it; rebuild
-        # one from current config so concentrations make sense, mark raf empty.
-        # (Full network round-trip is item P1-4 in PHASE2_BRUTAL.)
         c = np.array(data["concentrations"], dtype=np.float32)
-        network = random_reaction_network(
-            n_species=self.n_species, n_reactions=self.n_reactions,
-            food_fraction=self.food_fraction, rng=self.rng,
-        )
+        net_data = data.get("network")
+        if net_data is None:
+            # Legacy snapshot without a stored network: fall back to a fresh
+            # random one so the file still loads (pre-network-roundtrip saves).
+            network = random_reaction_network(
+                n_species=self.n_species,
+                n_reactions=self.n_reactions,
+                food_fraction=self.food_fraction,
+                rng=self.rng,
+            )
+        else:
+            reactions = tuple(
+                Reaction(
+                    reactants=(r["reactants"][0], r["reactants"][1]),
+                    product=r["product"],
+                    rate_constant=r["rate_constant"],
+                    catalyst=r["catalyst"],
+                )
+                for r in net_data["reactions"]
+            )
+            network = ReactionNetwork(
+                n_species=net_data["n_species"],
+                reactions=reactions,
+                food_set=frozenset(net_data["food_set"]),
+            )
         return RAFState(concentrations=c, network=network, raf=find_raf(network))
 
     def to_config(self) -> dict:
-        return {"n_species": self.n_species, "n_reactions": self.n_reactions,
-                "food_fraction": self.food_fraction, "food_supply": self.food_supply,
-                "diffusion_rate": self.diffusion_rate}
+        return {
+            "n_species": self.n_species,
+            "n_reactions": self.n_reactions,
+            "food_fraction": self.food_fraction,
+            "food_supply": self.food_supply,
+            "diffusion_rate": self.diffusion_rate,
+        }

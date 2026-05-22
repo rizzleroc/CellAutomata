@@ -64,17 +64,29 @@ class Wolfram1DRule:
         # Distinguish the live generation from scrolled history (Phase 2 §2.6).
         live_now = sum(1 for c in grid.cells[-1] if c)
         history = sum(1 for row in grid.cells[:-1] for c in row if c)
-        return {"live_now": live_now, "history_on": history,
-                "history_off": (grid.height - 1) * grid.width - history}
+        return {
+            "live_now": live_now,
+            "history_on": history,
+            "history_off": (grid.height - 1) * grid.width - history,
+        }
 
     def serialize_state(self, grid: Grid[bool]) -> dict:
-        return {"width": grid.width, "height": grid.height,
-                "cells": [[bool(c) for c in row] for row in grid.cells]}
+        return {
+            "width": grid.width,
+            "height": grid.height,
+            "cells": [[bool(c) for c in row] for row in grid.cells],
+        }
 
     def deserialize_state(self, data: dict) -> Grid[bool]:
-        return Grid(width=data["width"], height=data["height"],
-                    cells=[[bool(c) for c in row] for row in data["cells"]])
+        return Grid(
+            width=data["width"],
+            height=data["height"],
+            cells=[[bool(c) for c in row] for row in data["cells"]],
+        )
 
     def to_config(self) -> dict:
-        return {"rule_number": self.rule_number,
-                "alive_color": self.alive_color, "dead_color": self.dead_color}
+        return {
+            "rule_number": self.rule_number,
+            "alive_color": self.alive_color,
+            "dead_color": self.dead_color,
+        }

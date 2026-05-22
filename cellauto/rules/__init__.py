@@ -11,6 +11,11 @@ from cellauto.rules.abiogenesis.stage1_grayscott import AbiogenesisStage1GraySco
 from cellauto.rules.abiogenesis.stage2_raf import AbiogenesisStage2RAF
 from cellauto.rules.abiogenesis.stage3_vesicles import AbiogenesisStage3Vesicles
 from cellauto.rules.abiogenesis.stage4_selection import AbiogenesisStage4Selection
+from cellauto.rules.abiogenesis.stage_chirality import AbiogenesisStageHomochirality
+from cellauto.rules.abiogenesis.stage_coacervate import AbiogenesisStageCoacervate
+from cellauto.rules.abiogenesis.stage_minerals import AbiogenesisStageMinerals
+from cellauto.rules.abiogenesis.stage_rna import AbiogenesisStageRNAWorld
+from cellauto.rules.abiogenesis.stage_vents import AbiogenesisStageVents
 from cellauto.rules.base import Rule
 from cellauto.rules.conway import ConwaysLifeRule
 from cellauto.rules.natural_selection import NaturalSelectionRule
@@ -24,6 +29,12 @@ REGISTRY: dict[str, type] = {
     "abiogenesis-stage2-raf": AbiogenesisStage2RAF,
     "abiogenesis-stage3-vesicles": AbiogenesisStage3Vesicles,
     "abiogenesis-stage4-selection": AbiogenesisStage4Selection,
+    # Additional origin-of-life processes (selectable directly).
+    "abiogenesis-rna-world": AbiogenesisStageRNAWorld,
+    "abiogenesis-homochirality": AbiogenesisStageHomochirality,
+    "abiogenesis-hydrothermal-vent": AbiogenesisStageVents,
+    "abiogenesis-coacervate": AbiogenesisStageCoacervate,
+    "abiogenesis-mineral-catalysis": AbiogenesisStageMinerals,
     # Reference automata.
     "conway": ConwaysLifeRule,
     "wolfram1d": Wolfram1DRule,

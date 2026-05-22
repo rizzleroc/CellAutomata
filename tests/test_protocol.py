@@ -3,21 +3,20 @@
 v2.0 marked the Protocol @runtime_checkable but never actually checked at runtime.
 This test does, for every rule in REGISTRY.
 """
+
 from cellauto.rules import REGISTRY, Rule
 
 
 def test_every_registered_rule_satisfies_protocol():
     for name, cls in REGISTRY.items():
         rule = cls()
-        assert isinstance(rule, Rule), \
-            f"{name} ({cls.__name__}) does not satisfy Rule protocol"
+        assert isinstance(rule, Rule), f"{name} ({cls.__name__}) does not satisfy Rule protocol"
 
 
 def test_every_rule_declares_renderer_kind():
     for name, cls in REGISTRY.items():
         rule = cls()
-        assert rule.renderer_kind in ("discrete", "field"), \
-            f"{name} renderer_kind={rule.renderer_kind!r}"
+        assert rule.renderer_kind in ("discrete", "field"), f"{name} renderer_kind={rule.renderer_kind!r}"
 
 
 def test_every_rule_has_to_config_returning_dict():

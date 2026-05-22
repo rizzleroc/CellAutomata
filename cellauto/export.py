@@ -51,8 +51,12 @@ def export_gif(frames: Iterable[dict], path: str | Path, fps: int = 8) -> Path:
     path.parent.mkdir(parents=True, exist_ok=True)
     duration_ms = int(1000 / max(fps, 1))
     images[0].save(
-        path, save_all=True, append_images=images[1:],
-        duration=duration_ms, loop=0, optimize=True,
+        path,
+        save_all=True,
+        append_images=images[1:],
+        duration=duration_ms,
+        loop=0,
+        optimize=True,
     )
     log.info("exported %d-frame GIF to %s @ %d fps", len(images), path, fps)
     return path

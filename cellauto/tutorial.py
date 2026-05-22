@@ -53,6 +53,41 @@ _TUTORIALS: dict[str, tuple[str, ...]] = {
         "Eigen-Schuster (1977) showed that mutually-catalyzing replicator loops (hypercycles) are evolutionarily stable in a way isolated replicators are not.",
         "This stage is a toy model of the moment biology splits off from chemistry.",
     ),
+    "abiogenesis-rna-world": (
+        "RNA world (Gilbert 1986). RNA as both genotype and catalyst — a spatial population of self-replicating strands.",
+        "Each cell holds an RNA strand (4-letter alphabet) or is empty. Empty cells are colonized by a fitness-weighted occupied neighbor, copied base-by-base with per-base error ε.",
+        "Single-peak landscape: the 'master' strand replicates σ× faster than mutants. Bright (yellow) = master; darker = more mutations away from it.",
+        "Eigen (1971) error threshold: the master survives only while ε < ε_c = ln(σ)/L. At the σ=10, L=16 defaults that's ≈ 0.14.",
+        "Drag the error-rate slider past the threshold and watch the bright master colonies dissolve into dark noise — the error catastrophe.",
+    ),
+    "abiogenesis-homochirality": (
+        "Homochirality (Frank 1953). Life uses only L-amino acids and D-sugars — but a prebiotic soup is racemic (equal L and R). What broke the mirror symmetry?",
+        "Two enantiomers L and R diffuse on the field. Each AUTOCATALYSES its own production from substrate A; opposite hands ANTAGONISE (L + R → inert).",
+        "Teal = L-dominant, magenta = R-dominant, dark = racemic/empty. Watch local domains spontaneously pick a hand from tiny initial fluctuations.",
+        "This is unstable to the racemic state: the tiniest excess is amplified to dominance. The Soai reaction (1995) demonstrates this asymmetric autocatalysis in the lab.",
+        "Turn the antagonism slider kₓ toward 0 and the racemic state becomes stable again — no symmetry breaking, no homochirality.",
+    ),
+    "abiogenesis-hydrothermal-vent": (
+        "Alkaline hydrothermal vents (Russell, Martin & Lane). The metabolism-first alternative to the lightning-powered soup.",
+        "Serpentinization makes warm, alkaline, H2-rich vent fluid; the early ocean was mildly acidic (CO2). Across the thin mineral chimney wall sits a natural proton gradient of ~3-4 pH units.",
+        "Blue = alkaline vent interior, orange = acidic ocean. The steep gradient at the chimney WALL carries a proton-motive force — the same kind of gradient every living cell uses to make ATP.",
+        "Teal-green glow = organic matter synthesised by that gradient. Synthesis ignites along the interface, not uniformly: the gradient, not a hand-set feed rate, is the free-energy source (Lane & Martin 2012).",
+        "Slide the vent and ocean pH toward each other until the gradient is flat — synthesis stops. No gradient, no free energy, no chemistry.",
+    ),
+    "abiogenesis-coacervate": (
+        "Coacervates (Oparin 1924). The ORIGINAL protocell idea: dense, membraneless droplets that form when macromolecules phase-separate from solution.",
+        "Modelled by the Cahn-Hilliard equation — conserved liquid-liquid phase separation. From a near-uniform mix, a polymer-rich phase (gold droplets) separates from a dilute phase (dark).",
+        "This is the same physics as modern biomolecular condensates (membraneless organelles) — droplets concentrate RNA and catalysts without needing a lipid membrane.",
+        "Watch the droplets COARSEN: small ones dissolve and feed larger ones (Ostwald ripening) and neighbours fuse, so the droplet count falls over time.",
+        "Coacervates (membraneless) and lipid vesicles (Stage 3, membrane-bound) are two competing answers to the same question: how did chemistry first get a boundary?",
+    ),
+    "abiogenesis-mineral-catalysis": (
+        "Mineral-surface catalysis (Ferris; Cairns-Smith). Condensation polymerization is uphill in bulk water — dilute monomers don't spontaneously form long chains in the open ocean.",
+        "Montmorillonite clay solves this: it concentrates monomers on its charged surface and catalyses bond formation. Ferris (1996) grew RNA chains of 30-50 units this way.",
+        "Tan patches = clay surface, dark = bulk water. Teal-green glow = polymer. Watch polymer accumulate ON the clay and barely anywhere else — the chemistry is localized to the mineral surface.",
+        "Cairns-Smith (1982) went further: clay crystals as the first 'genetic' material, later handed off to organics (genetic takeover).",
+        "Raise the bulk-water rate up to the clay rate and the localization vanishes — polymer forms everywhere. The surface is what makes it work.",
+    ),
     "conway": (
         "Conway's Game of Life (Gardner 1970). B3/S23: dead cells with 3 live neighbors come alive; live cells with 2 or 3 neighbors survive.",
         "Look for: blinkers (3-cell oscillators), blocks (still life), gliders (5-cell traveling patterns).",
@@ -72,9 +107,9 @@ _TUTORIALS: dict[str, tuple[str, ...]] = {
 
 
 def tutorial_for(rule_name: str) -> tuple[str, ...]:
-    return _TUTORIALS.get(rule_name, (
-        f"No tutorial copy for '{rule_name}' yet. Pick a rule from the dropdown.",
-    ))
+    return _TUTORIALS.get(
+        rule_name, (f"No tutorial copy for '{rule_name}' yet. Pick a rule from the dropdown.",)
+    )
 
 
 # Back-compat: v2.0 exposed this constant directly.
