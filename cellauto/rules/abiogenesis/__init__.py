@@ -19,7 +19,10 @@ See ``docs/science.md`` for the math, the citations, and a discussion of
 what each stage simplifies.
 """
 
-from cellauto.rules.abiogenesis.pipeline import AbiogenesisPipelineRule
+from cellauto.rules.abiogenesis.pipeline import (
+    AbiogenesisExtendedPipelineRule,
+    AbiogenesisPipelineRule,
+)
 from cellauto.rules.abiogenesis.stage0_soup import AbiogenesisStage0Soup
 from cellauto.rules.abiogenesis.stage1_grayscott import AbiogenesisStage1GrayScott
 from cellauto.rules.abiogenesis.stage2_raf import AbiogenesisStage2RAF
@@ -27,11 +30,14 @@ from cellauto.rules.abiogenesis.stage3_vesicles import AbiogenesisStage3Vesicles
 from cellauto.rules.abiogenesis.stage4_selection import AbiogenesisStage4Selection
 from cellauto.rules.abiogenesis.stage_chirality import AbiogenesisStageHomochirality
 from cellauto.rules.abiogenesis.stage_coacervate import AbiogenesisStageCoacervate
+from cellauto.rules.abiogenesis.stage_code import AbiogenesisStageGeneticCode
+from cellauto.rules.abiogenesis.stage_luca import AbiogenesisStageLUCA
 from cellauto.rules.abiogenesis.stage_minerals import AbiogenesisStageMinerals
 from cellauto.rules.abiogenesis.stage_rna import AbiogenesisStageRNAWorld
 from cellauto.rules.abiogenesis.stage_vents import AbiogenesisStageVents
 
 __all__ = [
+    "AbiogenesisExtendedPipelineRule",
     "AbiogenesisPipelineRule",
     "AbiogenesisStage0Soup",
     "AbiogenesisStage1GrayScott",
@@ -43,4 +49,6 @@ __all__ = [
     "AbiogenesisStageVents",
     "AbiogenesisStageCoacervate",
     "AbiogenesisStageMinerals",
+    "AbiogenesisStageGeneticCode",
+    "AbiogenesisStageLUCA",
 ]

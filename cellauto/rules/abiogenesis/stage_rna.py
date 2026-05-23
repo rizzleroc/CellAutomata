@@ -46,6 +46,11 @@ import numpy as np
 
 from cellauto.renderer import cmap_viridis
 
+# Real RNA bases — the 4-letter alphabet maps directly onto the canonical
+# nucleotide identities used by every modern organism. The all-zero "master"
+# sequence is poly-A; mutant strands appear as mixes of the four bases.
+RNA_BASES: tuple[str, str, str, str] = ("A", "U", "G", "C")
+
 
 @dataclass
 class RNAWorldState:

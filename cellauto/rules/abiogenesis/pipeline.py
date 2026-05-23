@@ -27,6 +27,13 @@ from cellauto.rules.abiogenesis.stage1_grayscott import AbiogenesisStage1GraySco
 from cellauto.rules.abiogenesis.stage2_raf import AbiogenesisStage2RAF
 from cellauto.rules.abiogenesis.stage3_vesicles import AbiogenesisStage3Vesicles
 from cellauto.rules.abiogenesis.stage4_selection import AbiogenesisStage4Selection
+from cellauto.rules.abiogenesis.stage_chirality import AbiogenesisStageHomochirality
+from cellauto.rules.abiogenesis.stage_coacervate import AbiogenesisStageCoacervate
+from cellauto.rules.abiogenesis.stage_code import AbiogenesisStageGeneticCode
+from cellauto.rules.abiogenesis.stage_luca import AbiogenesisStageLUCA
+from cellauto.rules.abiogenesis.stage_minerals import AbiogenesisStageMinerals
+from cellauto.rules.abiogenesis.stage_rna import AbiogenesisStageRNAWorld
+from cellauto.rules.abiogenesis.stage_vents import AbiogenesisStageVents
 
 STAGE_CLASSES = (
     AbiogenesisStage0Soup,
@@ -141,11 +148,16 @@ class AbiogenesisPipelineRule:
     starting_stage: int = 0
     stage_duration: int = 60  # steps before promoting to next stage
     auto_promote: bool = True
+    # The classes the pipeline walks through, in narrative order, with parallel
+    # display metadata. Subclasses (e.g. the extended pipeline) override these
+    # by supplying different tuples.
+    stage_classes: tuple = STAGE_CLASSES
+    stage_infos: tuple[StageInfo, ...] = STAGE_INFO
     rng: random.Random = field(default_factory=random.Random)
     _step_count: int = field(default=0, init=False)
 
     def _make_stage(self, n: int) -> Any:
-        rule = STAGE_CLASSES[n]()
+        rule = self.stage_classes[n]()
         # Hand the pipeline's RNG to the stage so reproducibility holds across
         # promotions.
         if hasattr(rule, "rng"):
@@ -169,13 +181,13 @@ class AbiogenesisPipelineRule:
         if (
             self.auto_promote
             and self._step_count >= self.stage_duration
-            and state.current_stage < len(STAGE_CLASSES) - 1
+            and state.current_stage < len(self.stage_classes) - 1
         ):
             self.promote(state)
         return state
 
     def promote(self, state: PipelineState) -> None:
-        state.current_stage = min(state.current_stage + 1, len(STAGE_CLASSES) - 1)
+        state.current_stage = min(state.current_stage + 1, len(self.stage_classes) - 1)
         new_rule = self._make_stage(state.current_stage)
         state.inner_rule = new_rule
         state.inner_state = new_rule.init_state(state.width, state.height)
@@ -183,10 +195,10 @@ class AbiogenesisPipelineRule:
         self._step_count = 0
 
     def set_stage(self, state: PipelineState, n: int) -> None:
-        """Jump directly to stage ``n`` (0..len(STAGE_CLASSES)-1). Unlike
-        ``promote``, this can move backwards as well as forwards — it rebuilds
-        the inner rule and state from scratch for the requested stage."""
-        n = max(0, min(int(n), len(STAGE_CLASSES) - 1))
+        """Jump directly to stage ``n``. Unlike ``promote``, this can move
+        backwards as well as forwards — it rebuilds the inner rule and state
+        from scratch for the requested stage."""
+        n = max(0, min(int(n), len(self.stage_classes) - 1))
         if n == state.current_stage:
             return
         state.current_stage = n
@@ -195,6 +207,12 @@ class AbiogenesisPipelineRule:
         state.inner_state = new_rule.init_state(state.width, state.height)
         self.renderer_kind = new_rule.renderer_kind
         self._step_count = 0
+
+    def stage_info_for(self, n: int) -> StageInfo:
+        """Display metadata for stage ``n`` according to this pipeline's own
+        ``stage_infos`` tuple (clamped to the valid range)."""
+        infos = self.stage_infos
+        return infos[max(0, min(int(n), len(infos) - 1))]
 
     def render_cell(self, state: PipelineState, x: int, y: int) -> tuple[str, str]:
         return state.inner_rule.render_cell(state.inner_state, x, y)
@@ -233,3 +251,144 @@ class AbiogenesisPipelineRule:
             "stage_duration": self.stage_duration,
             "auto_promote": self.auto_promote,
         }
+
+
+# ---------------------------------------------------------------------------
+# Extended pipeline — every shipped origin-of-life process in narrative order
+# ---------------------------------------------------------------------------
+
+# StageInfo entries for the new processes inserted between the original five.
+_STAGE_VENT_INFO = StageInfo(
+    index=1,
+    title="ALKALINE VENT",
+    principle="Proton gradient across a chimney wall drives synthesis (chemiosmosis).",
+    detail=(
+        "Alkaline serpentinisation fluid meets the acidic ocean; the proton-"
+        "motive force across the FeS wall does the work for early carbon "
+        "fixation (Russell, Martin & Lane)."
+    ),
+    citation="Russell & Hall 1997 · Lane & Martin 2012 · Sojo 2016",
+    legend="blue = alkaline vent; orange = acidic ocean; teal-green = synthesis at the wall.",
+)
+_STAGE_MINERAL_INFO = StageInfo(
+    index=3,
+    title="MINERAL CATALYSIS",
+    principle="Condensation polymerisation localised to montmorillonite clay surfaces.",
+    detail=(
+        "Bulk water disfavours condensation; clay concentrates monomers on its "
+        "charged surface and templates polymer growth (Ferris 1996; Cairns-Smith 1982)."
+    ),
+    citation="Ferris 1996 · Cairns-Smith 1982 · Hanczyc 2003",
+    legend="tan = clay surface; teal-green = polymer accumulated on the clay.",
+)
+_STAGE_CHIRALITY_INFO = StageInfo(
+    index=5,
+    title="HOMOCHIRALITY",
+    principle="Autocatalysis + mutual antagonism breaks mirror symmetry (Frank 1953).",
+    detail=(
+        "Each enantiomer catalyses its own production and annihilates the "
+        "other; the racemic state is unstable to fluctuations, which are "
+        "amplified until one hand dominates (Soai 1995; Blackmond 2004)."
+    ),
+    citation="Frank 1953 · Soai 1995 · Blackmond 2004",
+    legend="teal = L-dominant; magenta = R-dominant; dark = racemic.",
+)
+_STAGE_RNA_INFO = StageInfo(
+    index=6,
+    title="RNA WORLD",
+    principle="RNA as genotype and catalyst; replication with per-base error ε.",
+    detail=(
+        "Spatial Eigen quasispecies on a single-peak landscape. The master "
+        "sequence is maintained only while ε < ln(σ)/L; past it, the population "
+        "melts into the error catastrophe (Gilbert 1986; Eigen 1971)."
+    ),
+    citation="Gilbert 1986 · Eigen 1971 · Joyce 2002",
+    legend="bright = master RNA strand; dark = far-from-master mutant; black = empty.",
+)
+_STAGE_CODE_INFO = StageInfo(
+    index=7,
+    title="GENETIC CODE",
+    principle="Message and code coevolve; selection drives the population onto a shared code.",
+    detail=(
+        "Each cell decodes its own RNA strand with its own private "
+        "codon→amino-acid table. Fitness depends on whether the produced "
+        "peptide matches a needed catalyst, so any code that makes a more "
+        "useful peptide spreads — the universal genetic code emerges from "
+        "selection on the code itself (Vetsigian, Woese & Goldenfeld 2006)."
+    ),
+    citation="Crick 1968 · Woese 1965 · Wong 1975 · Vetsigian–Woese–Goldenfeld 2006",
+    legend="viridis = fitness (peptide vs target); code_consensus stat shows convergence.",
+)
+_STAGE_LUCA_INFO = StageInfo(
+    index=11,
+    title="LUCA DISTILLATION",
+    principle="Comparative genomics across surviving lineages reveals the ancestral core genome.",
+    detail=(
+        "A spatial population of evolving cells with gene-presence bitsets; "
+        "selection on a benefit-vs-cost gene economy distills a shared core "
+        "genome — the inferred LUCA. Mirrors Weiss et al. (2016)'s "
+        "reconstruction of LUCA from genes shared across all sequenced "
+        "prokaryotes."
+    ),
+    citation="Koonin 2003 · Theobald 2010 · Weiss et al. 2016",
+    legend="viridis = fitness; luca_size stat = inferred ancestral core genome.",
+)
+_STAGE_COACERVATE_INFO = StageInfo(
+    index=8,
+    title="COACERVATES",
+    principle="Liquid-liquid phase separation forms membraneless droplets (Cahn-Hilliard).",
+    detail=(
+        "Macromolecule-rich and dilute phases separate spontaneously and "
+        "coarsen (Ostwald ripening). Modern biomolecular condensates run on "
+        "the same physics (Oparin 1924; Banani 2017)."
+    ),
+    citation="Oparin 1924 · Cahn-Hilliard 1958 · Banani 2017",
+    legend="gold = coacervate-rich droplet; dark = dilute phase.",
+)
+
+# Extended pipeline order: soup → vent → reaction-diffusion → clay → RAF →
+# chirality → RNA → genetic code → coacervates → vesicles → protocell selection.
+# This is the "show every process" version of the abiogenesis narrative; the
+# original 5-stage pipeline is kept untouched (default REGISTRY entry).
+EXTENDED_STAGE_CLASSES = (
+    AbiogenesisStage0Soup,
+    AbiogenesisStageVents,
+    AbiogenesisStage1GrayScott,
+    AbiogenesisStageMinerals,
+    AbiogenesisStage2RAF,
+    AbiogenesisStageHomochirality,
+    AbiogenesisStageRNAWorld,
+    AbiogenesisStageGeneticCode,
+    AbiogenesisStageCoacervate,
+    AbiogenesisStage3Vesicles,
+    AbiogenesisStage4Selection,
+    AbiogenesisStageLUCA,
+)
+EXTENDED_STAGE_INFO: tuple[StageInfo, ...] = (
+    STAGE_INFO[0],
+    _STAGE_VENT_INFO,
+    STAGE_INFO[1],
+    _STAGE_MINERAL_INFO,
+    STAGE_INFO[2],
+    _STAGE_CHIRALITY_INFO,
+    _STAGE_RNA_INFO,
+    _STAGE_CODE_INFO,
+    _STAGE_COACERVATE_INFO,
+    STAGE_INFO[3],
+    STAGE_INFO[4],
+    _STAGE_LUCA_INFO,
+)
+
+
+@dataclass
+class AbiogenesisExtendedPipelineRule(AbiogenesisPipelineRule):
+    """Auto-promoting pipeline that walks every shipped origin-of-life process
+    (10 stages, scientific order). Drop-in replacement for the canonical
+    `AbiogenesisPipelineRule` — same protocol, just a longer narrative."""
+
+    name: str = "abiogenesis-pipeline-extended"
+    stage_classes: tuple = EXTENDED_STAGE_CLASSES
+    stage_infos: tuple[StageInfo, ...] = EXTENDED_STAGE_INFO
+    # Each chapter card sits on-screen for ~4.5 s; pair that with a longer
+    # stage_duration so transitions don't feel rushed at the default FPS.
+    stage_duration: int = 90

@@ -49,13 +49,19 @@ class AmoebaMascot(tk.Canvas):
         self._happy = True  # smile vs neutral
         self._rng = random.Random(0xCE11)
         # Item handles so we can reconfigure rather than recreate each frame.
-        self._body: int | None = None
-        self._highlight: int | None = None
-        self._eye_l: int | None = None
-        self._eye_r: int | None = None
-        self._pupil_l: int | None = None
-        self._pupil_r: int | None = None
-        self._mouth: int | None = None
+        # Canvas item IDs are positive ints; we use -1 as a "not yet built"
+        # sentinel so the types stay narrow (int, not Optional).
+        self._body: int = -1
+        self._highlight: int = -1
+        self._eye_l: int = -1
+        self._eye_r: int = -1
+        self._pupil_l: int = -1
+        self._pupil_r: int = -1
+        self._mouth: int = -1
+        # Pupil radius (geometry, not a canvas ID). Kept distinct so the
+        # name doesn't collide with `_pupil_r` (the right-pupil item id).
+        self._eye_pupil_r: float = 1.0
+        self._eye_white_r: float = 2.0
         # Target gaze (where the pupils want to be, relative to centre, in
         # units of "max pupil offset"). Wanders smoothly over time.
         self._gaze_target = (0.0, 0.0)
@@ -103,7 +109,7 @@ class AmoebaMascot(tk.Canvas):
 
         # Eyes (whites). Positioned in the upper half.
         self._eye_white_r = max(2.0, s * 0.10)
-        self._pupil_r = max(1.0, self._eye_white_r * 0.55)
+        self._eye_pupil_r = max(1.0, self._eye_white_r * 0.55)
         self._eye_dx = s * 0.16
         self._eye_dy = -s * 0.06
         ew = self._eye_white_r
@@ -125,7 +131,7 @@ class AmoebaMascot(tk.Canvas):
         for side, attr in ((-1, "_pupil_l"), (1, "_pupil_r")):
             ex = cx + side * self._eye_dx
             ey = cy + self._eye_dy
-            pr = self._pupil_r
+            pr = self._eye_pupil_r
             setattr(
                 self,
                 attr,
@@ -142,7 +148,7 @@ class AmoebaMascot(tk.Canvas):
         self._draw_mouth()
 
     def _draw_mouth(self) -> None:
-        if self._mouth is not None:
+        if self._mouth != -1:
             self.delete(self._mouth)
         s = self._size
         cx, cy = self._cx, self._cy
@@ -221,7 +227,7 @@ class AmoebaMascot(tk.Canvas):
         self.coords(self._highlight, cx - h_r * 0.9, cy - r * 0.85, cx + h_r * 0.4, cy - r * 0.10)
 
         ew = self._eye_white_r
-        pr = self._pupil_r
+        pr = self._eye_pupil_r
         gx, gy = self._gaze
         max_off = ew - pr - 0.5  # pupil stays inside the eye white
 

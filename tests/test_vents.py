@@ -46,3 +46,63 @@ def test_registered():
     from cellauto.rules import REGISTRY
 
     assert "abiogenesis-hydrothermal-vent" in REGISTRY
+
+
+def test_thermodynamic_readouts_hit_lane_martin_range():
+    """The default vent vs ocean pH gap should produce a proton-motive force
+    in the ~200-300 mV range and ~−25 kJ/mol per proton — the Lane-Martin
+    "this can drive abiotic carbon fixation" window."""
+    rule = AbiogenesisStageVents()
+    # Default ΔpH should be 4.5 (alkaline 10.0, acidic 5.5).
+    assert abs(rule.delta_pH() - 4.5) < 1e-9
+    # Nernst: 59.16 mV × 4.5 ≈ 266 mV.
+    assert 200 <= rule.pmf_mV() <= 300
+    # Faraday: −96.485 × 0.266 ≈ −25.7 kJ/mol.
+    assert -30 <= rule.delta_G_kJ_per_mol() <= -15
+
+
+def test_flat_gradient_zeros_thermodynamics():
+    rule = AbiogenesisStageVents(pH_alkaline=7.0, pH_acidic=7.0)
+    assert rule.delta_pH() == 0.0
+    assert rule.pmf_mV() == 0.0
+    assert rule.delta_G_kJ_per_mol() == 0.0
+
+
+def test_thermodynamics_in_population():
+    rule = AbiogenesisStageVents(rng=random.Random(1))
+    state = rule.init_state(16, 16)
+    pop = rule.population(state)
+    assert pop["delta_pH_x10"] == 45  # 4.5 × 10
+    assert 200 <= pop["pmf_mV"] <= 300
+    assert -300 <= pop["delta_G_x10_kJmol"] <= -150  # −25.7 × 10 ≈ −257
+
+
+def test_wood_ljungdahl_yield_is_positive_with_full_feedstocks():
+    rule = AbiogenesisStageVents(rng=random.Random(1))
+    state = rule.init_state(40, 40)
+    for _ in range(80):
+        state = rule.step(state)
+    pop = rule.population(state)
+    assert pop["acetate_yield_x100"] > 0
+    assert pop["wl_delta_G_kJmol"] == -95
+    assert rule.pathway == "wood_ljungdahl"
+
+
+def test_no_h2_means_no_synthesis():
+    """The reaction needs H2 — cutting the chimney's H2 supply must kill the
+    yield even with the proton gradient intact."""
+    rule = AbiogenesisStageVents(h2_feed_level=0.0, rng=random.Random(1))
+    state = rule.init_state(40, 40)
+    for _ in range(50):
+        state = rule.step(state)
+    assert rule.population(state)["acetate_yield_x100"] == 0
+
+
+def test_no_co2_means_no_synthesis():
+    """Same for CO2 — both feedstocks are required for the stoichiometric
+    Wood-Ljungdahl reaction to fire."""
+    rule = AbiogenesisStageVents(co2_feed_level=0.0, rng=random.Random(1))
+    state = rule.init_state(40, 40)
+    for _ in range(50):
+        state = rule.step(state)
+    assert rule.population(state)["acetate_yield_x100"] == 0

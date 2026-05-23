@@ -108,6 +108,22 @@ PARAM_SPECS: dict[str, list[ParamSpec]] = {
         ParamSpec("k_hydrolysis", "hydrolysis", 0.0, 0.1, 0.002),
         ParamSpec("feed", "monomer feed", 0.0, 0.3, 0.01),
     ],
+    "abiogenesis-genetic-code": [
+        # Lower strand mutation + lower code mutation → faster convergence to
+        # a shared universal code (Vetsigian-Woese-Goldenfeld coevolution).
+        ParamSpec("strand_mutation", "msg error", 0.0, 0.20, 0.005),
+        ParamSpec("code_mutation", "code drift", 0.0, 0.05, 0.001),
+        ParamSpec("death_rate", "death rate", 0.02, 0.30, 0.01),
+        ParamSpec("repro_prob", "replication", 0.1, 1.0, 0.05),
+    ],
+    "abiogenesis-luca": [
+        # gene_cost is the selection knob — higher cost trims the genome
+        # toward the essential core, sharpening LUCA reconstruction.
+        ParamSpec("gene_cost", "genome cost", 0.0, 0.4, 0.01),
+        ParamSpec("mutation_rate", "mutation", 0.0, 0.05, 0.001),
+        ParamSpec("death_rate", "death rate", 0.02, 0.30, 0.01),
+        ParamSpec("core_prevalence", "core ≥", 0.5, 0.99, 0.01),
+    ],
     "wolfram1d": [
         # Rule 30 = chaos, 90 = Sierpiński, 110 = Turing-complete (Cook 2004).
         ParamSpec("rule_number", "rule  #", 0, 255, 1, integer=True, reinit=True),

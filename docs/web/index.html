@@ -1,0 +1,112 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>cellauto · Reaction–Diffusion — a live observation plate</title>
+  <meta name="description" content="A live in-browser Gray–Scott reaction–diffusion explorer, ported from the cellauto abiogenesis sandbox. Move the F and k sliders to traverse the Pearson parameter landscape — spots, stripes, mitosis, waves, labyrinth." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;1,400&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <header class="plate-header">
+    <p class="eyebrow">P L A T E &nbsp; I &nbsp; · &nbsp; C E L L A U T O &nbsp; · &nbsp; M M X X V I</p>
+    <h1>cellauto</h1>
+    <p class="subtitle">a live observation of the coalescence of chemistry into pattern</p>
+    <hr class="hairline" />
+  </header>
+
+  <main>
+    <section class="observation">
+      <p class="section-label"><span class="roman">I</span> &nbsp; O B S E R V A T I O N</p>
+      <div class="canvas-frame">
+        <canvas id="gs-canvas" width="220" height="220" aria-label="Live Gray-Scott reaction–diffusion simulation"></canvas>
+      </div>
+      <p class="caption" id="stage-caption">
+        STAGE 1 · REACTION–DIFFUSION
+      </p>
+      <p class="caption-detail" id="stage-detail">
+        ∂u/∂t = Du∇²u − uv² + F(1−u);&nbsp;&nbsp;∂v/∂t = Dv∇²v + uv² − (F+k)v
+      </p>
+    </section>
+
+    <section class="controls">
+      <p class="section-label"><span class="roman">II</span> &nbsp; C O N F I G U R A T I O N</p>
+
+      <div class="control-row">
+        <label class="ctl-label" for="preset">preset</label>
+        <select id="preset" class="select">
+          <option value="">— custom —</option>
+          <option value="spots" selected>spots</option>
+          <option value="stripes">stripes</option>
+          <option value="mitosis">mitosis</option>
+          <option value="waves">waves</option>
+          <option value="labyrinth">labyrinth</option>
+        </select>
+      </div>
+
+      <div class="control-row">
+        <label class="ctl-label" for="f-slider">feed&nbsp;&nbsp;F</label>
+        <input id="f-slider" class="slider" type="range" min="0.0" max="0.09" step="0.001" value="0.035" />
+        <span class="readout" id="f-readout">0.035</span>
+      </div>
+
+      <div class="control-row">
+        <label class="ctl-label" for="k-slider">kill&nbsp;&nbsp;k</label>
+        <input id="k-slider" class="slider" type="range" min="0.030" max="0.075" step="0.001" value="0.065" />
+        <span class="readout" id="k-readout">0.065</span>
+      </div>
+
+      <div class="control-row buttons">
+        <button id="btn-play" class="btn primary">PLAY</button>
+        <button id="btn-stop" class="btn danger" disabled>STOP</button>
+        <button id="btn-step" class="btn">STEP</button>
+        <button id="btn-reset" class="btn">RESET</button>
+      </div>
+    </section>
+
+    <section class="marginalia">
+      <p class="section-label"><span class="roman">III</span> &nbsp; M A R G I N A L I A</p>
+      <p class="commentary" id="marginalia">
+        Self-replicating spots — Pearson (1993) <em>Science</em> 261:189 —
+        emerge from a four-parameter PDE Alan Turing first proposed in 1952
+        as the chemical basis of biological morphogenesis. The same equation,
+        same five regimes, run live in your browser.
+      </p>
+    </section>
+
+    <section class="gallery">
+      <p class="section-label"><span class="roman">IV</span> &nbsp; T H E &nbsp; R E S T &nbsp; O F &nbsp; T H E &nbsp; S T O R Y</p>
+      <p class="caption-detail">
+        The other ten origin-of-life stages — soup, alkaline vents,
+        autocatalytic sets, homochirality, the RNA world, the genetic code,
+        coacervates, vesicles, protocell selection, and LUCA distillation —
+        run in the full Python build. Below: museum plates rendered from
+        each stage.
+      </p>
+      <div class="gallery-grid">
+        <figure><img src="../generated/stage0_soup.png" alt="Stage 0 — primordial soup" /><figcaption>0 · PRIMORDIAL SOUP</figcaption></figure>
+        <figure><img src="../generated/stage1_reaction_diffusion.png" alt="Stage 1 — reaction–diffusion" /><figcaption>1 · REACTION–DIFFUSION</figcaption></figure>
+        <figure><img src="../generated/stage2_autocatalytic.png" alt="Stage 2 — autocatalytic sets" /><figcaption>2 · AUTOCATALYTIC SETS</figcaption></figure>
+        <figure><img src="../generated/stage3_vesicles.png" alt="Stage 3 — vesicles" /><figcaption>3 · VESICLE FORMATION</figcaption></figure>
+        <figure><img src="../generated/stage4_selection.png" alt="Stage 4 — protocell selection" /><figcaption>4 · PROTOCELL SELECTION</figcaption></figure>
+        <figure><img src="../generated/pipeline_poster.png" alt="Pipeline poster — chemistry into life" /><figcaption>Ω · CHEMISTRY INTO LIFE</figcaption></figure>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <p class="footer-text">
+      cellauto — abiogenesis sandbox · MIT · source on
+      <a href="https://github.com/rizzleroc/CellAutomata">GitHub</a>
+      · twelve scientifically-grounded stages in the desktop build
+    </p>
+  </footer>
+
+  <script src="presets.js"></script>
+  <script src="viridis.js"></script>
+  <script src="sim.js"></script>
+</body>
+</html>

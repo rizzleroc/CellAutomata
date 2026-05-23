@@ -107,6 +107,9 @@ class AbiogenesisStage4Selection:
     Du: float = 0.16
     Dv: float = 0.08
     substeps_per_frame: int = 6
+    # Accessibility: swap the disc fitness colormap from red→green (CVD-hostile)
+    # to a colourblind-safe blue→yellow ramp when toggled from View ▸ Colour-safe.
+    colorblind_safe: bool = False
     rng: random.Random = field(default_factory=random.Random)
 
     @property
@@ -131,12 +134,14 @@ class AbiogenesisStage4Selection:
             chem[cy - r : cy + r, cx - r : cx + r, s] = 0.4
 
         # Initial protocell population: 3 cells with random genomes.
+        # (Renamed `cx`/`cy` → `px`/`py` so mypy doesn't try to unify the
+        # float coordinates here with the int indices used in the loop above.)
         cells = []
         for _ in range(3):
-            cx = self.rng.uniform(width * 0.25, width * 0.75)
-            cy = self.rng.uniform(height * 0.25, height * 0.75)
+            px = self.rng.uniform(width * 0.25, width * 0.75)
+            py = self.rng.uniform(height * 0.25, height * 0.75)
             genome = np.array([self.rng.uniform(0.05, 0.4) for _ in range(self.n_species)], dtype=np.float32)
-            cells.append(Protocell(cx=cx, cy=cy, radius=4.0, genome=genome))
+            cells.append(Protocell(cx=px, cy=py, radius=4.0, genome=genome))
         return SelectionState(chemistry=chem, cells=cells)
 
     def step(self, state: SelectionState) -> SelectionState:
@@ -212,11 +217,19 @@ class AbiogenesisStage4Selection:
             ring = ((xx - cell.cx) ** 2 + (yy - cell.cy) ** 2 <= cell.radius**2) & (
                 (xx - cell.cx) ** 2 + (yy - cell.cy) ** 2 >= (cell.radius - 1) ** 2
             )
-            # Fitness → hue (low = red, high = green).
+            # Fitness → hue. Default is red→green; colorblind_safe swaps to
+            # blue→yellow (Wong's CVD-safe diverging pair), which separates
+            # cleanly under deuteranopia and protanopia.
             fit = min(cell.fitness() / 0.25, 1.0)  # hypercycle max ≈ n*(0.5)^2/n = 0.25 for n=4
-            r = int(255 * (1 - fit))
-            g = int(255 * fit)
-            img[disc] = (r, g, 0)
+            if self.colorblind_safe:
+                r = int(40 + 200 * fit)
+                g = int(80 + 120 * fit)
+                b = int(180 * (1 - fit) + 40 * fit)
+            else:
+                r = int(255 * (1 - fit))
+                g = int(255 * fit)
+                b = 0
+            img[disc] = (r, g, b)
             img[ring] = (255, 255, 255)
         return img
 
