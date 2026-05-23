@@ -21,7 +21,7 @@ def _frame_to_image(frame: dict) -> Image.Image:
         img = Image.fromarray(rgb, mode="RGB")
         # Upscale to canvas size with nearest-neighbor so pixels stay crisp.
         if (w, h) != (canvas, canvas):
-            img = img.resize((canvas, canvas), Image.NEAREST)
+            img = img.resize((canvas, canvas), Image.Resampling.NEAREST)
         return img
     # Discrete frame.
     w = frame["width"]

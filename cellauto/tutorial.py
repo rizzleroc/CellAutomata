@@ -17,6 +17,13 @@ _TUTORIALS: dict[str, tuple[str, ...]] = {
         "Stage 4 — Protocell selection. Each protocell carries a genome; size-based growth and division create heritable variation. Eigen-Schuster hypercycle dynamics emerge.",
         "Click 'Promote stage' to step manually; the pipeline auto-promotes every 60 steps. See docs/science.md for citations.",
     ),
+    "abiogenesis-pipeline-extended": (
+        "Extended pipeline — every shipped origin-of-life process in narrative order.",
+        "0 Soup → 1 Alkaline vent → 2 Reaction-diffusion → 3 Mineral catalysis → 4 RAFs → 5 Homochirality → 6 RNA world → 7 Coacervates → 8 Vesicles → 9 Protocell selection.",
+        "The vent supplies the proton-motive force (Lane-Martin chemiosmosis). Mineral surfaces localise polymerisation (Ferris). Chirality breaks before the first replicators (Frank). RNA world meets the error threshold. Coacervates and vesicles offer parallel compartmentalisation routes.",
+        "Auto-promotes every 50 steps by default — use AUTO-PROMOTE / DUR to slow it, JUMP to skip ahead, or SCRUB to rewind.",
+        "Use the canonical 5-stage abiogenesis-pipeline for the museum-plate tour; use this rule when you want to see every process.",
+    ),
     "abiogenesis-stage0-soup": (
         "Stage 0 — Primordial soup. The 16-species palette stands in for distinct chemical species in an Oparin-Haldane prebiotic ocean.",
         "Rule 1: each non-amoeba cell adopts the species of a random neighbor every step. This models the Brownian mixing of dissolved molecules.",
@@ -73,6 +80,20 @@ _TUTORIALS: dict[str, tuple[str, ...]] = {
         "Blue = alkaline vent interior, orange = acidic ocean. The steep gradient at the chimney WALL carries a proton-motive force — the same kind of gradient every living cell uses to make ATP.",
         "Teal-green glow = organic matter synthesised by that gradient. Synthesis ignites along the interface, not uniformly: the gradient, not a hand-set feed rate, is the free-energy source (Lane & Martin 2012).",
         "Slide the vent and ocean pH toward each other until the gradient is flat — synthesis stops. No gradient, no free energy, no chemistry.",
+    ),
+    "abiogenesis-genetic-code": (
+        "Origin of the genetic code (Crick 1968; Woese 1965; Wong 1975). The deepest unsolved problem at the chemistry-to-biology boundary — and the conceptual bridge from this simulator's protocells to actual life.",
+        "Each cell holds an RNA-like strand AND its own private codon→amino-acid code. Fitness is how well the peptide (strand decoded via the cell's own code) matches a needed catalyst.",
+        "Crucially, both the strand AND the code mutate when copied. Any code that happens to make a useful peptide spreads — selection acts on the code itself.",
+        "Watch the `code_consensus` stat rise: this is the population converging on a SHARED code, which is what happened on Earth ~4 billion years ago. Vetsigian-Woese-Goldenfeld (2006) showed this is the mechanism behind the code's universality.",
+        "This is the last hand-off before biology proper: with a shared code, the population now has a translation system. Everything downstream is evolution within bounded chemical individuals.",
+    ),
+    "abiogenesis-luca": (
+        "LUCA distillation — the inferred Last Universal Common Ancestor (Koonin 2003; Weiss et al. 2016).",
+        "Each cell carries a gene-presence bitset; some genes are essential (high benefit), some accessory (mild), some deleterious (costly). Per-gene maintenance cost penalises bloat.",
+        "Selection + mutation drives the population. The `luca_size` stat tracks the inferred ancestral core: genes present in ≥70% of surviving lineages — exactly how Weiss et al. (2016) reconstructed LUCA from comparative genomics across all sequenced prokaryotes.",
+        "Watch luca_size climb from 0 (random initial genomes) to the essential-gene count. That intersection IS the simulated LUCA — every living thing in the population descends from a lineage that retained those genes.",
+        "Raise the genome-size cost slider to sharpen LUCA further; lower it and the lineages bloat with neutral accessory genes.",
     ),
     "abiogenesis-coacervate": (
         "Coacervates (Oparin 1924). The ORIGINAL protocell idea: dense, membraneless droplets that form when macromolecules phase-separate from solution.",

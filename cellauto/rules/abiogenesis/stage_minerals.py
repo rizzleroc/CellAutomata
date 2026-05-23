@@ -39,6 +39,13 @@ import numpy as np
 
 from cellauto.rules.abiogenesis.science import laplacian_5pt
 
+# Real chemistry: Ferris (1996) showed that **Na-montmorillonite clay** catalyses
+# the polymerisation of **5′-phosphorimidazolide of adenosine (ImpA)** — an
+# activated nucleotide monomer — into RNA oligomers of length 30–50.
+MONOMER_LABEL = "ImpA (5'-phosphorimidazolide of adenosine)"
+POLYMER_LABEL = "RNA oligomer (30-50mer per Ferris 1996)"
+MINERAL_LABEL = "Na-montmorillonite"
+
 
 @dataclass
 class MineralState:

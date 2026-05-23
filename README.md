@@ -7,11 +7,16 @@
 [![CI](https://github.com/rizzleroc/CellAutomata/actions/workflows/ci.yml/badge.svg)](https://github.com/rizzleroc/CellAutomata/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 ![Python](https://img.shields.io/badge/python-3.10%2B-blue)
-![Version](https://img.shields.io/badge/version-3.1.0-brightgreen)
+![Version](https://img.shields.io/badge/version-3.4.0-brightgreen)
 
 A scientifically-grounded cellular sandbox exploring the **chemistry-to-life
-transition** — the abiogenesis problem — across five stages, plus the two
-canonical reference cellular automata (Conway, Wolfram 1D) for comparison.
+transition** — the abiogenesis problem — across a canonical five-stage
+pipeline *and* a **12-stage extended pipeline** that walks every major
+origin-of-life process (alkaline hydrothermal vents with real Wood-Ljungdahl
+chemistry, mineral catalysis, autocatalytic sets, homochirality, RNA world,
+genetic-code coevolution, coacervates, vesicles, protocell selection, and
+LUCA distillation) in scientific order. Plus the two canonical reference
+cellular automata (Conway, Wolfram 1D) for comparison.
 
 ![Self-replicating Gray-Scott spots — protocell-like division](docs/hero.png)
 
@@ -38,6 +43,22 @@ plate composed from real cellauto simulations. The hero specimen is Stage 1
 Design philosophy: [Catalytic Silence](docs/design/catalytic-silence.md).
 Render script: [render_prima_materia.py](docs/design/render_prima_materia.py).*
 
+![Genesis — twelve observations on the coalescence of chemistry into life](docs/genesis.png)
+
+*Genesis (Plate XIII, Series MMXXVI) — the v3.4 magnum opus. A single
+museum poster compressing the full 12-stage extended pipeline into one
+composition: the Stage 1 fission moment dominates as the hero, with the
+other 11 stages arrayed as supporting medallions (primordial soup → vent
+→ minerals → autocatalytic sets → homochirality → RNA world → genetic
+code → coacervates → vesicles → protocell selection → LUCA). Every
+panel is real simulator output. Render script:
+[render_aaa_visuals.py](tools/render_aaa_visuals.py). Accompanied by the
+12-panel
+[Twelve Tableaux plate](docs/generated/cellauto_twelve_tableaux.png)
+generated via the whipgen MCP, and per-stage Catalytic Silence plates for
+the [genetic code](docs/generated/stage7_genetic_code_plate.png) and
+[LUCA distillation](docs/generated/stage11_luca_plate.png) stages.*
+
 ## What this project actually is
 
 The original v1.0 README called this a "natural-selection simulator." It
@@ -61,6 +82,29 @@ math behind each stage. The short version:
 Every constant traces to a published measurement; see
 [docs/science.md](docs/science.md) for the values and citations. The
 `abiogenesis-pipeline` rule walks all five stages end to end.
+
+Seven more origin-of-life processes ship as standalone selectable rules
+and together appear as the **12-stage `abiogenesis-pipeline-extended`** in
+scientific order — soup → vent → RD → mineral → RAF → chirality → RNA →
+genetic code → coacervate → vesicles → selection → LUCA:
+
+| Process | Science |
+|---|---|
+| **Alkaline hydrothermal vent** | Proton gradient does the thermodynamic work; PMF (mV) and ΔG (kJ/mol) read out live from the Nernst equation. Wood-Ljungdahl carbon fixation models the actual chemistry (2 CO₂ + 4 H₂ → acetate, ΔG° = −95 kJ/mol). (Russell & Hall 1997; Lane & Martin 2012) |
+| **Mineral-surface catalysis** | Polymerisation of activated ImpA monomers localised to Na-montmorillonite (Ferris 1996; Cairns-Smith 1982) |
+| **Homochirality** | Frank-model autocatalysis + mutual antagonism (Frank 1953; Soai 1995) |
+| **RNA world** | Spatial Eigen quasispecies; error catastrophe at `ε_c = ln(σ)/L` (Gilbert 1986; Eigen 1971) |
+| **Genetic-code coevolution** | Code → translation product → selection feedback drives convergence (Vetsigian-Woese-Goldenfeld 2006; Ikehara GADV-protein world) |
+| **Coacervates** | Cahn-Hilliard liquid-liquid phase separation (Oparin 1924; Banani et al. 2017) |
+| **LUCA distillation** | Comparative-genomics parsimony with a 70 % prevalence threshold; surfaces the conserved gene families shared by every surviving lineage (Weiss et al. 2016) |
+
+## Try it in your browser (no install)
+
+A live in-browser Stage 1 demo lives at [`docs/web/`](docs/web/) — a single
+static page with the Gray-Scott reaction-diffusion PDE running on a `<canvas>`
+via vanilla JS (no Pyodide). F/k sliders, Pearson preset chips, and the same
+viridis colormap as the desktop build. The other stages are exhibited as
+static museum plates beneath. Deployable to GitHub Pages from `/docs`.
 
 ## Install
 
@@ -116,12 +160,20 @@ than v1 in practice.
 
 | Rule name | Renderer | What it is |
 |---|---|---|
-| `abiogenesis-pipeline` | mixed | All 5 stages, auto-promoting |
-| `abiogenesis-stage0-soup` | discrete | Primordial soup with rules 1–4 |
+| `abiogenesis-pipeline` | mixed | Canonical 5-stage pipeline, auto-promoting |
+| `abiogenesis-pipeline-extended` | mixed | **12-stage pipeline** walking *every* shipped origin-of-life process in scientific order |
+| `abiogenesis-stage0-soup` | discrete | Primordial soup; init weighted by Miller's 1953 yields |
 | `abiogenesis-stage1-grayscott` | field | Gray-Scott reaction-diffusion |
 | `abiogenesis-stage2-raf` | field | Kauffman RAF autocatalytic chemistry |
-| `abiogenesis-stage3-vesicles` | field | Lipid bilayer self-assembly |
-| `abiogenesis-stage4-selection` | field | Protocell selection / hypercycle |
+| `abiogenesis-stage3-vesicles` | field | Lipid bilayer self-assembly (CMC threshold of a named fatty acid) |
+| `abiogenesis-stage4-selection` | field | Protocell selection / hypercycle proxy |
+| `abiogenesis-rna-world` | field | Spatial Eigen quasispecies — error catastrophe live (Gilbert 1986) |
+| `abiogenesis-homochirality` | field | Frank (1953) chiral symmetry breaking — teal/magenta domains |
+| `abiogenesis-hydrothermal-vent` | field | Lane-Martin chemiosmosis — pH gradient + Wood-Ljungdahl CO₂ fixation with live PMF/ΔG readouts |
+| `abiogenesis-coacervate` | field | Cahn-Hilliard membraneless droplets (Oparin) — coarsens over time |
+| `abiogenesis-mineral-catalysis` | field | Na-montmorillonite clay mask — Ferris-style surface catalysis of activated ImpA monomers |
+| `abiogenesis-genetic-code` | field | Vetsigian-Woese-Goldenfeld code coevolution — codon→amino-acid table converges under selection |
+| `abiogenesis-luca` | field | LUCA distillation — comparative-genomics parsimony surfaces the core gene set (Weiss et al. 2016) |
 | `conway` | discrete | Conway's Game of Life (B3/S23) |
 | `wolfram1d` | discrete | Elementary 1D automaton, rule 0–255 |
 | `natural-selection` | discrete | **Legacy alias** — same mechanics as Stage 0 |
@@ -131,24 +183,69 @@ than v1 in practice.
 The window is a fixed-width "museum plate"; its content **scrolls vertically**
 so every control is reachable on any screen size.
 
-- **Rule / Grid dropdowns** — pick a rule and grid size.
-- **Reseed** — fresh RNG seed (shown in the status bar).
-- **Promote stage** — for the pipeline rule, manually advance to the next stage.
-- **Step / Play / Stop** — single-step or run at the FPS slider's rate.
-- **Live stage caption** — the current stage name and a colour legend are drawn
-  on the canvas; entering a new stage announces its governing principle and
-  citations in the marginalia, so the science isn't buried in the docs.
-- **Tutorial** — per-rule walkthrough with citations.
-- **Record GIF** — capture live frames + save.
-- **Gallery menu** — nine museum plates, including a per-stage hero illustration
-  for each of the five stages and a full-arc "chemistry into life" poster
-  (`docs/generated/`).
-- **File ▸ Save / Open snapshot** — persist state to JSON (RNG state + rule
-  config round-trip exactly — load-then-step matches continuous run).
-- **File ▸ Export GIF** — render N frames headlessly to a GIF.
+**Configuration**
+- **Rule / Grid** dropdowns; **Reseed** (fresh seed) and **Restart** (rewind
+  to step 0 keeping the current parameter sliders) buttons.
+- **Promote** advances the pipeline one stage; pipeline rules also expose a
+  **JUMP** combobox (direct stage navigation, 0..N-1, sized to the active
+  pipeline), an **AUTO-PROMOTE** checkbox, and a **DUR** spinbox for the
+  stage-duration in steps.
+
+**Parameters (scientific knobs)**
+- A dynamic **PARAMETERS** panel exposes every live scientific knob for the
+  active rule — F/k/Du/Dv for Gray-Scott (with a Pearson regime preset
+  picker), error rate ε / superiority σ for the RNA world, antagonism kₓ
+  for the chirality model, vent / ocean pH for the hydrothermal vent, line
+  tension κ for coacervates, k_clay vs k_bulk for mineral catalysis, mutation
+  rate / radius / decay age for protocell selection, etc.
+- A **RESET** button restores the rule's dataclass defaults. Structural
+  parameters (n_species/n_reactions/food_fraction for Stage 2, rule_number
+  for Wolfram1D) auto-reinit deterministically from the engine seed.
+
+**Transport**
+- **Step / Play / Stop**; FPS slider; **Tutorial** (per-rule, with citations).
+- **SCRUB** Scale rewinds through the bounded ring buffer of serialized
+  state — stepping after a scrub-back truncates the future so timelines
+  branch rather than overwrite.
+- **Record GIF** with progress dialog + cancel.
+
+**Observation overlays**
+- **Live stage caption + colour legend** drawn on the canvas; entering a new
+  stage announces its principle and citations in the marginalia and pops a
+  brief **chapter card** overlay.
+- **Visual colorbar** under the canvas (viridis, red→green for Stage 4 fitness,
+  or the relevant diverging map for chirality/vents/coacervates/minerals).
+- **Sparkline** trace of the headline population stat (rolling 180 samples).
+- Click any **Stage 4** protocell disc to open the per-protocell inspector
+  (position, radius, age, fitness, genome vector).
+
+**Menus**
+- **File** — Open/Save snapshot (JSON, exact RNG round-trip); Export frame
+  as PNG; Export stats as CSV; Export GIF.
+- **Gallery** — six per-stage Catalytic Silence plates, a full-arc pipeline
+  poster, the three v3.1 plates, and a live **Reaction network (Stage 2 RAF)**
+  view rendered programmatically from the current network.
+- **View** — text size (Small / Default / Large / Extra-large) and a
+  Colour-blind safe palette toggle (Wong blue→yellow for Stage 4 fitness).
+- **Help** — Tutorial, Keyboard shortcuts, About.
+
+**Keyboard shortcuts**
+| Key | Action |
+|---|---|
+| Space | Play / Pause |
+| → (Right) | Single step (when paused) |
+| R | Restart to step 0 |
+| P | Promote stage (forward) |
+| `[` / `]` | Pipeline stage: previous / next |
+| Ctrl+N | New run (reseed) |
+| Ctrl+O / Ctrl+S | Open / Save snapshot |
+| Ctrl+Q | Quit |
+
+Shortcuts are suppressed while a Spinbox or Combobox has focus, so editing
+slider values never triggers a transport action.
 
 See [docs/ROADMAP.md](docs/ROADMAP.md) for the full feature inventory,
-punchlist, and roadmap.
+punchlist, and mandated UI toolset contract.
 
 ## Reproducibility
 
@@ -182,13 +279,44 @@ The project's history is its own gap analysis:
   false-positive autocatalytic sets; rewrote it to the correct layered
   food-generated closure with mandatory catalysis. Replaced toy constants
   with published data (Miller-Urey yields, fatty-acid CMCs, Eigen error
-  threshold). Surfaced the science in the UI (live stage captions +
-  transition citations). Generated six museum-quality stage plates via the
-  whipgen MCP. Made the GUI content scrollable so controls are never clipped.
+  threshold). **Added six new origin-of-life processes** as selectable
+  rules: RNA world, homochirality, alkaline hydrothermal vent, coacervates,
+  mineral-surface catalysis (plus the original 5-stage pipeline).
+  Surfaced the science in the UI (live stage captions, transition
+  citations, colorbar, RAF network graph view, sparkline). Generated six
+  museum-quality stage plates via the whipgen MCP. Full mandated UI
+  toolset: live parameter sliders incl. structural, JUMP/AUTO-PROMOTE/DUR,
+  RESET/RESTART, PNG/CSV export.
+- **v3.3** (2026-05-22): completing the genesis-of-life mandate. Added the
+  **`abiogenesis-pipeline-extended`** rule — a 10-stage auto-promoting
+  pipeline that walks every shipped process end-to-end in scientific order
+  (soup → vent → RD → mineral → RAF → chirality → RNA → coacervate →
+  vesicles → selection). Story-mode chapter transition cards. Per-protocell
+  inspector (click any Stage 4 disc → genome / fitness / age popup).
+  Timeline scrubber with branching truncation. Accessibility pass:
+  text-scaling, Wong CVD-safe palette for Stage 4, full keyboard
+  navigation (Space/→/R/P/[/]) with text-entry focus guards and a
+  Keyboard shortcuts dialog.
+- **v3.4** (2026-05-23): closing the honest science gaps. Added two new
+  stages — **genetic-code coevolution** (Vetsigian-Woese-Goldenfeld; codon →
+  amino-acid table converges under selection) and **LUCA distillation**
+  (Weiss et al. 2016 comparative-genomics parsimony with a 70 % prevalence
+  threshold), extending the pipeline to **12 stages**. Replaced the toy
+  vent gradient with **real thermodynamics**: live PMF (mV) from the Nernst
+  equation and ΔG (kJ/mol) via the Faraday constant, plus
+  **Wood-Ljungdahl carbon fixation** (2 CO₂ + 4 H₂ → acetate, ΔG° =
+  −95 kJ/mol). Tagged molecules with their real chemistry names (Ferris
+  ImpA, Na-montmorillonite, Ikehara GADV amino acids, sixteen LUCA gene
+  families). Static-HTML **web port** of Stage 1 deployable to GitHub Pages.
+  AAA release poster generated via the whipgen MCP. Fixed two bugs
+  reported in the field: chapter-card overlays now dismiss reliably, and
+  the default sim speed is slower so transitions are observable. CI gates
+  all green (ruff, ruff-format, mypy, pytest with 87 % coverage).
 
-72 tests, all passing. See [docs/science.md](docs/science.md) for the math
-and citations, and [docs/ROADMAP.md](docs/ROADMAP.md) for the feature
-inventory and roadmap. Full version history in [CHANGELOG.md](CHANGELOG.md).
+**120 tests, all passing.** See [docs/science.md](docs/science.md) for the
+math and citations, and [docs/ROADMAP.md](docs/ROADMAP.md) for the feature
+inventory, mandated UI toolset, and remaining roadmap. Full version history in
+[CHANGELOG.md](CHANGELOG.md).
 
 ## License
 

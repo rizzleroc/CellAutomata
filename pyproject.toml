@@ -4,8 +4,8 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "cellauto"
-version = "3.1.0"
-description = "Scientifically-grounded abiogenesis sandbox (5-stage chemistry-to-life pipeline + Conway + Wolfram)."
+version = "3.4.0"
+description = "Scientifically-grounded abiogenesis sandbox (5- and 10-stage chemistry-to-life pipelines + 6 additional origin-of-life processes + Conway + Wolfram)."
 readme = "README.md"
 license = { file = "LICENSE" }
 requires-python = ">=3.10"
@@ -50,6 +50,28 @@ cellauto = ["assets/*.png", "assets/*.ico", "assets/fonts/*.ttf"]
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 addopts = "-q"
+
+# Coverage is measured on the science / engine / data modules. The Tk-dependent
+# integration code (the GUI shell, the mascot canvas widget, the CLI entry,
+# and the canvas renderer) needs a real display to exercise and is verified
+# manually + via the headless smokes documented in docs/ROADMAP.md; it would
+# otherwise drag the headline coverage number with it without saying anything
+# meaningful about the scientific correctness the tests are checking.
+[tool.coverage.run]
+omit = [
+    "cellauto/__main__.py",
+    "cellauto/app.py",
+    "cellauto/mascot.py",
+    "cellauto/renderer.py",
+]
+
+[tool.coverage.report]
+exclude_lines = [
+    "pragma: no cover",
+    "raise NotImplementedError",
+    "if __name__ == .__main__.:",
+    "if TYPE_CHECKING:",
+]
 
 [tool.ruff]
 line-length = 110

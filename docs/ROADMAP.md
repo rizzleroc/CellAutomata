@@ -95,7 +95,7 @@ way that clips other controls (see [[cellauto-fixed-window-layout]]).
 - [x] Speed (FPS) control
 - [x] Reseed / new run
 - [x] Restart-to-step-0 — `RESTART` button: re-inits the state under the current rule and seed (preserves slider edits) and clears the stats buffer.
-- [ ] Step-back / timeline scrubber (requires frame-history buffer)
+- [x] Step-back / timeline scrubber — bounded ring buffer of serialized state per step (cap 120) with a `SCRUB` Scale in TRANSPORT; drag back to restore any captured frame. Stepping after a scrub-back **truncates the future** so timelines branch rather than overwrite.
 
 **B. Stage navigation**
 - [x] Rule selector (incl. each stage individually)
@@ -132,8 +132,8 @@ way that clips other controls (see [[cellauto-fixed-window-layout]]).
 - [x] Status register (rule / seed / step / FPS / population stats)
 
 **G. Accessibility**
-- [ ] Colourblind-safe palette option (Stage 4 red→green is the worst offender)
-- [ ] Text-scaling / zoom control
+- [x] Colourblind-safe palette option — `View ▸ Colour-blind safe palette` checkbox swaps Stage 4's red→green disc colour (the audit's flagged CVD offender) for a blue→yellow ramp; the legend bar follows. Other diverging maps in the project (chirality teal↔magenta, vents blue↔orange, viridis) are already CVD-friendly.
+- [x] Text-scaling / zoom control — `View ▸ Small/Default/Large/Extra-large text` calls `_apply_font_scale(scale)`, which recomputes every font tuple and re-applies the ttk styles uniformly; canvas overlays refresh via `_sync_stage_caption`. Clamped to [0.6, 2.0].
 
 ---
 
@@ -148,11 +148,13 @@ way that clips other controls (see [[cellauto-fixed-window-layout]]).
 - [x] **Oparin coacervates** — SHIPPED as `abiogenesis-coacervate`: Cahn-Hilliard liquid-liquid phase separation; gold droplets nucleate from a near-uniform mix and coarsen (Ostwald ripening), a membraneless alternative to Stage 3's vesicles. `stage_coacervate.py`; `test_coacervate.py`.
 
 ### Platform & polish
-- Web port (Pyodide / JS) so no Python install is needed.
-- Accessibility: colourblind-safe palettes, text scaling, keyboard navigation.
-- Per-vesicle / per-protocell inspectors (click a cell to see its genome / fitness).
-- In-app concentration / population time-series plots (sparklines).
-- Story mode: chaptered narration with per-stage dwell + transition cards.
+- [x] Extended auto-promote pipeline weaving every shipped origin-of-life process — SHIPPED as `abiogenesis-pipeline-extended` (10 stages: soup → vent → RD → mineral → RAF → chirality → RNA → coacervate → vesicles → selection). `AbiogenesisPipelineRule` was parameterised with `stage_classes`/`stage_infos`, so the original 5-stage default is unchanged.
+- [x] Web port (Pyodide / JS) so no Python install is needed — **SHIPPED as an MVP**: vanilla-JS Gray-Scott reaction-diffusion explorer in `docs/web/` (~400 lines: `index.html` + `styles.css` + `sim.js` + `viridis.js` + `presets.js`). Deployable to GitHub Pages from `/docs`. Other stages exhibited as static museum-plate gallery; the full 12-rule sandbox remains the Python build. No Pyodide — direct JS port of `gray_scott_step`.
+- [x] Accessibility: colourblind-safe palettes, text scaling.
+- [x] Accessibility: keyboard navigation — Space (play/pause), → (step), R (restart), P (promote), [ / ] (prev/next pipeline stage), with text-entry focus guard so Spinbox/Combobox typing isn't hijacked. Help ▸ Keyboard shortcuts lists them.
+- [x] Per-protocell inspector — `Button-1` on the canvas hit-tests Stage 4 `Protocell` discs (direct rule or pipeline-wrapped) and opens a Toplevel showing position, radius, age, fitness, and the genome vector, plus a caption explaining the hypercycle-coupling fitness.
+- [x] In-app concentration / population time-series plot (sparkline overlay).
+- [x] Story-mode chapter transition cards — when the pipeline promotes, a centered overlay shows "CHAPTER N · TITLE" + principle + citation, fades after ~4.5 s via `_animate` countdown. Works for both 5- and 10-stage pipelines.
 
 ---
 

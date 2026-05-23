@@ -291,6 +291,50 @@ folding, and sequence-dependent fitness landscapes.
 
 ---
 
+## Origin of the genetic code — coevolution of message and code
+
+Selectable as the `abiogenesis-genetic-code` rule. The deepest unsolved
+problem at the chemistry-to-biology boundary is the origin of the **genetic
+code** itself: why is the codon→amino-acid mapping (nearly) universal across
+all life, and how did it arise? Three classic answers:
+
+- **Stereochemical** (Woese 1965): codons and their amino acids are physically
+  matched — the code reflects molecular complementarity.
+- **Coevolution** (Wong 1975; Vetsigian, Woese & Goldenfeld 2006): the code
+  and the messages it interprets coevolve, and innovation-sharing among
+  proto-organisms drives the population to converge on a single shared code.
+- **Frozen accident** (Crick 1968): whatever code happened first locked in.
+
+This stage models the **coevolution** account. Each cell on the grid carries
+both an RNA-like strand of codons *and* its own private codon→amino-acid
+table. Each cell decodes its own strand through its own code to produce a
+peptide; fitness is how well that peptide matches a fixed target catalyst.
+Empty cells are colonised by fitness-weighted occupied neighbours, copying
+both the strand (with per-base mutation) and the code (with rare swaps). Any
+code that happens to make a more useful peptide spreads. The
+`code_consensus` population stat tracks how much the surviving population
+agrees on the code: convergence toward 1.0 is the emergence of a universal
+genetic code.
+
+**What this captures:** the coevolutionary dynamics of message and code, and
+selection acting on the code itself — the mechanism behind the universality
+of the genetic code (Vetsigian-Woese-Goldenfeld 2006).
+**What it cuts:** actual stereochemistry, actual translation by ribosomes,
+and the specific historical contingencies that shaped the canonical code.
+
+**Citations**
+- Crick, F. H. C. (1968). The origin of the genetic code. *J. Mol. Biol.*,
+  38(3), 367–379.
+- Woese, C. R. (1965). On the evolution of the genetic code. *PNAS*, 54,
+  1546–1552.
+- Wong, J. T.-F. (1975). A co-evolution theory of the genetic code. *PNAS*,
+  72(5), 1909–1912.
+- Vetsigian, K., Woese, C., & Goldenfeld, N. (2006). Collective evolution and
+  the genetic code. *PNAS*, 103(28), 10696–10701.
+- Koonin, E. V. (2017). Frozen accident pushing 50… *Life*, 7(2), 22.
+
+---
+
 ## Homochirality — spontaneous mirror-symmetry breaking
 
 Selectable as the `abiogenesis-homochirality` rule. Life is **homochiral**: it
@@ -354,6 +398,31 @@ organic synthesis.
 
 **What this captures:** a fixed geochemical proton gradient as the energy
 source, and interface-localised synthesis driven by the proton-motive force.
+The stage exposes **real thermodynamic readouts**: the abstract proton field
+maps to actual pH (alkaline ≈ 10, ocean ≈ 5.5 by default — the early-Earth
+ocean estimate of Krissansen-Totton et al. 2018); at 25 °C the Nernst factor
+2.303 RT/F ≈ 59.16 mV per pH unit gives the proton-motive force directly
+(PMF ≈ 266 mV at default ΔpH = 4.5), and Faraday's constant converts that to
+the available free energy (ΔG ≈ −26 kJ/mol per proton). Those numbers sit
+comfortably above ATP synthase's ~150 mV threshold and in the range
+Lane & Martin argue can drive abiotic carbon fixation.
+
+**The chemistry the gradient drives is the Wood-Ljungdahl pathway.** The
+stage tracks dissolved H₂ (replenished inside the alkaline chimney by
+serpentinisation) and dissolved CO₂ (globally fed from the CO₂-rich Hadean
+ocean), and the synthesis term is a proper mass-action reaction with the
+real net stoichiometry
+
+```
+2 CO₂ + 4 H₂ → CH₃COOH + 2 H₂O      (ΔG° ≈ −95 kJ/mol)
+```
+
+Rate ∝ PMF · [H₂] · [CO₂], capped by the 2 : 1 H₂ : CO₂ requirement (the
+limiting reagent is enforced). Take either feedstock away and the reaction
+stops *even though the proton gradient is still there* — exactly the
+Russell-Martin-Sojo argument that the alkaline-vent geochemistry sets up
+not just a free-energy source but the actual carbon-fixation chemistry that
+became central metabolism.
 **What it cuts:** the actual carbon-fixation chemistry (acetyl-CoA / Wood-
 Ljungdahl pathway), real FeS/FeNi mineral catalysis, and fluid flow.
 
@@ -440,6 +509,46 @@ activation chemistry, and sequence selectivity.
   of primitive cellular compartments. *Science*, 302, 618–622.
 - Hazen, R. M., & Sverjensky, D. A. (2010). Mineral surfaces… and the origins of
   life. *CSH Perspect. Biol.*, 2, a002162.
+
+---
+
+## LUCA distillation — the last universal common ancestor
+
+Selectable as the `abiogenesis-luca` rule. Every organism alive today
+descends from a single inferred ancestor, the **Last Universal Common
+Ancestor (LUCA)**. We cannot dig it up; we reconstruct its genome by
+**comparative genomics** — taking the (threshold-relaxed) intersection of
+gene families across all sequenced lineages. Weiss et al. (2016) ran this
+analysis over ~6.1 million prokaryotic protein-coding genes and recovered a
+core gene set (~355 protein families) consistent with LUCA being a
+hydrothermal, hydrogen-using chemolithoautotroph.
+
+This stage models that distillation. Each cell carries a gene-presence
+bitset; some genes are essential (high fitness), some accessory (mild), some
+deleterious (cost), and every gene has a maintenance cost. Selection +
+mutation drive the population; the headline `luca_size` stat is the number
+of genes present in ≥ 70% of surviving lineages — exactly the kind of
+prevalence threshold real LUCA reconstruction uses. From random initial
+genomes, `luca_size` climbs and locks at roughly the essential-gene count
+(6 by default). That intersection IS the simulated LUCA, the genome every
+lineage inherited.
+
+**What this captures:** comparative-genomics distillation of a core ancestral
+genome under selection, the trade-off between gene benefit and genome-size
+cost, and the gene-prevalence threshold real reconstruction relies on.
+**What it cuts:** actual sequence evolution, the specific metabolic genes of
+real LUCA, horizontal gene transfer (the `abiogenesis-genetic-code` stage
+covers that part), and protein structure.
+
+**Citations**
+- Koonin, E. V. (2003). Comparative genomics, minimal gene-sets and the last
+  universal common ancestor. *Nat. Rev. Microbiol.*, 1, 127–136.
+- Theobald, D. L. (2010). A formal test of the theory of universal common
+  ancestry. *Nature*, 465, 219–222.
+- Weiss, M. C., et al. (2016). The physiology and habitat of the last
+  universal common ancestor. *Nat. Microbiol.*, 1, 16116.
+- Mirkin, B. G., et al. (2003). Parsimonious evolutionary scenarios for
+  genome evolution. *BMC Evol. Biol.*, 3, 2.
 
 ---
 

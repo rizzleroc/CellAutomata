@@ -51,7 +51,7 @@ log = logging.getLogger(__name__)
 
 CANVAS_SIZE = 600
 DEFAULT_GRID = 60
-DEFAULT_FPS = 8.0
+DEFAULT_FPS = 5.0  # gentle default so the extended pipeline doesn't blow past chapter cards
 
 # ── Catalytic Silence palette ───────────────────────────────────────────────
 BG = "#0a0e16"  # obsidian
@@ -116,12 +116,32 @@ class App(tk.Frame):
         # export. Bounded so it doesn't grow without limit on long runs.
         self._stats_history: list[dict[str, int]] = []
         self._stats_history_cap = 5000
+        # Full serialized-state ring for the timeline SCRUB control. Each entry
+        # is {"step": int, "state": rule.serialize_state(...)}; capped because
+        # field states can be ~hundreds of KB each.
+        self._state_history: list[dict] = []
+        self._state_history_cap = 120
+        # Suppress scrub callbacks during programmatic Scale updates so dragging
+        # the slider doesn't loop with restoration.
+        self._scrubbing = False
+        # Accessibility: 1.0 is the design baseline; View ▸ <size> picks others.
+        self._font_scale: float = 1.0
+        # Colourblind-safe palette toggle (currently swaps Stage 4's red→green
+        # fitness disc colour for a blue→yellow ramp; other diverging maps in
+        # the project — chirality teal↔magenta, vents blue↔orange, viridis —
+        # are already CVD-friendly).
+        self._colorblind_safe = False
+        # Story-mode chapter card: a brief title/principle overlay that
+        # appears when the pipeline promotes to a new stage. Counted in
+        # `_animate` ticks (~20 Hz) so it fades regardless of play state.
+        self._chapter_card_ticks_left = 0
+        self._chapter_card_duration = 90  # ~4.5 s at 20 Hz
 
         self._setup_theme()
         self._build_widgets()
         self._build_menu()
         self._apply_window_icon()
-        self._renderer = None
+        self._renderer: FieldRenderer | DiscreteRenderer | None = None
         self._new_engine(rule_name=rule_name, grid_size=grid_size, seed=seed)
         self._anim_frame = 0
         self._animate()
@@ -151,15 +171,18 @@ class App(tk.Frame):
         # ttk needs an actual sans for combobox text; we keep the platform one.
         self._fam_ui = first("Segoe UI", "TkDefaultFont")
 
-        self._font_title = (self._fam_display, 22)
-        self._font_eyebrow = (self._fam_mono, 9)  # tracked microcaps
-        self._font_section_num = (self._fam_display, 16)  # Roman numerals
+        # 3-tuples throughout so mypy's tk stub overloads accept the fonts as
+        # arguments to canvas.create_text (the 2-tuple form only matches a
+        # 1-arg overload).
+        self._font_title = (self._fam_display, 22, "normal")
+        self._font_eyebrow = (self._fam_mono, 9, "normal")  # tracked microcaps
+        self._font_section_num = (self._fam_display, 16, "normal")  # Roman numerals
         self._font_section = (self._fam_mono, 9, "bold")
         self._font_button = (self._fam_mono, 9, "bold")
-        self._font_label = (self._fam_mono, 9)
-        self._font_value = (self._fam_mono, 10)
+        self._font_label = (self._fam_mono, 9, "normal")
+        self._font_value = (self._fam_mono, 10, "normal")
         self._font_caption = (self._fam_italic, 11, "italic")
-        self._font_ui_widget = (self._fam_ui, 9)
+        self._font_ui_widget = (self._fam_ui, 9, "normal")
 
         # Base widget colours.
         style.configure(
@@ -338,6 +361,19 @@ class App(tk.Frame):
         self._update_status()
         self._rebuild_parameters()
         self._sync_pipeline_row()
+        self._stats_history.clear()
+        self._state_history.clear()
+        self._record_state_snapshot()  # seed step 0 so the scrubber has a baseline
+        # Don't carry an in-progress chapter card from the previous run into
+        # the new one — _sync_stage_caption will pop a fresh one for the
+        # starting stage if the rule is a pipeline.
+        self._chapter_card_ticks_left = 0
+        # Force chapter-card cleanup any previous overlay items that survived
+        # the renderer re-init (defensive).
+        try:
+            self.canvas.delete("chapter_card")
+        except tk.TclError:
+            pass
 
     def _state_dims(self) -> tuple[int, int]:
         state = self.engine.state
@@ -358,11 +394,50 @@ class App(tk.Frame):
     def _init_renderer(self) -> None:
         kind = getattr(self.engine.rule, "renderer_kind", "discrete")
         w, h = self._state_dims()
+        renderer: FieldRenderer | DiscreteRenderer
         if kind == "field":
-            self._renderer = FieldRenderer(canvas=self.canvas, canvas_size=CANVAS_SIZE)
+            renderer = FieldRenderer(canvas=self.canvas, canvas_size=CANVAS_SIZE)
         else:
-            self._renderer = DiscreteRenderer(canvas=self.canvas, canvas_size=CANVAS_SIZE)
-        self._renderer.reset(w, h)
+            renderer = DiscreteRenderer(canvas=self.canvas, canvas_size=CANVAS_SIZE)
+        renderer.reset(w, h)
+        self._renderer = renderer
+
+    # ── Accessibility ───────────────────────────────────────────────────────
+
+    def _apply_font_scale(self, scale: float) -> None:
+        """Recompute font tuples at the given scale (1.0 is design baseline) and
+        re-apply them through ttk styles so every label, button, and caption
+        updates uniformly. Canvas-overlay text (stage caption, legend, sparkline)
+        is redrawn via ``_sync_stage_caption`` to pick up the new sizes."""
+        self._font_scale = max(0.6, min(2.0, float(scale)))
+        sc = self._font_scale
+
+        def s(base: int) -> int:
+            return max(7, int(round(base * sc)))
+
+        self._font_title = (self._fam_display, s(22), "normal")
+        self._font_eyebrow = (self._fam_mono, s(9), "normal")
+        self._font_section_num = (self._fam_display, s(16), "normal")
+        self._font_section = (self._fam_mono, s(9), "bold")
+        self._font_button = (self._fam_mono, s(9), "bold")
+        self._font_label = (self._fam_mono, s(9), "normal")
+        self._font_value = (self._fam_mono, s(10), "normal")
+        self._font_caption = (self._fam_italic, s(11), "italic")
+        self._font_ui_widget = (self._fam_ui, s(9), "normal")
+        style = ttk.Style(self.master_window)
+        style.configure(".", font=self._font_ui_widget)
+        style.configure("TLabel", font=self._font_label)
+        style.configure("Title.TLabel", font=self._font_title)
+        style.configure("Eyebrow.TLabel", font=self._font_eyebrow)
+        style.configure("Roman.TLabel", font=self._font_section_num)
+        style.configure("Section.TLabel", font=self._font_section)
+        style.configure("Apparatus.TLabel", font=self._font_label)
+        style.configure("Value.TLabel", font=self._font_value)
+        style.configure("Caption.TLabel", font=self._font_caption)
+        style.configure("TButton", font=self._font_button)
+        # Refresh on-canvas text so the overlay matches the new size immediately.
+        if hasattr(self, "canvas"):
+            self._sync_stage_caption()
 
     # ── Layout primitives ───────────────────────────────────────────────────
 
@@ -371,7 +446,7 @@ class App(tk.Frame):
 
     def _section(
         self, parent: tk.Widget, roman: str, name: str, pad_top: int = 14, pad_bottom: int = 8
-    ) -> tk.Frame:
+    ) -> ttk.Frame:
         """A section header: Italiana Roman numeral · tracked mono label,
         followed by a thin teal hairline rule. Returns the body Frame the
         caller fills with section content."""
@@ -452,7 +527,7 @@ class App(tk.Frame):
         ttk.Label(title_col, text="cellauto", style="Title.TLabel").pack(anchor="center", pady=(4, 2))
         ttk.Label(
             title_col,
-            text="five observations on the coalescence of chemistry into pattern",
+            text="observations on the coalescence of chemistry into life",
             style="Caption.TLabel",
         ).pack(anchor="center")
         self._hairline(header, color=HAIRLINE_HI).pack(fill="x", pady=(16, 0), anchor="center")
@@ -467,6 +542,9 @@ class App(tk.Frame):
             frame, width=CANVAS_SIZE, height=CANVAS_SIZE, background=BG, highlightthickness=0, borderwidth=2
         )
         self.canvas.pack(padx=2, pady=2)
+        # Click → per-protocell inspector for Stage 4 discs (direct rule or
+        # the pipeline at stage 4); no-op otherwise.
+        self.canvas.bind("<Button-1>", self._on_canvas_click)
         # The live specimen label (stage name + colour legend) is drawn as a
         # text overlay *on* the canvas — see _sync_stage_caption. Drawing it on
         # the canvas costs zero layout space, which keeps the fixed-height
@@ -504,15 +582,18 @@ class App(tk.Frame):
         self._pipeline_row = ttk.Frame(body)
         ttk.Label(self._pipeline_row, text="JUMP", style="Apparatus.TLabel").pack(side="left", padx=(0, 8))
         self._jump_var = tk.StringVar(value="0")
-        jump_picker = ttk.Combobox(
+        # Combobox values are refilled per-rule by `_sync_pipeline_row` from
+        # the active pipeline's `stage_classes` length, so 5-stage and
+        # 10-stage pipelines both work without hardcoding.
+        self._jump_picker = ttk.Combobox(
             self._pipeline_row,
             textvariable=self._jump_var,
             values=["0", "1", "2", "3", "4"],
             width=3,
             state="readonly",
         )
-        jump_picker.pack(side="left", padx=(0, 18))
-        jump_picker.bind("<<ComboboxSelected>>", lambda _e: self._on_jump_to_stage())
+        self._jump_picker.pack(side="left", padx=(0, 18))
+        self._jump_picker.bind("<<ComboboxSelected>>", lambda _e: self._on_jump_to_stage())
         self._auto_promote_var = tk.BooleanVar(value=True)
         ttk.Checkbutton(
             self._pipeline_row,
@@ -542,11 +623,17 @@ class App(tk.Frame):
         self._preset_var = tk.StringVar(value="")
 
     def _sync_pipeline_row(self) -> None:
-        """Show the JUMP / AUTO-PROMOTE / DUR controls only for the pipeline rule."""
+        """Show the JUMP / AUTO-PROMOTE / DUR controls for any pipeline rule
+        (canonical or extended). The JUMP combobox values are refilled from
+        the rule's own ``stage_classes`` so 5- and 10-stage pipelines both
+        size correctly."""
         rule = self.engine.rule
-        if getattr(rule, "name", "") == "abiogenesis-pipeline":
+        is_pipeline = hasattr(rule, "stage_classes") and hasattr(rule, "set_stage")
+        if is_pipeline:
             if not self._pipeline_row.winfo_ismapped():
                 self._pipeline_row.pack(fill="x", pady=(8, 0), before=self._param_frame)
+            n = len(getattr(rule, "stage_classes", ()))
+            self._jump_picker.configure(values=[str(i) for i in range(n)])
             stage = getattr(self.engine.state, "current_stage", 0)
             self._jump_var.set(str(int(stage)))
             self._auto_promote_var.set(bool(getattr(rule, "auto_promote", True)))
@@ -581,6 +668,16 @@ class App(tk.Frame):
         rule = self.engine.rule
         if hasattr(rule, "stage_duration"):
             rule.stage_duration = max(1, d)
+
+    def _on_colorblind_toggle(self) -> None:
+        """Toggle CVD-safe mode. Propagate to the active rule (or pipeline
+        inner rule) so the next frame uses the alternative palette."""
+        self._colorblind_safe = bool(self._colorblind_var.get())
+        for target in (self.engine.rule, getattr(self.engine.state, "inner_rule", None)):
+            if target is not None and hasattr(target, "colorblind_safe"):
+                target.colorblind_safe = self._colorblind_safe
+        self._render()
+        self._update_status()
 
     def _reset_params(self) -> None:
         """Reset every slider on the active rule to its dataclass defaults."""
@@ -643,7 +740,7 @@ class App(tk.Frame):
                 to=spec.hi,
                 variable=var,
                 length=300,
-                command=lambda _v, s=spec: self._on_param_change(s),
+                command=lambda _v, s=spec: self._on_param_change(s),  # type: ignore[misc]
             ).pack(side="left", padx=(0, 8))
             ttk.Label(srow, textvariable=readout, style="Value.TLabel", width=7).pack(side="left")
 
@@ -750,6 +847,27 @@ class App(tk.Frame):
         )
         self.record_button.pack(side="right", padx=(0, 8))
 
+        # Timeline scrubber. Each step pushes a serialized state into a bounded
+        # ring; the user can drag back to inspect any captured frame and resume
+        # from there (stepping after a scrub truncates the future — timeline
+        # branches rather than overwriting).
+        srow = ttk.Frame(body)
+        srow.pack(fill="x", pady=(8, 0))
+        ttk.Label(srow, text="SCRUB", style="Apparatus.TLabel").pack(side="left", padx=(0, 8))
+        self._scrub_var = tk.DoubleVar(value=0)
+        self._scrub = ttk.Scale(
+            srow,
+            from_=0,
+            to=0,
+            variable=self._scrub_var,
+            orient="horizontal",
+            length=350,
+            command=lambda _v: self._on_scrub(),
+        )
+        self._scrub.pack(side="left", padx=(0, 8))
+        self._scrub_label_var = tk.StringVar(value="0 / 0")
+        ttk.Label(srow, textvariable=self._scrub_label_var, style="Value.TLabel", width=11).pack(side="left")
+
     def _build_register(self, parent: ttk.Frame) -> None:
         body = self._section(parent, "IV", "REGISTER")
 
@@ -825,9 +943,11 @@ class App(tk.Frame):
             ("stage2", "Stage 2 — Autocatalytic sets"),
             ("stage3", "Stage 3 — Vesicle formation"),
             ("stage4", "Stage 4 — Protocell selection"),
+            ("stage7", "Stage VIII — Genetic code"),
+            ("stage11", "Stage XII — LUCA distillation"),
             ("poster", "Chemistry into life — full arc"),
         ):
-            gallerymenu.add_command(label=label, command=lambda k=key: self._open_gallery(k))
+            gallerymenu.add_command(label=label, command=lambda k=key: self._open_gallery(k))  # type: ignore[misc]
         gallerymenu.add_separator()
         gallerymenu.add_command(
             label="Hero — Gray-Scott close-up", command=lambda: self._open_gallery("hero")
@@ -836,12 +956,38 @@ class App(tk.Frame):
         gallerymenu.add_command(
             label="Prima Materia — Plate XII", command=lambda: self._open_gallery("prima")
         )
+        gallerymenu.add_command(
+            label="Genesis — twelve-stage arc",
+            command=lambda: self._open_gallery("genesis"),
+        )
+        gallerymenu.add_command(
+            label="Twelve Tableaux — pipeline plate",
+            command=lambda: self._open_gallery("tableaux"),
+        )
         gallerymenu.add_separator()
         gallerymenu.add_command(label="Reaction network (Stage 2 RAF)…", command=self._open_network_view)
         menubar.add_cascade(label="Gallery", menu=gallerymenu)
 
+        viewmenu = tk.Menu(menubar, tearoff=0)
+        for label, scale in (
+            ("Small text", 0.85),
+            ("Default text", 1.0),
+            ("Large text", 1.20),
+            ("Extra-large text", 1.40),
+        ):
+            viewmenu.add_command(label=label, command=lambda s=scale: self._apply_font_scale(s))  # type: ignore[misc]
+        viewmenu.add_separator()
+        self._colorblind_var = tk.BooleanVar(value=False)
+        viewmenu.add_checkbutton(
+            label="Colour-blind safe palette",
+            variable=self._colorblind_var,
+            command=self._on_colorblind_toggle,
+        )
+        menubar.add_cascade(label="View", menu=viewmenu)
+
         helpmenu = tk.Menu(menubar, tearoff=0)
         helpmenu.add_command(label="Start tutorial", command=self._tutorial_start)
+        helpmenu.add_command(label="Keyboard shortcuts…", command=self._show_keyboard_help)
         helpmenu.add_command(label="About", command=self._about)
         menubar.add_cascade(label="Help", menu=helpmenu)
 
@@ -850,6 +996,20 @@ class App(tk.Frame):
         self.master_window.bind_all("<Control-o>", lambda _e: self._open_snapshot())
         self.master_window.bind_all("<Control-s>", lambda _e: self._save_snapshot())
         self.master_window.bind_all("<Control-q>", lambda _e: self._quit())
+        # Single-key transport/navigation shortcuts (guarded against text-entry
+        # focus so typing in a Spinbox/Combobox isn't hijacked).
+        for keysym, handler in (
+            ("<space>", self._key_play_pause),
+            ("<Right>", self._key_step),
+            ("<r>", self._key_restart),
+            ("<R>", self._key_restart),
+            ("<p>", self._key_promote),
+            ("<P>", self._key_promote),
+            ("<bracketleft>", self._key_prev_stage),
+            ("<bracketright>", self._key_next_stage),
+            ("<Escape>", self._key_dismiss_card),
+        ):
+            self.master_window.bind_all(keysym, handler)
         self.master_window.protocol("WM_DELETE_WINDOW", self._quit)
 
     # ── Engine control ──────────────────────────────────────────────────────
@@ -878,12 +1038,115 @@ class App(tk.Frame):
             rule._step_count = 0
         self.engine.state = rule.init_state(self.engine.width, self.engine.height)
         self.engine.step_count = 0
-        self._stats_history.clear()
         self._init_renderer()
         self._render()
         self._update_status()
         self._rebuild_parameters()
         self._sync_pipeline_row()
+        self._stats_history.clear()
+        self._state_history.clear()
+        self._record_state_snapshot()  # seed step 0 so the scrubber has a baseline
+        self._clear_chapter_card()
+
+    # ── Keyboard shortcuts ──────────────────────────────────────────────────
+
+    _TEXT_ENTRY_CLASSES = frozenset(
+        {
+            "Entry",
+            "TEntry",
+            "Spinbox",
+            "TSpinbox",
+            "Combobox",
+            "TCombobox",
+            "Text",
+        }
+    )
+
+    def _ignore_if_text_entry(self, event: tk.Event) -> bool:
+        widget = getattr(event, "widget", None)
+        try:
+            cls = widget.winfo_class() if widget else ""
+        except (AttributeError, tk.TclError):
+            cls = ""
+        return cls in self._TEXT_ENTRY_CLASSES
+
+    def _key_play_pause(self, event: tk.Event) -> None:
+        if self._ignore_if_text_entry(event):
+            return
+        if self.running:
+            self._stop()
+        else:
+            self._play()
+
+    def _key_step(self, event: tk.Event) -> None:
+        if self._ignore_if_text_entry(event):
+            return
+        if not self.running:
+            self._step_once()
+
+    def _key_restart(self, event: tk.Event) -> None:
+        if self._ignore_if_text_entry(event):
+            return
+        self._restart()
+
+    def _key_promote(self, event: tk.Event) -> None:
+        if self._ignore_if_text_entry(event):
+            return
+        self._promote_stage()
+
+    def _key_prev_stage(self, event: tk.Event) -> None:
+        if self._ignore_if_text_entry(event):
+            return
+        self._step_stage(-1)
+
+    def _key_next_stage(self, event: tk.Event) -> None:
+        if self._ignore_if_text_entry(event):
+            return
+        self._step_stage(+1)
+
+    def _key_dismiss_card(self, event: tk.Event) -> None:
+        """Escape dismisses an in-progress chapter-card overlay immediately."""
+        self._clear_chapter_card()
+
+    def _step_stage(self, delta: int) -> None:
+        rule = self.engine.rule
+        if not (hasattr(rule, "set_stage") and hasattr(self.engine.state, "current_stage")):
+            return
+        rule.set_stage(self.engine.state, self.engine.state.current_stage + delta)
+        self._init_renderer()
+        self._render()
+        self._update_status()
+
+    def _show_keyboard_help(self) -> None:
+        dlg = tk.Toplevel(self.master_window)
+        dlg.title("Keyboard shortcuts")
+        dlg.configure(background=BG)
+        dlg.transient(self.master_window)
+        body = ttk.Frame(dlg, padding=(22, 18))
+        body.pack(fill="both", expand=True)
+        ttk.Label(body, text="KEYBOARD  SHORTCUTS", style="Eyebrow.TLabel").pack(anchor="w")
+        for key, what in (
+            ("Space", "Play / Pause"),
+            ("→  (Right arrow)", "Single step (when paused)"),
+            ("R", "Restart to step 0"),
+            ("P", "Promote stage (forward)"),
+            ("[  /  ]", "Pipeline stage: previous / next"),
+            ("Ctrl+N", "New run (reseed)"),
+            ("Ctrl+O", "Open snapshot"),
+            ("Ctrl+S", "Save snapshot"),
+            ("Ctrl+Q", "Quit"),
+        ):
+            r = ttk.Frame(body)
+            r.pack(fill="x", pady=(6, 0))
+            ttk.Label(r, text=key, style="Value.TLabel", width=16).pack(side="left")
+            ttk.Label(r, text=what, style="Apparatus.TLabel").pack(side="left")
+        ttk.Label(
+            body,
+            style="Caption.TLabel",
+            wraplength=420,
+            justify="left",
+            text="Shortcuts are suppressed while a Spinbox or Combobox has focus, so editing slider values doesn't trigger transport actions.",
+        ).pack(anchor="w", pady=(14, 0))
 
     def _promote_stage(self) -> None:
         rule = self.engine.rule
@@ -902,6 +1165,7 @@ class App(tk.Frame):
         self._render()
         self._update_status()
         self._record_stats_sample()
+        self._record_state_snapshot()
         self._maybe_capture_frame()
 
     def _record_stats_sample(self) -> None:
@@ -910,6 +1174,71 @@ class App(tk.Frame):
         self._stats_history.append(sample)
         if len(self._stats_history) > self._stats_history_cap:
             del self._stats_history[: len(self._stats_history) - self._stats_history_cap]
+
+    def _record_state_snapshot(self) -> None:
+        """Push a serialized snapshot of the engine state into the scrub ring.
+        If we are downstream of a scrubbed-back position (the current step is
+        earlier than the buffer's tail), the future is truncated first so a new
+        step after a scrub creates a fresh timeline branch."""
+        if self._scrubbing:
+            return
+        step = int(self.engine.step_count)
+        # Drop any "future" beyond this step that's left over from a scrub-back.
+        while self._state_history and self._state_history[-1]["step"] >= step:
+            self._state_history.pop()
+        try:
+            snap = self.engine.rule.serialize_state(self.engine.state)
+        except Exception:  # noqa: BLE001
+            return
+        self._state_history.append({"step": step, "state": snap})
+        if len(self._state_history) > self._state_history_cap:
+            del self._state_history[: len(self._state_history) - self._state_history_cap]
+        self._sync_scrub_widget(active=len(self._state_history) - 1)
+
+    def _sync_scrub_widget(self, active: int | None = None) -> None:
+        """Keep the SCRUB Scale range and label aligned with the ring buffer."""
+        n = len(self._state_history)
+        hi = max(n - 1, 0)
+        self._scrub.configure(to=hi)
+        if active is None:
+            active = int(self._scrub_var.get())
+        active = max(0, min(active, hi))
+        # Set the var WITHOUT triggering the scrub callback.
+        self._scrubbing = True
+        try:
+            self._scrub_var.set(active)
+        finally:
+            self._scrubbing = False
+        if n:
+            step = self._state_history[active]["step"]
+            tail = self._state_history[-1]["step"]
+            self._scrub_label_var.set(f"{step} / {tail}")
+        else:
+            self._scrub_label_var.set("0 / 0")
+
+    def _on_scrub(self) -> None:
+        """Restore engine state to the buffer entry the user dragged to.
+        ``_scrubbing`` guards against re-entrance from programmatic Scale
+        updates."""
+        if self._scrubbing or not self._state_history:
+            return
+        self._scrubbing = True
+        try:
+            self._stop()
+            idx = max(0, min(int(self._scrub_var.get()), len(self._state_history) - 1))
+            entry = self._state_history[idx]
+            try:
+                self.engine.state = self.engine.rule.deserialize_state(entry["state"])
+            except Exception:  # noqa: BLE001
+                return
+            self.engine.step_count = entry["step"]
+            self._init_renderer()
+            self._render()
+            self._update_status()
+            tail = self._state_history[-1]["step"]
+            self._scrub_label_var.set(f"{entry['step']} / {tail}")
+        finally:
+            self._scrubbing = False
 
     def _play(self) -> None:
         if self.running:
@@ -939,18 +1268,96 @@ class App(tk.Frame):
 
     def _animate(self) -> None:
         """Continuous ~20 fps tick so the amoeba colony breathes/blinks even
-        while the simulation is paused. Independent of the sim step loop."""
+        while the simulation is paused. Independent of the sim step loop.
+
+        The chapter-card fade timer ticks FIRST (and unconditionally), so a
+        transient TclError inside ``renderer.animate`` can't leave a card
+        pinned to the canvas forever."""
         self._anim_frame += 1
+        if self._chapter_card_ticks_left > 0:
+            self._chapter_card_ticks_left -= 1
+            if self._chapter_card_ticks_left == 0:
+                try:
+                    self.canvas.delete("chapter_card")
+                except tk.TclError:
+                    pass
         renderer = self._renderer
         if isinstance(renderer, DiscreteRenderer) and renderer.animated:
             try:
                 renderer.animate(self._anim_frame)
             except tk.TclError:
-                return
+                pass  # don't return — we still need to reschedule the next tick
         try:
             self.master_window.after(50, self._animate)
         except tk.TclError:
             return
+
+    def _clear_chapter_card(self) -> None:
+        """Hide any in-progress chapter card immediately (reset the fade timer
+        and remove the canvas items). Called on RESEED / RESTART / new engine
+        and on Escape so the old chapter's title doesn't bleed into the next."""
+        self._chapter_card_ticks_left = 0
+        try:
+            self.canvas.delete("chapter_card")
+        except tk.TclError:
+            pass
+
+    def _show_chapter_card(self, stage: int, info: Any) -> None:
+        """Display a brief title/principle overlay on the canvas when a new
+        stage begins. Fades automatically via the `_animate` countdown."""
+        try:
+            self.canvas.delete("chapter_card")
+        except tk.TclError:
+            return
+        cx = CANVAS_SIZE // 2
+        cy = CANVAS_SIZE // 2
+        w, h = 460, 170
+        x0, y0 = cx - w // 2, cy - h // 2
+        x1, y1 = cx + w // 2, cy + h // 2
+        # Dimmed plate so the card reads on top of any field background.
+        self.canvas.create_rectangle(
+            x0, y0, x1, y1, fill="#0a0e16", outline=HAIRLINE_HI, width=2, tags="chapter_card"
+        )
+        self.canvas.create_text(
+            cx,
+            y0 + 22,
+            anchor="n",
+            fill=TEXT_DIM,
+            font=self._font_eyebrow,
+            text=f"CHAPTER  {stage}",
+            tags="chapter_card",
+        )
+        self.canvas.create_text(
+            cx,
+            y0 + 52,
+            anchor="n",
+            fill=TEXT,
+            font=self._font_section_num,
+            text=info.title,
+            tags="chapter_card",
+        )
+        self.canvas.create_text(
+            cx,
+            y0 + 92,
+            anchor="n",
+            fill=TEXT_DIM,
+            font=self._font_caption,
+            width=w - 32,
+            justify="center",
+            text=info.principle,
+            tags="chapter_card",
+        )
+        self.canvas.create_text(
+            cx,
+            y1 - 18,
+            anchor="s",
+            fill=TEXT_DIM,
+            font=self._font_eyebrow,
+            text=info.citation,
+            tags="chapter_card",
+        )
+        self.canvas.tag_raise("chapter_card")
+        self._chapter_card_ticks_left = self._chapter_card_duration
 
     def _quit(self) -> None:
         self.running = False
@@ -1060,7 +1467,7 @@ class App(tk.Frame):
         kind = getattr(rule, "renderer_kind", "discrete")
         if kind == "field":
             arr = rule.render_rgb(self.engine.state)
-            img = Image.fromarray(arr, "RGB").resize((CANVAS_SIZE, CANVAS_SIZE), Image.NEAREST)
+            img = Image.fromarray(arr, "RGB").resize((CANVAS_SIZE, CANVAS_SIZE), Image.Resampling.NEAREST)
         else:
             w, h = self._state_dims()
             cw, ch = CANVAS_SIZE / w, CANVAS_SIZE / h
@@ -1150,7 +1557,7 @@ class App(tk.Frame):
             self._render()
             progress_var.set(i + 1)
             status_lbl.config(text=f"frame {i + 1:02d} / {n_frames}")
-            self.after(1, lambda _i=i: capture_frame(_i + 1))
+            self.after(1, lambda _i=i: capture_frame(_i + 1))  # type: ignore[misc]
 
         self.after(10, lambda: capture_frame(0))
 
@@ -1261,7 +1668,105 @@ class App(tk.Frame):
             "docs/generated/pipeline_poster.png",
             (1100, 458),
         ),
+        "stage7": (
+            "THE CODON TABLE",
+            "PLATE  ·  STAGE  VIII",
+            "Genetic-code coevolution: random codes → partial consensus → "
+            "crystallised code. The teal cell marks the first locked-in "
+            "codon → amino-acid assignment. Vetsigian-Woese-Goldenfeld 2006.",
+            "docs/generated/stage7_genetic_code_plate.png",
+            (900, 1125),
+        ),
+        "stage11": (
+            "THE CONSERVED CORE",
+            "PLATE  ·  STAGE  XII",
+            "LUCA distillation: gene-coverage field, the inferred 70%-prevalence "
+            "core gene set as a teal-marked constellation, and the rooted tree "
+            "of descent. Weiss et al. 2016.",
+            "docs/generated/stage11_luca_plate.png",
+            (900, 1125),
+        ),
+        "genesis": (
+            "GENESIS",
+            "PLATE  XIII  ·  MMXXVI",
+            "Twelve observations on the coalescence of chemistry into life — "
+            "the project's magnum opus. Every panel is real cellauto simulator "
+            "output, stylised to the Catalytic Silence palette.",
+            "docs/genesis.png",
+            (740, 1141),
+        ),
+        "tableaux": (
+            "TWELVE TABLEAUX",
+            "PLATE  ·  THE PIPELINE",
+            "12 panels reading left to right as a single procession through the "
+            "chemistry-to-life arc. Generated via the whipgen MCP. Pairs with "
+            "the deterministic Genesis plate.",
+            "docs/generated/cellauto_twelve_tableaux.png",
+            (1200, 675),
+        ),
     }
+
+    def _on_canvas_click(self, event: tk.Event) -> None:
+        """If a Stage 4 ``Protocell`` lives under the click, open the inspector.
+        Works for both the direct stage rule and the pipeline at stage 4."""
+        state = self.engine.state
+        sel = getattr(state, "inner_state", None) or state
+        cells = getattr(sel, "cells", None)
+        if not cells:
+            return
+        w, h = self._state_dims()
+        gx = event.x / max(1.0, CANVAS_SIZE / w)
+        gy = event.y / max(1.0, CANVAS_SIZE / h)
+        for i, c in enumerate(cells):
+            if not getattr(c, "alive", True):
+                continue
+            if (gx - c.cx) ** 2 + (gy - c.cy) ** 2 <= c.radius**2:
+                self._show_protocell_inspector(i, c)
+                return
+
+    def _show_protocell_inspector(self, index: int, cell: Any) -> None:
+        """Toplevel detail panel for one ``Protocell`` — surfaces the otherwise
+        hidden genome, fitness, age, and radius so a learner can see *why* a
+        disc is bright or dim and *what* is being selected on."""
+        dlg = tk.Toplevel(self.master_window)
+        dlg.title(f"Protocell #{index}")
+        dlg.configure(background=BG)
+        dlg.transient(self.master_window)
+        body = ttk.Frame(dlg, padding=(22, 18))
+        body.pack(fill="both", expand=True)
+        ttk.Label(body, text=f"PROTOCELL  ·  #{index}", style="Eyebrow.TLabel").pack(anchor="w")
+
+        def row(label: str, value: str) -> None:
+            r = ttk.Frame(body)
+            r.pack(fill="x", pady=(6, 0))
+            ttk.Label(r, text=label, style="Apparatus.TLabel", width=12).pack(side="left")
+            ttk.Label(r, text=value, style="Value.TLabel").pack(side="left")
+
+        row("position", f"({cell.cx:.1f}, {cell.cy:.1f})")
+        row("radius", f"{cell.radius:.2f}")
+        row("age", f"{cell.age} steps")
+        try:
+            fit = float(cell.fitness())
+        except Exception:  # noqa: BLE001
+            fit = 0.0
+        row("fitness", f"{fit:.4f}")
+        genome_txt = "  ".join(f"{float(g):+.3f}" for g in cell.genome)
+        ttk.Label(body, text="genome", style="Apparatus.TLabel").pack(anchor="w", pady=(8, 0))
+        ttk.Label(body, text=genome_txt, style="Value.TLabel", wraplength=420, justify="left").pack(
+            anchor="w"
+        )
+        ttk.Label(
+            body,
+            style="Caption.TLabel",
+            wraplength=420,
+            justify="left",
+            text=(
+                "Each genome entry is one internal species concentration. "
+                "Fitness is the hypercycle-flavoured cyclic coupling "
+                "Σ g[i]·g[(i+1) mod n] — zero if any species is missing, "
+                "maximal at equal concentrations."
+            ),
+        ).pack(anchor="w", pady=(10, 0))
 
     def _open_network_view(self) -> None:
         """Render and show the current Stage 2 reaction network with its RAF
@@ -1290,7 +1795,7 @@ class App(tk.Frame):
         ttk.Label(body, text="AUTOCATALYTIC SET", style="Eyebrow.TLabel").pack(anchor="w")
         photo = tk.PhotoImage(file=str(tmp))
         lbl = ttk.Label(body, image=photo)
-        lbl.image = photo  # keep a reference so it isn't garbage-collected
+        lbl.image = photo  # type: ignore[attr-defined]  # GC-pin; Label has no formal attr
         lbl.pack(pady=(8, 8))
         ttk.Label(
             body,
@@ -1442,14 +1947,18 @@ class App(tk.Frame):
         if stage is None:
             self._displayed_stage = None
             return
-        info = stage_info(stage)
+        # Use the active rule's own stage_info table (the canonical 5-stage
+        # pipeline and the 10-stage extended pipeline carry different infos);
+        # fall back to the module-level table for backward compatibility.
+        rule = self.engine.rule
+        info = rule.stage_info_for(stage) if hasattr(rule, "stage_info_for") else stage_info(stage)
         self.canvas.create_text(
             14,
             12,
             anchor="nw",
             fill=TEXT,
             font=self._font_eyebrow,
-            text=f"STAGE {info.index} · {info.title}",
+            text=f"STAGE {stage} · {info.title}",
             tags="stage_overlay",
         )
         self.canvas.create_text(
@@ -1471,9 +1980,13 @@ class App(tk.Frame):
             self._tutorial_index = -1
             self.tutorial_var.set(f"{info.principle}  —  {info.detail}  ({info.citation})")
             # The pipeline's inner rule changed, so refresh the parameter sliders
-            # and the JUMP combobox.
+            # and the JUMP combobox, and propagate the CVD-safe flag.
+            inner = getattr(self.engine.state, "inner_rule", None)
+            if inner is not None and hasattr(inner, "colorblind_safe"):
+                inner.colorblind_safe = self._colorblind_safe
             self._rebuild_parameters()
             self._sync_pipeline_row()
+            self._show_chapter_card(stage, info)
 
     def _draw_sparkline(self) -> None:
         """Tiny line plot of the most recent population samples for the first
@@ -1531,7 +2044,13 @@ class App(tk.Frame):
         y_top, y_bot = 44, CANVAS_SIZE - 44
         n = 48
         if name == "abiogenesis-stage4-selection":
-            colors = [(int(255 * (1 - t)), int(255 * t), 0) for t in np.linspace(0, 1, n)]
+            if self._colorblind_safe:
+                colors = [
+                    (int(40 + 200 * t), int(80 + 120 * t), int(180 * (1 - t) + 40 * t))
+                    for t in np.linspace(0, 1, n)
+                ]
+            else:
+                colors = [(int(255 * (1 - t)), int(255 * t), 0) for t in np.linspace(0, 1, n)]
             hi_label, lo_label = "fit 1", "fit 0"
         elif name == "abiogenesis-homochirality":
             # Diverging map: teal (L) at top ↔ magenta (R) at bottom.
@@ -1570,16 +2089,26 @@ class App(tk.Frame):
                 tags="legend_bar",
             )
         self.canvas.create_rectangle(x0, y_top, x1, y_bot, outline=HAIRLINE, tags="legend_bar")
-        for label, y, anchor in ((hi_label, y_top, "se"), (lo_label, y_bot, "ne")):
-            self.canvas.create_text(
-                x0 - 5,
-                y,
-                anchor=anchor,
-                fill=TEXT_DIM,
-                font=self._font_eyebrow,
-                text=label,
-                tags="legend_bar",
-            )
+        # Unrolled (the two end labels) so the anchor stays a Literal rather
+        # than collapsing to plain `str` through a loop variable.
+        self.canvas.create_text(
+            x0 - 5,
+            y_top,
+            anchor="se",
+            fill=TEXT_DIM,
+            font=self._font_eyebrow,
+            text=hi_label,
+            tags="legend_bar",
+        )
+        self.canvas.create_text(
+            x0 - 5,
+            y_bot,
+            anchor="ne",
+            fill=TEXT_DIM,
+            font=self._font_eyebrow,
+            text=lo_label,
+            tags="legend_bar",
+        )
         self.canvas.tag_raise("legend_bar")
 
 
