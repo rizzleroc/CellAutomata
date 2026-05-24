@@ -1,0 +1,74 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>cellauto — web sandbox</title>
+    <link rel="stylesheet" href="/static/style.css" />
+  </head>
+  <body>
+    <header>
+      <h1>cellauto</h1>
+      <p class="subtitle">
+        Scientifically-grounded cellular sandbox — abiogenesis pipeline,
+        Conway, Wolfram 1D. Web wrapper around the same Python engine the
+        desktop GUI uses.
+      </p>
+    </header>
+
+    <main>
+      <section class="controls">
+        <div class="control-row">
+          <label>
+            Rule
+            <select id="rule"></select>
+          </label>
+          <label>
+            Grid
+            <input id="grid" type="number" min="8" max="240" step="4" value="80" />
+          </label>
+          <label>
+            Seed
+            <input id="seed" type="number" placeholder="random" />
+          </label>
+        </div>
+
+        <div class="control-row">
+          <button id="play" type="button">▶ Play</button>
+          <button id="step" type="button">Step</button>
+          <button id="reset" type="button">Reset</button>
+          <label class="speed">
+            Speed
+            <input id="speed" type="range" min="1" max="60" value="20" />
+            <span id="speed-label">20/s</span>
+          </label>
+        </div>
+
+        <div id="stats" class="stats">
+          <span><strong>step:</strong> <span id="step-count">0</span></span>
+          <span><strong>fps:</strong> <span id="fps">0</span></span>
+          <span><strong>seed:</strong> <span id="seed-out">—</span></span>
+        </div>
+      </section>
+
+      <section class="stage">
+        <canvas id="canvas" width="600" height="600"></canvas>
+        <div id="population" class="population"></div>
+      </section>
+
+      <section class="tutorial">
+        <h2 id="tutorial-title">About this rule</h2>
+        <ol id="tutorial-body"></ol>
+      </section>
+    </main>
+
+    <footer>
+      <p>
+        See <a href="https://github.com/rizzleroc/CellAutomata">GitHub</a>
+        for citations and the Python source.
+      </p>
+    </footer>
+
+    <script src="/static/app.js"></script>
+  </body>
+</html>

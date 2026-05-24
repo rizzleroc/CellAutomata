@@ -5,6 +5,21 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ---
 
+## [Unreleased]
+
+### Added — browser sandbox
+
+- **`cellauto web` subcommand.** A Flask server (`cellauto/web/server.py`)
+  wraps the existing `Engine` and exposes every rule in the registry over a
+  small JSON API; a single-page vanilla-JS frontend (`cellauto/web/static/`)
+  drives it. Rule picker, grid size, seed input, play/pause/step, speed
+  slider, per-rule tutorial copy, live population stats — same engine the
+  desktop GUI uses, no Pyodide, no per-rule reimplementation. Frames are
+  rendered server-side via each rule's existing `render_rgb` and shipped
+  as PNGs. Flask is opt-in: `pip install -e ".[web]"`.
+
+---
+
 ## [3.4.0] — 2026-05-23
 
 The "closing the honest gaps" release. The v3.2/v3.3 cycles fixed correctness
