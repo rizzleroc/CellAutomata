@@ -380,15 +380,24 @@ def test_session_carries_a_threading_lock():
 
 
 def test_dropdown_label_includes_stage_title(client):
-    """The frontend wants to label stage 0 as e.g. "0 — Primordial soup"
-    instead of bare "0", so the server must include `title` in stage_info."""
+    """The frontend wants to label every stage option as e.g.
+    "0 — Primordial soup", not just the currently-selected one. The
+    server must therefore include a `stages` array with each stage's
+    title alongside the current stage's metadata."""
     sid = client.post(
         "/api/sessions",
         json={"rule": "abiogenesis-pipeline", "grid": 16, "seed": 1},
     ).get_json()["session_id"]
     body = client.get(f"/api/sessions/{sid}").get_json()
-    assert "stage_info" in body
-    assert body["stage_info"]["title"]
-    # After a promote, the title must change to the new stage's name.
+    info = body["stage_info"]
+    assert info["title"]
+    assert isinstance(info["stages"], list)
+    assert len(info["stages"]) == info["total_stages"]
+    # Every stage must carry a non-empty title (the frontend labels them all).
+    titles = [s["title"] for s in info["stages"]]
+    assert all(titles), titles
+    # And after a promote, the *current* title changes (the stages list
+    # itself stays the same — it's the pipeline definition, not state).
     promoted = client.post(f"/api/sessions/{sid}/promote").get_json()
-    assert promoted["stage_info"]["title"] != body["stage_info"]["title"]
+    assert promoted["stage_info"]["title"] != info["title"]
+    assert promoted["stage_info"]["stages"] == info["stages"]

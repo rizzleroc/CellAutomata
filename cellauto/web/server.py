@@ -149,6 +149,14 @@ def _stage_info(engine: Engine) -> dict | None:
     if not hasattr(rule, "stage_info_for") or not hasattr(state, "current_stage"):
         return None
     info = rule.stage_info_for(state.current_stage)
+    total = len(getattr(rule, "stage_classes", ()))
+    # Surface every stage's title so the frontend can label the full stage
+    # dropdown ("0 — Primordial soup" / "1 — Reaction-diffusion" / …) rather
+    # than only the currently-selected one.
+    stages = []
+    for i in range(total):
+        si = rule.stage_info_for(i)
+        stages.append({"index": i, "title": si.title})
     return {
         "index": info.index,
         "title": info.title,
@@ -157,7 +165,8 @@ def _stage_info(engine: Engine) -> dict | None:
         "citation": info.citation,
         "legend": info.legend,
         "current_stage": state.current_stage,
-        "total_stages": len(getattr(rule, "stage_classes", ())),
+        "total_stages": total,
+        "stages": stages,
         "auto_promote": bool(getattr(rule, "auto_promote", False)),
         "stage_duration": int(getattr(rule, "stage_duration", 0)),
     }

@@ -176,29 +176,33 @@ function showStageBanner(info) {
 
 function populateStageControls(info) {
   els.stageWrap.hidden = false;
-  // Rebuild the stage dropdown when the pipeline changes length OR when
-  // the current stage's name doesn't match what's already there (e.g.
-  // switching from the 5-stage to the 12-stage extended pipeline).
-  const want = info.total_stages;
-  const have = els.stageSelect.options.length;
-  if (have !== want) {
+  // Title-case so "PRIMORDIAL SOUP" reads as "Primordial soup" — the
+  // server emits the museum-card uppercase form for the banner; the
+  // dropdown looks calmer in sentence case.
+  const niceTitle = (s) => {
+    const lower = String(s || "").toLowerCase();
+    return lower.charAt(0).toUpperCase() + lower.slice(1);
+  };
+  const stages =
+    Array.isArray(info.stages) && info.stages.length
+      ? info.stages
+      : Array.from({ length: info.total_stages }, (_, i) => ({
+          index: i,
+          title: i === info.current_stage ? info.title : "",
+        }));
+  const want = stages.length;
+  if (els.stageSelect.options.length !== want) {
     els.stageSelect.innerHTML = "";
-    for (let i = 0; i < want; i++) {
+    for (const s of stages) {
       const opt = document.createElement("option");
-      opt.value = String(i);
-      // Title is only available for the current stage; fill in once
-      // selected — until then show index only. The current stage gets
-      // the friendly name appended.
-      opt.textContent = i === info.current_stage ? `${i} — ${info.title}` : String(i);
+      opt.value = String(s.index);
       els.stageSelect.appendChild(opt);
     }
-  } else {
-    // Refresh the label on whichever option is current so the dropdown
-    // always shows the descriptive title.
-    for (const opt of els.stageSelect.options) {
-      const idx = Number(opt.value);
-      opt.textContent = idx === info.current_stage ? `${idx} — ${info.title}` : String(idx);
-    }
+  }
+  for (const opt of els.stageSelect.options) {
+    const idx = Number(opt.value);
+    const title = stages[idx] && stages[idx].title;
+    opt.textContent = title ? `${idx} — ${niceTitle(title)}` : String(idx);
   }
   els.stageSelect.value = String(info.current_stage);
   els.autoPromote.checked = info.auto_promote;
