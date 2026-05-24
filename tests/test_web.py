@@ -73,9 +73,9 @@ def test_field_rule_renders_png(client):
 
 
 def test_reset_replaces_engine(client):
-    sid = client.post(
-        "/api/sessions", json={"rule": "conway", "grid": 12, "seed": 1}
-    ).get_json()["session_id"]
+    sid = client.post("/api/sessions", json={"rule": "conway", "grid": 12, "seed": 1}).get_json()[
+        "session_id"
+    ]
     client.post(f"/api/sessions/{sid}/step", json={"n": 5})
     res = client.post(
         f"/api/sessions/{sid}/reset",
@@ -100,9 +100,9 @@ def test_oversized_grid_rejected(client):
 
 
 def test_step_clamped(client):
-    sid = client.post(
-        "/api/sessions", json={"rule": "conway", "grid": 12, "seed": 1}
-    ).get_json()["session_id"]
+    sid = client.post("/api/sessions", json={"rule": "conway", "grid": 12, "seed": 1}).get_json()[
+        "session_id"
+    ]
     res = client.post(f"/api/sessions/{sid}/step", json={"n": 10_000})
     assert res.status_code == 400
 

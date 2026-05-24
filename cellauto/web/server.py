@@ -162,9 +162,7 @@ def build_app() -> Any:
         from flask import Flask, abort, jsonify, request, send_from_directory
     except ImportError as e:
         raise SystemExit(
-            "The web server needs Flask. Install with:\n"
-            "    pip install -e \".[web]\"\n"
-            "or: pip install flask"
+            'The web server needs Flask. Install with:\n    pip install -e ".[web]"\nor: pip install flask'
         ) from e
 
     from pathlib import Path
@@ -173,20 +171,24 @@ def build_app() -> Any:
     app = Flask(__name__, static_folder=str(static_dir), static_url_path="/static")
     store = _SessionStore()
 
+    def _require(sid: str) -> _Session:
+        """Fetch a session or 404. Extracted so mypy can see the non-None
+        return path; ``flask.abort`` is typed as ``NoReturn`` upstream but
+        CI runs mypy with ``--ignore-missing-imports`` so the assert keeps
+        the narrowing explicit."""
+        s = store.get(sid)
+        if s is None:
+            abort(404)
+        assert s is not None
+        return s
+
     @app.get("/")
     def index() -> Any:
         return send_from_directory(str(static_dir), "index.html")
 
     @app.get("/api/rules")
     def list_rules() -> Any:
-        return jsonify(
-            {
-                "rules": [
-                    {"name": name, "tutorial": list(tutorial_for(name))}
-                    for name in REGISTRY
-                ]
-            }
-        )
+        return jsonify({"rules": [{"name": name, "tutorial": list(tutorial_for(name))} for name in REGISTRY]})
 
     @app.post("/api/sessions")
     def create_session() -> Any:
@@ -205,16 +207,11 @@ def build_app() -> Any:
 
     @app.get("/api/sessions/<sid>")
     def get_session(sid: str) -> Any:
-        s = store.get(sid)
-        if s is None:
-            abort(404)
-        return jsonify(_state_summary(s.engine))
+        return jsonify(_state_summary(_require(sid).engine))
 
     @app.post("/api/sessions/<sid>/step")
     def step_session(sid: str) -> Any:
-        s = store.get(sid)
-        if s is None:
-            abort(404)
+        s = _require(sid)
         data = request.get_json(silent=True) or {}
         n = int(data.get("n", 1))
         if not (1 <= n <= MAX_STEPS_PER_REQUEST):
@@ -225,9 +222,7 @@ def build_app() -> Any:
 
     @app.post("/api/sessions/<sid>/reset")
     def reset_session(sid: str) -> Any:
-        s = store.get(sid)
-        if s is None:
-            abort(404)
+        s = _require(sid)
         data = request.get_json(silent=True) or {}
         try:
             engine = _make_engine(
@@ -249,10 +244,7 @@ def build_app() -> Any:
 
     @app.get("/api/sessions/<sid>/frame.png")
     def frame_png(sid: str) -> Any:
-        s = store.get(sid)
-        if s is None:
-            abort(404)
-        png = _render_png(s.engine)
+        png = _render_png(_require(sid).engine)
         # Cache-bust via query string from the client; tell intermediaries
         # not to cache so live frames don't get pinned.
         resp = app.response_class(png, mimetype="image/png")
