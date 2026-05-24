@@ -35,10 +35,15 @@ const els = {
   autoPromote: document.getElementById("auto-promote"),
   stageDuration: document.getElementById("stage-duration"),
 
-  stageBanner: document.getElementById("stage-banner"),
-  stageBannerIndex: document.getElementById("stage-banner-index"),
-  stageBannerTitle: document.getElementById("stage-banner-title"),
-  stageBannerCitation: document.getElementById("stage-banner-citation"),
+  // Wall-label stage display (left column)
+  stageEyebrow: document.getElementById("stage-eyebrow"),
+  stageTitleText: document.getElementById("stage-title-text"),
+  stageCitationText: document.getElementById("stage-citation-text"),
+  stageDetailText: document.getElementById("stage-detail-text"),
+  brandMark: document.getElementById("brand-mark"),
+  specimen: document.querySelector(".specimen"),
+  playIcon: document.getElementById("play-icon"),
+  playText: document.getElementById("play-text"),
 
   downloadSnapshot: document.getElementById("download-snapshot"),
   loadSnapshot: document.getElementById("load-snapshot"),
@@ -142,15 +147,83 @@ function applySummary(s) {
   renderPopulation(s.population);
 
   if (s.stage_info) {
-    showStageBanner(s.stage_info);
+    applyStageInfo(s.stage_info);
     populateStageControls(s.stage_info);
     showLegend(s.stage_info.legend);
     setStageTabVisible(true);
   } else {
-    els.stageBanner.hidden = true;
+    applyRuleInfo();
     setStageTabVisible(false);
     els.legend.hidden = true;
   }
+}
+
+function applyStageInfo(info) {
+  // The wall-label shows the active stage's museum info.
+  els.stageEyebrow.textContent = `Stage ${toRoman(info.current_stage)} · ${info.current_stage + 1} / ${info.total_stages}`;
+  els.stageTitleText.textContent = niceTitle(info.title);
+  els.stageCitationText.textContent = info.citation || "";
+  els.stageDetailText.textContent = info.detail || info.principle || "";
+}
+
+function applyRuleInfo() {
+  // For non-pipeline rules: the wall-label shows rule metadata sourced
+  // from the tutorial copy (first line is the tagline, the rest is detail).
+  const r = state.rulesByName.get(els.rule.value);
+  if (!r) return;
+  els.stageEyebrow.textContent = "Specimen";
+  els.stageTitleText.textContent = prettifyRuleName(r.name);
+  els.stageCitationText.textContent = "";
+  els.stageDetailText.textContent = r.tutorial[0] || "";
+}
+
+function prettifyRuleName(slug) {
+  // "abiogenesis-stage1-grayscott" → "Gray-Scott"
+  // "conway" → "Conway's Life"
+  // "wolfram1d" → "Wolfram 1D"
+  // "natural-selection" → "Natural Selection"
+  const map = {
+    "conway": "Conway's Life",
+    "wolfram1d": "Wolfram 1D",
+    "natural-selection": "Natural Selection",
+    "abiogenesis-pipeline": "Abiogenesis · Canonical",
+    "abiogenesis-pipeline-extended": "Abiogenesis · Extended",
+    "abiogenesis-stage0-soup": "Primordial Soup",
+    "abiogenesis-stage1-grayscott": "Gray-Scott",
+    "abiogenesis-stage2-raf": "Autocatalytic Sets",
+    "abiogenesis-stage3-vesicles": "Vesicles",
+    "abiogenesis-stage4-selection": "Protocell Selection",
+    "abiogenesis-rna-world": "RNA World",
+    "abiogenesis-homochirality": "Homochirality",
+    "abiogenesis-hydrothermal-vent": "Hydrothermal Vent",
+    "abiogenesis-coacervate": "Coacervate",
+    "abiogenesis-mineral-catalysis": "Mineral Catalysis",
+    "abiogenesis-genetic-code": "Genetic Code",
+    "abiogenesis-luca": "LUCA",
+  };
+  return map[slug] || slug;
+}
+
+function toRoman(n) {
+  const map = [
+    [1000, "M"], [900, "CM"], [500, "D"], [400, "CD"],
+    [100, "C"], [90, "XC"], [50, "L"], [40, "XL"],
+    [10, "X"], [9, "IX"], [5, "V"], [4, "IV"], [1, "I"],
+  ];
+  if (n === 0) return "0";
+  let s = "";
+  for (const [v, sym] of map) {
+    while (n >= v) { s += sym; n -= v; }
+  }
+  return s;
+}
+
+function niceTitle(s) {
+  // Server emits museum-card uppercase ("PRIMORDIAL SOUP"). Sentence-case
+  // it for the wall label so it reads as a title, not as a banner shout.
+  const lower = String(s || "").toLowerCase();
+  // Title-case each word, preserving hyphens.
+  return lower.replace(/(^|[\s\-–—·])([a-z])/g, (m, sep, ch) => sep + ch.toUpperCase());
 }
 
 function setStageTabVisible(visible) {
@@ -195,13 +268,6 @@ function renderPopulation(pop) {
     pair.append(ks, vs);
     els.population.append(pair);
   }
-}
-
-function showStageBanner(info) {
-  els.stageBanner.hidden = false;
-  els.stageBannerIndex.textContent = `Stage ${info.current_stage} / ${info.total_stages - 1}`;
-  els.stageBannerTitle.textContent = info.title;
-  els.stageBannerCitation.textContent = info.citation;
 }
 
 function populateStageControls(info) {
@@ -481,8 +547,7 @@ function effectiveHz() {
 function startLoop() {
   if (state.loopHandle) return;
   state.playing = true;
-  els.play.textContent = "⏸ pause";
-  els.play.classList.add("active");
+  setPlayingChrome(true);
   // Batch steps when the requested rate exceeds what a single
   // step→frame.png round-trip can sustain (~30 sps). At speed=60 we ask
   // the server for 2 steps then paint once, doubling effective throughput
@@ -505,8 +570,18 @@ async function stopLoop() {
     clearTimeout(state.loopHandle);
     state.loopHandle = null;
   }
-  els.play.textContent = "▶ play";
-  els.play.classList.remove("active");
+  setPlayingChrome(false);
+}
+
+function setPlayingChrome(on) {
+  // Centralise all the chrome that reflects playing/paused state.
+  // The brand-mark pulses, the canvas vitrine gets a stronger glow,
+  // the Play button label flips to Pause.
+  els.play.classList.toggle("active", on);
+  if (els.playIcon) els.playIcon.textContent = on ? "⏸" : "▶";
+  if (els.playText) els.playText.textContent = on ? "pause" : "play";
+  if (els.brandMark) els.brandMark.classList.toggle("playing", on);
+  if (els.specimen) els.specimen.classList.toggle("playing", on);
 }
 
 async function downloadSnapshot() {
