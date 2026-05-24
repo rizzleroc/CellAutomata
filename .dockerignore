@@ -1,0 +1,28 @@
+# Don't ignore README.md / LICENSE — setuptools reads them from
+# pyproject.toml and the Dockerfile copies them explicitly.
+# Don't ignore cellauto/assets/*.png — they're declared package data.
+
+.git
+.github
+.gitignore
+.dockerignore
+Dockerfile
+CHANGELOG.md
+PRD.md
+manual.md
+docs
+tests
+tools
+exports
+snapshots
+__pycache__
+*.pyc
+*.pyo
+.pytest_cache
+.coverage
+.mypy_cache
+.ruff_cache
+*.egg-info
+build
+dist
+main.py

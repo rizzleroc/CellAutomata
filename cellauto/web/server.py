@@ -186,6 +186,12 @@ def build_app() -> Any:
     def index() -> Any:
         return send_from_directory(str(static_dir), "index.html")
 
+    @app.get("/api/health")
+    def health() -> Any:
+        # Cheap liveness probe for Railway / load balancers. Doesn't touch
+        # the session store so an unhealthy store still gets restarted.
+        return jsonify({"status": "ok", "rules": len(REGISTRY)})
+
     @app.get("/api/rules")
     def list_rules() -> Any:
         return jsonify({"rules": [{"name": name, "tutorial": list(tutorial_for(name))} for name in REGISTRY]})

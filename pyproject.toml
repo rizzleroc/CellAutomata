@@ -34,6 +34,7 @@ dev = [
 ]
 web = [
     "flask>=3.0",
+    "gunicorn>=21.2",
 ]
 
 [project.scripts]
@@ -74,6 +75,7 @@ omit = [
     "cellauto/mascot.py",
     "cellauto/renderer.py",
     "cellauto/web/server.py",
+    "cellauto/web/wsgi.py",
 ]
 
 [tool.coverage.report]

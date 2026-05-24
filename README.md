@@ -122,6 +122,21 @@ control surface (rule picker, grid size, seed, play/pause/step, speed
 slider, per-rule tutorial). Frames are rendered server-side via each
 rule's existing `render_rgb` and streamed as PNGs.
 
+### Deploy `cellauto web` to Railway
+
+The repo ships a `Dockerfile` + `railway.toml` so Railway can host the
+full sandbox at a public URL:
+
+1. **New Project → Deploy from GitHub repo** → pick `CellAutomata`.
+2. Railway detects the `Dockerfile` and builds it. No env vars needed
+   — `$PORT` is injected by Railway and respected by the container.
+3. Under **Settings → Networking**, click **Generate Domain** to get
+   a public `*.up.railway.app` URL.
+4. Healthcheck is wired to `GET /api/health` (returns `{status: "ok"}`).
+
+Production runs `gunicorn cellauto.web.wsgi:app` with one worker + four
+threads (sessions live in-process — see `cellauto/web/wsgi.py`).
+
 ## Install
 
 ```bash

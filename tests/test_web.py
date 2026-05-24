@@ -111,3 +111,11 @@ def test_index_served(client):
     res = client.get("/")
     assert res.status_code == 200
     assert b"<canvas" in res.data
+
+
+def test_health_endpoint(client):
+    res = client.get("/api/health")
+    assert res.status_code == 200
+    body = res.get_json()
+    assert body["status"] == "ok"
+    assert body["rules"] > 0
