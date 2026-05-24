@@ -1,9 +1,10 @@
 // cellauto web client
 //
 // Drives the Flask backend: creates a session, ticks it on a timer, paints
-// the returned PNG into the canvas. State lives on the server (so the
-// existing Python rule code does all the science); this file is just the
-// view + controls.
+// the returned PNG into the canvas, and surfaces per-rule controls
+// (parameter sliders, presets, pipeline stage controls, snapshot save/load,
+// PNG + GIF export). State lives on the server (so the existing Python rule
+// code does all the science); this file is just the view + controls.
 
 const els = {
   rule: document.getElementById("rule"),
@@ -19,8 +20,39 @@ const els = {
   seedOut: document.getElementById("seed-out"),
   canvas: document.getElementById("canvas"),
   population: document.getElementById("population"),
+  legend: document.getElementById("legend"),
+
+  presetsWrap: document.getElementById("presets-wrap"),
+  presets: document.getElementById("presets"),
+
+  paramsWrap: document.getElementById("params-wrap"),
+  params: document.getElementById("params"),
+
+  stageWrap: document.getElementById("stage-wrap"),
+  stageSelect: document.getElementById("stage-select"),
+  promote: document.getElementById("promote"),
+  autoPromote: document.getElementById("auto-promote"),
+  stageDuration: document.getElementById("stage-duration"),
+
+  stageBanner: document.getElementById("stage-banner"),
+  stageBannerIndex: document.getElementById("stage-banner-index"),
+  stageBannerTitle: document.getElementById("stage-banner-title"),
+  stageBannerCitation: document.getElementById("stage-banner-citation"),
+
+  downloadSnapshot: document.getElementById("download-snapshot"),
+  loadSnapshot: document.getElementById("load-snapshot"),
+  downloadPng: document.getElementById("download-png"),
+  exportGif: document.getElementById("export-gif"),
+  gifSteps: document.getElementById("gif-steps"),
+  gifFps: document.getElementById("gif-fps"),
+  exportStatus: document.getElementById("export-status"),
+
   tutorialTitle: document.getElementById("tutorial-title"),
   tutorialBody: document.getElementById("tutorial-body"),
+  tutorialAll: document.getElementById("tutorial-all"),
+  tutorialPrev: document.getElementById("tutorial-prev"),
+  tutorialNext: document.getElementById("tutorial-next"),
+  tutorialCounter: document.getElementById("tutorial-counter"),
 };
 
 const state = {
@@ -30,6 +62,9 @@ const state = {
   playing: false,
   loopHandle: null,
   pendingTick: false,
+  tutorialIdx: 0,
+  currentParams: [],
+  lastSummary: null,
   ctx: els.canvas.getContext("2d"),
 };
 
@@ -57,22 +92,27 @@ async function loadRules() {
     els.rule.appendChild(opt);
   }
   els.rule.value = "abiogenesis-pipeline";
-  renderTutorial();
 }
 
 function renderTutorial() {
   const r = state.rulesByName.get(els.rule.value);
   if (!r) return;
   els.tutorialTitle.textContent = r.name;
-  els.tutorialBody.innerHTML = "";
+  if (state.tutorialIdx >= r.tutorial.length) state.tutorialIdx = 0;
+  els.tutorialBody.textContent = r.tutorial[state.tutorialIdx] || "";
+  els.tutorialCounter.textContent = `${state.tutorialIdx + 1} / ${r.tutorial.length}`;
+  els.tutorialPrev.disabled = state.tutorialIdx === 0;
+  els.tutorialNext.disabled = state.tutorialIdx >= r.tutorial.length - 1;
+  els.tutorialAll.innerHTML = "";
   for (const line of r.tutorial) {
     const li = document.createElement("li");
     li.textContent = line;
-    els.tutorialBody.appendChild(li);
+    els.tutorialAll.appendChild(li);
   }
 }
 
 function applySummary(s) {
+  state.lastSummary = s;
   els.stepCount.textContent = s.step_count;
   els.fps.textContent = s.fps;
   els.seedOut.textContent = s.seed;
@@ -80,6 +120,50 @@ function applySummary(s) {
     .map(([k, v]) => `${k}: ${typeof v === "number" ? v.toLocaleString() : v}`)
     .join("   ");
   els.population.textContent = pop || "(no population stats for this rule)";
+
+  if (s.stage_info) {
+    showStageBanner(s.stage_info);
+    populateStageControls(s.stage_info);
+    showLegend(s.stage_info.legend);
+  } else {
+    els.stageBanner.hidden = true;
+    els.stageWrap.hidden = true;
+    els.legend.hidden = true;
+  }
+}
+
+function showStageBanner(info) {
+  els.stageBanner.hidden = false;
+  els.stageBannerIndex.textContent = `STAGE ${info.current_stage} / ${info.total_stages - 1}`;
+  els.stageBannerTitle.textContent = info.title;
+  els.stageBannerCitation.textContent = info.citation;
+}
+
+function populateStageControls(info) {
+  els.stageWrap.hidden = false;
+  if (els.stageSelect.options.length !== info.total_stages) {
+    els.stageSelect.innerHTML = "";
+    for (let i = 0; i < info.total_stages; i++) {
+      const opt = document.createElement("option");
+      opt.value = String(i);
+      opt.textContent = `${i}`;
+      els.stageSelect.appendChild(opt);
+    }
+  }
+  els.stageSelect.value = String(info.current_stage);
+  els.autoPromote.checked = info.auto_promote;
+  if (document.activeElement !== els.stageDuration) {
+    els.stageDuration.value = String(info.stage_duration);
+  }
+}
+
+function showLegend(text) {
+  if (!text) {
+    els.legend.hidden = true;
+    return;
+  }
+  els.legend.hidden = false;
+  els.legend.textContent = text;
 }
 
 async function paintFrame() {
@@ -98,6 +182,150 @@ async function paintFrame() {
   ctx.drawImage(img, 0, 0, els.canvas.width, els.canvas.height);
 }
 
+async function refreshParams() {
+  if (!state.sessionId) return;
+  let payload;
+  try {
+    payload = await api("GET", `/api/sessions/${state.sessionId}/params`);
+  } catch (e) {
+    console.error(e);
+    return;
+  }
+  state.currentParams = payload.params;
+  renderParamSliders(payload);
+  renderPresets(payload);
+}
+
+function renderParamSliders({ params }) {
+  els.params.innerHTML = "";
+  if (!params || params.length === 0) {
+    els.paramsWrap.hidden = true;
+    return;
+  }
+  els.paramsWrap.hidden = false;
+  for (const p of params) {
+    const row = document.createElement("div");
+    row.className = "param-row" + (p.reinit ? " param-reinit" : "");
+
+    const label = document.createElement("label");
+    label.htmlFor = `p-${p.attr}`;
+    label.innerHTML = `${p.label}${p.reinit ? ' <em title="changes restart the simulation">⟲</em>' : ""}`;
+
+    const range = document.createElement("input");
+    range.type = "range";
+    range.id = `p-${p.attr}`;
+    range.min = String(p.lo);
+    range.max = String(p.hi);
+    range.step = String(p.step);
+    range.value = String(p.value);
+
+    const display = document.createElement("span");
+    display.className = "param-value";
+    display.textContent = formatNum(p.value, p.step, p.integer);
+
+    let timer = null;
+    range.addEventListener("input", () => {
+      display.textContent = formatNum(Number(range.value), p.step, p.integer);
+      if (timer) clearTimeout(timer);
+      // Debounce: structural ("reinit") params skip the user-is-still-dragging
+      // window so we don't reset state on every pixel of slider travel.
+      const debounce = p.reinit ? 250 : 60;
+      timer = setTimeout(() => {
+        applyParam(p.attr, Number(range.value));
+      }, debounce);
+    });
+
+    row.appendChild(label);
+    row.appendChild(range);
+    row.appendChild(display);
+    els.params.appendChild(row);
+  }
+}
+
+function formatNum(value, step, integer) {
+  if (integer) return String(Math.round(value));
+  const decimals = step < 0.01 ? 4 : step < 0.1 ? 3 : 2;
+  return Number(value).toFixed(decimals);
+}
+
+async function applyParam(attr, value) {
+  if (!state.sessionId) return;
+  try {
+    const res = await api("POST", `/api/sessions/${state.sessionId}/params`, { [attr]: value });
+    applySummary(res);
+    // A reinit param rebuilds the inner state — repaint immediately so the
+    // user sees the new initial conditions instead of the stale grid.
+    if (res.reinit) await paintFrame();
+  } catch (e) {
+    console.error(e);
+  }
+}
+
+function renderPresets({ presets }) {
+  els.presets.innerHTML = "";
+  if (!presets || presets.length === 0) {
+    els.presetsWrap.hidden = true;
+    return;
+  }
+  els.presetsWrap.hidden = false;
+  for (const name of presets) {
+    const btn = document.createElement("button");
+    btn.type = "button";
+    btn.textContent = name;
+    btn.className = "chip";
+    btn.addEventListener("click", () => applyPreset(name));
+    els.presets.appendChild(btn);
+  }
+}
+
+async function applyPreset(name) {
+  if (!state.sessionId) return;
+  try {
+    const res = await api("POST", `/api/sessions/${state.sessionId}/preset`, { name });
+    applySummary(res);
+    await refreshParams();
+    await paintFrame();
+  } catch (e) {
+    alert("preset failed: " + e.message);
+  }
+}
+
+async function promoteStage() {
+  if (!state.sessionId) return;
+  try {
+    const res = await api("POST", `/api/sessions/${state.sessionId}/promote`);
+    applySummary(res);
+    await refreshParams();
+    await paintFrame();
+  } catch (e) {
+    alert("promote failed: " + e.message);
+  }
+}
+
+async function jumpToStage(n) {
+  if (!state.sessionId) return;
+  try {
+    const res = await api("POST", `/api/sessions/${state.sessionId}/stage`, { stage: Number(n) });
+    applySummary(res);
+    await refreshParams();
+    await paintFrame();
+  } catch (e) {
+    alert("stage change failed: " + e.message);
+  }
+}
+
+async function setAutoPromote(enabled, duration) {
+  if (!state.sessionId) return;
+  const body = { enabled };
+  if (duration !== undefined) body.duration = duration;
+  try {
+    const res = await api("POST", `/api/sessions/${state.sessionId}/auto_promote`, body);
+    applySummary(res);
+  } catch (e) {
+    alert("auto-promote change failed: " + e.message);
+  }
+}
+
 async function createSession() {
   await stopLoop();
   const body = {
@@ -114,7 +342,9 @@ async function createSession() {
     s = await api("POST", "/api/sessions", body);
     state.sessionId = s.session_id;
   }
+  state.tutorialIdx = 0;
   applySummary(s);
+  await refreshParams();
   await paintFrame();
   renderTutorial();
 }
@@ -159,6 +389,104 @@ async function stopLoop() {
   els.play.classList.remove("active");
 }
 
+async function downloadSnapshot() {
+  if (!state.sessionId) return;
+  // Fetch as a Blob so the browser uses our filename suggestion instead of
+  // opening the JSON inline.
+  const res = await fetch(`/api/sessions/${state.sessionId}/snapshot.json`);
+  if (!res.ok) {
+    alert("snapshot failed");
+    return;
+  }
+  const cd = res.headers.get("Content-Disposition") || "";
+  const m = cd.match(/filename="([^"]+)"/);
+  const blob = await res.blob();
+  triggerDownload(blob, (m && m[1]) || "cellauto-snapshot.json");
+}
+
+async function loadSnapshot(file) {
+  if (!file || !state.sessionId) return;
+  let snapshot;
+  try {
+    snapshot = JSON.parse(await file.text());
+  } catch (e) {
+    alert("not valid JSON: " + e.message);
+    return;
+  }
+  try {
+    const res = await api("POST", `/api/sessions/${state.sessionId}/load`, snapshot);
+    // The new state may use a different rule — keep the UI in sync.
+    els.rule.value = res.rule;
+    els.grid.value = res.grid;
+    state.tutorialIdx = 0;
+    applySummary(res);
+    await refreshParams();
+    await paintFrame();
+    renderTutorial();
+  } catch (e) {
+    alert("load failed: " + e.message);
+  } finally {
+    els.loadSnapshot.value = "";
+  }
+}
+
+async function downloadFramePng() {
+  if (!state.sessionId) return;
+  const res = await fetch(`/api/sessions/${state.sessionId}/frame.png?download=1`);
+  if (!res.ok) {
+    alert("frame download failed");
+    return;
+  }
+  const cd = res.headers.get("Content-Disposition") || "";
+  const m = cd.match(/filename="([^"]+)"/);
+  const blob = await res.blob();
+  triggerDownload(blob, (m && m[1]) || "cellauto-frame.png");
+}
+
+async function exportGif() {
+  if (!state.sessionId) return;
+  const steps = Number(els.gifSteps.value);
+  const fps = Number(els.gifFps.value);
+  els.exportStatus.textContent = `Rendering ${steps} frames…`;
+  els.exportGif.disabled = true;
+  await stopLoop();
+  try {
+    const res = await fetch(`/api/sessions/${state.sessionId}/gif`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ steps, fps, canvas: 480 }),
+    });
+    if (!res.ok) {
+      const text = await res.text();
+      throw new Error(text || res.statusText);
+    }
+    const cd = res.headers.get("Content-Disposition") || "";
+    const m = cd.match(/filename="([^"]+)"/);
+    const blob = await res.blob();
+    triggerDownload(blob, (m && m[1]) || "cellauto-export.gif");
+    els.exportStatus.textContent = `Exported ${steps} frames @ ${fps} fps.`;
+    // Refresh the summary — the engine advanced during export.
+    const summary = await api("GET", `/api/sessions/${state.sessionId}`);
+    applySummary(summary);
+    await paintFrame();
+  } catch (e) {
+    els.exportStatus.textContent = "GIF export failed: " + e.message;
+  } finally {
+    els.exportGif.disabled = false;
+  }
+}
+
+function triggerDownload(blob, filename) {
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  URL.revokeObjectURL(url);
+}
+
 function bindUI() {
   els.play.addEventListener("click", () => {
     if (state.playing) stopLoop();
@@ -172,11 +500,49 @@ function bindUI() {
     createSession().catch((e) => alert("reset failed: " + e.message));
   });
   els.rule.addEventListener("change", () => {
-    renderTutorial();
+    state.tutorialIdx = 0;
     createSession().catch((e) => alert("rule switch failed: " + e.message));
   });
   els.speed.addEventListener("input", () => {
     els.speedLabel.textContent = `${els.speed.value}/s`;
+  });
+
+  els.stageSelect.addEventListener("change", () => {
+    jumpToStage(els.stageSelect.value);
+  });
+  els.promote.addEventListener("click", promoteStage);
+  els.autoPromote.addEventListener("change", () => {
+    setAutoPromote(els.autoPromote.checked);
+  });
+  els.stageDuration.addEventListener("change", () => {
+    const d = Number(els.stageDuration.value);
+    if (d > 0) setAutoPromote(els.autoPromote.checked, d);
+  });
+
+  els.downloadSnapshot.addEventListener("click", downloadSnapshot);
+  els.loadSnapshot.addEventListener("change", () => loadSnapshot(els.loadSnapshot.files[0]));
+  els.downloadPng.addEventListener("click", downloadFramePng);
+  els.exportGif.addEventListener("click", exportGif);
+
+  els.tutorialPrev.addEventListener("click", () => {
+    if (state.tutorialIdx > 0) { state.tutorialIdx--; renderTutorial(); }
+  });
+  els.tutorialNext.addEventListener("click", () => {
+    const r = state.rulesByName.get(els.rule.value);
+    if (r && state.tutorialIdx < r.tutorial.length - 1) {
+      state.tutorialIdx++;
+      renderTutorial();
+    }
+  });
+
+  // Keyboard shortcuts — keep them out of input fields so typing doesn't
+  // accidentally toggle play.
+  document.addEventListener("keydown", (e) => {
+    if (e.target.matches("input, select, textarea")) return;
+    if (e.key === " ") { e.preventDefault(); els.play.click(); }
+    else if (e.key === "s") { els.step.click(); }
+    else if (e.key === "r") { els.reset.click(); }
+    else if (e.key === "p") { els.promote.click(); }
   });
 }
 
