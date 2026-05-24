@@ -54,8 +54,29 @@ main {
   align-items: start;
 }
 
-@media (max-width: 900px) {
-  main { grid-template-columns: 1fr; }
+/* Tablet / landscape phones still get the 2-column desktop layout.
+   The breakpoint deliberately sits below 844px (iPhone 13 landscape) so
+   sideways phones don't lose the side-by-side view. */
+@media (max-width: 768px) {
+  main {
+    grid-template-columns: 1fr;
+    padding: 1rem;
+    gap: 1rem;
+  }
+  /* Canvas first on mobile — otherwise the user lands on a wall of
+     controls and presses Play without ever seeing the sim react. */
+  .stage { order: 1; }
+  .controls { order: 2; }
+  .tutorial { order: 3; }
+}
+
+/* On phone-sized screens, push the Rule dropdown onto its own row so
+   the long names ("abiogenesis-pipeline-extended") don't get clipped by
+   the native <select>. */
+@media (max-width: 480px) {
+  .control-row > label:first-child {
+    flex-basis: 100%;
+  }
 }
 
 .controls {
@@ -108,11 +129,12 @@ button {
   color: var(--text);
   border: 1px solid var(--border);
   border-radius: 4px;
-  padding: 0.45rem 0.9rem;
+  padding: 0.5rem 0.95rem;
   font: inherit;
   font-size: 0.95rem;
   cursor: pointer;
   white-space: nowrap;
+  min-height: 40px;
 }
 
 button:hover { border-color: var(--accent); color: var(--accent); }
@@ -122,7 +144,67 @@ button:disabled:hover { border-color: var(--border); color: var(--text); }
 
 .speed { flex: 2 1 auto; min-width: 12rem; }
 .speed input { width: 100%; }
-#speed-label { font-size: 0.8rem; color: var(--muted); margin-top: 0.1rem; }
+.speed-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 0.4rem;
+}
+#speed-label { font-size: 0.8rem; color: var(--accent-2); font-family: ui-monospace, monospace; }
+
+/* Touch-friendly range slider — desktop sliders are pinpoint-tiny on
+   mobile. Custom track + thumb gives a 22px target hit area without
+   uglifying the desktop look. */
+input[type="range"] {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 100%;
+  height: 28px;
+  background: transparent;
+  cursor: pointer;
+}
+input[type="range"]::-webkit-slider-runnable-track {
+  height: 6px;
+  background: var(--panel-3);
+  border-radius: 3px;
+}
+input[type="range"]::-moz-range-track {
+  height: 6px;
+  background: var(--panel-3);
+  border-radius: 3px;
+}
+input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 22px;
+  height: 22px;
+  margin-top: -8px;
+  border-radius: 50%;
+  background: var(--accent);
+  border: none;
+  cursor: pointer;
+}
+input[type="range"]::-moz-range-thumb {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: var(--accent);
+  border: none;
+  cursor: pointer;
+}
+input[type="range"]:focus { outline: none; }
+input[type="range"]:focus::-webkit-slider-thumb { box-shadow: 0 0 0 4px rgba(240, 160, 64, 0.25); }
+input[type="range"]:focus::-moz-range-thumb     { box-shadow: 0 0 0 4px rgba(240, 160, 64, 0.25); }
+
+.error {
+  margin: 0;
+  padding: 0.5rem 0.75rem;
+  background: rgba(240, 138, 138, 0.12);
+  border: 1px solid var(--reinit);
+  border-radius: 4px;
+  color: var(--reinit);
+  font-size: 0.85rem;
+}
 
 .stats {
   display: flex;
@@ -316,8 +398,10 @@ canvas {
   color: var(--muted);
 }
 .tutorial-nav button {
-  padding: 0.25rem 0.7rem;
-  font-size: 0.9rem;
+  padding: 0.5rem 0.9rem;
+  font-size: 0.95rem;
+  min-height: 40px;
+  min-width: 40px;
 }
 
 .tutorial-body {

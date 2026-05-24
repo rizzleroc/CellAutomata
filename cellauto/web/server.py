@@ -180,12 +180,24 @@ def _state_summary(engine: Engine) -> dict:
 
 def _param_payload(engine: Engine) -> dict:
     """Build the param-control payload for the rule whose knobs the user
-    should see (the active stage of a pipeline, or the rule itself)."""
+    should see (the active stage of a pipeline, or the rule itself).
+
+    Some rules (Gray-Scott) default ``F``/``k`` to ``None`` and resolve
+    them from a named preset at step time. If we returned ``None`` to the
+    client the slider would render at midpoint and lie about what the sim
+    is actually running. Fall back to the preset's value so the slider
+    starts where the chemistry actually is.
+    """
     active = _active_rule(engine)
     specs = PARAM_SPECS.get(active.name, [])
+    preset_bank = PRESET_REGISTRY.get(active.name, {})
+    preset_name = getattr(active, "preset", None) if preset_bank else None
+    preset_values = preset_bank.get(preset_name, {}) if preset_name else {}
     params = []
     for spec in specs:
         value = getattr(active, spec.attr, None)
+        if value is None and spec.attr in preset_values:
+            value = preset_values[spec.attr]
         params.append(
             {
                 "attr": spec.attr,
@@ -201,7 +213,8 @@ def _param_payload(engine: Engine) -> dict:
     return {
         "rule": active.name,
         "params": params,
-        "presets": sorted(PRESET_REGISTRY.get(active.name, {}).keys()),
+        "presets": sorted(preset_bank.keys()),
+        "active_preset": preset_name,
     }
 
 

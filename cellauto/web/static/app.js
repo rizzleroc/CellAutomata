@@ -24,6 +24,7 @@ const els = {
 
   presetsWrap: document.getElementById("presets-wrap"),
   presets: document.getElementById("presets"),
+  error: document.getElementById("error"),
 
   paramsWrap: document.getElementById("params-wrap"),
   params: document.getElementById("params"),
@@ -78,6 +79,21 @@ async function api(method, path, body) {
   try { data = text ? JSON.parse(text) : null; } catch { /* not JSON */ }
   if (!res.ok) throw new Error((data && data.error) || text || res.statusText);
   return data;
+}
+
+function showError(msg) {
+  if (!els.error) return;
+  els.error.textContent = msg;
+  els.error.hidden = false;
+  // Auto-clear after a few seconds so transient errors don't linger.
+  if (showError._timer) clearTimeout(showError._timer);
+  showError._timer = setTimeout(() => { els.error.hidden = true; }, 6000);
+}
+
+function clearError() {
+  if (!els.error) return;
+  els.error.hidden = true;
+  if (showError._timer) clearTimeout(showError._timer);
 }
 
 async function loadRules() {
@@ -286,7 +302,7 @@ async function applyPreset(name) {
     await refreshParams();
     await paintFrame();
   } catch (e) {
-    alert("preset failed: " + e.message);
+    showError("Preset failed: " + e.message);
   }
 }
 
@@ -298,7 +314,7 @@ async function promoteStage() {
     await refreshParams();
     await paintFrame();
   } catch (e) {
-    alert("promote failed: " + e.message);
+    showError("Promote failed: " + e.message);
   }
 }
 
@@ -310,7 +326,7 @@ async function jumpToStage(n) {
     await refreshParams();
     await paintFrame();
   } catch (e) {
-    alert("stage change failed: " + e.message);
+    showError("Stage change failed: " + e.message);
   }
 }
 
@@ -322,18 +338,28 @@ async function setAutoPromote(enabled, duration) {
     const res = await api("POST", `/api/sessions/${state.sessionId}/auto_promote`, body);
     applySummary(res);
   } catch (e) {
-    alert("auto-promote change failed: " + e.message);
+    showError("Auto-promote change failed: " + e.message);
   }
 }
 
 async function createSession() {
   await stopLoop();
-  const body = {
-    rule: els.rule.value,
-    grid: Number(els.grid.value),
-  };
+  const grid = Number(els.grid.value);
+  if (!Number.isFinite(grid) || grid < 4 || grid > 240) {
+    showError(`Grid must be between 4 and 240 (you entered ${els.grid.value || "—"}).`);
+    return;
+  }
+  const body = { rule: els.rule.value, grid };
   const seedVal = els.seed.value.trim();
-  if (seedVal !== "") body.seed = Number(seedVal);
+  if (seedVal !== "") {
+    const seed = Number(seedVal);
+    if (!Number.isFinite(seed)) {
+      showError("Seed must be a number, or leave it blank for random.");
+      return;
+    }
+    body.seed = seed;
+  }
+  clearError();
 
   let s;
   if (state.sessionId) {
@@ -395,7 +421,7 @@ async function downloadSnapshot() {
   // opening the JSON inline.
   const res = await fetch(`/api/sessions/${state.sessionId}/snapshot.json`);
   if (!res.ok) {
-    alert("snapshot failed");
+    showError("Snapshot download failed.");
     return;
   }
   const cd = res.headers.get("Content-Disposition") || "";
@@ -410,7 +436,7 @@ async function loadSnapshot(file) {
   try {
     snapshot = JSON.parse(await file.text());
   } catch (e) {
-    alert("not valid JSON: " + e.message);
+    showError("Not valid JSON: " + e.message);
     return;
   }
   try {
@@ -424,7 +450,7 @@ async function loadSnapshot(file) {
     await paintFrame();
     renderTutorial();
   } catch (e) {
-    alert("load failed: " + e.message);
+    showError("Snapshot load failed: " + e.message);
   } finally {
     els.loadSnapshot.value = "";
   }
@@ -434,7 +460,7 @@ async function downloadFramePng() {
   if (!state.sessionId) return;
   const res = await fetch(`/api/sessions/${state.sessionId}/frame.png?download=1`);
   if (!res.ok) {
-    alert("frame download failed");
+    showError("Frame download failed.");
     return;
   }
   const cd = res.headers.get("Content-Disposition") || "";
@@ -497,11 +523,11 @@ function bindUI() {
     stepOnce(1);
   });
   els.reset.addEventListener("click", () => {
-    createSession().catch((e) => alert("reset failed: " + e.message));
+    createSession().catch((e) => showError("Reset failed: " + e.message));
   });
   els.rule.addEventListener("change", () => {
     state.tutorialIdx = 0;
-    createSession().catch((e) => alert("rule switch failed: " + e.message));
+    createSession().catch((e) => showError("Rule switch failed: " + e.message));
   });
   els.speed.addEventListener("input", () => {
     els.speedLabel.textContent = `${els.speed.value}/s`;
@@ -552,7 +578,7 @@ async function init() {
     await loadRules();
     await createSession();
   } catch (e) {
-    alert("init failed: " + e.message);
+    showError("Init failed: " + e.message);
   }
 }
 

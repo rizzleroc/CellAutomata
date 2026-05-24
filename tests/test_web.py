@@ -192,6 +192,26 @@ def test_reinit_wolfram_resets_step_count(client):
     assert res.get_json()["step_count"] == 0
 
 
+def test_grayscott_params_resolve_from_preset_when_none(client):
+    """The default Gray-Scott rule has F=None and k=None on the rule
+    object; the actual values come from the active preset at step time.
+    /params must surface those preset-derived values, not nulls — the
+    slider would otherwise render at midpoint and misrepresent what the
+    simulation is running."""
+    sid = client.post(
+        "/api/sessions",
+        json={"rule": "abiogenesis-stage1-grayscott", "grid": 16, "seed": 1},
+    ).get_json()["session_id"]
+    body = client.get(f"/api/sessions/{sid}/params").get_json()
+    vals = {p["attr"]: p["value"] for p in body["params"]}
+    # Default preset is "spots" → F=0.035, k=0.065.
+    assert vals["F"] is not None
+    assert vals["k"] is not None
+    assert abs(vals["F"] - 0.035) < 1e-6
+    assert abs(vals["k"] - 0.065) < 1e-6
+    assert body["active_preset"] == "spots"
+
+
 def test_preset_applies_gray_scott(client):
     sid = client.post(
         "/api/sessions",
