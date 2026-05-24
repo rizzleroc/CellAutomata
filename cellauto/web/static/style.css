@@ -1,538 +1,733 @@
+/* Catalytic Silence — museum plate aesthetic for the cellauto web sandbox.
+ *
+ * Mirrors the design system documented at docs/design/catalytic-silence.md
+ * and the static demo at docs/web/styles.css. Obsidian ground, warm bone
+ * text, restrained teal hairlines, accent magenta for events, didone serif
+ * for display and a geometric monospace for apparatus. No solid panel
+ * boxes; composition is held together by hairlines and breath, not chrome.
+ */
+
 :root {
-  --bg: #0e1117;
-  --panel: #161b22;
-  --panel-2: #1f262f;
-  --panel-3: #242c37;
-  --text: #e6edf3;
-  --muted: #8b949e;
-  --accent: #f0a040;
-  --accent-dim: #b87d33;
-  --accent-2: #59c2ff;
-  --border: #30363d;
-  --reinit: #f08a8a;
-  --transition: 120ms ease;
+  --bg: #0a0e16;          /* obsidian — near-black with a cold suggestion */
+  --bg-2: #0e1320;        /* one whisper lighter, for nested surfaces */
+  --bg-3: #131a28;        /* nested panel interior */
+  --text: #e6e0d0;        /* warm bone */
+  --text-dim: #8c8a82;    /* quiet bone for apparatus */
+  --text-faint: #5a5851;
+  --hairline: #1f4f4c;    /* desaturated teal — structural */
+  --hairline-soft: #1a2a32;
+  --teal: #39d4c8;        /* event accent */
+  --teal-dim: #2aa39a;
+  --magenta: #d439a4;     /* event accent (counterpoint) */
+  --magenta-dim: #a02a7c;
+  --reinit: #d18a8a;
+
+  --font-display: "Cormorant Garamond", "Constantia", "Cambria", "Georgia", serif;
+  --font-mono: "IBM Plex Mono", "Cascadia Mono", "Consolas", "SF Mono", monospace;
+
+  --transition: 160ms ease;
+
+  --plate-max: 880px;
 }
 
 * { box-sizing: border-box; }
 
-/* HTML `hidden` attribute loses to any explicit `display:` rule below, so
-   force it back here. Without this, .stage-banner / .chip-row stay visible
-   even when the JS marks them hidden after a rule switch. */
 [hidden] { display: none !important; }
 
-/* Single visible focus indicator for keyboard navigation. The browser
-   default outline is ~1.3:1 contrast against the dark theme — invisible.
-   Sliders keep their custom thumb glow defined below. */
+/* Focus indicator: 2px teal outline matches the museum hairline accent. */
 :focus-visible {
-  outline: 2px solid var(--accent);
-  outline-offset: 2px;
-  border-radius: 4px;
+  outline: 1.5px solid var(--teal);
+  outline-offset: 3px;
 }
 input[type="range"]:focus-visible { outline: none; }
 
-/* Honor OS-level reduced-motion preference: disable button transitions
-   and skip any easing on canvas redraw. JS additionally caps the play
-   loop speed in this mode (see app.js). */
 @media (prefers-reduced-motion: reduce) {
-  *, *::before, *::after { transition: none !important; }
+  *, *::before, *::after { transition: none !important; animation: none !important; }
 }
 
-/* Skip link — visually hidden until focused. */
 .skip-link {
   position: absolute;
   left: -9999px;
   top: 0;
-  background: var(--accent);
+  background: var(--teal);
   color: var(--bg);
-  padding: 0.6rem 1rem;
+  padding: 0.6rem 1.2rem;
   z-index: 100;
-  border-radius: 0 0 6px 0;
-  font-weight: 600;
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  text-decoration: none;
 }
-.skip-link:focus { left: 0; }
+.skip-link:focus { left: 1rem; top: 1rem; }
 
-body {
-  margin: 0;
+html, body {
   background: var(--bg);
   color: var(--text);
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui,
-    "Helvetica Neue", Arial, sans-serif;
-  line-height: 1.5;
+  margin: 0;
+  padding: 0;
+  min-height: 100%;
+  font-family: var(--font-mono);
+  font-size: 14px;
+  line-height: 1.55;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  font-feature-settings: "ss01" on, "cv11" on;
 }
 
-header {
-  padding: 1.75rem 2rem 1.25rem;
-  border-bottom: 1px solid var(--border);
+body { padding: 56px 24px 24px; }
+
+/* ── Plate header ───────────────────────────────────────────────────────── */
+
+.plate-header {
+  max-width: var(--plate-max);
+  margin: 0 auto 48px;
+  text-align: center;
 }
 
-header h1 {
-  margin: 0 0 0.4rem;
-  font-size: 1.95rem;
-  font-weight: 700;
-  letter-spacing: -0.015em;
+.eyebrow {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--text-dim);
+  letter-spacing: 0.32em;
+  margin: 0 0 14px;
+  text-transform: uppercase;
+}
+
+h1 {
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-size: 64px;
+  line-height: 1;
+  letter-spacing: 0.005em;
+  margin: 0 0 10px;
   color: var(--text);
 }
 
 .subtitle {
-  margin: 0;
-  color: var(--muted);
-  max-width: 60ch;
-  font-size: 0.95rem;
+  font-family: var(--font-display);
+  font-style: italic;
+  font-weight: 400;
+  font-size: 18px;
+  color: var(--text);
+  margin: 0 auto 24px;
+  max-width: 56ch;
 }
+
+.hairline {
+  border: none;
+  border-top: 1px solid var(--teal-dim);
+  margin: 28px auto 0;
+  width: 100%;
+  max-width: var(--plate-max);
+}
+
+footer .hairline { margin-top: 56px; }
+
+/* ── Main grid ──────────────────────────────────────────────────────────── */
 
 main {
+  max-width: var(--plate-max);
+  margin: 0 auto;
   display: grid;
-  grid-template-columns: minmax(280px, 1fr) 2fr;
-  gap: 1.5rem;
-  padding: 1.5rem 2rem;
-  align-items: start;
+  grid-template-columns: 1fr;
+  gap: 56px;
 }
 
-/* Tablets and below collapse to one column. 820-960px (iPad portrait,
-   tablet landscape) previously got a half-empty right column because the
-   canvas capped at 720px while the right grid track was ~500px. Move the
-   breakpoint up so those widths get the cleaner single-column layout. */
-@media (max-width: 960px) {
-  main {
-    grid-template-columns: 1fr;
-    padding: 1rem 1.25rem;
-    gap: 1rem;
-  }
-  /* Canvas first on narrow viewports — otherwise the user lands on a
-     wall of controls and presses Play without ever seeing the sim. */
-  .stage { order: 1; }
-  .controls { order: 2; }
-  .tutorial { order: 3; }
+/* On wide screens, give the observation full width and put apparatus +
+   config + marginalia in a single tall column beside or beneath. The
+   plate metaphor favors the single dominant specimen given breath. */
+
+section {
+  padding: 0;
 }
 
-/* On phone-sized screens, push the Rule dropdown onto its own row so
-   the long names ("abiogenesis-pipeline-extended") don't get clipped. */
-@media (max-width: 480px) {
-  .control-row > label:first-child {
-    flex-basis: 100%;
-  }
-  header { padding: 1.25rem 1rem 1rem; }
-  header h1 { font-size: 1.65rem; }
+.section-label {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: 500;
+  color: var(--text-dim);
+  letter-spacing: 0.32em;
+  margin: 0 0 22px;
+  text-transform: uppercase;
+  border-bottom: 1px solid var(--hairline-soft);
+  padding-bottom: 8px;
+  display: flex;
+  align-items: baseline;
 }
 
-.controls {
-  background: var(--panel);
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  padding: 1rem;
+.roman {
+  font-family: var(--font-display);
+  font-style: italic;
+  font-weight: 400;
+  font-size: 18px;
+  color: var(--text);
+  letter-spacing: 0;
+  margin-right: 4px;
+  line-height: 1;
+}
+
+/* ── I · Observation ────────────────────────────────────────────────────── */
+
+.observation { text-align: center; }
+
+.stage-banner {
   display: flex;
   flex-direction: column;
-  gap: 0.75rem;
+  gap: 4px;
+  align-items: center;
+  margin: 0 auto 18px;
+  max-width: 620px;
+}
+.stage-banner-index {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--teal);
+  letter-spacing: 0.28em;
+  text-transform: uppercase;
+}
+.stage-banner-title {
+  font-family: var(--font-display);
+  font-weight: 500;
+  font-size: 24px;
+  letter-spacing: 0.01em;
+  color: var(--text);
+  line-height: 1.1;
+}
+.stage-banner-citation {
+  font-family: var(--font-display);
+  font-style: italic;
+  font-size: 14px;
+  color: var(--text-dim);
 }
 
-.control-row {
+/* Thin teal frame around the canvas — the museum vitrine. */
+.canvas-frame {
+  display: inline-block;
+  padding: 1px;
+  background: var(--teal-dim);
+  margin: 0 auto 14px;
+  max-width: 100%;
+}
+.canvas-frame::before {
+  /* Subtle inner shadow ring so the frame reads as glass over depth. */
+  content: "";
+}
+
+canvas {
+  display: block;
+  background: #000;
+  width: 620px;
+  height: 620px;
+  max-width: calc(100vw - 64px);
+  max-height: calc(100vw - 64px);
+  aspect-ratio: 1 / 1;
+  image-rendering: pixelated;
+  image-rendering: -moz-crisp-edges;
+  image-rendering: crisp-edges;
+}
+
+.caption {
+  font-family: var(--font-display);
+  font-style: italic;
+  font-size: 14px;
+  color: var(--text-dim);
+  margin: 12px auto 0;
+  max-width: 620px;
+  line-height: 1.55;
+}
+
+.legend {
+  margin-top: 8px;
+}
+
+/* ── II · Apparatus ─────────────────────────────────────────────────────── */
+
+.readout-row {
   display: flex;
   flex-wrap: wrap;
-  gap: 0.5rem;
-  align-items: center;
+  gap: 22px;
+  justify-content: flex-start;
+  margin-bottom: 14px;
+}
+.readout {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 8px;
+  font-family: var(--font-mono);
+  font-size: 11px;
+}
+.readout-key {
+  color: var(--text-dim);
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+}
+.readout-val {
+  color: var(--text);
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
+  font-size: 13px;
 }
 
-label {
+.population {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 14px;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--text-dim);
+  padding: 10px 0 0;
+  border-top: 1px solid var(--hairline-soft);
+}
+.population:empty::before {
+  content: "(no population stats for this rule)";
+  color: var(--text-faint);
+  font-style: italic;
+  font-family: var(--font-display);
+  font-size: 12px;
+}
+.pop-pair {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 6px;
+}
+.pop-key {
+  color: var(--text-dim);
+  letter-spacing: 0.06em;
+}
+.pop-val {
+  color: var(--text);
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
+}
+
+/* ── III · Configuration ────────────────────────────────────────────────── */
+
+.field-row,
+.action-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: flex-end;
+  margin-bottom: 14px;
+}
+
+.action-row { align-items: center; }
+
+.field {
   display: flex;
   flex-direction: column;
-  font-size: 0.85rem;
-  color: var(--muted);
+  gap: 6px;
   flex: 1 1 auto;
-  min-width: 7rem;
-  gap: 0.25rem;
+  min-width: 9rem;
 }
 
-label.checkbox {
+.field-label {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: 500;
+  color: var(--text-dim);
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+}
+
+.field.checkbox {
   flex-direction: row;
   align-items: center;
-  gap: 0.6rem;
+  gap: 10px;
+  min-height: 44px;
   min-width: auto;
-  min-height: 44px;
-  color: var(--text);
+  flex: 0 0 auto;
 }
-label.checkbox input[type="checkbox"] {
-  width: 22px;
-  height: 22px;
+.field.checkbox > span {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--text);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+.field.checkbox input[type="checkbox"] {
+  width: 20px;
+  height: 20px;
+  accent-color: var(--teal);
   cursor: pointer;
-  accent-color: var(--accent);
+  margin: 0;
 }
 
-select, input[type="number"], input[type="text"] {
-  background: var(--panel-2);
-  color: var(--text);
-  border: 1px solid var(--border);
-  border-radius: 4px;
-  padding: 0.55rem 0.55rem;
-  font: inherit;
-  font-size: 0.95rem;
-  width: 100%;
-  min-height: 44px;
-  transition: border-color var(--transition), background-color var(--transition);
+.speed {
+  flex: 2 1 18rem;
 }
-select:hover, input[type="number"]:hover, input[type="text"]:hover {
-  border-color: var(--panel-3);
-}
-
-button {
-  background: var(--panel-2);
-  color: var(--text);
-  border: 1px solid var(--border);
-  border-radius: 4px;
-  padding: 0.6rem 1rem;
-  font: inherit;
-  font-size: 0.95rem;
-  cursor: pointer;
-  white-space: nowrap;
-  min-height: 44px;
-  transition: background-color var(--transition), border-color var(--transition),
-              color var(--transition);
-}
-
-button:hover { border-color: var(--accent); color: var(--accent); }
-button.active { background: var(--accent); color: var(--bg); border-color: var(--accent); }
-button.active:hover { background: var(--accent); color: var(--bg); }
-button:disabled { opacity: 0.4; cursor: not-allowed; }
-button:disabled:hover { border-color: var(--border); color: var(--text); }
-
-.speed { flex: 2 1 auto; min-width: 12rem; }
-.speed input { width: 100%; }
 .speed-head {
   display: flex;
   justify-content: space-between;
   align-items: baseline;
-  gap: 0.4rem;
+  gap: 8px;
 }
 #speed-label {
-  font-size: 0.8rem;
-  color: var(--accent-2);
-  font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--teal);
+  font-variant-numeric: tabular-nums;
 }
 
-/* Touch-friendly range slider — desktop sliders are pinpoint-tiny on
-   mobile. Custom track + thumb gives a 22px target hit area without
-   uglifying the desktop look. */
+select,
+input[type="number"],
+input[type="text"] {
+  background: var(--bg);
+  color: var(--text);
+  border: 1px solid var(--hairline);
+  border-radius: 0;
+  padding: 10px 12px;
+  font-family: var(--font-mono);
+  font-size: 13px;
+  width: 100%;
+  min-height: 44px;
+  transition: border-color var(--transition), color var(--transition);
+}
+select:hover,
+input[type="number"]:hover,
+input[type="text"]:hover {
+  border-color: var(--teal-dim);
+}
+
+.btn {
+  background: transparent;
+  color: var(--text);
+  border: 1px solid var(--hairline);
+  border-radius: 0;
+  padding: 12px 22px;
+  font-family: var(--font-mono);
+  font-weight: 500;
+  font-size: 10px;
+  letter-spacing: 0.22em;
+  cursor: pointer;
+  text-transform: uppercase;
+  min-height: 44px;
+  white-space: nowrap;
+  transition: border-color var(--transition), color var(--transition),
+              background-color var(--transition);
+}
+.btn:hover:not(:disabled) {
+  border-color: var(--teal);
+  color: var(--teal);
+}
+.btn:disabled {
+  color: var(--text-faint);
+  border-color: var(--hairline-soft);
+  cursor: not-allowed;
+}
+.btn.primary {
+  color: var(--teal);
+  border-color: var(--teal-dim);
+}
+.btn.primary:hover:not(:disabled) {
+  background: rgba(57, 212, 200, 0.06);
+}
+.btn.active {
+  background: var(--teal);
+  color: var(--bg);
+  border-color: var(--teal);
+}
+.btn.active:hover:not(:disabled) {
+  background: var(--teal);
+  color: var(--bg);
+}
+.btn.nav {
+  padding: 8px 14px;
+  letter-spacing: 0;
+  font-size: 12px;
+}
+
+.file-input {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+.file-input input[type="file"] { display: none; }
+
+/* Slider — hairline track with a small teal thumb, matching the static demo. */
 input[type="range"] {
   -webkit-appearance: none;
   appearance: none;
   width: 100%;
-  height: 32px;
+  height: 28px;
   background: transparent;
   cursor: pointer;
 }
 input[type="range"]::-webkit-slider-runnable-track {
-  height: 6px;
-  background: var(--panel-3);
-  border-radius: 3px;
+  height: 1px;
+  background: var(--hairline);
+  border-radius: 0;
 }
 input[type="range"]::-moz-range-track {
-  height: 6px;
-  background: var(--panel-3);
-  border-radius: 3px;
+  height: 1px;
+  background: var(--hairline);
+  border-radius: 0;
 }
 input[type="range"]::-webkit-slider-thumb {
   -webkit-appearance: none;
   appearance: none;
-  width: 22px;
-  height: 22px;
-  margin-top: -8px;
+  width: 18px;
+  height: 18px;
+  margin-top: -9px;
+  background: var(--teal);
+  border: 1px solid var(--bg);
   border-radius: 50%;
-  background: var(--accent);
-  border: none;
-  cursor: pointer;
-  transition: transform var(--transition);
+  cursor: ew-resize;
+  transition: transform var(--transition), background-color var(--transition);
 }
 input[type="range"]::-moz-range-thumb {
-  width: 22px;
-  height: 22px;
+  width: 18px;
+  height: 18px;
+  background: var(--teal);
+  border: 1px solid var(--bg);
   border-radius: 50%;
-  background: var(--accent);
-  border: none;
-  cursor: pointer;
-  transition: transform var(--transition);
+  cursor: ew-resize;
+  transition: transform var(--transition), background-color var(--transition);
 }
-input[type="range"]:focus { outline: none; }
-input[type="range"]:focus::-webkit-slider-thumb { box-shadow: 0 0 0 4px rgba(240, 160, 64, 0.35); }
-input[type="range"]:focus::-moz-range-thumb     { box-shadow: 0 0 0 4px rgba(240, 160, 64, 0.35); }
-input[type="range"]:hover::-webkit-slider-thumb { transform: scale(1.08); }
-input[type="range"]:hover::-moz-range-thumb     { transform: scale(1.08); }
-
-.error {
-  margin: 0;
-  padding: 0.6rem 0.8rem;
-  background: rgba(240, 138, 138, 0.12);
-  border: 1px solid var(--reinit);
-  border-radius: 4px;
-  color: var(--reinit);
-  font-size: 0.9rem;
+input[type="range"]:focus::-webkit-slider-thumb {
+  box-shadow: 0 0 0 4px rgba(57, 212, 200, 0.18);
 }
-
-.stats {
-  display: flex;
-  gap: 1rem;
-  font-size: 0.85rem;
-  color: var(--muted);
-  flex-wrap: wrap;
+input[type="range"]:focus::-moz-range-thumb {
+  box-shadow: 0 0 0 4px rgba(57, 212, 200, 0.18);
 }
-.stats strong { color: var(--text); margin-right: 0.25rem; font-weight: 600; }
+input[type="range"]:hover::-webkit-slider-thumb { transform: scale(1.1); }
+input[type="range"]:hover::-moz-range-thumb     { transform: scale(1.1); }
 
+/* Nested disclosure panels — hairline-bordered, never solid filled. */
 .panel {
-  background: var(--panel-2);
-  border: 1px solid var(--border);
-  border-radius: 6px;
-  padding: 0.75rem 0.9rem;
+  border: 1px solid var(--hairline-soft);
+  border-radius: 0;
+  padding: 14px 16px;
+  margin-top: 14px;
+  background: transparent;
 }
 .panel summary {
   cursor: pointer;
-  font-size: 0.9rem;
-  font-weight: 600;
-  color: var(--text);
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: 500;
+  color: var(--text-dim);
+  letter-spacing: 0.28em;
+  text-transform: uppercase;
   user-select: none;
-  padding: 0.4rem 0;
-  letter-spacing: 0.02em;
   min-height: 36px;
   display: flex;
   align-items: center;
+  list-style: none;
 }
-.panel summary:hover { color: var(--accent-2); }
-.panel[open] summary { margin-bottom: 0.5rem; }
-.panel > .control-row { margin-top: 0.5rem; }
-.panel > .control-row:first-of-type { margin-top: 0; }
+.panel summary::-webkit-details-marker { display: none; }
+.panel summary::before {
+  content: "›";
+  display: inline-block;
+  color: var(--teal-dim);
+  margin-right: 10px;
+  font-size: 16px;
+  transition: transform var(--transition);
+}
+.panel[open] summary::before {
+  transform: rotate(90deg);
+}
+.panel summary:hover {
+  color: var(--teal);
+}
+.panel[open] summary { margin-bottom: 12px; }
+.panel > .action-row,
+.panel > .field-row {
+  margin-bottom: 12px;
+}
+.panel > .action-row:last-child,
+.panel > .field-row:last-child {
+  margin-bottom: 0;
+}
 
+/* Preset chips — thin hairline pills, tracked uppercase mono. */
 .chip-row {
   display: flex;
   flex-wrap: wrap;
-  gap: 0.4rem;
+  gap: 8px;
 }
-
 .chip {
-  background: var(--panel-3);
-  border: 1px solid var(--border);
+  background: transparent;
+  border: 1px solid var(--hairline);
   border-radius: 999px;
-  padding: 0.5rem 0.95rem;
-  font-size: 0.85rem;
-  color: var(--text);
+  padding: 8px 16px;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: 500;
+  color: var(--text-dim);
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
   cursor: pointer;
   min-height: 36px;
-  transition: background-color var(--transition), border-color var(--transition), color var(--transition);
+  transition: border-color var(--transition), color var(--transition);
 }
-.chip:hover { border-color: var(--accent); color: var(--accent); background: var(--panel-2); }
+.chip:hover {
+  border-color: var(--teal);
+  color: var(--teal);
+}
 
+/* Parameter sliders — same teal thumb, with label/value mono apparatus. */
 .param-list {
   display: flex;
   flex-direction: column;
-  gap: 0.6rem;
+  gap: 12px;
 }
-
 .param-row {
   display: grid;
-  grid-template-columns: 1fr 2fr auto;
+  grid-template-columns: minmax(7rem, 1fr) 2fr auto;
   align-items: center;
-  gap: 0.6rem;
-  font-size: 0.85rem;
+  gap: 14px;
 }
 .param-row label {
   flex-direction: row;
   color: var(--text);
   margin: 0;
   min-width: 0;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.08em;
 }
 .param-row em {
-  color: var(--reinit);
+  color: var(--magenta);
   font-style: normal;
-  margin-left: 0.25rem;
+  margin-left: 6px;
+  font-family: var(--font-mono);
+  font-size: 12px;
 }
 .param-row input[type="range"] { width: 100%; }
 .param-value {
-  font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
-  font-size: 0.8rem;
-  color: var(--muted);
-  min-width: 4rem;
-  text-align: right;
-}
-
-.file-input {
-  flex-direction: row;
-  align-items: center;
-  gap: 0.4rem;
-  background: var(--panel-2);
-  border: 1px solid var(--border);
-  border-radius: 4px;
-  padding: 0.6rem 1rem;
-  min-height: 44px;
+  font-family: var(--font-mono);
+  font-size: 11px;
   color: var(--text);
-  cursor: pointer;
-  font-size: 0.95rem;
-  flex: 0 0 auto;
-  transition: border-color var(--transition), color var(--transition);
+  min-width: 4.5rem;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
 }
-.file-input:hover { border-color: var(--accent); color: var(--accent); }
-.file-input input[type="file"] { display: none; }
 
 .export-status {
-  margin: 0.5rem 0 0;
-  color: var(--muted);
-  font-size: 0.85rem;
+  margin: 8px 0 0;
+  color: var(--text-dim);
+  font-family: var(--font-display);
+  font-style: italic;
+  font-size: 13px;
   min-height: 1.2em;
 }
 
-.stage {
-  display: flex;
-  flex-direction: column;
-  gap: 0.6rem;
+.error {
+  margin: 0 0 14px;
+  padding: 10px 14px;
+  background: rgba(212, 57, 164, 0.06);
+  border: 1px solid var(--magenta-dim);
+  border-radius: 0;
+  color: var(--magenta);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.04em;
 }
 
-/* Museum-card-style stage banner: small-caps tracked label up top,
-   semibold title in the middle, italic citation below. Replaces the
-   single-line debug strip from earlier iterations. */
-.stage-banner {
-  display: flex;
-  flex-direction: column;
-  gap: 0.15rem;
-  background: linear-gradient(180deg, var(--panel) 0%, rgba(31, 38, 47, 0.5) 100%);
-  border: 1px solid var(--border);
-  border-left: 3px solid var(--accent);
-  border-radius: 6px;
-  padding: 0.7rem 1rem;
-}
-.stage-index {
-  color: var(--accent);
-  font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
-  font-size: 0.78rem;
-  font-weight: 600;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-}
-.stage-title {
-  color: var(--text);
-  font-weight: 600;
-  font-size: 1.05rem;
-  letter-spacing: 0.01em;
-}
-.stage-citation {
-  color: var(--muted);
-  font-style: italic;
-  font-size: 0.85rem;
-}
+/* ── IV · Marginalia (tutorial) ─────────────────────────────────────────── */
 
-canvas {
-  width: 100%;
-  max-width: 720px;
-  aspect-ratio: 1 / 1;
-  background: #000;
-  border: 2px solid var(--border);
-  border-radius: 6px;
-  box-shadow: inset 0 0 0 1px rgba(15, 17, 23, 0.6);
-  image-rendering: pixelated;
-  image-rendering: -moz-crisp-edges;
-  image-rendering: crisp-edges;
-  display: block;
-}
-
-.legend {
-  font-size: 0.85rem;
-  color: var(--muted);
-  background: var(--panel);
-  border: 1px solid var(--border);
-  border-left: 3px solid var(--accent-2);
-  border-radius: 6px;
-  padding: 0.5rem 0.85rem;
-  max-width: 720px;
-}
-
-/* Population stats: a wrapping list of key:value chips reads better
-   than a long whitespace-wrapped string, especially for rules with 10
-   keys (hydrothermal vent, RAF). */
-.population {
-  font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
-  font-size: 0.82rem;
-  color: var(--muted);
-  background: var(--panel);
-  border: 1px solid var(--border);
-  border-radius: 6px;
-  padding: 0.5rem 0.6rem;
-  max-width: 720px;
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.25rem 0.45rem;
-}
-.population:empty::before {
-  content: "(no population stats for this rule)";
-  color: var(--muted);
-}
-.population .pop-pair {
-  display: inline-flex;
-  align-items: baseline;
-  gap: 0.3rem;
-  background: var(--panel-2);
-  border-radius: 4px;
-  padding: 0.2rem 0.55rem;
-}
-.population .pop-key { color: var(--muted); }
-.population .pop-val { color: var(--text); }
-
-.tutorial {
-  grid-column: 1 / -1;
-  background: var(--panel);
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  padding: 1rem 1.25rem;
-}
-
-.tutorial-head {
+.marginalia-head {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
   justify-content: space-between;
-  gap: 0.5rem;
-  margin-bottom: 0.75rem;
+  gap: 12px;
+  margin-bottom: 12px;
 }
-
-.tutorial h2 {
+.marginalia-title {
   margin: 0;
-  font-size: 1.15rem;
-  color: var(--accent);
-  letter-spacing: 0.01em;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--text);
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
 }
-
-.tutorial-nav {
+.marginalia-nav {
   display: flex;
   align-items: center;
-  gap: 0.4rem;
-  font-size: 0.9rem;
-  color: var(--muted);
+  gap: 8px;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--text-dim);
 }
-.tutorial-nav button {
-  padding: 0.5rem 0.9rem;
-  font-size: 0.95rem;
-  min-height: 44px;
-  min-width: 44px;
+.marginalia-counter {
+  font-variant-numeric: tabular-nums;
+  min-width: 4ch;
+  text-align: center;
 }
-.tutorial-nav button:hover:not(:disabled) {
-  background: var(--panel-3);
-}
-
-.tutorial-body {
-  margin: 0 0 0.75rem;
-  padding: 0.2rem 0 0.2rem 0.85rem;
-  border-left: 3px solid var(--accent);
-  color: var(--text);
-  font-size: 1rem;
+.marginalia-body {
+  margin: 0 0 18px;
+  font-family: var(--font-display);
+  font-style: italic;
+  font-size: 18px;
   line-height: 1.6;
-}
-
-.tutorial ol {
-  margin: 0;
-  padding-left: 1.25rem;
   color: var(--text);
+  border-left: 1px solid var(--teal-dim);
+  padding-left: 18px;
 }
-.tutorial li { margin-bottom: 0.4rem; line-height: 1.55; }
+.marginalia-list {
+  margin: 0;
+  padding-left: 20px;
+  color: var(--text);
+  font-family: var(--font-display);
+  font-style: italic;
+  font-size: 15px;
+  line-height: 1.55;
+}
+.marginalia-list li { margin-bottom: 8px; }
+
+/* ── Footer ─────────────────────────────────────────────────────────────── */
 
 footer {
-  padding: 1rem 2rem 2rem;
-  color: var(--muted);
-  font-size: 0.85rem;
-  border-top: 1px solid var(--border);
+  max-width: var(--plate-max);
+  margin: 0 auto;
+  text-align: center;
+  padding-bottom: 32px;
 }
 
-footer a { color: var(--accent-dim); }
-footer a:hover { color: var(--accent); }
+.footer-text {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--text-dim);
+  letter-spacing: 0.32em;
+  margin: 18px 0 0;
+  text-transform: uppercase;
+}
+
+footer a {
+  color: var(--text-dim);
+  text-decoration: none;
+  border-bottom: 1px solid var(--hairline);
+  letter-spacing: 0.12em;
+}
+footer a:hover {
+  color: var(--teal);
+  border-color: var(--teal);
+}
+
+/* ── Responsive ─────────────────────────────────────────────────────────── */
+
+@media (max-width: 720px) {
+  body { padding: 32px 16px 16px; }
+  h1 { font-size: 44px; }
+  .subtitle { font-size: 15px; }
+  .plate-header { margin-bottom: 32px; }
+  main { gap: 40px; }
+  .section-label { letter-spacing: 0.25em; }
+  .stage-banner-title { font-size: 19px; }
+  .marginalia-body { font-size: 16px; padding-left: 14px; }
+
+  /* On tiny phones, put long-named fields on their own row so the rule
+     dropdown doesn't truncate "abiogenesis-pipeline-extended". */
+  .field-row > .field:first-child,
+  .action-row > .field { flex-basis: 100%; }
+}
+
+@media (max-width: 480px) {
+  h1 { font-size: 36px; }
+  .eyebrow { letter-spacing: 0.24em; font-size: 9px; }
+  canvas { width: 100%; height: auto; }
+}

@@ -113,6 +113,8 @@ async function loadRules() {
 function renderTutorial() {
   const r = state.rulesByName.get(els.rule.value);
   if (!r) return;
+  // Show the rule's slug as the marginalia title — tracked uppercase via
+  // CSS already. Same string the rule is invoked by in the Python API.
   els.tutorialTitle.textContent = r.name;
   if (state.tutorialIdx >= r.tutorial.length) state.tutorialIdx = 0;
   els.tutorialBody.textContent = r.tutorial[state.tutorialIdx] || "";
@@ -445,7 +447,7 @@ function effectiveHz() {
 function startLoop() {
   if (state.loopHandle) return;
   state.playing = true;
-  els.play.textContent = "⏸ Pause";
+  els.play.textContent = "⏸  P A U S E";
   els.play.classList.add("active");
   // Batch steps when the requested rate exceeds what a single
   // step→frame.png round-trip can sustain (~30 sps). At speed=60 we ask
@@ -469,7 +471,7 @@ async function stopLoop() {
     clearTimeout(state.loopHandle);
     state.loopHandle = null;
   }
-  els.play.textContent = "▶ Play";
+  els.play.textContent = "▶  P L A Y";
   els.play.classList.remove("active");
 }
 

@@ -3,109 +3,152 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>cellauto — web sandbox</title>
+    <title>cellauto — a live observation plate</title>
+    <meta
+      name="description"
+      content="Scientifically-grounded cellular sandbox. The abiogenesis pipeline, Conway's Life and Wolfram 1D, run live in your browser via the same Python engine the desktop GUI uses."
+    />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,400&family=IBM+Plex+Mono:wght@400;500;600&display=swap"
+      rel="stylesheet"
+    />
     <link rel="stylesheet" href="/static/style.css" />
   </head>
   <body>
     <a class="skip-link" href="#main-content">Skip to main content</a>
-    <header>
+
+    <header class="plate-header">
+      <p class="eyebrow">P L A T E &nbsp; · &nbsp; C E L L A U T O &nbsp; · &nbsp; M M X X V I</p>
       <h1>cellauto</h1>
-      <p class="subtitle">
-        Scientifically-grounded cellular sandbox — abiogenesis pipeline,
-        Conway, Wolfram 1D. Web wrapper around the same Python engine the
-        desktop GUI uses.
-      </p>
+      <p class="subtitle">a live observation of the coalescence of chemistry into pattern</p>
+      <hr class="hairline" />
     </header>
 
     <main id="main-content">
-      <section class="controls">
-        <div class="control-row">
-          <label>
-            Rule
+      <!-- I · OBSERVATION ------------------------------------------------- -->
+      <section class="observation" aria-label="Simulation">
+        <p class="section-label"><span class="roman">I</span>&nbsp;&nbsp;O B S E R V A T I O N</p>
+
+        <div id="stage-banner" class="stage-banner" hidden aria-live="polite" aria-atomic="true">
+          <span class="stage-banner-index" id="stage-banner-index"></span>
+          <span class="stage-banner-title" id="stage-banner-title"></span>
+          <span class="stage-banner-citation" id="stage-banner-citation"></span>
+        </div>
+
+        <div class="canvas-frame">
+          <canvas
+            id="canvas"
+            width="600"
+            height="600"
+            role="img"
+            aria-label="Cellular automaton grid. Numerical state is summarized in the apparatus panel below."
+          >
+            Cellular automaton visualization. Read the apparatus panel below for the
+            numerical state of the simulation.
+          </canvas>
+        </div>
+
+        <p id="legend" class="legend caption" hidden></p>
+      </section>
+
+      <!-- II · APPARATUS (stats line) ------------------------------------- -->
+      <section class="apparatus" aria-label="Live readout">
+        <p class="section-label"><span class="roman">II</span>&nbsp;&nbsp;A P P A R A T U S</p>
+        <div class="readout-row">
+          <span class="readout"><span class="readout-key">step</span><span class="readout-val" id="step-count">0</span></span>
+          <span class="readout"><span class="readout-key">fps</span><span class="readout-val" id="fps">0</span></span>
+          <span class="readout"><span class="readout-key">seed</span><span class="readout-val" id="seed-out">—</span></span>
+        </div>
+        <div id="population" class="population" aria-live="off"></div>
+      </section>
+
+      <!-- III · CONFIGURATION --------------------------------------------- -->
+      <section class="config" aria-label="Configuration">
+        <p class="section-label"><span class="roman">III</span>&nbsp;&nbsp;C O N F I G U R A T I O N</p>
+
+        <p id="error" class="error" role="alert" hidden></p>
+
+        <div class="field-row">
+          <label class="field">
+            <span class="field-label">rule</span>
             <select id="rule"></select>
           </label>
-          <label>
-            Grid
+          <label class="field">
+            <span class="field-label">grid</span>
             <input id="grid" type="number" min="8" max="240" step="4" value="80" />
           </label>
-          <label>
-            Seed
+          <label class="field">
+            <span class="field-label">seed</span>
             <input id="seed" type="number" placeholder="random" />
           </label>
         </div>
 
-        <div class="control-row">
-          <button id="play" type="button">▶ Play</button>
-          <button id="step" type="button">Step</button>
-          <button id="reset" type="button">Reset</button>
-          <label class="speed">
+        <div class="action-row">
+          <button id="play" type="button" class="btn primary">▶ &nbsp;P L A Y</button>
+          <button id="step" type="button" class="btn">S T E P</button>
+          <button id="reset" type="button" class="btn">R E S E T</button>
+          <label class="field speed">
             <span class="speed-head">
-              <span>Speed</span>
+              <span class="field-label">speed</span>
               <span id="speed-label">20/s</span>
             </span>
             <input id="speed" type="range" min="1" max="60" value="20" />
           </label>
         </div>
 
-        <div id="stats" class="stats">
-          <span><strong>step:</strong> <span id="step-count">0</span></span>
-          <span><strong>fps:</strong> <span id="fps">0</span></span>
-          <span><strong>seed:</strong> <span id="seed-out">—</span></span>
-        </div>
-
-        <p id="error" class="error" role="alert" hidden></p>
-
         <details id="presets-wrap" class="panel" open hidden>
-          <summary>Presets</summary>
+          <summary>P R E S E T S</summary>
           <div id="presets" class="chip-row"></div>
         </details>
 
         <details id="params-wrap" class="panel" open hidden>
-          <summary>Parameters</summary>
+          <summary>P A R A M E T E R S</summary>
           <div id="params" class="param-list"></div>
         </details>
 
         <details id="stage-wrap" class="panel" open hidden>
-          <summary>Pipeline stage</summary>
-          <div class="control-row">
-            <label>
-              Stage
+          <summary>P I P E L I N E &nbsp; S T A G E</summary>
+          <div class="field-row">
+            <label class="field">
+              <span class="field-label">stage</span>
               <select id="stage-select"></select>
             </label>
-            <button id="promote" type="button">Promote ▶</button>
+            <button id="promote" type="button" class="btn">P R O M O T E &nbsp;▶</button>
           </div>
-          <div class="control-row">
-            <label class="checkbox">
+          <div class="field-row">
+            <label class="field checkbox">
               <input id="auto-promote" type="checkbox" />
-              Auto-promote
+              <span>auto-promote</span>
             </label>
-            <label>
-              Duration (steps)
+            <label class="field">
+              <span class="field-label">duration (steps)</span>
               <input id="stage-duration" type="number" min="1" max="500" step="5" />
             </label>
           </div>
         </details>
 
         <details class="panel" open>
-          <summary>Snapshot &amp; export</summary>
-          <div class="control-row">
-            <button id="download-snapshot" type="button">⬇ Snapshot JSON</button>
-            <label class="file-input">
-              ⬆ Load snapshot
+          <summary>S N A P S H O T &nbsp; · &nbsp; E X P O R T</summary>
+          <div class="action-row">
+            <button id="download-snapshot" type="button" class="btn">↓ &nbsp;S N A P S H O T</button>
+            <label class="btn file-input">
+              ↑ &nbsp;L O A D
               <input id="load-snapshot" type="file" accept=".json,application/json" />
             </label>
           </div>
-          <div class="control-row">
-            <button id="download-png" type="button">⬇ Frame PNG</button>
-            <button id="export-gif" type="button">⬇ Animated GIF</button>
+          <div class="action-row">
+            <button id="download-png" type="button" class="btn">↓ &nbsp;F R A M E &nbsp; · &nbsp; P N G</button>
+            <button id="export-gif" type="button" class="btn">↓ &nbsp;A N I M A T E D &nbsp; · &nbsp; G I F</button>
           </div>
-          <div class="control-row">
-            <label>
-              GIF steps
+          <div class="field-row">
+            <label class="field">
+              <span class="field-label">gif steps</span>
               <input id="gif-steps" type="number" min="2" max="240" value="60" />
             </label>
-            <label>
-              GIF fps
+            <label class="field">
+              <span class="field-label">gif fps</span>
               <input id="gif-fps" type="number" min="1" max="30" value="8" />
             </label>
           </div>
@@ -113,47 +156,41 @@
         </details>
       </section>
 
-      <section class="stage" aria-label="Simulation">
-        <div id="stage-banner" class="stage-banner" hidden aria-live="polite" aria-atomic="true">
-          <span class="stage-index" id="stage-banner-index"></span>
-          <span class="stage-title" id="stage-banner-title"></span>
-          <span class="stage-citation" id="stage-banner-citation"></span>
-        </div>
-        <canvas
-          id="canvas"
-          width="600"
-          height="600"
-          role="img"
-          aria-label="Cellular automaton grid. State is summarized in the population panel below."
-        >
-          Cellular automaton visualization. Read the population panel below for the
-          numerical state of the simulation.
-        </canvas>
-        <div id="legend" class="legend" hidden></div>
-        <div id="population" class="population" aria-live="off"></div>
-      </section>
-
-      <section class="tutorial" aria-label="Tutorial">
-        <div class="tutorial-head">
-          <h2 id="tutorial-title">About this rule</h2>
-          <div class="tutorial-nav">
-            <button id="tutorial-prev" type="button" aria-label="Previous tutorial step">◀</button>
-            <span id="tutorial-counter" aria-live="polite">1 / 1</span>
-            <button id="tutorial-next" type="button" aria-label="Next tutorial step">▶</button>
+      <!-- IV · MARGINALIA (tutorial) -------------------------------------- -->
+      <section class="marginalia" aria-label="Tutorial">
+        <p class="section-label"><span class="roman">IV</span>&nbsp;&nbsp;M A R G I N A L I A</p>
+        <div class="marginalia-head">
+          <p id="tutorial-title" class="marginalia-title">about this rule</p>
+          <div class="marginalia-nav">
+            <button
+              id="tutorial-prev"
+              type="button"
+              class="btn nav"
+              aria-label="Previous tutorial step"
+            >◀</button>
+            <span id="tutorial-counter" class="marginalia-counter" aria-live="polite">1 / 1</span>
+            <button
+              id="tutorial-next"
+              type="button"
+              class="btn nav"
+              aria-label="Next tutorial step"
+            >▶</button>
           </div>
         </div>
-        <p id="tutorial-body" class="tutorial-body" aria-live="polite"></p>
+        <p id="tutorial-body" class="marginalia-body" aria-live="polite"></p>
         <details class="panel">
-          <summary>All steps</summary>
-          <ol id="tutorial-all"></ol>
+          <summary>A L L &nbsp; S T E P S</summary>
+          <ol id="tutorial-all" class="marginalia-list"></ol>
         </details>
       </section>
     </main>
 
     <footer>
-      <p>
-        See <a href="https://github.com/rizzleroc/CellAutomata">GitHub</a>
-        for citations and the Python source.
+      <hr class="hairline" />
+      <p class="footer-text">
+        C E L L A U T O &nbsp; · &nbsp;
+        <a href="https://github.com/rizzleroc/CellAutomata">github.com/rizzleroc/cellautomata</a>
+        &nbsp; · &nbsp; M M X X V I
       </p>
     </footer>
 
