@@ -126,13 +126,32 @@ class AbiogenesisStageVents:
         c = width // 2
         return c - half, c + half
 
-    def init_state(self, width: int, height: int) -> VentState:
+    def init_state(
+        self,
+        width: int,
+        height: int,
+        *,
+        seed_field: np.ndarray | None = None,
+    ) -> VentState:
+        from cellauto.rules.abiogenesis.science import normalise_signal
+
+        signal = normalise_signal(seed_field)
         protons = np.full((height, width), self.ocean_acidity, dtype=np.float32)
         organic = np.zeros((height, width), dtype=np.float32)
+        if signal is not None:
+            # G1: warm-start the organic field with upstream activity so the
+            # chemiosmotic stage doesn't begin from a barren grid when there
+            # was already a chemistry-active upstream stage.
+            organic = (signal * 0.08).astype(np.float32)  # type: ignore[assignment]
         h2 = np.zeros((height, width), dtype=np.float32)
         co2 = np.zeros((height, width), dtype=np.float32)
         self._apply_sources(protons, h2, co2)
         return VentState(protons=protons, organic=organic, h2=h2, co2=co2)
+
+    def extract_signal(self, state: VentState) -> np.ndarray:
+        """Downstream: the acetate (WL product) field — where carbon
+        fixation has accumulated organic matter."""
+        return state.organic.copy()
 
     def _apply_sources(
         self,

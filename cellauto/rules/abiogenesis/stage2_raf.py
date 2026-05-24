@@ -64,7 +64,13 @@ class AbiogenesisStage2RAF:
     diffusion_rate: float = 0.05
     rng: random.Random = field(default_factory=random.Random)
 
-    def init_state(self, width: int, height: int) -> RAFState:
+    def init_state(
+        self,
+        width: int,
+        height: int,
+        *,
+        seed_field: np.ndarray | None = None,
+    ) -> RAFState:
         # Build a random reaction network and locate its RAF. If the network
         # has no RAF, regenerate up to 5 times — RAFs are common above
         # connectivity ~2 (Kauffman 1986).
@@ -87,17 +93,34 @@ class AbiogenesisStage2RAF:
             )
             raf = frozenset()
 
+        from cellauto.rules.abiogenesis.science import normalise_signal
+
+        signal = normalise_signal(seed_field)
         c = np.zeros((height, width, self.n_species), dtype=np.float32)
         # Seed food species at low concentration everywhere — the "primordial
         # ocean has a uniform background concentration of small molecules"
         # idealization.
         for s in network.food_set:
             c[:, :, s] = 0.1
-        # Localised perturbation in the center to break symmetry.
-        cx, cy = width // 2, height // 2
-        r = max(3, min(width, height) // 12)
-        c[cy - r : cy + r, cx - r : cx + r, :] += 0.3 / self.n_species
+        if signal is not None:
+            # G1: bump every species's concentration in proportion to the
+            # upstream signal at each cell. Bright upstream regions (where
+            # Stage 1 had Gray-Scott spots, where the vent had organic
+            # synthesis, etc.) become high-chemistry-density regions for
+            # the RAF to ignite from.
+            bias = signal.astype(np.float32)[..., None]  # (H, W, 1)
+            c += bias * (0.35 / max(self.n_species, 1))
+        else:
+            # Localised perturbation in the center to break symmetry.
+            cx, cy = width // 2, height // 2
+            r = max(3, min(width, height) // 12)
+            c[cy - r : cy + r, cx - r : cx + r, :] += 0.3 / self.n_species
         return RAFState(concentrations=c, network=network, raf=raf)
+
+    def extract_signal(self, state: RAFState) -> np.ndarray:
+        """Downstream stages get the spatial density of RAF chemistry —
+        the location of self-sustaining autocatalytic activity."""
+        return state.concentrations.sum(axis=2).astype(np.float32)
 
     def step(self, state: RAFState) -> RAFState:
         c = state.concentrations

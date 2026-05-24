@@ -164,6 +164,31 @@ class AbiogenesisPipelineRule:
             rule.rng = self.rng
         return rule
 
+    @staticmethod
+    def _extract_signal(rule: Any, state: Any) -> Any:
+        """Pull the previous stage's transferable signal so we can seed the
+        next stage with it. Returns ``None`` when the previous stage hasn't
+        opted in. The G1 fix: state genuinely flows forward across promotion.
+        """
+        if hasattr(rule, "extract_signal"):
+            try:
+                return rule.extract_signal(state)
+            except Exception:  # pragma: no cover — defensive
+                return None
+        return None
+
+    def _init_new_stage_state(self, new_rule: Any, width: int, height: int, signal: Any) -> Any:
+        """Initialise the new stage's state, passing the upstream signal if
+        the new stage accepts it. Falls back to bare ``init_state`` when the
+        new stage's ``init_state`` doesn't accept a ``seed_field`` kwarg —
+        keeps backward compat with stages that haven't opted in yet."""
+        if signal is None:
+            return new_rule.init_state(width, height)
+        try:
+            return new_rule.init_state(width, height, seed_field=signal)
+        except TypeError:
+            return new_rule.init_state(width, height)
+
     def init_state(self, width: int, height: int) -> PipelineState:
         inner = self._make_stage(self.starting_stage)
         self.renderer_kind = inner.renderer_kind
@@ -187,24 +212,32 @@ class AbiogenesisPipelineRule:
         return state
 
     def promote(self, state: PipelineState) -> None:
+        # G1: extract the upstream signal BEFORE we lose the reference.
+        prev_signal = self._extract_signal(state.inner_rule, state.inner_state)
         state.current_stage = min(state.current_stage + 1, len(self.stage_classes) - 1)
         new_rule = self._make_stage(state.current_stage)
         state.inner_rule = new_rule
-        state.inner_state = new_rule.init_state(state.width, state.height)
+        state.inner_state = self._init_new_stage_state(new_rule, state.width, state.height, prev_signal)
         self.renderer_kind = new_rule.renderer_kind
         self._step_count = 0
 
     def set_stage(self, state: PipelineState, n: int) -> None:
         """Jump directly to stage ``n``. Unlike ``promote``, this can move
         backwards as well as forwards — it rebuilds the inner rule and state
-        from scratch for the requested stage."""
+        from scratch for the requested stage. Backward jumps don't carry a
+        signal forward (there is no upstream to inherit from)."""
         n = max(0, min(int(n), len(self.stage_classes) - 1))
         if n == state.current_stage:
             return
+        # Forward jumps still carry the signal — the jump simulates a
+        # multi-step promotion. Backward jumps reset.
+        prev_signal = (
+            self._extract_signal(state.inner_rule, state.inner_state) if n > state.current_stage else None
+        )
         state.current_stage = n
         new_rule = self._make_stage(n)
         state.inner_rule = new_rule
-        state.inner_state = new_rule.init_state(state.width, state.height)
+        state.inner_state = self._init_new_stage_state(new_rule, state.width, state.height, prev_signal)
         self.renderer_kind = new_rule.renderer_kind
         self._step_count = 0
 

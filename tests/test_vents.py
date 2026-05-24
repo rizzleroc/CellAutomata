@@ -106,3 +106,36 @@ def test_no_co2_means_no_synthesis():
     for _ in range(50):
         state = rule.step(state)
     assert rule.population(state)["acetate_yield_x100"] == 0
+
+
+def test_stoichiometric_cap_respects_two_to_one_ratio():
+    """G8 pin: the Wood-Ljungdahl net reaction is 2 CO₂ + 4 H₂ → acetate
+    (normalised in-sim to 1 CO₂ + 2 H₂). So no matter how much H₂ we flood
+    in, the acetate yield must remain bounded by the CO₂ feed — the reaction
+    can't run faster than its limiting reagent. We check this by clamping
+    CO₂ low and H₂ high: yield should be small (because CO₂ is the limiter),
+    NOT proportional to the H₂ excess.
+    """
+    co2_limited = AbiogenesisStageVents(
+        h2_feed_level=1.0,
+        co2_feed_level=0.05,  # CO2 is the limiting reagent
+        co2_feed_rate=0.01,
+        rng=random.Random(1),
+    )
+    full = AbiogenesisStageVents(rng=random.Random(1))
+    state_lim = co2_limited.init_state(40, 40)
+    state_full = full.init_state(40, 40)
+    for _ in range(80):
+        state_lim = co2_limited.step(state_lim)
+        state_full = full.step(state_full)
+    yield_limited = co2_limited.population(state_lim)["acetate_yield_x100"]
+    yield_full = full.population(state_full)["acetate_yield_x100"]
+    # The CO2-starved run must produce strictly less acetate than the
+    # both-feedstocks-flush run, AND less than half of it (because the
+    # CO2 supply is ~13× lower) — i.e. the stoichiometric cap binds.
+    assert yield_limited < yield_full, (
+        f"CO2-limited yield {yield_limited} should be < full-feed yield {yield_full}"
+    )
+    assert yield_limited <= yield_full // 2, (
+        f"stoichiometric cap not binding: CO2-limited {yield_limited} vs full {yield_full}"
+    )

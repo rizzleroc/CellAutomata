@@ -92,27 +92,31 @@ class AbiogenesisStageLUCA:
     name: str = "abiogenesis-luca"
     renderer_kind: str = "field"
     n_genes: int = 16
-    # Gene fitness contributions: indices 0-5 essential (high benefit), 6-11
-    # accessory (mild), 12-15 deleterious (cost). The essential-gene count
-    # sets the LUCA target — `luca_size` should converge to this.
-    gene_values: tuple[float, ...] = (
-        2.5,
-        2.5,
-        2.5,
-        2.5,
-        2.5,
-        2.5,
-        0.7,
-        0.7,
-        0.7,
-        0.7,
-        0.7,
-        0.7,
-        -0.6,
-        -0.6,
-        -0.6,
-        -0.6,
+    # G5 — pathway graph (NETWORK-DERIVED essentiality).
+    #
+    # The v3.4 version used a hand-shaped 16-vector ``gene_values`` declaring
+    # gene 0 worth +2.5 etc. The audit flagged that as a tuned parameter, not
+    # a discovered invariant. Under G5, fitness is instead derived from a
+    # small static co-occurrence pathway graph: a pathway is a set of gene
+    # indices that ALL must be present to confer their joint benefit
+    # (missing any one nullifies the benefit). The "essential" genes are
+    # then the genes that participate in at least one pathway — they emerge
+    # from the network topology rather than being assigned.
+    #
+    # The 5 toy pathways below cover 10 of the 16 genes; the remaining 6
+    # are accessory (small individual bonus, no pathway requirement).
+    # Pathway names match the LUCA_GENE_NAMES tuple positions and are
+    # informed by Weiss et al. 2016's reconstruction of LUCA as an
+    # anaerobic thermophilic chemolithoautotroph subsisting on CO₂ + H₂.
+    pathways: tuple[tuple[tuple[int, ...], float], ...] = (
+        ((0, 1, 2), 1.4),  # translation core: rpoB · rpsC · rplB (ribosome)
+        ((3, 4, 5), 1.5),  # Wood-Ljungdahl: fdhA · codhC · mrpA
+        ((6, 7), 1.0),  # chemiosmotic ATP: atpA + Mrp-antiporter pair
+        ((8, 9), 0.9),  # H₂ chemistry: hypE + nifH (anaerobic metabolism)
+        ((10, 11), 0.8),  # DNA maintenance: dnaK chaperone + replication
     )
+    pathway_break_penalty: float = 0.15  # cost per pathway present-but-incomplete
+    accessory_bonus: float = 0.08  # small fitness for accessory (non-pathway) genes
     gene_cost: float = 0.10  # per-gene maintenance cost (genome-size penalty)
     death_rate: float = 0.10
     repro_prob: float = 0.6
@@ -128,29 +132,92 @@ class AbiogenesisStageLUCA:
     rng: random.Random = field(default_factory=random.Random)
 
     @property
+    def pathway_genes(self) -> frozenset[int]:
+        """The set of gene indices that participate in at least one pathway.
+        These are the network-essential genes; the recovered LUCA core
+        should be a subset of this set."""
+        return frozenset(g for path, _ in self.pathways for g in path)
+
+    @property
     def essential_count(self) -> int:
-        return sum(1 for v in self.gene_values if v > 1.0)
+        """Number of network-essential genes (members of at least one
+        pathway). The recovered LUCA core size should converge toward this."""
+        return len(self.pathway_genes)
 
     @property
     def fitness_normaliser(self) -> float:
-        """Approximate maximum reachable fitness (essential genes only,
-        accounting for their maintenance cost)."""
-        essentials = [v for v in self.gene_values if v > 1.0]
-        return max(sum(essentials) - self.gene_cost * len(essentials), 1.0)
+        """Approximate maximum reachable fitness — every pathway complete
+        plus every accessory gene, minus their maintenance cost."""
+        pathway_benefit = sum(b for _, b in self.pathways)
+        n_path_genes = len(self.pathway_genes)
+        n_accessory = self.n_genes - n_path_genes
+        accessory_total = self.accessory_bonus * n_accessory
+        cost_total = self.gene_cost * self.n_genes
+        return max(pathway_benefit + accessory_total - cost_total, 1.0)
 
     # ---- Rule protocol ----------------------------------------------------
 
-    def init_state(self, width: int, height: int) -> LUCAState:
+    def init_state(
+        self,
+        width: int,
+        height: int,
+        *,
+        seed_field: np.ndarray | None = None,
+    ) -> LUCAState:
+        from cellauto.rules.abiogenesis.science import normalise_signal
+
+        signal = normalise_signal(seed_field)
         gen = np.random.default_rng(self.rng.randrange(2**31))
-        occupied = gen.random((height, width)) < self.seed_fraction
+        if signal is None:
+            occupied = gen.random((height, width)) < self.seed_fraction
+        else:
+            # G1: founder lineages emerge at the brightest cells of the
+            # upstream signal (protocell-selection survivors, e.g.). Random
+            # genomes everywhere they take root.
+            probs = np.clip(self.seed_fraction * (0.3 + 1.4 * signal), 0.0, 1.0)
+            occupied = gen.random((height, width)) < probs
         genome = gen.random((height, width, self.n_genes)) < 0.5
         return LUCAState(occupied=occupied, genome=genome)
 
+    def extract_signal(self, state: LUCAState) -> np.ndarray:
+        """Downstream: occupied × per-cell fitness — bright cells are
+        well-adapted lineages."""
+        fit = self._fitness_field(state)
+        return (state.occupied.astype(np.float32) * fit).astype(np.float32)
+
     def _fitness_field(self, state: LUCAState) -> np.ndarray:
-        vals = np.array(self.gene_values, dtype=np.float32)
-        score = (state.genome.astype(np.float32) * vals).sum(axis=2)
-        size = state.genome.sum(axis=2).astype(np.float32)
-        fit = score - self.gene_cost * size
+        """G5 — pathway-network fitness, not hand-shaped per-gene values.
+
+        For each cell:
+          * For every pathway, if ALL member genes are present, add the
+            pathway's joint benefit. If only SOME members are present
+            (partial machinery — wasted), subtract a small penalty.
+          * For each accessory gene present (not in any pathway), add a
+            small individual bonus.
+          * Subtract per-gene maintenance cost (genome-size penalty).
+        Normalise into [0, 1].
+
+        The "essential" gene set this rewards is purely a topological
+        property of the pathway graph — a network invariant rather than a
+        list of pre-declared values.
+        """
+        H, W, N = state.genome.shape
+        genome_f = state.genome.astype(np.float32)
+        fit = np.zeros((H, W), dtype=np.float32)
+        accessory = set(range(N)) - set(self.pathway_genes)
+        # Pathway contributions.
+        for path, benefit in self.pathways:
+            members = np.array(path, dtype=np.int64)
+            present_count = genome_f[..., members].sum(axis=-1)
+            full = (present_count == len(members)).astype(np.float32)
+            partial = ((present_count > 0) & (present_count < len(members))).astype(np.float32)
+            fit = fit + full * benefit - partial * self.pathway_break_penalty
+        # Accessory genes — small individual bonus.
+        for g in accessory:
+            fit = fit + genome_f[..., g] * self.accessory_bonus
+        # Maintenance cost.
+        size = genome_f.sum(axis=-1)
+        fit = fit - self.gene_cost * size
         return np.clip(fit / self.fitness_normaliser, 0.0, 1.0)
 
     def _luca_core(self, state: LUCAState) -> np.ndarray:
@@ -263,10 +330,13 @@ class AbiogenesisStageLUCA:
     def to_config(self) -> dict:
         return {
             "n_genes": self.n_genes,
-            "gene_values": tuple(float(v) for v in self.gene_values),
+            "pathways": tuple((tuple(int(g) for g in path), float(b)) for path, b in self.pathways),
+            "pathway_break_penalty": self.pathway_break_penalty,
+            "accessory_bonus": self.accessory_bonus,
             "gene_cost": self.gene_cost,
             "death_rate": self.death_rate,
             "repro_prob": self.repro_prob,
             "mutation_rate": self.mutation_rate,
             "seed_fraction": self.seed_fraction,
+            "core_prevalence": self.core_prevalence,
         }

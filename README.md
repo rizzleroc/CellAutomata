@@ -7,16 +7,25 @@
 [![CI](https://github.com/rizzleroc/CellAutomata/actions/workflows/ci.yml/badge.svg)](https://github.com/rizzleroc/CellAutomata/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 ![Python](https://img.shields.io/badge/python-3.10%2B-blue)
-![Version](https://img.shields.io/badge/version-3.4.0-brightgreen)
+![Version](https://img.shields.io/badge/version-3.5.0-brightgreen)
 
 A scientifically-grounded cellular sandbox exploring the **chemistry-to-life
 transition** — the abiogenesis problem — across a canonical five-stage
-pipeline *and* a **12-stage extended pipeline** that walks every major
-origin-of-life process (alkaline hydrothermal vents with real Wood-Ljungdahl
-chemistry, mineral catalysis, autocatalytic sets, homochirality, RNA world,
-genetic-code coevolution, coacervates, vesicles, protocell selection, and
-LUCA distillation) in scientific order. Plus the two canonical reference
-cellular automata (Conway, Wolfram 1D) for comparison.
+pipeline *and* a **coupled 12-stage extended pipeline** that walks every
+major origin-of-life process (alkaline hydrothermal vents with real
+Wood-Ljungdahl chemistry, mineral catalysis, autocatalytic sets,
+homochirality, RNA world, genetic-code coevolution, coacervates, vesicles,
+protocell selection, and LUCA distillation) in scientific order.
+
+In v3.5 every stage transition genuinely passes its output field forward
+to the next stage's initial condition, so the pipeline is now a single
+continuous narrative — not twelve isolated demos on a timer. Stage XI
+runs the real Eigen-Schuster replicator ODE; Stage X has Helfrich
+bending elasticity; Stage VIII scores peptides under a Miyazawa-Jernigan
+contact-energy landscape; Stage XII derives the LUCA core from a
+co-occurrence pathway graph (a network invariant, not a tuned vector).
+Plus the two canonical reference cellular automata (Conway, Wolfram 1D)
+for comparison.
 
 ![Self-replicating Gray-Scott spots — protocell-like division](docs/hero.png)
 
@@ -312,8 +321,37 @@ The project's history is its own gap analysis:
   reported in the field: chapter-card overlays now dismiss reliably, and
   the default sim speed is slower so transitions are observable. CI gates
   all green (ruff, ruff-format, mypy, pytest with 87 % coverage).
+- **v3.5** (2026-05-24): the **honest-gap-closure** release. A v3.4
+  self-audit found four real integrity gaps under the AAA polish; v3.5
+  closes all of them:
+  - **G1 — pipeline coupling**: every stage now exposes `extract_signal`
+    and accepts `seed_field`; `promote()` and forward `set_stage()`
+    thread the upstream output into the new stage's init. The 12-stage
+    pipeline is a single coupled narrative, no longer twelve isolated
+    sims on a timer. Pinned by a Pearson-correlation regression test.
+  - **G2 — Eigen-Schuster hypercycle ODE**: Stage XI now integrates
+    `dx_i/dt = x_i ( k_i x_{i-1} − Φ )` inside every protocell. The
+    "TOY" disclaimer is gone. Mass-conserved Euler step with
+    renormalisation; pinned by fixed-point + broken-cycle tests.
+  - **G3 — Helfrich bending elasticity**: Stage X adds the biharmonic
+    regularisation `−κ_b · ∇²(∇²φ)` so vesicle interfaces have a
+    real bending modulus. Pinned by a total-curvature-energy reduction
+    test.
+  - **G4 — Miyazawa-Jernigan landscape**: Stage VIII fitness now depends
+    on sequence composition under a residue-pair contact-energy table
+    (hydrophobic packing favourable, like-charge clashes unfavourable),
+    not on matching a hard-coded answer key.
+  - **G5 — pathway-graph LUCA**: Stage XII essentiality is now a
+    topological invariant of a static co-occurrence pathway graph (5
+    toy pathways covering 12 of 16 genes — translation core, Wood-
+    Ljungdahl, chemiosmotic ATP, H₂ chemistry, DNA maintenance), not a
+    tuned per-gene benefit vector.
+  - Plus G6–G10 (behavioural test pins for CMC gate, Eigen ε_c
+    transition, WL stoichiometric cap, real code-consensus test,
+    pipeline handoff) and G11–G12 (README + CHANGELOG + ROADMAP
+    honesty). Test count 120 → 141; coverage 87.09 % → 88.13 %.
 
-**120 tests, all passing.** See [docs/science.md](docs/science.md) for the
+**141 tests, all passing.** See [docs/science.md](docs/science.md) for the
 math and citations, and [docs/ROADMAP.md](docs/ROADMAP.md) for the feature
 inventory, mandated UI toolset, and remaining roadmap. Full version history in
 [CHANGELOG.md](CHANGELOG.md).

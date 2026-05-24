@@ -50,3 +50,54 @@ def test_connected_components_counts_separate_regions():
     mask[4, 4] = True  # third isolated vesicle
     n = AbiogenesisStage3Vesicles._count_connected(mask)
     assert n == 3
+
+
+def test_helfrich_bending_suppresses_total_curvature_energy():
+    """G3 pin: turning on the Helfrich bending term (κ_b > 0) must reduce
+    the total bending energy E_b ∝ Σ(∇²v)² of the lipid field — that's
+    literally what the variational term is designed to minimise. We compare
+    same-seed runs and assert the κ_b > 0 case has measurably lower total
+    curvature energy WITHOUT erasing the CMC-threshold vesicle pattern.
+    """
+
+    from cellauto.rules.abiogenesis.science import laplacian_5pt
+
+    sharp = AbiogenesisStage3Vesicles(kappa_bend=0.0)
+    smooth = AbiogenesisStage3Vesicles(kappa_bend=0.025)
+    eng_sharp = Engine(width=40, height=40, rule=sharp, seed=3)
+    eng_smooth = Engine(width=40, height=40, rule=smooth, seed=3)
+    for _ in range(120):
+        eng_sharp.step()
+        eng_smooth.step()
+    # Total bending energy proxy (the actual quantity Helfrich minimises).
+    e_sharp = float((laplacian_5pt(eng_sharp.state.lipid) ** 2).sum())
+    e_smooth = float((laplacian_5pt(eng_smooth.state.lipid) ** 2).sum())
+    assert e_smooth < e_sharp * 0.97, (
+        f"Helfrich bending did not reduce total bending energy: sharp={e_sharp:.4f}, smooth={e_smooth:.4f}"
+    )
+    smooth_membrane = int(eng_smooth.state.membrane_mask.sum())
+    assert smooth_membrane > 0, "Helfrich bending erased all vesicles — κ_b too aggressive"
+
+
+def test_cmc_gate_zero_above_peak_positive_below():
+    """G6 pin: the CMC threshold is the central scientific claim of the stage.
+    With the threshold set far above any value the lipid field ever reaches,
+    NO vesicles should form (no membrane, no protocell — the chemistry is
+    just below the critical micelle concentration). With it set well below,
+    vesicles must form. This pins that the threshold is genuinely gating
+    self-assembly, not a cosmetic display knob.
+    """
+    high = AbiogenesisStage3Vesicles(cmc_threshold=10.0)  # unreachable
+    eng_high = Engine(width=40, height=40, rule=high, seed=1)
+    for _ in range(100):
+        eng_high.step()
+    assert int(eng_high.state.membrane_mask.sum()) == 0, (
+        "membrane formed above an unreachable CMC — the threshold isn't gating self-assembly"
+    )
+    low = AbiogenesisStage3Vesicles(cmc_threshold=0.05)
+    eng_low = Engine(width=40, height=40, rule=low, seed=1)
+    for _ in range(100):
+        eng_low.step()
+    assert int(eng_low.state.membrane_mask.sum()) > 0, (
+        "no membrane below the CMC — but lipid is clearly accumulating"
+    )

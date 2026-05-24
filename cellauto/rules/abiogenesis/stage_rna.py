@@ -78,15 +78,39 @@ class AbiogenesisStageRNAWorld:
 
     # ---- Rule protocol -----------------------------------------------------
 
-    def init_state(self, width: int, height: int) -> RNAWorldState:
+    def init_state(
+        self,
+        width: int,
+        height: int,
+        *,
+        seed_field: np.ndarray | None = None,
+    ) -> RNAWorldState:
+        from cellauto.rules.abiogenesis.science import normalise_signal
+
+        signal = normalise_signal(seed_field)
         L = self.seq_length
         seqs = np.zeros((height, width, L), dtype=np.int8)  # master = all zeros
         occupied = np.zeros((height, width), dtype=bool)
         for y in range(height):
             for x in range(width):
-                if self.rng.random() < self.seed_fraction:
-                    occupied[y, x] = True  # seed wild-type (master) colonisers
+                # G1: occupancy probability is biased by upstream signal —
+                # cells in high-signal regions are more likely to host the
+                # master quasispecies coloniser.
+                p = self.seed_fraction
+                if signal is not None:
+                    p = float(np.clip(self.seed_fraction * (0.3 + 1.4 * signal[y, x]), 0.0, 1.0))
+                if self.rng.random() < p:
+                    occupied[y, x] = True
         return RNAWorldState(seqs=seqs, occupied=occupied)
+
+    def extract_signal(self, state: RNAWorldState) -> np.ndarray:
+        """Downstream: an "RNA-active" mask weighted by master-proximity.
+        Cells with the master sequence (Hamming distance 0) get the brightest
+        signal; mutants nearby contribute less; empty cells contribute zero."""
+        L = self.seq_length
+        ham = state.seqs.astype(np.int32).sum(axis=2)  # since master = all-zero, sum = Hamming dist
+        weight = np.where(state.occupied, 1.0 - (ham / L), 0.0)
+        return np.clip(weight, 0.0, 1.0).astype(np.float32)
 
     def _fitness(self, seq: np.ndarray) -> float:
         # Single-peak landscape: the master (all-zero) strand replicates σ×

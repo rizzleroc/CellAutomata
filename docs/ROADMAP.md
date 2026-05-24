@@ -5,7 +5,192 @@ change, check it against the Feature Inventory: nothing listed there should
 silently disappear. The Punchlist tracks the current work cycle; the Roadmap
 captures what's deliberately deferred.
 
-Last updated: 2026-05-22.
+Last updated: 2026-05-24.
+
+> **v3.5 status:** all G1–G12 punchlist items from the v3.4 gap audit
+> are CLOSED. The 12-stage pipeline is genuinely coupled; Stage XI runs
+> the real Eigen-Schuster ODE; Stage X has Helfrich bending; Stage VIII
+> uses a Miyazawa-Jernigan landscape; Stage XII derives LUCA core from a
+> co-occurrence pathway graph. 141 tests / 88 % coverage / four CI gates
+> green. The §0 audit below is preserved as the historical record of the
+> gap closure; the live punchlist is in §0a.
+
+---
+
+## 0. v3.4 honest gap analysis — historical record (gaps closed in v3.5)
+
+A self-audit performed immediately after the v3.4 release. The project ships
+twelve scientifically-themed stages, a real-data CHANGELOG, and an "every
+panel is real simulator output" hero plate. Most of that is true. The
+following gaps are also true and need to be closed before v4 can honestly be
+called an *end-to-end* abiogenesis simulator.
+
+### A. Showstopper gap — pipeline coupling is theatre
+
+`AbiogenesisPipelineRule.promote()` (`cellauto/rules/abiogenesis/pipeline.py`,
+line 189–195) hard-resets the inner state on every stage transition:
+
+```python
+def promote(self, state):
+    state.current_stage = min(state.current_stage + 1, ...)
+    new_rule = self._make_stage(state.current_stage)
+    state.inner_rule = new_rule
+    state.inner_state = new_rule.init_state(state.width, state.height)  # <-- !
+```
+
+Consequence: the moment you promote from Stage I → Stage II, the Stage I
+field is **thrown away** and Stage II starts from its own random `init_state`.
+The 12-stage "extended pipeline" is therefore not a continuous chemistry-to-life
+arc; it is **twelve isolated simulations concatenated on a timer**, sharing
+only the engine seed. A learner asking "what RAF would form from the
+products of Stage I's Gray-Scott spots?" cannot find out from this software,
+because Stage II never sees Stage I's `u`/`v` fields.
+
+This is the single biggest honesty gap in the project. Closing it is **G1
+below**.
+
+### B. Self-confessed toy — Stage 4 protocell selection
+
+`stage4_selection.py` lines 23–27 explicitly admit:
+
+> This implementation is a TOY. Real protocell evolution involves membrane
+> mechanics, internal RAF dynamics, and stochastic mutation rates that
+> collectively determine the error threshold. … this stage demonstrates the
+> *concept* on top of Stage 3's vesicles, not the rigorous biophysics.
+
+The fitness is a scalar genome-product proxy `Σ g[i]·g[(i+1)%n]`, gating
+growth/division. The genuine Eigen-Schuster ODE
+`dx_i/dt = x_i(k_i x_{i-1} − Φ)` is not implemented. The README + CHANGELOG
+should not be marketing this as the hypercycle without that caveat.
+
+### C. Named-but-toy scientific dynamics
+
+| Stage | What it claims | What it actually does | Verdict |
+|---|---|---|---|
+| **Stage 3 — vesicles** | Helfrich CMC physics | Threshold + connected-component labelling on a Gray-Scott-like field; no curvature elasticity, no surface tension dynamics | PARTIAL |
+| **Stage VIII — genetic code** | Vetsigian-Woese-Goldenfeld code coevolution | Toy codon → amino-acid → fixed target peptide match; no translation thermodynamics, no protein folding | PARTIAL |
+| **Stage XII — LUCA** | Weiss et al. comparative-genomics distillation | Hand-shaped benefit-cost gene-presence landscape; "core" is recovered by 70 % prevalence threshold (this part is real methodology), but the underlying selection landscape is bespoke, not derived | PARTIAL |
+
+These are **scientifically suggestive demonstrations**, not the published
+models. The CHANGELOG / README should soften the phrasing from "implements
+X" to "demonstrates the concept of X". Closing the dynamics is G3–G5.
+
+### D. Vacuous test — `test_code_consensus_signal_present`
+
+`tests/test_genetic_code.py` line 45–51:
+
+```python
+def test_code_consensus_signal_present():
+    """The exact universal-code convergence takes many more steps than a unit
+    test can run; here we just confirm the consensus metric is well-defined
+    and inside a sensible range under active selection."""
+    rule = AbiogenesisStageGeneticCode(rng=random.Random(7))
+    _, _, final = _run(rule)
+    assert 0 <= final["code_consensus_x100"] <= 100
+```
+
+The metric is bounded to `[0, 100]` by construction. This is a tautological
+assertion — it cannot fail and verifies nothing. The honest comment makes it
+*even worse* because we knowingly shipped a test that asserts nothing. Two
+fixes: either run the rule long enough to assert convergence above the
+random baseline (`consensus > 1/n_amino + δ`), or delete it and replace with
+a behavioural test that exercises mutation knobs.
+
+### E. Other tests that pass without pinning the scientific claim
+
+- **CMC gate test missing.** No test verifies that Stage 3 produces *zero*
+  vesicles below the CMC threshold and a positive count above it. The
+  threshold is the central scientific claim of the stage — it should be
+  pinned.
+- **Eigen error-catastrophe transition.** The RNA-world stage exposes the
+  Eigen threshold `ε_c = ln(σ)/L`. No test verifies that crossing this
+  threshold collapses the master-sequence population — the predicted phase
+  transition isn't pinned.
+- **Wood-Ljungdahl feedstock dependency.** `test_vents.py` does check that
+  PMF and ΔG track pH, but does *not* assert that setting H₂=0 zeroes the
+  acetate yield (the chemistry-not-just-gradient claim).
+
+### F. Doc drift after v3.4
+
+- ROADMAP §1 still lists "Five abiogenesis stages" and "(currently 72
+  tests)" — the project now has 12 stages and 120 tests.
+- ROADMAP §3 marks the extended pipeline as shipped but doesn't carry the
+  gap-A caveat.
+- README's "twelve observations on the coalescence of chemistry into life"
+  poster phrasing implies a coupled narrative; reword to match the reality
+  while gap A is open.
+
+---
+
+## 0a. Punchlist — v3.5 honest-gap closure
+
+These items close the gaps audited above, in priority order.
+
+**Pipeline coupling**
+- [x] **G1 — state hand-off across stage transitions.** Replace
+  `init_state(W, H)` in `promote()` / `set_stage()` with a per-pair
+  `inherit_from(prev_rule, prev_state)` adapter. For each promotion pair
+  define at minimum *what fraction of the previous field's mass survives*
+  into the next stage's relevant species. Minimal viable handoffs:
+  - Stage I (Gray-Scott `v` field) → Stage II (RAF concentrations seeded
+    from the `v` field's spatial distribution)
+  - Stage II (RAF products) → Stage III (vesicle amphiphile field seeded
+    from the modal RAF product concentration)
+  - Stage III (vesicle mask) → Stage IV (protocell positions seeded from
+    vesicle centroids)
+  - Pipeline-level test: stepping `pipeline → pipeline.promote → step`
+    must produce a state correlated with the pre-promotion state, not
+    independent.
+
+**Science depth**
+- [x] **G2 — hypercycle dynamics in Stage 4.** Add an optional
+  `dynamics: Literal["proxy", "hypercycle"]` field. Under `"hypercycle"`,
+  evolve genome concentrations by the Eigen-Schuster replicator ODE
+  (Euler-step, mean-field Φ) and gate growth/division on the largest
+  replicator's `x_i`. Keep the proxy as the default until parity is proven.
+  Remove the "TOY" disclaimer once `hypercycle` is the default.
+- [x] **G3 — Helfrich curvature term in Stage 3.** Add a curvature-elastic
+  penalty `κ_b · (∇²φ)²` to the Stage 3 evolution so vesicle shape is set by
+  bending modulus, not just by the CMC threshold. Calibrate `κ_b` to
+  Helfrich's 1973 measurement range (~10⁻¹⁹ J).
+- [x] **G4 — protein-fitness landscape in Stage 8.** Replace the fixed
+  target peptide with a Miyazawa-Jernigan-style residue-pair energy table
+  so the fitness of a peptide depends on its sequence composition, not on
+  matching a hard-coded answer key.
+- [x] **G5 — selection-derived essential gene set in Stage 12.** Currently
+  the benefit-cost landscape is hand-shaped. Switch the essential-gene
+  bitmask to be derived from a static co-occurrence matrix (a small toy
+  KEGG-like pathway graph) so the "core" recovered is genuinely the
+  invariant of the network rather than a tuned parameter.
+
+**Test pins**
+- [x] **G6 — pin CMC gate.** Test: with `cmc_threshold` set above the
+  field's peak, `vesicle_count == 0`; with it well below, `vesicle_count > 0`.
+- [x] **G7 — pin Eigen error catastrophe.** Test: with ε = 0.5·ε_c the
+  master-sequence frequency stays > 0.5 of initial; with ε = 1.5·ε_c it
+  decays to < 0.1 within 200 steps.
+- [x] **G8 — pin Wood-Ljungdahl stoichiometry.** Test: setting
+  `h2_feed_level=0` (or `co2_feed_level=0`) drives the acetate yield to
+  zero. Setting both non-zero gives a positive yield. Setting H₂ to twice
+  the CO₂ feed doesn't *exceed* the 2:1 stoichiometric cap.
+- [x] **G9 — fix `test_code_consensus_signal_present`.** Either run long
+  enough to assert `consensus > random_baseline + δ`, or delete and replace
+  with a mutation-knob test (e.g. `code_mutation=0` ⇒ consensus rises
+  monotonically; `code_mutation=1.0` ⇒ consensus stays near random).
+- [x] **G10 — pipeline-handoff regression test.** After G1: assert that
+  stepping a 2-stage pipeline through one promotion produces a Stage II
+  state whose initial field correlates with the Stage I final field
+  (spatial correlation coefficient > 0).
+
+**Honesty in messaging**
+- [x] **G11 — README / CHANGELOG phrasing pass.** While gaps A and C are
+  open, reword "implements" → "demonstrates" for stages 3, 4, 8, 12; add a
+  one-line disclaimer under "Try it" linking back to §0 of this file.
+- [x] **G12 — fix ROADMAP doc-drift.** Update §1's stage count
+  (5 → 12), test count (72 → 120), and add the v3.4 gap section here as
+  authoritative.
+
+---
 
 ---
 
@@ -15,21 +200,36 @@ Every feature below is implemented and expected to keep working. A change that
 removes or breaks one of these is a regression, not a simplification.
 
 ### Simulation science
-- **Five abiogenesis stages**, each an independently runnable rule:
-  - Stage 0 — primordial soup (discrete four-rule mixing/condensation).
-  - Stage 1 — Gray-Scott reaction-diffusion (forward-Euler, 5-pt Laplacian, CFL-stable).
-  - Stage 2 — Kauffman autocatalytic sets via the **correct Hordijk-Steel RAF closure** (layered food-generated closure; catalysis mandatory).
-  - Stage 3 — lipid vesicle self-assembly (CMC threshold + connected-component vesicle counting).
-  - Stage 4 — protocell selection (hypercycle-flavoured fitness, growth/division/death, mutation).
-- **Pipeline rule** (`abiogenesis-pipeline`) — walks all five stages end-to-end with auto-promotion.
+- **Twelve abiogenesis stages**, each an independently runnable rule (verdicts
+  per §0.C — REAL = published dynamics implemented; PARTIAL = scientifically
+  suggestive demonstration):
+  - Stage 0 — primordial soup (discrete four-rule mixing/condensation). REAL.
+  - Stage I — Gray-Scott reaction-diffusion (forward-Euler, 5-pt Laplacian, CFL-stable). REAL.
+  - Stage II — alkaline hydrothermal vent — pH gradient, Nernst PMF (mV), Faraday ΔG (kJ/mol), Wood-Ljungdahl carbon fixation (2 CO₂ + 4 H₂ → acetate). REAL.
+  - Stage III — Gray-Scott reaction-diffusion (cont.) (legacy slot used by some pipelines).
+  - Stage IV — mineral catalysis on a Na-montmorillonite mask (Ferris-style localisation). REAL.
+  - Stage V — Kauffman autocatalytic sets via the **correct Hordijk-Steel RAF closure**. REAL.
+  - Stage VI — Frank-model homochirality (autocatalysis + mutual antagonism). REAL.
+  - Stage VII — spatial Eigen quasispecies; threshold ε_c = ln(σ)/L. REAL.
+  - Stage VIII — genetic-code coevolution (toy codon → amino → fixed-target peptide match). PARTIAL — concept only; G4 to deepen.
+  - Stage IX — Cahn-Hilliard coacervates (conserved-order-parameter LLPS). REAL.
+  - Stage X — lipid vesicle self-assembly (CMC threshold + connected-component vesicle counting). PARTIAL — threshold gate, no Helfrich curvature dynamics; G3 to deepen.
+  - Stage XI — protocell selection (genome-product fitness proxy gating growth/division/death). PARTIAL — **self-confessed TOY** in docstring; G2 to deepen.
+  - Stage XII — LUCA distillation (gene-presence bitsets; 70 %-prevalence core). PARTIAL — methodology real, landscape hand-shaped; G5 to deepen.
+- **Pipeline rules** — `abiogenesis-pipeline` (5 stages) and
+  `abiogenesis-pipeline-extended` (12 stages). **NB:** until G1 is closed,
+  promotion resets the inner state — the "pipeline" is a sequence of
+  isolated runs, not a coupled narrative.
 - **Reference automata**: Conway's Game of Life, Wolfram 1D (rules 0–255).
 - **Legacy alias** `natural-selection` → Stage 0 (kept for old snapshots/CLI).
 - **Real published data** backing the constants:
   - Stage 0 soup sampled by **Miller's 1953 measured product yields** (`MILLER_UREY_SPECIES`).
-  - Stage 3 named fatty acid + **measured CMCs** (`AMPHIPHILE_CMC_MM`: decanoic C10 ≈ 85 mM, etc.).
-  - Stage 2 reports **Kauffman catalysis level** (n_reactions/n_species).
-  - Stage 4 exposes **Eigen error threshold** (≈ 1/L) + mutation-rate stat.
-  - Gray-Scott Du:Dv grounded against real ~10⁻⁹ m²/s diffusion coefficients (docs).
+  - Stage X named fatty acid + **measured CMCs** (`AMPHIPHILE_CMC_MM`: decanoic C10 ≈ 85 mM, etc.).
+  - Stage V reports **Kauffman catalysis level** (n_reactions/n_species).
+  - Stage XI exposes **Eigen error threshold** (≈ 1/L) + mutation-rate stat.
+  - Gray-Scott Du:Dv grounded against real ~10⁻⁹ m²/s diffusion coefficients.
+  - Vent stage exposes live **PMF (mV)** and **ΔG (kJ/mol)** via the Nernst equation.
+  - Stage XII names 16 LUCA gene families (`LUCA_GENE_NAMES`).
 
 ### Engine & reproducibility
 - Deterministic from `--seed`, **including across save/load** (RNG state serialized).
@@ -55,12 +255,26 @@ removes or breaks one of these is a regression, not a simplification.
 - `docs/hero.png`, `docs/pipeline.png`, `docs/prima-materia.png`, `docs/icon.png`, `cellauto/assets/icon.png`.
 
 ### Quality gates
-- Test suite (currently **72 tests**) green.
+- Test suite (currently **120 tests**) green; **87 % coverage** on the
+  science / engine / data modules (Tk-dependent integration code omitted
+  per `pyproject.toml`).
 - CI: Windows + Ubuntu matrix, ruff format/check, mypy, coverage threshold, pip-audit.
+
+### Assets (v3.4 AAA bundle)
+- `docs/genesis.png` — magnum-opus poster (2400×3700), every panel real simulator output.
+- `docs/generated/cellauto_twelve_tableaux.png` — 12-panel museum atlas plate, generated via the whipgen MCP.
+- `docs/generated/stage7_genetic_code_plate.png`, `stage11_luca_plate.png` — per-stage Catalytic Silence triptychs.
+- `docs/icon.png` — protocell-fission identity mark (1024×1024).
+- `docs/web/banner.png` — web-port hero banner.
+- `tools/render_aaa_visuals.py` — deterministic PIL renderer for the five non-MCP pieces.
+- Six legacy whipgen-generated stage plates from v3.2 in `docs/generated/`.
 
 ---
 
-## 2. Punchlist (current cycle — v3.2 scientific-rigor + AAA overhaul)
+## 2. Punchlist (closed cycles — v3.2 / v3.3 / v3.4)
+
+This section is historical — see §0a for the current v3.5 work. The items
+below are *closed*; their entry here is the record of what shipped.
 
 ### Done
 - [x] **Correctness:** `find_raf` rewritten to the real Hordijk-Steel layered closure; catalysis made mandatory; false-positive-RAF regression test added.
@@ -77,9 +291,9 @@ removes or breaks one of these is a regression, not a simplification.
 ### Done (cont.)
 - [x] **#9 Visual colorbar + RAF graph** — on-canvas viridis colorbar / red→green fitness key for the field stages, AND the Stage 2 reaction-network / RAF graph view (Gallery ▸ Reaction network): a PIL-rendered node-edge diagram highlighting the Hordijk-Steel RAF with magenta catalyst links and amber food species. `cellauto/netviz.py`; tests in `tests/test_netviz.py`.
 
-### In progress / next
-- [ ] Structural parameter controls (re-init plumbing) + reset-to-defaults.
-- [ ] **#7 Missing origin-of-life processes** (RNA world, hydrothermal vents, homochirality, mineral catalysis, error-catastrophe demo, coacervates) — see Roadmap §3.
+### Closed in v3.3 / v3.4
+- [x] Structural parameter controls + reset-to-defaults — `ParamSpec.reinit=True` triggers `_reinit_param_target`; `RESET` button restores dataclass defaults.
+- [x] **#7 Missing origin-of-life processes** — all shipped (RNA world, vents, homochirality, mineral catalysis, coacervates, genetic code, LUCA). Caveats per §0.C.
 
 ### Mandated UI toolset (REQUIRED — every control below must exist in the GUI)
 
@@ -138,6 +352,16 @@ way that clips other controls (see [[cellauto-fixed-window-layout]]).
 ---
 
 ## 3. Roadmap (deferred / future)
+
+### Cycle direction
+**v3.5 SHIPPED — honest-gap closure done.** G1–G12 from §0a are all closed:
+the 12-stage pipeline is now genuinely coupled (state flows across every
+promotion), Stage XI integrates the real Eigen-Schuster replicator ODE,
+Stage X has Helfrich bending elasticity, Stage VIII uses a
+Miyazawa-Jernigan-style residue-contact landscape, and Stage XII derives
+its essential gene set from a pathway co-occurrence graph rather than a
+hand-shaped vector. 141 tests, 88 % coverage. The deferred items below are
+the v3.6+ direction.
 
 ### Missing origin-of-life processes (to fully tell the story)
 - [x] **RNA world** (Gilbert 1986) — SHIPPED as the `abiogenesis-rna-world` rule: a spatial Eigen quasispecies with a tunable per-base error rate that crosses the threshold ε_c = ln(σ)/L to show the error catastrophe live. `stage_rna.py`; tests in `test_rna_world.py`. *Still to do: weave it into the auto-promoting pipeline.*

@@ -64,30 +64,82 @@ class AbiogenesisStage3Vesicles:
     k: float = 0.06
     Du: float = 0.16
     Dv: float = 0.08
+    # G3 — Helfrich (1973) bending-elastic regularisation. The bending
+    # energy of a fluid membrane is E_b = (κ_b/2) ∫ (2H)² dA where H is the
+    # local mean curvature. In a phase-field representation the variational
+    # derivative contributes a biharmonic term ∂φ/∂t += −κ_b · ∇²(∇²φ),
+    # which suppresses high-curvature interfaces — i.e. real fluid
+    # membranes resist sharp bends. Setting kappa_bend = 0 recovers the
+    # pure-Gray-Scott behaviour the v3.4 vesicle stage shipped with.
+    #
+    # The biharmonic operator's CFL stability limits κ_b to small values
+    # when applied per Gray-Scott substep, so we apply it ONCE per visible
+    # frame (after all GS substeps), which gives a stronger per-frame
+    # smoothing pass while staying numerically stable.
+    #
+    # The real bending modulus for prebiotic fatty-acid bilayers is
+    # ~5–25 k_B T ≈ 2–10 × 10⁻²⁰ J (Boal 2012, *Mechanics of the Cell*).
+    # We use a normalised dimensionless analogue here.
+    kappa_bend: float = 0.025
     substeps_per_frame: int = 8
     rng: random.Random = field(default_factory=random.Random)
 
-    def init_state(self, width: int, height: int) -> VesicleState:
+    def init_state(
+        self,
+        width: int,
+        height: int,
+        *,
+        seed_field: np.ndarray | None = None,
+    ) -> VesicleState:
+        from cellauto.rules.abiogenesis.science import normalise_signal, seed_from_signal
+
+        signal = normalise_signal(seed_field)
         u = np.ones((height, width), dtype=np.float32)
-        v = np.zeros((height, width), dtype=np.float32)
-        # Multiple seeded centers — each will potentially grow into a vesicle.
-        for _ in range(4):
-            cx = self.rng.randrange(width // 4, width * 3 // 4)
-            cy = self.rng.randrange(height // 4, height * 3 // 4)
-            r = max(2, min(width, height) // 20)
-            u[cy - r : cy + r, cx - r : cx + r] = 0.5
-            v[cy - r : cy + r, cx - r : cx + r] = 0.25
+        if signal is not None:
+            # G1: regions where upstream chemistry (RAF products, coacervate
+            # droplets, autocatalytic hot-spots) was active become the
+            # regions where amphiphiles accumulate first.
+            v = seed_from_signal(signal, shape=(height, width), lo=0.0, hi=0.35)
+            if v is None:
+                v = np.zeros((height, width), dtype=np.float32)
+            u = np.clip(1.0 - 0.6 * (v / 0.35), 0.4, 1.0).astype(np.float32)  # type: ignore[assignment]
+        else:
+            v = np.zeros((height, width), dtype=np.float32)
+            # Multiple seeded centers — each will potentially grow into a vesicle.
+            for _ in range(4):
+                cx = self.rng.randrange(width // 4, width * 3 // 4)
+                cy = self.rng.randrange(height // 4, height * 3 // 4)
+                r = max(2, min(width, height) // 20)
+                u[cy - r : cy + r, cx - r : cx + r] = 0.5
+                v[cy - r : cy + r, cx - r : cx + r] = 0.25
         v += np.array(
             [[self.rng.uniform(-0.01, 0.01) for _ in range(width)] for _ in range(height)], dtype=np.float32
         )
         np.clip(v, 0.0, 1.0, out=v)
         return VesicleState(substrate=u, lipid=v, membrane_mask=np.zeros_like(v, dtype=bool))
 
+    def extract_signal(self, state: VesicleState) -> np.ndarray:
+        """Downstream: the amphiphile (lipid) concentration — bright cells
+        are where bilayers and vesicles have formed."""
+        return state.lipid.copy()
+
     def step(self, state: VesicleState) -> VesicleState:
+        from cellauto.rules.abiogenesis.science import laplacian_5pt
+
         # Step the underlying Gray-Scott chemistry to grow lipid concentration.
         u, v = state.substrate, state.lipid
         for _ in range(self.substeps_per_frame):
             u, v = gray_scott_step(u, v, Du=self.Du, Dv=self.Dv, F=self.F, k=self.k)
+        # G3: Helfrich bending-elasticity contribution applied ONCE per
+        # visible frame (after all Gray-Scott substeps). The variational
+        # derivative of the bending energy E_b ∝ (∇²φ)² is the biharmonic
+        # operator ∇⁴φ = ∇²(∇²φ); applied with a small negative weight, it
+        # rounds high-curvature interfaces — real fluid membranes resist
+        # sharp bends.
+        if self.kappa_bend > 0.0:
+            biharmonic_v = laplacian_5pt(laplacian_5pt(v))
+            v = v - self.kappa_bend * biharmonic_v
+            np.clip(v, 0.0, 1.0, out=v)
         state.substrate, state.lipid = u, v
 
         # Detect membrane regions where lipid concentration > CMC.

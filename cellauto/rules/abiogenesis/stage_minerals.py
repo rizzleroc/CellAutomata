@@ -68,18 +68,43 @@ class AbiogenesisStageMinerals:
     dt: float = 0.5
     rng: random.Random = field(default_factory=random.Random)
 
-    def init_state(self, width: int, height: int) -> MineralState:
+    def init_state(
+        self,
+        width: int,
+        height: int,
+        *,
+        seed_field: np.ndarray | None = None,
+    ) -> MineralState:
+        from cellauto.rules.abiogenesis.science import normalise_signal
+
+        signal = normalise_signal(seed_field)
         clay = np.zeros((height, width), dtype=bool)
         radius = max(2, min(width, height) // 9)
         yy, xx = np.ogrid[:height, :width]
-        for _ in range(self.clay_patches):
-            cx = self.rng.randrange(width)
-            cy = self.rng.randrange(height)
-            r = radius + self.rng.randrange(-1, 2)
-            clay |= (xx - cx) ** 2 + (yy - cy) ** 2 <= r * r
+        if signal is not None:
+            # G1: place clay patches at the brightest peaks of the upstream
+            # signal so polymerisation localises where the previous stage's
+            # chemistry was hottest (vent organic synthesis, e.g.).
+            flat = signal.flatten()
+            top = np.argpartition(flat, -self.clay_patches)[-self.clay_patches :]
+            for idx in top:
+                cy_i, cx_i = divmod(int(idx), signal.shape[1])
+                r = radius + self.rng.randrange(-1, 2)
+                clay |= (xx - cx_i) ** 2 + (yy - cy_i) ** 2 <= r * r
+        else:
+            for _ in range(self.clay_patches):
+                cx = self.rng.randrange(width)
+                cy = self.rng.randrange(height)
+                r = radius + self.rng.randrange(-1, 2)
+                clay |= (xx - cx) ** 2 + (yy - cy) ** 2 <= r * r
         monomer = np.ones((height, width), dtype=np.float32)
         polymer = np.zeros((height, width), dtype=np.float32)
         return MineralState(monomer=monomer, polymer=polymer, clay=clay)
+
+    def extract_signal(self, state: MineralState) -> np.ndarray:
+        """Downstream: where polymer has accumulated. The clay patches'
+        scaffolding becomes the next stage's high-chemistry seed."""
+        return state.polymer.copy()
 
     def step(self, state: MineralState) -> MineralState:
         M, P, clay = state.monomer, state.polymer, state.clay

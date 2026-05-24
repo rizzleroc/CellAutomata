@@ -64,13 +64,35 @@ class AbiogenesisStageHomochirality:
     noise: float = 0.02  # initial racemic fluctuation amplitude
     rng: random.Random = field(default_factory=random.Random)
 
-    def init_state(self, width: int, height: int) -> ChiralityState:
+    def init_state(
+        self,
+        width: int,
+        height: int,
+        *,
+        seed_field: np.ndarray | None = None,
+    ) -> ChiralityState:
+        from cellauto.rules.abiogenesis.science import normalise_signal
+
+        signal = normalise_signal(seed_field)
         npr = np.random.RandomState(self.rng.randrange(2**31))
         base = 0.1
         left = base + self.noise * npr.rand(height, width).astype(np.float32)
         right = base + self.noise * npr.rand(height, width).astype(np.float32)
+        if signal is not None:
+            # G1: upstream chemistry biases the initial enantiomer distribution
+            # — the upstream signal asymmetrically nudges L vs R so the Frank
+            # model has a small initial chiral bias to amplify, instead of pure
+            # racemic noise. (Wherever the upstream was active, give L a slight
+            # head-start.)
+            left = left + (signal * 0.05).astype(np.float32)
         substrate = np.full((height, width), self.A0, dtype=np.float32)
         return ChiralityState(left=left, right=right, substrate=substrate)
+
+    def extract_signal(self, state: ChiralityState) -> np.ndarray:
+        """Downstream: total enantiomer mass — the absolute amount of chiral
+        chemistry produced (regardless of which enantiomer won)."""
+        total = state.left + state.right
+        return total.astype(np.float32)
 
     def step(self, state: ChiralityState) -> ChiralityState:
         L, R, A = state.left, state.right, state.substrate
