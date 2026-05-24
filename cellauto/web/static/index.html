@@ -7,6 +7,7 @@
     <link rel="stylesheet" href="/static/style.css" />
   </head>
   <body>
+    <a class="skip-link" href="#main-content">Skip to main content</a>
     <header>
       <h1>cellauto</h1>
       <p class="subtitle">
@@ -16,7 +17,7 @@
       </p>
     </header>
 
-    <main>
+    <main id="main-content">
       <section class="controls">
         <div class="control-row">
           <label>
@@ -108,31 +109,40 @@
               <input id="gif-fps" type="number" min="1" max="30" value="8" />
             </label>
           </div>
-          <p id="export-status" class="export-status"></p>
+          <p id="export-status" class="export-status" aria-live="polite"></p>
         </details>
       </section>
 
-      <section class="stage">
-        <div id="stage-banner" class="stage-banner" hidden>
+      <section class="stage" aria-label="Simulation">
+        <div id="stage-banner" class="stage-banner" hidden aria-live="polite" aria-atomic="true">
           <span class="stage-index" id="stage-banner-index"></span>
           <span class="stage-title" id="stage-banner-title"></span>
           <span class="stage-citation" id="stage-banner-citation"></span>
         </div>
-        <canvas id="canvas" width="600" height="600"></canvas>
+        <canvas
+          id="canvas"
+          width="600"
+          height="600"
+          role="img"
+          aria-label="Cellular automaton grid. State is summarized in the population panel below."
+        >
+          Cellular automaton visualization. Read the population panel below for the
+          numerical state of the simulation.
+        </canvas>
         <div id="legend" class="legend" hidden></div>
-        <div id="population" class="population"></div>
+        <div id="population" class="population" aria-live="off"></div>
       </section>
 
-      <section class="tutorial">
+      <section class="tutorial" aria-label="Tutorial">
         <div class="tutorial-head">
           <h2 id="tutorial-title">About this rule</h2>
           <div class="tutorial-nav">
             <button id="tutorial-prev" type="button" aria-label="Previous tutorial step">◀</button>
-            <span id="tutorial-counter">1 / 1</span>
+            <span id="tutorial-counter" aria-live="polite">1 / 1</span>
             <button id="tutorial-next" type="button" aria-label="Next tutorial step">▶</button>
           </div>
         </div>
-        <p id="tutorial-body" class="tutorial-body"></p>
+        <p id="tutorial-body" class="tutorial-body" aria-live="polite"></p>
         <details class="panel">
           <summary>All steps</summary>
           <ol id="tutorial-all"></ol>

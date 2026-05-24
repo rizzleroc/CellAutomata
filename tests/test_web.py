@@ -350,3 +350,45 @@ def test_gif_steps_clamped(client):
     ]
     res = client.post(f"/api/sessions/{sid}/gif", json={"steps": 10_000, "fps": 8, "canvas": 200})
     assert res.status_code == 400
+
+
+def test_session_carries_a_threading_lock():
+    """The per-session lock is what protects /step + /gif from racing on
+    the shared engine. Test the structural invariant directly (Flask's
+    test_client isn't safe to drive from a ThreadPoolExecutor)."""
+    from cellauto.engine import Engine
+    from cellauto.rules.conway import ConwaysLifeRule
+    from cellauto.web.server import _SessionStore
+
+    store = _SessionStore()
+    sid = store.create(Engine(width=16, height=16, rule=ConwaysLifeRule(), seed=1))
+    s1 = store.get(sid)
+    s2 = store.get(sid)
+    assert s1 is not None and s2 is not None
+    # Same lock instance from two lookups — threads will actually contend.
+    assert s1.lock is s2.lock
+    # threading.Lock() returns an opaque object; check the contract instead.
+    s1.lock.acquire()
+    try:
+        # The lock is held; a non-blocking acquire from anywhere must fail.
+        assert s2.lock.acquire(blocking=False) is False
+    finally:
+        s1.lock.release()
+    # Once released, it's acquirable again.
+    assert s2.lock.acquire(blocking=False) is True
+    s2.lock.release()
+
+
+def test_dropdown_label_includes_stage_title(client):
+    """The frontend wants to label stage 0 as e.g. "0 — Primordial soup"
+    instead of bare "0", so the server must include `title` in stage_info."""
+    sid = client.post(
+        "/api/sessions",
+        json={"rule": "abiogenesis-pipeline", "grid": 16, "seed": 1},
+    ).get_json()["session_id"]
+    body = client.get(f"/api/sessions/{sid}").get_json()
+    assert "stage_info" in body
+    assert body["stage_info"]["title"]
+    # After a promote, the title must change to the new stage's name.
+    promoted = client.post(f"/api/sessions/{sid}/promote").get_json()
+    assert promoted["stage_info"]["title"] != body["stage_info"]["title"]

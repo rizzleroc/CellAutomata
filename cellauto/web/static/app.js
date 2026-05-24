@@ -132,10 +132,7 @@ function applySummary(s) {
   els.stepCount.textContent = s.step_count;
   els.fps.textContent = s.fps;
   els.seedOut.textContent = s.seed;
-  const pop = Object.entries(s.population)
-    .map(([k, v]) => `${k}: ${typeof v === "number" ? v.toLocaleString() : v}`)
-    .join("   ");
-  els.population.textContent = pop || "(no population stats for this rule)";
+  renderPopulation(s.population);
 
   if (s.stage_info) {
     showStageBanner(s.stage_info);
@@ -148,22 +145,59 @@ function applySummary(s) {
   }
 }
 
+function renderPopulation(pop) {
+  // Render as wrap-friendly key:value chips instead of a single string;
+  // rules like hydrothermal-vent emit 10+ stats and orphaned line breaks
+  // in a single string read poorly.
+  els.population.replaceChildren();
+  if (!pop) return;
+  const entries = Object.entries(pop);
+  if (entries.length === 0) return;
+  for (const [k, v] of entries) {
+    const pair = document.createElement("span");
+    pair.className = "pop-pair";
+    const ks = document.createElement("span");
+    ks.className = "pop-key";
+    ks.textContent = `${k}:`;
+    const vs = document.createElement("span");
+    vs.className = "pop-val";
+    vs.textContent = typeof v === "number" ? v.toLocaleString() : String(v);
+    pair.append(ks, vs);
+    els.population.append(pair);
+  }
+}
+
 function showStageBanner(info) {
   els.stageBanner.hidden = false;
-  els.stageBannerIndex.textContent = `STAGE ${info.current_stage} / ${info.total_stages - 1}`;
+  els.stageBannerIndex.textContent = `Stage ${info.current_stage} / ${info.total_stages - 1}`;
   els.stageBannerTitle.textContent = info.title;
   els.stageBannerCitation.textContent = info.citation;
 }
 
 function populateStageControls(info) {
   els.stageWrap.hidden = false;
-  if (els.stageSelect.options.length !== info.total_stages) {
+  // Rebuild the stage dropdown when the pipeline changes length OR when
+  // the current stage's name doesn't match what's already there (e.g.
+  // switching from the 5-stage to the 12-stage extended pipeline).
+  const want = info.total_stages;
+  const have = els.stageSelect.options.length;
+  if (have !== want) {
     els.stageSelect.innerHTML = "";
-    for (let i = 0; i < info.total_stages; i++) {
+    for (let i = 0; i < want; i++) {
       const opt = document.createElement("option");
       opt.value = String(i);
-      opt.textContent = `${i}`;
+      // Title is only available for the current stage; fill in once
+      // selected — until then show index only. The current stage gets
+      // the friendly name appended.
+      opt.textContent = i === info.current_stage ? `${i} — ${info.title}` : String(i);
       els.stageSelect.appendChild(opt);
+    }
+  } else {
+    // Refresh the label on whichever option is current so the dropdown
+    // always shows the descriptive title.
+    for (const opt of els.stageSelect.options) {
+      const idx = Number(opt.value);
+      opt.textContent = idx === info.current_stage ? `${idx} — ${info.title}` : String(idx);
     }
   }
   els.stageSelect.value = String(info.current_stage);
@@ -391,18 +425,38 @@ async function stepOnce(n = 1) {
   }
 }
 
+// Honor OS-level reduced motion. Caps both the on-screen tick rate and
+// the slider's effective max so the canvas doesn't strobe — addresses
+// WCAG 2.2.2 / 2.3.3 for vestibular / photosensitive users.
+const prefersReducedMotion = window.matchMedia
+  ? window.matchMedia("(prefers-reduced-motion: reduce)").matches
+  : false;
+
+function effectiveHz() {
+  let hz = Number(els.speed.value) || 20;
+  if (prefersReducedMotion) hz = Math.min(hz, 10);
+  return Math.max(1, hz);
+}
+
 function startLoop() {
   if (state.loopHandle) return;
   state.playing = true;
   els.play.textContent = "⏸ Pause";
   els.play.classList.add("active");
-  const hzToInterval = () => Math.max(16, Math.round(1000 / Number(els.speed.value)));
+  // Batch steps when the requested rate exceeds what a single
+  // step→frame.png round-trip can sustain (~30 sps). At speed=60 we ask
+  // the server for 2 steps then paint once, doubling effective throughput
+  // without hammering the network. MAX_STEPS_PER_REQUEST on the server
+  // is 50, so the batch is safely bounded.
   const tick = async () => {
     if (!state.playing) return;
-    await stepOnce(1);
-    state.loopHandle = setTimeout(tick, hzToInterval());
+    const hz = effectiveHz();
+    const batch = Math.min(20, Math.max(1, Math.ceil(hz / 30)));
+    const interval = Math.max(4, Math.round((1000 * batch) / hz));
+    await stepOnce(batch);
+    if (state.playing) state.loopHandle = setTimeout(tick, interval);
   };
-  state.loopHandle = setTimeout(tick, hzToInterval());
+  state.loopHandle = setTimeout(tick, 4);
 }
 
 async function stopLoop() {

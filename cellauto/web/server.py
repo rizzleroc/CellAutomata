@@ -280,6 +280,12 @@ def _capture_frame(engine: Engine, canvas: int) -> dict:
 class _Session:
     engine: Engine
     last_touched: float = field(default_factory=time.time)
+    # Per-session lock so /step, /gif, /params, etc. don't mutate the
+    # same Engine concurrently. Werkzeug's threaded dev server and
+    # gunicorn (with threads > 1) can both interleave requests for the
+    # same session — without this the GIF render races the play loop on
+    # shared NumPy buffers and the step counter desyncs.
+    lock: threading.Lock = field(default_factory=threading.Lock)
 
 
 class _SessionStore:
@@ -415,7 +421,9 @@ def build_app() -> Any:
 
     @app.get("/api/sessions/<sid>")
     def get_session(sid: str) -> Any:
-        return jsonify(_state_summary(_require(sid).engine))
+        s = _require(sid)
+        with s.lock:
+            return jsonify(_state_summary(s.engine))
 
     @app.post("/api/sessions/<sid>/step")
     def step_session(sid: str) -> Any:
@@ -424,9 +432,10 @@ def build_app() -> Any:
         n = int(data.get("n", 1))
         if not (1 <= n <= MAX_STEPS_PER_REQUEST):
             return jsonify({"error": f"n must be 1..{MAX_STEPS_PER_REQUEST}"}), 400
-        for _ in range(n):
-            s.engine.step()
-        return jsonify(_state_summary(s.engine))
+        with s.lock:
+            for _ in range(n):
+                s.engine.step()
+            return jsonify(_state_summary(s.engine))
 
     @app.post("/api/sessions/<sid>/reset")
     def reset_session(sid: str) -> Any:
@@ -441,7 +450,8 @@ def build_app() -> Any:
             )
         except (ValueError, TypeError) as e:
             return jsonify({"error": str(e)}), 400
-        store.replace_engine(sid, engine)
+        with s.lock:
+            store.replace_engine(sid, engine)
         return jsonify(_state_summary(engine))
 
     @app.delete("/api/sessions/<sid>")
@@ -452,33 +462,37 @@ def build_app() -> Any:
 
     @app.get("/api/sessions/<sid>/params")
     def session_params(sid: str) -> Any:
-        return jsonify(_param_payload(_require(sid).engine))
+        s = _require(sid)
+        with s.lock:
+            return jsonify(_param_payload(s.engine))
 
     @app.post("/api/sessions/<sid>/params")
     def session_set_params(sid: str) -> Any:
         s = _require(sid)
         data = request.get_json(silent=True) or {}
-        try:
-            applied, reinit = _apply_params(s.engine, data)
-        except (TypeError, ValueError) as e:
-            return jsonify({"error": str(e)}), 400
-        return jsonify({"applied": applied, "reinit": reinit, **_state_summary(s.engine)})
+        with s.lock:
+            try:
+                applied, reinit = _apply_params(s.engine, data)
+            except (TypeError, ValueError) as e:
+                return jsonify({"error": str(e)}), 400
+            return jsonify({"applied": applied, "reinit": reinit, **_state_summary(s.engine)})
 
     @app.post("/api/sessions/<sid>/preset")
     def session_set_preset(sid: str) -> Any:
         s = _require(sid)
         data = request.get_json(silent=True) or {}
         name = data.get("name", "")
-        active = _active_rule(s.engine)
-        bank = PRESET_REGISTRY.get(active.name, {})
-        if name not in bank:
-            return jsonify({"error": f"unknown preset '{name}' for rule {active.name}"}), 400
-        _apply_params(s.engine, bank[name])
-        # Some rules (Gray-Scott) also track which preset is active for their
-        # serialised config; set it if the attr exists.
-        if hasattr(active, "preset"):
-            active.preset = name
-        return jsonify({"preset": name, **_state_summary(s.engine)})
+        with s.lock:
+            active = _active_rule(s.engine)
+            bank = PRESET_REGISTRY.get(active.name, {})
+            if name not in bank:
+                return jsonify({"error": f"unknown preset '{name}' for rule {active.name}"}), 400
+            _apply_params(s.engine, bank[name])
+            # Some rules (Gray-Scott) also track which preset is active for
+            # their serialised config; set it if the attr exists.
+            if hasattr(active, "preset"):
+                active.preset = name
+            return jsonify({"preset": name, **_state_summary(s.engine)})
 
     @app.post("/api/sessions/<sid>/promote")
     def session_promote(sid: str) -> Any:
@@ -486,8 +500,9 @@ def build_app() -> Any:
         rule = s.engine.rule
         if not hasattr(rule, "promote"):
             return jsonify({"error": f"rule {rule.name} is not a pipeline"}), 400
-        rule.promote(s.engine.state)
-        return jsonify(_state_summary(s.engine))
+        with s.lock:
+            rule.promote(s.engine.state)
+            return jsonify(_state_summary(s.engine))
 
     @app.post("/api/sessions/<sid>/stage")
     def session_set_stage(sid: str) -> Any:
@@ -500,8 +515,9 @@ def build_app() -> Any:
             n = int(data.get("stage", 0))
         except (TypeError, ValueError):
             return jsonify({"error": "stage must be an integer"}), 400
-        rule.set_stage(s.engine.state, n)
-        return jsonify(_state_summary(s.engine))
+        with s.lock:
+            rule.set_stage(s.engine.state, n)
+            return jsonify(_state_summary(s.engine))
 
     @app.post("/api/sessions/<sid>/auto_promote")
     def session_auto_promote(sid: str) -> Any:
@@ -510,30 +526,31 @@ def build_app() -> Any:
         if not hasattr(rule, "auto_promote"):
             return jsonify({"error": f"rule {rule.name} is not a pipeline"}), 400
         data = request.get_json(silent=True) or {}
-        if "enabled" in data:
-            rule.auto_promote = bool(data["enabled"])
-        if "duration" in data:
-            try:
-                rule.stage_duration = max(1, int(data["duration"]))
-            except (TypeError, ValueError):
-                return jsonify({"error": "duration must be an integer"}), 400
-        return jsonify(_state_summary(s.engine))
+        with s.lock:
+            if "enabled" in data:
+                rule.auto_promote = bool(data["enabled"])
+            if "duration" in data:
+                try:
+                    rule.stage_duration = max(1, int(data["duration"]))
+                except (TypeError, ValueError):
+                    return jsonify({"error": "duration must be an integer"}), 400
+            return jsonify(_state_summary(s.engine))
 
     @app.get("/api/sessions/<sid>/snapshot.json")
     def session_snapshot(sid: str) -> Any:
         import json
 
         s = _require(sid)
-        body = json.dumps(s.engine.to_dict(), indent=2).encode("utf-8")
+        with s.lock:
+            body = json.dumps(s.engine.to_dict(), indent=2).encode("utf-8")
+            filename = f"cellauto-{s.engine.rule.name}-step{s.engine.step_count}.json"
         resp = app.response_class(body, mimetype="application/json")
-        filename = f"cellauto-{s.engine.rule.name}-step{s.engine.step_count}.json"
         resp.headers["Content-Disposition"] = f'attachment; filename="{filename}"'
         return resp
 
     @app.post("/api/sessions/<sid>/load")
     def session_load(sid: str) -> Any:
-        # Verify the session exists before we bother parsing the snapshot.
-        _require(sid)
+        s = _require(sid)
         data = request.get_json(silent=True) or {}
         try:
             rule_name = data["rule"]
@@ -558,16 +575,18 @@ def build_app() -> Any:
                 rule.rng.setstate(rng_state)
         except (KeyError, TypeError, ValueError) as e:
             return jsonify({"error": f"bad snapshot: {e}"}), 400
-        store.replace_engine(sid, engine)
+        with s.lock:
+            store.replace_engine(sid, engine)
         return jsonify(_state_summary(engine))
 
     @app.get("/api/sessions/<sid>/frame.png")
     def frame_png(sid: str) -> Any:
         s = _require(sid)
-        png = _render_png(s.engine)
+        with s.lock:
+            png = _render_png(s.engine)
+            filename = f"cellauto-{s.engine.rule.name}-step{s.engine.step_count}.png"
         resp = app.response_class(png, mimetype="image/png")
         if request.args.get("download"):
-            filename = f"cellauto-{s.engine.rule.name}-step{s.engine.step_count}.png"
             resp.headers["Content-Disposition"] = f'attachment; filename="{filename}"'
         else:
             # Tell intermediaries not to cache so live frames don't get pinned.
@@ -593,12 +612,18 @@ def build_app() -> Any:
         if not (60 <= canvas <= 1200):
             return jsonify({"error": "canvas must be 60..1200"}), 400
 
-        # Capture frames as we step. We mutate the live engine on purpose:
-        # the user expects the sim to advance just like clicking Step would.
-        frames = [_capture_frame(s.engine, canvas)]
-        for _ in range(steps - 1):
-            s.engine.step()
-            frames.append(_capture_frame(s.engine, canvas))
+        # Hold the lock for the whole render: /gif and /step both mutate
+        # engine.state and engine.step_count, so an interleaved /step from
+        # another tab (or the play loop) would scramble the captured
+        # frames. The play loop sees the request take longer, but the
+        # output is consistent. The client calls stopLoop() before firing
+        # /gif anyway, so this only matters for concurrent sessions.
+        with s.lock:
+            frames = [_capture_frame(s.engine, canvas)]
+            for _ in range(steps - 1):
+                s.engine.step()
+                frames.append(_capture_frame(s.engine, canvas))
+            filename = f"cellauto-{s.engine.rule.name}-step{s.engine.step_count}.gif"
 
         import tempfile
         from pathlib import Path
@@ -612,7 +637,6 @@ def build_app() -> Any:
             tmp_path.unlink(missing_ok=True)
 
         resp = app.response_class(data_bytes, mimetype="image/gif")
-        filename = f"cellauto-{s.engine.rule.name}-step{s.engine.step_count}.gif"
         resp.headers["Content-Disposition"] = f'attachment; filename="{filename}"'
         return resp
 
