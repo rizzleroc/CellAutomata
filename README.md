@@ -106,6 +106,41 @@ via vanilla JS (no Pyodide). F/k sliders, Pearson preset chips, and the same
 viridis colormap as the desktop build. The other stages are exhibited as
 static museum plates beneath. Deployable to GitHub Pages from `/docs`.
 
+## Run the full sandbox in a browser locally (`cellauto web`)
+
+**Live demo:** <https://cellautomata-production.up.railway.app/> — full
+17-rule sandbox running on Railway (one-worker container; expect a few
+seconds of cold-start on first hit).
+
+For the entire 17-rule catalog — every abiogenesis stage, Conway, Wolfram —
+in a browser locally, ship the desktop engine behind a tiny Flask server:
+
+```bash
+pip install -e ".[web]"
+cellauto web                 # → http://127.0.0.1:8765
+cellauto web --host 0.0.0.0  # expose on the LAN
+```
+
+It's the same Python engine the GUI uses; the browser is just a thin
+control surface (rule picker, grid size, seed, play/pause/step, speed
+slider, per-rule tutorial). Frames are rendered server-side via each
+rule's existing `render_rgb` and streamed as PNGs.
+
+### Deploy `cellauto web` to Railway
+
+The repo ships a `Dockerfile` + `railway.toml` so Railway can host the
+full sandbox at a public URL:
+
+1. **New Project → Deploy from GitHub repo** → pick `CellAutomata`.
+2. Railway detects the `Dockerfile` and builds it. No env vars needed
+   — `$PORT` is injected by Railway and respected by the container.
+3. Under **Settings → Networking**, click **Generate Domain** to get
+   a public `*.up.railway.app` URL.
+4. Healthcheck is wired to `GET /api/health` (returns `{status: "ok"}`).
+
+Production runs `gunicorn cellauto.web.wsgi:app` with one worker + four
+threads (sessions live in-process — see `cellauto/web/wsgi.py`).
+
 ## Install
 
 ```bash
@@ -122,6 +157,9 @@ continuous-field stages; `Pillow` for GIF export.
 ```bash
 # Launch the GUI with the full abiogenesis pipeline.
 cellauto gui
+
+# Or the browser sandbox (needs `pip install -e ".[web]"`).
+cellauto web
 
 # Pick a specific stage to study in isolation.
 cellauto gui --rule abiogenesis-stage1-grayscott --grid 100

@@ -2,6 +2,7 @@
 
 Subcommands:
     gui       launch the Tk sandbox
+    web       launch the browser sandbox (Flask server)
     simulate  headless: run N steps, print final population (and optionally save)
     export    headless: run N steps and write an animated GIF
 
@@ -88,6 +89,12 @@ def cmd_gui(args: argparse.Namespace) -> None:
     run(rule_name=args.rule, grid_size=args.grid, seed=args.seed)
 
 
+def cmd_web(args: argparse.Namespace) -> None:
+    from cellauto.web import run
+
+    run(host=args.host, port=args.port, debug=args.debug)
+
+
 def cmd_simulate(args: argparse.Namespace) -> None:
     engine = _make_engine(args)
     for _ in range(args.steps):
@@ -151,6 +158,12 @@ def build_parser() -> argparse.ArgumentParser:
     sp_gui = sub.add_parser("gui", help="launch the Tk sandbox")
     add_common(sp_gui)
     sp_gui.set_defaults(func=cmd_gui)
+
+    sp_web = sub.add_parser("web", help="launch the browser sandbox (Flask)")
+    sp_web.add_argument("--host", default="127.0.0.1", help="bind address (use 0.0.0.0 for LAN)")
+    sp_web.add_argument("--port", type=int, default=8765, help="bind port")
+    sp_web.add_argument("--debug", action="store_true", help="Flask debug mode")
+    sp_web.set_defaults(func=cmd_web)
 
     sp_sim = sub.add_parser("simulate", help="run N steps headlessly")
     add_common(sp_sim)

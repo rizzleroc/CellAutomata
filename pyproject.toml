@@ -32,6 +32,10 @@ dev = [
     "ruff>=0.4",
     "mypy>=1.10",
 ]
+web = [
+    "flask>=3.0",
+    "gunicorn>=21.2",
+]
 
 [project.scripts]
 cellauto = "cellauto.__main__:main"
@@ -45,7 +49,14 @@ include = ["cellauto*"]
 exclude = ["tests*", "exports*", "snapshots*"]
 
 [tool.setuptools.package-data]
-cellauto = ["assets/*.png", "assets/*.ico", "assets/fonts/*.ttf"]
+cellauto = [
+    "assets/*.png",
+    "assets/*.ico",
+    "assets/fonts/*.ttf",
+    "web/static/*.html",
+    "web/static/*.css",
+    "web/static/*.js",
+]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
@@ -63,6 +74,8 @@ omit = [
     "cellauto/app.py",
     "cellauto/mascot.py",
     "cellauto/renderer.py",
+    "cellauto/web/server.py",
+    "cellauto/web/wsgi.py",
 ]
 
 [tool.coverage.report]

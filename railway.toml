@@ -1,0 +1,14 @@
+# Railway deployment config.
+#
+# Railway auto-detects the Dockerfile; this file pins the builder and
+# the health check so deploys fail fast if the app isn't reachable.
+
+[build]
+builder = "DOCKERFILE"
+dockerfilePath = "Dockerfile"
+
+[deploy]
+healthcheckPath = "/api/health"
+healthcheckTimeout = 30
+restartPolicyType = "ON_FAILURE"
+restartPolicyMaxRetries = 3

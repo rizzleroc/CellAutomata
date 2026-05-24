@@ -1,0 +1,238 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <title>cellauto</title>
+    <meta
+      name="description"
+      content="Scientifically-grounded cellular sandbox. The abiogenesis pipeline, Conway's Life and Wolfram 1D, run live in your browser via the same Python engine the desktop GUI uses."
+    />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,400&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="/static/style.css" />
+  </head>
+  <body>
+    <a class="skip-link" href="#canvas">Skip to canvas</a>
+
+    <!-- Layered background: gradient + subtle noise -->
+    <div class="bg-grain" aria-hidden="true"></div>
+
+    <!-- ───── Top bar — minimal: brand + plate metadata + github ───── -->
+    <header class="topbar">
+      <div class="brand">
+        <span class="brand-mark" id="brand-mark"></span>
+        <span class="brand-name">cellauto</span>
+      </div>
+      <div class="plate-id">
+        <span>Plate</span><span class="plate-num">I</span><span>·</span><span>MMXXVI</span>
+      </div>
+      <a class="topbar-link" href="https://github.com/rizzleroc/CellAutomata" target="_blank" rel="noopener" aria-label="GitHub repository">
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true">
+          <path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/>
+        </svg>
+      </a>
+    </header>
+
+    <!-- ───── Main: 3-column composition ────────────────────────────── -->
+    <main>
+      <!-- LEFT: wall-label with stage info + config + readouts -->
+      <aside class="wall-label">
+        <div class="block">
+          <div class="stage-eyebrow" id="stage-eyebrow"></div>
+          <h2 class="stage-title" id="stage-title-text">cellauto</h2>
+          <p class="stage-citation" id="stage-citation-text"></p>
+        </div>
+
+        <div class="block muted-block">
+          <p class="block-key">about</p>
+          <p class="stage-detail" id="stage-detail-text">
+            Scientifically-grounded cellular sandbox running the same Python
+            engine as the desktop GUI.
+          </p>
+        </div>
+
+        <hr class="hairline" />
+
+        <div class="block">
+          <p class="block-key">configuration</p>
+          <div class="config-grid">
+            <label class="config-field">
+              <span class="config-field-key">rule</span>
+              <select id="rule" aria-label="Rule"></select>
+            </label>
+            <label class="config-field narrow">
+              <span class="config-field-key">grid</span>
+              <input id="grid" type="number" min="8" max="240" step="4" value="80" />
+            </label>
+            <label class="config-field narrow">
+              <span class="config-field-key">seed</span>
+              <input id="seed" type="number" placeholder="random" />
+            </label>
+          </div>
+        </div>
+
+        <hr class="hairline" />
+
+        <div class="block readout-block">
+          <p class="block-key">readout</p>
+          <dl class="readout-list">
+            <div class="readout-row">
+              <dt>step</dt><dd id="step-count">0</dd>
+            </div>
+            <div class="readout-row">
+              <dt>fps</dt><dd id="fps">0</dd>
+            </div>
+            <div class="readout-row">
+              <dt>seed</dt><dd id="seed-out">—</dd>
+            </div>
+          </dl>
+          <div id="population" class="population" aria-live="off"></div>
+        </div>
+      </aside>
+
+      <!-- CENTER: canvas as hero specimen -->
+      <section class="specimen" aria-label="Simulation">
+        <div class="vitrine">
+          <div class="vitrine-corners" aria-hidden="true">
+            <span class="vc tl"></span>
+            <span class="vc tr"></span>
+            <span class="vc bl"></span>
+            <span class="vc br"></span>
+          </div>
+          <canvas
+            id="canvas"
+            width="600"
+            height="600"
+            role="img"
+            aria-label="Cellular automaton grid. Numerical state is summarized in the readout panel."
+          >
+            Cellular automaton visualization. Read the readout panel for the
+            numerical state of the simulation.
+          </canvas>
+        </div>
+        <p id="legend" class="legend-caption" hidden></p>
+      </section>
+
+      <!-- RIGHT: minimal rail with tabs + content (no panel chrome) -->
+      <aside class="rail" aria-label="Controls">
+        <nav class="tabs" role="tablist">
+          <button class="tab active" role="tab" aria-selected="true" data-tab="params" type="button">parameters</button>
+          <button class="tab" role="tab" aria-selected="false" data-tab="stage" type="button" hidden>stage</button>
+          <button class="tab" role="tab" aria-selected="false" data-tab="export" type="button">export</button>
+        </nav>
+
+        <div class="tab-pane active" data-pane="params" role="tabpanel">
+          <div id="presets-wrap" class="block" hidden>
+            <p class="block-key">presets</p>
+            <div id="presets" class="chip-row"></div>
+          </div>
+          <div id="params-wrap" class="block" hidden>
+            <div id="params" class="param-list"></div>
+          </div>
+          <p id="params-empty" class="empty-state">No live-adjustable parameters for this rule.</p>
+        </div>
+
+        <div class="tab-pane" data-pane="stage" role="tabpanel" hidden>
+          <div class="block">
+            <label class="config-field">
+              <span class="config-field-key">stage</span>
+              <select id="stage-select" aria-label="Pipeline stage"></select>
+            </label>
+            <button id="promote" type="button" class="btn block-action">promote →</button>
+          </div>
+          <hr class="hairline" />
+          <div class="block">
+            <label class="config-field checkbox">
+              <input id="auto-promote" type="checkbox" />
+              <span>auto-promote</span>
+            </label>
+            <label class="config-field narrow">
+              <span class="config-field-key">duration</span>
+              <input id="stage-duration" type="number" min="1" max="500" step="5" />
+            </label>
+          </div>
+        </div>
+
+        <div class="tab-pane" data-pane="export" role="tabpanel" hidden>
+          <div class="block">
+            <p class="block-key">snapshot</p>
+            <div class="btn-row">
+              <button id="download-snapshot" type="button" class="btn">↓ snapshot</button>
+              <label class="btn file-input">
+                ↑ load
+                <input id="load-snapshot" type="file" accept=".json,application/json" />
+              </label>
+            </div>
+          </div>
+          <div class="block">
+            <p class="block-key">image</p>
+            <button id="download-png" type="button" class="btn block-action">↓ frame · png</button>
+          </div>
+          <div class="block">
+            <p class="block-key">animated gif</p>
+            <div class="config-grid two">
+              <label class="config-field narrow">
+                <span class="config-field-key">steps</span>
+                <input id="gif-steps" type="number" min="2" max="240" value="60" />
+              </label>
+              <label class="config-field narrow">
+                <span class="config-field-key">fps</span>
+                <input id="gif-fps" type="number" min="1" max="30" value="8" />
+              </label>
+            </div>
+            <button id="export-gif" type="button" class="btn block-action">↓ render gif</button>
+            <p id="export-status" class="export-status" aria-live="polite"></p>
+          </div>
+        </div>
+      </aside>
+    </main>
+
+    <!-- ───── Bottom transport + tutorial ───────────────────────────── -->
+    <footer class="transport">
+      <div class="transport-actions">
+        <button id="play" type="button" class="btn primary">
+          <span class="btn-icon" id="play-icon">▶</span>
+          <span id="play-text">play</span>
+        </button>
+        <button id="step" type="button" class="btn ghost">step</button>
+        <button id="reset" type="button" class="btn ghost">reset</button>
+      </div>
+
+      <label class="transport-speed">
+        <span class="transport-speed-track">
+          <input id="speed" type="range" min="1" max="60" value="20" />
+        </span>
+        <span class="transport-speed-readout">
+          <span class="readout-label">speed</span>
+          <span id="speed-label">20/s</span>
+        </span>
+      </label>
+
+      <div class="transport-tutorial">
+        <button id="tutorial-prev" type="button" class="btn nav" aria-label="Previous tutorial step">◀</button>
+        <span class="tutorial-counter" id="tutorial-counter" aria-live="polite">1/1</span>
+        <button id="tutorial-next" type="button" class="btn nav" aria-label="Next tutorial step">▶</button>
+        <p id="tutorial-body" class="tutorial-body" aria-live="polite"></p>
+        <button id="tutorial-toggle" type="button" class="btn nav" aria-label="Show all tutorial steps">+</button>
+      </div>
+    </footer>
+
+    <!-- All-steps tutorial popover -->
+    <dialog id="tutorial-dialog" class="dialog" aria-labelledby="tutorial-dialog-title">
+      <header class="dialog-head">
+        <h2 id="tutorial-dialog-title" class="dialog-title">about this rule</h2>
+        <button id="tutorial-dialog-close" type="button" class="btn nav" aria-label="Close">✕</button>
+      </header>
+      <ol id="tutorial-all" class="tutorial-list"></ol>
+    </dialog>
+
+    <p id="error" class="error" role="alert" hidden></p>
+
+    <script src="/static/app.js"></script>
+  </body>
+</html>
