@@ -108,8 +108,12 @@ static museum plates beneath. Deployable to GitHub Pages from `/docs`.
 
 ## Run the full sandbox in a browser locally (`cellauto web`)
 
+**Live demo:** <https://cellautomata-production.up.railway.app/> — full
+17-rule sandbox running on Railway (one-worker container; expect a few
+seconds of cold-start on first hit).
+
 For the entire 17-rule catalog — every abiogenesis stage, Conway, Wolfram —
-in a browser, ship the desktop engine behind a tiny Flask server:
+in a browser locally, ship the desktop engine behind a tiny Flask server:
 
 ```bash
 pip install -e ".[web]"
