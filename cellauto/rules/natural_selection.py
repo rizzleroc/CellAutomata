@@ -143,7 +143,17 @@ class NaturalSelectionRule:
 
     # ---- Rule protocol -----------------------------------------------------
 
-    def init_state(self, width: int, height: int) -> Grid[Cell]:
+    def init_state(
+        self,
+        width: int,
+        height: int,
+        *,
+        seed_field: np.ndarray | None = None,  # accepted for G1 pipeline-handoff compat
+    ) -> Grid[Cell]:
+        # Stage 0 sits at the head of the pipeline so there's nothing upstream
+        # to inherit from in practice; the ``seed_field`` kwarg is accepted only
+        # so the pipeline's uniform handoff call signature works on every stage.
+        _ = seed_field  # explicitly ignored — Stage 0's discrete soup is symmetric.
         pal = self.palette
         weights = self.species_weights if len(self.species_weights) == len(pal) else None
         if weights is None:
@@ -153,6 +163,28 @@ class NaturalSelectionRule:
             height,
             lambda x, y: Cell(color=self.rng.choices(pal, weights=weights, k=1)[0]),
         )
+
+    def extract_signal(self, grid: Grid[Cell]) -> np.ndarray:
+        """Pipeline hand-off signal for downstream stages.
+
+        We mark cells that are either amoebas (Rule 4 lifecycle — locally
+        condensed protocell-like aggregations) or freshly-changed
+        (``is_new`` — sites where species transitions just fired). Both are
+        the "interesting" cells in the soup; downstream stages biased by
+        this signal will ignite chemistry where soup chemistry was active
+        rather than uniformly.
+        """
+        w, h = grid.width, grid.height
+        out = np.zeros((h, w), dtype=np.float32)
+        for y in range(h):
+            row = grid.cells[y]
+            for x in range(w):
+                c = row[x]
+                if c.is_ameba:
+                    out[y, x] = 1.0
+                elif c.is_new:
+                    out[y, x] = 0.5
+        return out
 
     def step(self, grid: Grid[Cell]) -> Grid[Cell]:
         w, h = grid.width, grid.height

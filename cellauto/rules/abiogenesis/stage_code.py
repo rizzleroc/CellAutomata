@@ -68,6 +68,44 @@ from cellauto.renderer import cmap_viridis
 CODON_BASES: tuple[str, str, str, str] = ("A", "U", "G", "C")
 AMINO_ACIDS: tuple[str, str, str, str] = ("Gly", "Ala", "Asp", "Val")
 
+# G4 — Miyazawa-Jernigan-style residue-pair contact-energy table for the
+# Ikehara GADV proto-code. The MJ statistical potential (Miyazawa & Jernigan
+# 1985, 1996) derives pairwise residue contact energies from observed
+# frequencies in folded protein structures: hydrophobic-hydrophobic contacts
+# are energetically favourable (negative ΔG); like-charged polar contacts
+# are unfavourable (positive ΔG). A peptide's folding score is then the sum
+# over adjacent pair contact energies — more negative = better-folded =
+# more functional. We project the full 20×20 MJ table down to the 4-letter
+# GADV alphabet using residue physicochemistry:
+#
+#     G (Gly) — small, flexible, neutral; weak interactions everywhere
+#     A (Ala) — hydrophobic, small; favours other hydrophobics
+#     D (Asp) — charged, polar; D-D unfavourable (same charge)
+#     V (Val) — hydrophobic, bulky; V-V strongly favourable
+#
+# Numbers are dimensionless analogues calibrated to the MJ scale; the
+# qualitative pattern is the published one.
+#
+# References:
+#     Miyazawa, S., & Jernigan, R. L. (1985). Estimation of effective
+#         interresidue contact energies from protein crystal structures.
+#         Macromolecules, 18(3), 534-552.
+#     Miyazawa, S., & Jernigan, R. L. (1996). Residue-residue potentials
+#         with a favorable contact pair term and an unfavorable high
+#         packing density term. J. Mol. Biol., 256(3), 623-644.
+#     Ikehara, K. (2002). Origins of gene, genetic code, protein and life.
+#         J. Biosci., 27(2), 165-186.
+MJ_CONTACT_ENERGY: np.ndarray = np.array(
+    [
+        # contact partner:   G      A      D      V
+        [-0.50, -0.60, -0.40, -0.70],  # row = G (Gly)
+        [-0.60, -1.00, -0.30, -1.20],  # row = A (Ala)
+        [-0.40, -0.30, +0.50, -0.20],  # row = D (Asp) — D-D unfavourable
+        [-0.70, -1.20, -0.20, -1.50],  # row = V (Val) — V-V most favourable
+    ],
+    dtype=np.float32,
+)
+
 
 @dataclass
 class GeneticCodeState:
@@ -83,7 +121,19 @@ class AbiogenesisStageGeneticCode:
     strand_length: int = 6  # codons per strand (and length of the target peptide)
     n_codons: int = 4  # codon alphabet size
     n_amino: int = 4  # amino-acid alphabet size
+    # ``target_peptide`` is used only when fitness_mode == "target_match"
+    # (the legacy v3.4 mode). Under the default Miyazawa-Jernigan landscape
+    # there is no fixed target — fitness depends on the peptide's
+    # sequence composition (G4).
     target_peptide: tuple[int, ...] = (0, 1, 2, 3, 0, 1)
+    # G4 — pick the fitness landscape. Default ``"mj_landscape"`` scores
+    # peptides by sequence composition under a Miyazawa-Jernigan-style
+    # residue-pair contact-energy table (MJ_CONTACT_ENERGY): fitness is
+    # the negative summed contact energy of adjacent residue pairs,
+    # normalised to [0, 1]. The legacy ``"target_match"`` mode scores
+    # peptides by how many positions match a fixed target sequence — that
+    # was the v3.4 audit's "matching a hard-coded answer key" critique.
+    fitness_mode: str = "mj_landscape"
     death_rate: float = 0.10
     repro_prob: float = 0.6
     strand_mutation: float = 0.04  # per-codon mutation when copying the strand
@@ -101,14 +151,36 @@ class AbiogenesisStageGeneticCode:
 
     # ---- Rule protocol ----------------------------------------------------
 
-    def init_state(self, width: int, height: int) -> GeneticCodeState:
+    def init_state(
+        self,
+        width: int,
+        height: int,
+        *,
+        seed_field: np.ndarray | None = None,
+    ) -> GeneticCodeState:
+        from cellauto.rules.abiogenesis.science import normalise_signal
+
+        signal = normalise_signal(seed_field)
         gen = np.random.default_rng(self.rng.randrange(2**31))
-        occupied = gen.random((height, width)) < self.seed_fraction
+        if signal is None:
+            occupied = gen.random((height, width)) < self.seed_fraction
+        else:
+            # G1: occupancy probability tracks the upstream signal — cells
+            # where the previous stage (RNA quasispecies) was active are the
+            # cells that carry the first translated peptides.
+            probs = np.clip(self.seed_fraction * (0.3 + 1.4 * signal), 0.0, 1.0)
+            occupied = gen.random((height, width)) < probs
         strand = gen.integers(0, self.n_codons, size=(height, width, self.strand_length), dtype=np.int8)
         # Each cell starts with a private *random* codon table. No universal
         # code exists yet — its emergence is what the simulation should show.
         code = gen.integers(0, self.n_amino, size=(height, width, self.n_codons), dtype=np.int8)
         return GeneticCodeState(occupied=occupied, strand=strand, code=code)
+
+    def extract_signal(self, state: GeneticCodeState) -> np.ndarray:
+        """Downstream: occupied × per-cell peptide fitness — bright cells
+        are translating useful peptides under the current code."""
+        fit = self._fitness_field(state)
+        return (state.occupied.astype(np.float32) * fit).astype(np.float32)
 
     def _peptides(self, state: GeneticCodeState) -> np.ndarray:
         """For each cell, decode its own strand with its own code. Returns
@@ -118,14 +190,44 @@ class AbiogenesisStageGeneticCode:
         return np.take_along_axis(state.code, state.strand.astype(np.int64), axis=2)
 
     def _fitness_field(self, state: GeneticCodeState) -> np.ndarray:
+        peptide = self._peptides(state)  # (H, W, L) amino-acid indices
+        if self.fitness_mode == "mj_landscape":
+            return self._mj_fitness_field(peptide)
+        # Legacy target-match landscape (v3.4 behaviour).
         target = np.array(self.target_peptide[: self.strand_length], dtype=np.int8)
         if target.size < self.strand_length:
-            # Pad shorter targets with zeros so the dimensions line up.
             pad = np.zeros(self.strand_length - target.size, dtype=np.int8)
             target = np.concatenate([target, pad])
-        peptide = self._peptides(state)
         matches = (peptide == target).sum(axis=2)
         return matches.astype(np.float32) / self.strand_length
+
+    def _mj_fitness_field(self, peptide: np.ndarray) -> np.ndarray:
+        """G4 — Miyazawa-Jernigan-style sequence-composition fitness.
+
+        At each (y, x) cell, compute the sum of adjacent residue-pair
+        contact energies under the ``MJ_CONTACT_ENERGY`` table. Negate
+        (lower energy = better fold), shift, and normalise into [0, 1].
+        This rewards peptides with many hydrophobic neighbours (A-V, V-V)
+        and penalises like-charged contacts (D-D) — the published MJ
+        physicochemical pattern, projected to the GADV proto-code.
+        """
+        L = peptide.shape[2]
+        if L < 2:
+            return np.zeros(peptide.shape[:2], dtype=np.float32)
+        # peptide[..., i] is the amino-acid index at position i for that cell.
+        # Pair energies: MJ_CONTACT_ENERGY[peptide[i], peptide[i+1]] for each
+        # adjacent pair. Sum across pairs gives per-cell folding energy.
+        left = peptide[..., :-1].astype(np.int64)
+        right = peptide[..., 1:].astype(np.int64)
+        energies = MJ_CONTACT_ENERGY[left, right]  # (H, W, L-1)
+        folding_energy = energies.sum(axis=2)  # (H, W) — more negative = better
+        # Normalise to [0, 1]: best possible all-V-V is L-1 contacts × −1.5;
+        # worst is L-1 contacts × +0.5 (all D-D, the only positive entry).
+        worst = float(MJ_CONTACT_ENERGY.max()) * (L - 1)  # +0.5 × (L-1)
+        best = float(MJ_CONTACT_ENERGY.min()) * (L - 1)  # −1.5 × (L-1)
+        span = max(worst - best, 1e-6)
+        fit = (worst - folding_energy) / span  # 1 at the most favourable, 0 at the least
+        return np.clip(fit, 0.0, 1.0).astype(np.float32)
 
     def _mutated_strand(self, strand: np.ndarray) -> np.ndarray:
         out = strand.copy()

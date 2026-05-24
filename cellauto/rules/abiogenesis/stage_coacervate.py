@@ -64,10 +64,30 @@ class AbiogenesisStageCoacervate:
     substeps_per_frame: int = 10
     rng: random.Random = field(default_factory=random.Random)
 
-    def init_state(self, width: int, height: int) -> CoacervateState:
+    def init_state(
+        self,
+        width: int,
+        height: int,
+        *,
+        seed_field: np.ndarray | None = None,
+    ) -> CoacervateState:
+        from cellauto.rules.abiogenesis.science import normalise_signal
+
+        signal = normalise_signal(seed_field)
         gen = np.random.default_rng(self.rng.randrange(2**31))
         phi = self.mean_composition + self.noise * (gen.random((height, width), dtype=np.float32) - 0.5)
+        if signal is not None:
+            # G1: bias φ upward where the upstream chemistry was active —
+            # those become the nucleation seeds for the Cahn-Hilliard
+            # coarsening so coacervate droplets emerge from real upstream
+            # hot-spots instead of pure noise.
+            phi = phi + (signal * 0.6).astype(np.float32)
         return CoacervateState(phi=phi.astype(np.float32))
+
+    def extract_signal(self, state: CoacervateState) -> np.ndarray:
+        """Downstream: the coacervate-rich field (normalised composition).
+        Bright cells are inside droplets."""
+        return np.clip((state.phi + 1.0) / 2.0, 0.0, 1.0).astype(np.float32)
 
     def step(self, state: CoacervateState) -> CoacervateState:
         phi = state.phi

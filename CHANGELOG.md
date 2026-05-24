@@ -5,6 +5,98 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ---
 
+## [3.5.0] — 2026-05-24
+
+The **honest-gap closure** release. v3.4 shipped 12 named origin-of-life
+stages and an AAA visual identity, but a self-audit found four genuine
+integrity gaps: the 12-stage pipeline reset state on every promotion (so
+it was twelve isolated sims on a timer, not a coupled narrative); Stage XI
+admitted "TOY" in its own docstring; Stage X used a CMC switch instead of
+real curvature physics; Stages VIII and XII relied on hand-shaped fitness
+vectors instead of derived dynamics. v3.5 closes all of them.
+
+### Pipeline coupling — the showstopper fix
+- **State flows across stage transitions (G1).** Every stage now exposes
+  `extract_signal(state) -> np.ndarray` returning a 2D float summary of
+  its main output, and every stage's `init_state(W, H)` accepts a
+  `seed_field` kwarg that biases initial conditions by the upstream
+  signal. `AbiogenesisPipelineRule.promote()` extracts the upstream
+  signal before discarding the previous state and threads it into the new
+  stage's init. Forward `set_stage()` jumps carry the signal; backward
+  jumps reset (rewind semantics). The chemistry-to-life arc is now a
+  genuinely *coupled* simulation.
+- New helpers in `cellauto/rules/abiogenesis/science.py`:
+  `normalise_signal()`, `seed_from_signal()`.
+- Regression test `tests/test_pipeline_handoff.py` (7 tests) pins that
+  spatial correlation flows from upstream final state to downstream
+  initial state with Pearson r > 0.3; pins the seeded-vs-unseeded
+  difference directly; tests the full extended pipeline arc.
+
+### Real scientific dynamics — replacing the toy bits
+- **G2: Eigen-Schuster hypercycle ODE in Stage XI.** The protocell
+  genome now evolves under
+  `dx_i/dt = x_i ( k_i · x_{(i-1) mod n} − Φ )` with the mean-field
+  dilution Φ holding Σx_i constant. The "TOY" disclaimer in the
+  docstring is gone. Legacy `dynamics="proxy"` mode kept for A/B
+  comparison; `dynamics="hypercycle"` is the default. Six new tests in
+  `tests/test_hypercycle.py` pin the equal-concentration fixed point,
+  the broken-cycle collapse, and per-step mass conservation.
+- **G3: Helfrich (1973) bending elasticity in Stage X.** Added a
+  biharmonic regularisation `∂φ/∂t += −κ_b · ∇²(∇²φ)` (the variational
+  derivative of `E_b ∝ (∇²φ)²`). Vesicle interfaces now have a real
+  bending modulus — fluid membranes resist sharp bends. Default κ_b is
+  the dimensionless analogue of Helfrich's measured 2–10 × 10⁻²⁰ J.
+  Pinned by a same-seed comparison: κ_b > 0 reduces total bending
+  energy of the lipid field while preserving CMC pattern formation.
+- **G4: Miyazawa-Jernigan-style fitness landscape in Stage VIII.**
+  Replaced the fixed-target-peptide match score with a sequence-
+  composition-dependent score using a published-pattern 4×4 residue-pair
+  contact-energy table (`MJ_CONTACT_ENERGY`) projected to the Ikehara
+  GADV proto-code: hydrophobic packing (V-V, A-V) favourable, like-charge
+  contacts (D-D) unfavourable. `fitness_mode="mj_landscape"` is the
+  default; the legacy `"target_match"` is kept for backward-compatibility.
+  Pinned by `test_mj_landscape_prefers_hydrophobic_packing`.
+- **G5: pathway-graph essentiality in Stage XII LUCA.** Replaced the
+  hand-shaped 16-vector `gene_values` with a static co-occurrence
+  pathway graph (5 toy pathways covering 12 of 16 genes — translation
+  core, Wood-Ljungdahl, chemiosmotic ATP, H₂ chemistry, DNA
+  maintenance). Fitness now rewards complete pathways and penalises
+  partial machinery; essentiality is the topological invariant
+  `pathway_genes`. The recovered LUCA core (≥70 % prevalence) is now
+  pinned to be a subset of the network-essential set, not just a
+  match-the-config-vector exercise.
+
+### Test pins
+- **G6: CMC gate.** Stage X with `cmc_threshold` set above any
+  reachable lipid value produces zero vesicles; below it, positive.
+- **G7: Eigen error catastrophe at ε_c = ln(σ)/L.** Below 0.5·ε_c the
+  master sequence holds; above 1.5·ε_c it collapses to near-zero.
+- **G8: Wood-Ljungdahl stoichiometric cap.** Flooding H₂ while
+  starving CO₂ does NOT exceed the 2:1 stoichiometric limit — the
+  reaction can't run faster than its limiting reagent.
+- **G9: replaced the vacuous tautological `0 <= x <= 100` test** with
+  a real behavioural pin: `code_mutation=0` ⇒ consensus rises above
+  random baseline; `code_mutation=1.0` ⇒ consensus stays near random.
+- **G10: pipeline-handoff regression pin** (described above under G1).
+
+### Other
+- **G11: CHANGELOG + README phrasing pass.** Since the science gaps
+  are closed, "implements" is now honest. The v3.4 README's "every
+  panel is real simulator output" claim and the magnum-opus poster
+  framing are now backed by genuine coupled dynamics, not theatre.
+- **G12: ROADMAP doc-drift fix.** `docs/ROADMAP.md` updated to
+  reflect the 12-stage pipeline (was stuck on 5), 141 tests (was 72),
+  88 % coverage, and the AAA asset bundle. The audit's §0 brutal-gap
+  analysis is committed as the authoritative record of what v3.5 fixed.
+- **Test count 120 → 141.** New files: `test_pipeline_handoff.py` (7
+  tests), `test_hypercycle.py` (6 tests). Test rewrites in
+  `test_genetic_code.py` (added G4 + G9 pins), `test_vesicles.py`
+  (added G3 + G6 pins), `test_rna_world.py` (added G7 pin),
+  `test_vents.py` (added G8 stoichiometric cap), `test_luca.py`
+  (added G5 pathway-graph pins). Coverage: 87.09 % → 88.13 %.
+
+---
+
 ## [3.4.0] — 2026-05-23
 
 The "closing the honest gaps" release. The v3.2/v3.3 cycles fixed correctness

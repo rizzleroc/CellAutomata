@@ -48,6 +48,27 @@ def test_error_catastrophe_above_threshold():
     assert above < 15
 
 
+def test_eigen_transition_at_predicted_threshold():
+    """The phase transition Eigen 1971 predicts at ε_c = ln(σ)/L should be
+    sharp: well below ε_c the master survives, well above ε_c it collapses.
+    We tie the test to the *theoretical* formula by using 0.5·ε_c and
+    1.5·ε_c rather than the broad-strokes 0.01-vs-0.35 numbers in the
+    legacy test above. The claim under test is the RATIO — the master
+    fraction at half-threshold must be substantially higher than at
+    above-threshold, and the above-threshold value must be near zero.
+    """
+    rule_template = AbiogenesisStageRNAWorld(superiority=10.0, seq_length=16)
+    eps_c = rule_template.error_threshold
+    half = _run(error_rate=0.5 * eps_c, steps=80)
+    above = _run(error_rate=1.5 * eps_c, steps=80)
+    # Above ε_c the master is wiped out — finite-size noise allows a few
+    # surviving cells but the population is no longer a quasispecies.
+    assert above <= 3, f"above ε_c the master should collapse to near-zero (got {above} %)"
+    # And the half-threshold case must be at least an order of magnitude
+    # higher — the phase transition is sharp.
+    assert half >= max(10, 5 * above), f"phase transition not sharp: half={half} %, above={above} %"
+
+
 def test_serialization_round_trip():
     rule = AbiogenesisStageRNAWorld(rng=random.Random(3))
     state = rule.init_state(12, 12)

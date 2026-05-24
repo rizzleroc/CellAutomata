@@ -4,8 +4,8 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "cellauto"
-version = "3.4.0"
-description = "Scientifically-grounded abiogenesis sandbox (5- and 10-stage chemistry-to-life pipelines + 6 additional origin-of-life processes + Conway + Wolfram)."
+version = "3.5.0"
+description = "Scientifically-grounded abiogenesis sandbox with a *coupled* 12-stage chemistry-to-life pipeline. Real Eigen-Schuster hypercycle ODE, Helfrich curvature, Miyazawa-Jernigan fitness, pathway-graph LUCA. Plus Conway and Wolfram for reference."
 readme = "README.md"
 license = { file = "LICENSE" }
 requires-python = ">=3.10"

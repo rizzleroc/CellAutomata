@@ -235,6 +235,61 @@ AMPHIPHILE_CMC_MM: dict[str, float] = {
 }
 
 
+# ---------------------------------------------------------------------------
+# Pipeline state hand-off — the G1 fix
+# ---------------------------------------------------------------------------
+
+
+def normalise_signal(signal: np.ndarray | None) -> np.ndarray | None:
+    """Min-max normalise a 2D signal to [0, 1]; pass through None.
+
+    Used by the pipeline-coupling glue. A stage's ``extract_signal`` may
+    return raw concentrations / fitness values / occupancy counts on any
+    scale; downstream stages should not have to know that scale. Normalising
+    once here means every consumer sees the same dynamic range.
+    """
+    if signal is None:
+        return None
+    arr = np.asarray(signal, dtype=np.float32)
+    lo, hi = float(arr.min()), float(arr.max())
+    if hi - lo < 1e-9:
+        return np.zeros_like(arr, dtype=np.float32)
+    return (arr - lo) / (hi - lo)
+
+
+def seed_from_signal(
+    signal: np.ndarray | None,
+    *,
+    shape: tuple[int, int],
+    lo: float = 0.0,
+    hi: float = 1.0,
+    fallback: np.ndarray | None = None,
+) -> np.ndarray | None:
+    """Build an initial-state field from an incoming normalised signal.
+
+    Given a signal in roughly [0, 1] (after ``normalise_signal``), produce a
+    target field of ``shape`` in [lo, hi] — bright signal pixels become
+    ``hi``-valued, dim ones become ``lo``-valued. If ``signal`` is None we
+    return ``fallback`` (which is itself allowed to be None — the caller is
+    then expected to use its own default init).
+
+    This is the *common case* of pipeline state hand-off: the previous
+    stage's interesting locations become the next stage's high-energy seed.
+    """
+    if signal is None:
+        return fallback
+    arr = np.asarray(signal, dtype=np.float32)
+    if arr.shape != shape:
+        # Resize via PIL when shapes mismatch (rare — only triggered when a
+        # snapshot is loaded into a different grid size).
+        from PIL import Image
+
+        img = Image.fromarray((np.clip(arr, 0, 1) * 255).astype(np.uint8))
+        img = img.resize((shape[1], shape[0]), Image.Resampling.BILINEAR)
+        arr = np.asarray(img, dtype=np.float32) / 255.0
+    return (lo + (hi - lo) * np.clip(arr, 0.0, 1.0)).astype(np.float32)
+
+
 def vesicle_indicator(amphiphile_concentration: np.ndarray, threshold: float = 0.6) -> np.ndarray:
     """Critical-micelle-concentration membrane marker.
 

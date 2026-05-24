@@ -64,22 +64,50 @@ class AbiogenesisStage1GrayScott:
     substeps_per_frame: int = 10  # the PDE is stable with small dt; run many sub-steps per visible frame
     rng: random.Random = field(default_factory=random.Random)
 
-    def init_state(self, width: int, height: int) -> GrayScottState:
+    def init_state(
+        self,
+        width: int,
+        height: int,
+        *,
+        seed_field: np.ndarray | None = None,
+    ) -> GrayScottState:
         # Standard Gray-Scott initial condition: u=1, v=0 everywhere except a
-        # small perturbed central patch where v is seeded.
+        # small perturbed central patch where v is seeded. The G1 pipeline
+        # hand-off: if an upstream stage supplied a ``seed_field`` (organic
+        # concentration from the vent, polymer from minerals, etc.) we use it
+        # to seed v directly — the locations where upstream chemistry was
+        # active become the locations where Gray-Scott patterns ignite.
+        from cellauto.rules.abiogenesis.science import normalise_signal, seed_from_signal
+
+        signal = normalise_signal(seed_field)
         u = np.ones((height, width), dtype=np.float32)
-        v = np.zeros((height, width), dtype=np.float32)
-        cx, cy = width // 2, height // 2
-        r = max(2, min(width, height) // 16)
-        u[cy - r : cy + r, cx - r : cx + r] = 0.5
-        v[cy - r : cy + r, cx - r : cx + r] = 0.25
-        # Small random noise so symmetric initial conditions break.
+        if signal is not None:
+            v = seed_from_signal(signal, shape=(height, width), lo=0.0, hi=0.45)
+            # Pull u down where v is high so the system is locally near the
+            # interesting (mass-conserved) regime, not the trivial (u=1, v=0).
+            u = np.clip(1.0 - 0.5 * (v / 0.45 if v is not None else 0.0), 0.5, 1.0).astype(np.float32)  # type: ignore[assignment]
+            if v is None:
+                v = np.zeros((height, width), dtype=np.float32)
+        else:
+            v = np.zeros((height, width), dtype=np.float32)
+            cx, cy = width // 2, height // 2
+            r = max(2, min(width, height) // 16)
+            u[cy - r : cy + r, cx - r : cx + r] = 0.5
+            v[cy - r : cy + r, cx - r : cx + r] = 0.25
+        # Small random noise so symmetric initial conditions break (and so a
+        # uniform seed field still has the variability the PDE needs to grow
+        # interesting structure).
         noise = np.array(
             [[self.rng.uniform(-0.02, 0.02) for _ in range(width)] for _ in range(height)], dtype=np.float32
         )
         v += noise
         np.clip(v, 0.0, 1.0, out=v)
         return GrayScottState(u=u, v=v)
+
+    def extract_signal(self, state: GrayScottState) -> np.ndarray:
+        """Downstream stages get the inhibitor concentration field. Bright
+        regions are where reaction-diffusion produced self-replicating spots."""
+        return state.v.copy()
 
     def step(self, state: GrayScottState) -> GrayScottState:
         if self.F is not None and self.k is not None:
