@@ -12,11 +12,33 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - **`cellauto web` subcommand.** A Flask server (`cellauto/web/server.py`)
   wraps the existing `Engine` and exposes every rule in the registry over a
   small JSON API; a single-page vanilla-JS frontend (`cellauto/web/static/`)
-  drives it. Rule picker, grid size, seed input, play/pause/step, speed
-  slider, per-rule tutorial copy, live population stats — same engine the
-  desktop GUI uses, no Pyodide, no per-rule reimplementation. Frames are
-  rendered server-side via each rule's existing `render_rgb` and shipped
-  as PNGs. Flask is opt-in: `pip install -e ".[web]"`.
+  drives it. Same engine the desktop GUI uses, no Pyodide, no per-rule
+  reimplementation. Frames are rendered server-side via each rule's
+  existing `render_rgb` and shipped as PNGs. Flask is opt-in:
+  `pip install -e ".[web]"`.
+- **Feature parity with the desktop GUI** (within the constraints of a
+  PNG-streaming architecture): rule picker, grid + seed inputs, play /
+  pause / step / reset, speed slider, **dynamic per-rule parameter
+  sliders** built from `PARAM_SPECS` (live-applies; rebuilds state for
+  structural `reinit=True` knobs), **Gray-Scott Pearson preset chips**
+  (spots / stripes / mitosis / waves / labyrinth), **pipeline stage
+  controls** (promote, jump to stage, auto-promote toggle, duration),
+  **stage banner + legend** above and below the canvas, **snapshot
+  save / load** (JSON, round-trips RNG state via the existing
+  `Engine.to_dict` / `deserialize_state` path), **frame PNG download**,
+  **animated GIF export** (reuses `cellauto.export.export_gif`), and a
+  **navigable tutorial panel** that cycles through each rule's citation
+  copy. Keyboard shortcuts: space=play, s=step, r=reset, p=promote.
+- **Live demo on Railway.** Repository ships a `Dockerfile`,
+  `.dockerignore`, `railway.toml`, gunicorn WSGI entry
+  (`cellauto/web/wsgi.py`), and a `/api/health` liveness probe so the
+  sandbox deploys with zero env-var config. Hosted at
+  <https://cellautomata-production.up.railway.app/>.
+- **Test coverage**: `tests/test_web.py` — 23 cases covering session
+  lifecycle, PNG + GIF rendering for both discrete and field rules,
+  parameter clamping, reinit-driven state rebuilds, preset application,
+  pipeline stage controls, snapshot save/load round-trips, and input
+  validation. Tests skip silently when Flask isn't installed.
 
 ---
 
