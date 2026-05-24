@@ -21,15 +21,15 @@ const els = {
   canvas: document.getElementById("canvas"),
   population: document.getElementById("population"),
   legend: document.getElementById("legend"),
+  error: document.getElementById("error"),
 
   presetsWrap: document.getElementById("presets-wrap"),
   presets: document.getElementById("presets"),
-  error: document.getElementById("error"),
 
   paramsWrap: document.getElementById("params-wrap"),
   params: document.getElementById("params"),
+  paramsEmpty: document.getElementById("params-empty"),
 
-  stageWrap: document.getElementById("stage-wrap"),
   stageSelect: document.getElementById("stage-select"),
   promote: document.getElementById("promote"),
   autoPromote: document.getElementById("auto-promote"),
@@ -48,12 +48,19 @@ const els = {
   gifFps: document.getElementById("gif-fps"),
   exportStatus: document.getElementById("export-status"),
 
-  tutorialTitle: document.getElementById("tutorial-title"),
+  tabs: Array.from(document.querySelectorAll(".tab")),
+  panes: Array.from(document.querySelectorAll(".tab-pane")),
+  stageTab: document.querySelector('.tab[data-tab="stage"]'),
+
   tutorialBody: document.getElementById("tutorial-body"),
-  tutorialAll: document.getElementById("tutorial-all"),
   tutorialPrev: document.getElementById("tutorial-prev"),
   tutorialNext: document.getElementById("tutorial-next"),
   tutorialCounter: document.getElementById("tutorial-counter"),
+  tutorialToggle: document.getElementById("tutorial-toggle"),
+  tutorialAll: document.getElementById("tutorial-all"),
+  tutorialDialog: document.getElementById("tutorial-dialog"),
+  tutorialDialogClose: document.getElementById("tutorial-dialog-close"),
+  tutorialDialogTitle: document.getElementById("tutorial-dialog-title"),
 };
 
 const state = {
@@ -113,14 +120,12 @@ async function loadRules() {
 function renderTutorial() {
   const r = state.rulesByName.get(els.rule.value);
   if (!r) return;
-  // Show the rule's slug as the marginalia title — tracked uppercase via
-  // CSS already. Same string the rule is invoked by in the Python API.
-  els.tutorialTitle.textContent = r.name;
   if (state.tutorialIdx >= r.tutorial.length) state.tutorialIdx = 0;
   els.tutorialBody.textContent = r.tutorial[state.tutorialIdx] || "";
-  els.tutorialCounter.textContent = `${state.tutorialIdx + 1} / ${r.tutorial.length}`;
+  els.tutorialCounter.textContent = `${state.tutorialIdx + 1}/${r.tutorial.length}`;
   els.tutorialPrev.disabled = state.tutorialIdx === 0;
   els.tutorialNext.disabled = state.tutorialIdx >= r.tutorial.length - 1;
+  if (els.tutorialDialogTitle) els.tutorialDialogTitle.textContent = r.name;
   els.tutorialAll.innerHTML = "";
   for (const line of r.tutorial) {
     const li = document.createElement("li");
@@ -140,11 +145,34 @@ function applySummary(s) {
     showStageBanner(s.stage_info);
     populateStageControls(s.stage_info);
     showLegend(s.stage_info.legend);
+    setStageTabVisible(true);
   } else {
     els.stageBanner.hidden = true;
-    els.stageWrap.hidden = true;
+    setStageTabVisible(false);
     els.legend.hidden = true;
   }
+}
+
+function setStageTabVisible(visible) {
+  if (!els.stageTab) return;
+  els.stageTab.hidden = !visible;
+  // If the stage tab is hidden but currently active, snap back to params.
+  if (!visible && els.stageTab.classList.contains("active")) {
+    activateTab("params");
+  }
+}
+
+function activateTab(name) {
+  els.tabs.forEach((t) => {
+    const on = t.dataset.tab === name;
+    t.classList.toggle("active", on);
+    t.setAttribute("aria-selected", on ? "true" : "false");
+  });
+  els.panes.forEach((p) => {
+    const on = p.dataset.pane === name;
+    p.classList.toggle("active", on);
+    p.hidden = !on;
+  });
 }
 
 function renderPopulation(pop) {
@@ -177,10 +205,10 @@ function showStageBanner(info) {
 }
 
 function populateStageControls(info) {
-  els.stageWrap.hidden = false;
-  // Title-case so "PRIMORDIAL SOUP" reads as "Primordial soup" — the
-  // server emits the museum-card uppercase form for the banner; the
-  // dropdown looks calmer in sentence case.
+  // The stage tab itself is shown/hidden via setStageTabVisible; here we
+  // just populate the form. Title-case so "PRIMORDIAL SOUP" reads as
+  // "Primordial soup" — the server emits the museum-card uppercase form
+  // for the banner; the dropdown looks calmer in sentence case.
   const niceTitle = (s) => {
     const lower = String(s || "").toLowerCase();
     return lower.charAt(0).toUpperCase() + lower.slice(1);
@@ -250,6 +278,12 @@ async function refreshParams() {
   state.currentParams = payload.params;
   renderParamSliders(payload);
   renderPresets(payload);
+  // Empty-state shown when the rule has neither sliders nor presets.
+  if (els.paramsEmpty) {
+    const hasParams = payload.params && payload.params.length > 0;
+    const hasPresets = payload.presets && payload.presets.length > 0;
+    els.paramsEmpty.hidden = hasParams || hasPresets;
+  }
 }
 
 function renderParamSliders({ params }) {
@@ -447,7 +481,7 @@ function effectiveHz() {
 function startLoop() {
   if (state.loopHandle) return;
   state.playing = true;
-  els.play.textContent = "⏸  P A U S E";
+  els.play.textContent = "⏸ pause";
   els.play.classList.add("active");
   // Batch steps when the requested rate exceeds what a single
   // step→frame.png round-trip can sustain (~30 sps). At speed=60 we ask
@@ -471,7 +505,7 @@ async function stopLoop() {
     clearTimeout(state.loopHandle);
     state.loopHandle = null;
   }
-  els.play.textContent = "▶  P L A Y";
+  els.play.textContent = "▶ play";
   els.play.classList.remove("active");
 }
 
@@ -620,6 +654,26 @@ function bindUI() {
       renderTutorial();
     }
   });
+  els.tutorialToggle.addEventListener("click", () => {
+    if (typeof els.tutorialDialog.showModal === "function") {
+      els.tutorialDialog.showModal();
+    } else {
+      els.tutorialDialog.removeAttribute("hidden");
+      els.tutorialDialog.setAttribute("open", "");
+    }
+  });
+  els.tutorialDialogClose.addEventListener("click", () => {
+    if (typeof els.tutorialDialog.close === "function") {
+      els.tutorialDialog.close();
+    } else {
+      els.tutorialDialog.removeAttribute("open");
+    }
+  });
+
+  // Tab switching
+  els.tabs.forEach((t) => {
+    t.addEventListener("click", () => activateTab(t.dataset.tab));
+  });
 
   // Keyboard shortcuts — keep them out of input fields so typing doesn't
   // accidentally toggle play.
@@ -628,7 +682,7 @@ function bindUI() {
     if (e.key === " ") { e.preventDefault(); els.play.click(); }
     else if (e.key === "s") { els.step.click(); }
     else if (e.key === "r") { els.reset.click(); }
-    else if (e.key === "p") { els.promote.click(); }
+    else if (e.key === "p" && !els.stageTab.hidden) { els.promote.click(); }
   });
 }
 
