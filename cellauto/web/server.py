@@ -238,6 +238,12 @@ def _apply_params(engine: Engine, updates: dict[str, Any]) -> tuple[list[str], b
             engine.state.inner_state = active.init_state(engine.width, engine.height)
         else:
             engine.state = engine.rule.init_state(engine.width, engine.height)
+        # Zero the step counter so the UI's "step: N" stays consistent with
+        # the fresh state. Wolfram 1D is especially obvious about this — its
+        # canvas is an accumulated history, so without the reset the stats
+        # say "step: 5" but the canvas shows only the seed pixel.
+        engine.step_count = 0
+        engine._step_durations.clear()
     return applied, needs_reinit
 
 

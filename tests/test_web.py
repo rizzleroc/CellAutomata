@@ -167,9 +167,29 @@ def test_reinit_param_rebuilds_state(client):
     client.post(f"/api/sessions/{sid}/step", json={"n": 3})
     res = client.post(f"/api/sessions/{sid}/params", json={"n_species": 8})
     assert res.status_code == 200
-    assert res.get_json()["reinit"] is True
+    body = res.get_json()
+    assert body["reinit"] is True
+    # The step counter must go back to 0 — without this the UI shows e.g.
+    # step=3 next to a freshly-initialised canvas, which (especially on
+    # Wolfram 1D's accumulated-history visualisation) reads as "broken".
+    assert body["step_count"] == 0
     # And stepping still works after the reinit.
     assert client.post(f"/api/sessions/{sid}/step", json={"n": 1}).status_code == 200
+
+
+def test_reinit_wolfram_resets_step_count(client):
+    """Specifically lock in the Wolfram 1D case the playtest caught: the
+    canvas is an accumulated history, so a reinit MUST zero step_count or
+    the UI shows a stale number beside a blank canvas."""
+    sid = client.post(
+        "/api/sessions",
+        json={"rule": "wolfram1d", "grid": 32, "seed": 1},
+    ).get_json()["session_id"]
+    client.post(f"/api/sessions/{sid}/step", json={"n": 5})
+    assert client.get(f"/api/sessions/{sid}").get_json()["step_count"] == 5
+    res = client.post(f"/api/sessions/{sid}/params", json={"rule_number": 110})
+    assert res.status_code == 200
+    assert res.get_json()["step_count"] == 0
 
 
 def test_preset_applies_gray_scott(client):
