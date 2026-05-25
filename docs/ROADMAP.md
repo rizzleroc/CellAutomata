@@ -5,7 +5,7 @@ change, check it against the Feature Inventory: nothing listed there should
 silently disappear. The Punchlist tracks the current work cycle; the Roadmap
 captures what's deliberately deferred.
 
-Last updated: 2026-05-24.
+Last updated: 2026-05-25.
 
 > **v3.5 status:** all G1–G12 punchlist items from the v3.4 gap audit
 > are CLOSED. The 12-stage pipeline is genuinely coupled; Stage XI runs
@@ -14,6 +14,18 @@ Last updated: 2026-05-24.
 > co-occurrence pathway graph. 141 tests / 88 % coverage / four CI gates
 > green. The §0 audit below is preserved as the historical record of the
 > gap closure; the live punchlist is in §0a.
+>
+> **v3.6 status:** local-vs-web UX parity SHIPPED. Nine of eleven L
+> items closed; L2 (tabbed panels) + L10 (background grain) deferred
+> with rationale in §5.
+>
+> **v4.0 status (PROPOSED):** SEM-grade live rendering. See §6 below and
+> the full PRD at [PRD_SEM_VISUALIZATION.md](PRD_SEM_VISUALIZATION.md).
+> Twelve S items (S1–S12) span four phases — CPU rasteriser → sprite
+> library → full stage catalogue → optional GPU shader → opt-in AI
+> refinement. The goal is photographic instrument-grade rendering of
+> every frame the engine produces, without changing the underlying
+> simulation.
 
 ---
 
@@ -379,6 +391,103 @@ the v3.6+ direction.
 - [x] Per-protocell inspector — `Button-1` on the canvas hit-tests Stage 4 `Protocell` discs (direct rule or pipeline-wrapped) and opens a Toplevel showing position, radius, age, fitness, and the genome vector, plus a caption explaining the hypercycle-coupling fitness.
 - [x] In-app concentration / population time-series plot (sparkline overlay).
 - [x] Story-mode chapter transition cards — when the pipeline promotes, a centered overlay shows "CHAPTER N · TITLE" + principle + citation, fades after ~4.5 s via `_animate` countdown. Works for both 5- and 10-stage pipelines.
+
+---
+
+## 6. v4.0 — SEM-grade visualization cycle (proposed)
+
+Full PRD: **[docs/PRD_SEM_VISUALIZATION.md](PRD_SEM_VISUALIZATION.md)**.
+
+### One-line vision
+The v3.x line earned scientific *credibility* (real Eigen-Schuster ODE,
+Helfrich bending, Miyazawa-Jernigan landscape, pathway-graph LUCA,
+coupled 12-stage pipeline). The v4.0 line earns scientific
+**representation** — every frame the engine produces should look like a
+live SEM (scanning-electron-microscope) feed of real abiotic chemistry,
+not a viridis heat-map on a pixel grid.
+
+### Cycle direction
+The reference target is the user-supplied ideal-state image: a warm-sepia
+SEM micrograph of granular substrate with spherical protocell-like forms
+catching directional light, framed by a "LIVE SEM FEED" badge, scale bar,
+and the v3.6 three-column composition. We get there by adding a new
+**depth-shading renderer** alongside the existing viridis one and
+toggling between them from `View ▸ SEM mode`. Underlying simulation
+stays unchanged — the win is purely visual.
+
+### Punchlist (open until each phase ships)
+
+- [ ] **S1 — `SemRenderer` core (Phase 1).** New module
+  `cellauto/renderer_sem.py` implementing the depth-shaded numpy
+  rasteriser: height-field → gradients → normals → Lambertian +
+  ambient + specular shading → procedural noise overlay → sepia /
+  mono LUT → LANCZOS upscale → vignette + crosshair + scale-bar
+  overlay. Same `render(state)` signature as `FieldRenderer` so app.py
+  stays agnostic. Target: 20 FPS @ 60×60 grid on CPU.
+- [ ] **S2 — Palette modes.** `warm-sepia` (matches the reference image)
+  and `cool-mono` (extends the existing Catalytic Silence palette into
+  3-D shading). Picker under `View ▸ SEM palette`. Both verified
+  colourblind-safe via `colorspacious`.
+- [ ] **S3 — `View ▸ SEM mode` toggle.** Checkbox flips between
+  viridis (legacy v3.6) and SEM rendering. Persists in the existing
+  config. Both render paths share step counts on the same seed
+  (regression-pinned).
+- [ ] **S4 — Instrument framing.** Centred crosshair reticle (1-px
+  hairline teal), "LIVE SEM FEED · Stage N — name" microcaps badge
+  upper-right, scale-bar microcopy below the canvas, ~10 % corner
+  vignette. Pulse-syncs the badge opacity with the v3.6 playback dot.
+- [ ] **S5 — Stage 1 hero pass.** Tune the height-map derivation +
+  shading parameters until Stage 1 (Gray-Scott) reads as the
+  reference image. This is the *demo gate* for the cycle — if Stage 1
+  doesn't look like an SEM, ship nothing.
+- [ ] **S6 — Sprite library, stages 0 / 1 / 3 (Phase 2).** Each stage's
+  characteristic forms (protocell granules, Gray-Scott spots, vesicle
+  bilayers) pre-rendered as alpha PNGs and composited over the
+  shaded background per the per-stage sim state.
+- [ ] **S7 — Full stage catalogue (Phase 3).** Sprite library extended
+  to all 12 stages of the extended pipeline. `docs/generated/sem_<stage>.png`
+  committed for each.
+- [ ] **S8 — Graceful fallback (F6).** If Pillow / numpy / Tk capability
+  detection fails, drop to v3.6 viridis rendering with a one-time toast
+  explaining why. No crashes.
+- [ ] **S9 — Regression tests.** ≥ 8 new pins:
+    - SemRenderer produces non-trivial image for each stage
+    - SEM and viridis renderers produce same step count on the same seed
+    - Zero-field input → near-uniform background
+    - Palette mode persists across init
+    - Reduced-motion mode disables the badge pulse
+    - PNG export under SEM mode matches the on-screen view byte-for-byte
+    - SEM mode falls back cleanly when Pillow LANCZOS isn't available
+    - Performance budget: 20 FPS @ 60×60 on CI hardware
+- [ ] **S10 — Optional GPU path (Phase 4).** `cellauto[gpu]` extra
+  brings `moderngl`; auto-select if importable. GLSL fragment shader
+  port of the Phase-1 pipeline. Maintains exact pixel parity with
+  CPU path (golden-image regression).
+- [ ] **S11 — Stretch: AI image-to-image refinement (Phase 5).**
+  `tools/sem_refine.py` runs SEM output through a fine-tuned diffusion
+  model at strength 0.35 for hero-shot quality. `File ▸ Export refined
+  PNG…` menu entry. Slow, opt-in, never the default.
+- [ ] **S12 — Documentation.** README + CHANGELOG carry a before/after
+  comparison image. `docs/science.md` notes that SEM mode is purely a
+  rendering choice; the underlying physics is unchanged.
+
+### Out of scope for v4.0
+- Replacing Tk with PyQt / Electron / web-only (the v3.6 audit settled
+  this — Tk stays).
+- Volumetric / true-3-D ray-traced rendering (SEM imagery is 2.5-D
+  depth-mapped; a volumetric chemistry sim is a v5.0 conversation).
+- Mandatory GPU dependency (GPU is an opt-in extra).
+- Replacing the underlying simulation. Every SEM pixel must still trace
+  to a real engine value. No "decorative" structures.
+
+### Acceptance criteria for v4.0.0 (the first ship)
+See PRD §9. Headlines:
+1. `cellauto gui --rule abiogenesis-pipeline` shows the 5-stage pipeline
+   in SEM mode by default.
+2. `View ▸ SEM mode` toggles cleanly between SEM and viridis.
+3. Stage 1 under SEM mode reads as a microscope view, not a screenshot.
+4. Four CI gates green; ≥ 8 new tests.
+5. v4.0 entry in CHANGELOG with a before/after comparison image.
 
 ---
 
