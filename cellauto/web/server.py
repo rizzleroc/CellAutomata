@@ -131,14 +131,10 @@ def _render_png(engine: Engine) -> bytes:
 
 
 def _active_rule(engine: Engine) -> Any:
-    """Return the rule whose parameters are 'currently active'.
-
-    For pipeline rules this is the inner rule of the active stage so the
-    UI shows the sliders that actually affect what the user is looking at.
-    """
-    state = engine.state
-    inner = getattr(state, "inner_rule", None)
-    return inner if inner is not None else engine.rule
+    """Thin alias kept for backward compatibility; prefer
+    ``engine.active_rule`` directly. The centralised property landed in
+    v3.5 — see ``cellauto/engine.py`` and PUNCHLIST P2-1."""
+    return engine.active_rule
 
 
 def _stage_info(engine: Engine) -> dict | None:
@@ -272,17 +268,20 @@ def _apply_params(engine: Engine, updates: dict[str, Any]) -> tuple[list[str], b
 def _capture_frame(engine: Engine, canvas: int) -> dict:
     """Snapshot the current state in the format export_gif expects.
 
-    Mirrors the shape used by ``cellauto export`` (see __main__.cmd_export).
+    PUNCHLIST P2-8: use ``render_rgb`` even for discrete rules. The
+    Rule protocol mandates render_rgb on every rule; the old per-cell
+    render_cell path was ~57k Python calls per 240² frame. Switching to
+    render_rgb cuts that to a single numpy alloc + tolist. As a side
+    effect, GIFs of discrete rules now look like the live web canvas
+    (flat colored squares) rather than rendering ovals for amoebas —
+    which is the cellauto-web user's actual mental model.
     """
-    rule = engine.rule
-    kind = getattr(rule, "renderer_kind", "discrete")
-    if kind == "field":
-        rgb = rule.render_rgb(engine.state)
-        return {"kind": "field", "rgb": np.asarray(rgb, dtype=np.uint8).tolist(), "canvas_size": canvas}
-    w = engine.grid.width
-    h = engine.grid.height
-    cells = [[rule.render_cell(engine.state, x, y) for x in range(w)] for y in range(h)]
-    return {"kind": "discrete", "width": w, "height": h, "cells": cells, "canvas_size": canvas}
+    rgb = engine.rule.render_rgb(engine.state)
+    return {
+        "kind": "field",
+        "rgb": np.asarray(rgb, dtype=np.uint8).tolist(),
+        "canvas_size": canvas,
+    }
 
 
 @dataclass

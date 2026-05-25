@@ -73,20 +73,63 @@ WINDOW_H = 1000
 def _register_bundled_fonts() -> None:
     """Make the bundled TTFs visible to the platform font system.
 
-    On Windows we call gdi32.AddFontResourceExW with FR_PRIVATE so the
-    fonts are only visible to this process. On other platforms there is
-    no portable equivalent that doesn't require user-level cache
-    rebuilds; we fall through to system fonts via the family fallback
-    list in ``_setup_theme``.
+    - Windows: ``gdi32.AddFontResourceExW`` with FR_PRIVATE (process-local).
+    - Linux: best-effort copy to ``~/.local/share/fonts/cellauto/`` and
+      ``fc-cache -f``. Fontconfig picks these up immediately.
+    - macOS: best-effort copy to ``~/Library/Fonts/`` (per-user, no admin).
+
+    Failures are silent — if the OS-level install doesn't take, the GUI
+    falls through to the system-font fallback list in ``_setup_theme``.
+    The "Catalytic Silence" visual identity then renders in close-enough
+    families (Constantia / Cambria / Georgia for serif; system mono).
+
+    PUNCHLIST P2-3: pre-v3.5 this function was Windows-only, so the
+    bundled fonts shipped but only Windows users saw the museum
+    typography. On Linux/macOS the design fell back to system serifs.
     """
-    if not FONTS_DIR.exists() or sys.platform != "win32":
+    if not FONTS_DIR.exists():
         return
     try:
-        FR_PRIVATE = 0x10
-        for ttf in FONTS_DIR.glob("*.ttf"):
-            ctypes.windll.gdi32.AddFontResourceExW(str(ttf), FR_PRIVATE, 0)
+        if sys.platform == "win32":
+            FR_PRIVATE = 0x10
+            for ttf in FONTS_DIR.glob("*.ttf"):
+                ctypes.windll.gdi32.AddFontResourceExW(str(ttf), FR_PRIVATE, 0)
+        elif sys.platform == "darwin":
+            _install_user_fonts(Path.home() / "Library" / "Fonts" / "cellauto")
+        elif sys.platform.startswith("linux"):
+            target = Path.home() / ".local" / "share" / "fonts" / "cellauto"
+            _install_user_fonts(target)
+            # Refresh fontconfig so new fonts are visible without a logout.
+            import subprocess
+
+            subprocess.run(
+                ["fc-cache", "-f", str(target)],
+                check=False,
+                capture_output=True,
+                timeout=5,
+            )
     except Exception as exc:  # noqa: BLE001
         log.debug("font registration failed: %s", exc)
+
+
+def _install_user_fonts(target_dir: Path) -> None:
+    """Copy bundled TTFs to a per-user font directory, idempotent.
+
+    Skips files that already exist with the same byte count (cheap mtime
+    check would be wrong if the package was reinstalled). No-op on
+    failure.
+    """
+    import shutil
+
+    target_dir.mkdir(parents=True, exist_ok=True)
+    for ttf in FONTS_DIR.glob("*.ttf"):
+        dst = target_dir / ttf.name
+        try:
+            if dst.exists() and dst.stat().st_size == ttf.stat().st_size:
+                continue
+            shutil.copy2(ttf, dst)
+        except OSError as exc:
+            log.debug("could not copy %s → %s: %s", ttf, dst, exc)
 
 
 class App(tk.Frame):
@@ -1708,15 +1751,26 @@ class App(tk.Frame):
 
     def _on_canvas_click(self, event: tk.Event) -> None:
         """If a Stage 4 ``Protocell`` lives under the click, open the inspector.
-        Works for both the direct stage rule and the pipeline at stage 4."""
+        Works for both the direct stage rule and the pipeline at stage 4.
+
+        PUNCHLIST P2-7: subtract the canvas's borderwidth (2px) from the
+        event coordinates before scaling to grid-space. Without it,
+        clicks within ~2px of the canvas edge were 1-2 grid cells off.
+        """
         state = self.engine.state
         sel = getattr(state, "inner_state", None) or state
         cells = getattr(sel, "cells", None)
         if not cells:
             return
         w, h = self._state_dims()
-        gx = event.x / max(1.0, CANVAS_SIZE / w)
-        gy = event.y / max(1.0, CANVAS_SIZE / h)
+        # event.x/y are canvas-widget-relative, including the 2px border
+        # we set at canvas creation (`borderwidth=2`). Subtract it so the
+        # scaling matches the drawn pixel grid.
+        BORDER = 2
+        cx_pix = max(0, event.x - BORDER)
+        cy_pix = max(0, event.y - BORDER)
+        gx = cx_pix / max(1.0, CANVAS_SIZE / w)
+        gy = cy_pix / max(1.0, CANVAS_SIZE / h)
         for i, c in enumerate(cells):
             if not getattr(c, "alive", True):
                 continue

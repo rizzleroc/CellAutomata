@@ -89,6 +89,33 @@ class Engine:
     def grid(self) -> Any:
         return self.state
 
+    @property
+    def active_rule(self) -> Rule:
+        """Return the rule whose parameters / population / render are
+        currently in effect.
+
+        For pipeline rules this is the inner rule of the active stage
+        (so parameter sliders track which stage you're looking at).
+        For standalone rules it's just ``self.rule``.
+
+        PUNCHLIST P2-1 (partial): this was hand-rolled as
+        ``getattr(state, "inner_rule", None) or rule`` in 5+ places
+        across ``app.py`` and ``web/server.py``. Centralising it on
+        Engine eliminates that duplication.
+        """
+        inner = getattr(self.state, "inner_rule", None)
+        return inner if inner is not None else self.rule
+
+    @property
+    def active_state(self) -> Any:
+        """Companion to ``active_rule``: returns the inner state for
+        pipelines, ``self.state`` otherwise. Use these together when
+        calling ``rule.population(state)`` / ``rule.render_rgb(state)``
+        without caring whether you've been handed a pipeline or a
+        standalone rule."""
+        inner = getattr(self.state, "inner_state", None)
+        return inner if inner is not None else self.state
+
     def step(self) -> None:
         t0 = time.perf_counter()
         new_state = self.rule.step(self.state)
@@ -143,12 +170,20 @@ class Engine:
         rule_cls = rule_registry[rule_name]
         rule_config = data.get("rule_config", {})
         rule = rule_cls(**rule_config) if rule_config else rule_cls()
-        engine = cls(
-            width=data["width"],
-            height=data["height"],
-            rule=rule,
-            seed=data["seed"],
-        )
+        # Build via __new__ + manual init so we skip the wasteful
+        # rule.init_state in __post_init__ — Engine.load overwrites
+        # engine.state immediately from the snapshot. Avoids ~5-10 ms
+        # per load on an 80×80 RAF (PUNCHLIST P2-4).
+        engine = cls.__new__(cls)
+        engine.width = data["width"]
+        engine.height = data["height"]
+        engine.rule = rule
+        engine.seed = data["seed"]
+        engine.step_count = 0
+        engine._step_durations = deque(maxlen=60)
+        engine.state = None  # filled in below
+        if hasattr(rule, "rng"):
+            rule.rng = random.Random(data["seed"])
         engine.step_count = data["step_count"]
         engine.state = rule.deserialize_state(data["state"])
         # Restore RNG state. Format v3 ships a JSON-native list (safe);

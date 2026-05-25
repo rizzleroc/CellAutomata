@@ -199,10 +199,13 @@ class AbiogenesisStageLUCA:
                     continue
                 py, px = self.rng.choices(parents, weights=weights, k=1)[0]
                 child = state.genome[py, px].copy()
-                # Per-gene mutation (independent flips).
-                for i in range(N):
-                    if self.rng.random() < self.mutation_rate:
-                        child[i] = not child[i]
+                # Vectorised per-gene mutation: PUNCHLIST P2-2. Numpy
+                # Generator seeded from self.rng so determinism is
+                # preserved at the population level.
+                gen = np.random.default_rng(self.rng.randrange(2**31))
+                flip_mask = gen.random(N) < self.mutation_rate
+                if flip_mask.any():
+                    child = np.where(flip_mask, ~child, child)
                 new_genome[y, x] = child
                 new_occ[y, x] = True
 

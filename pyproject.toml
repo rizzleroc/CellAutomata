@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "cellauto"
-version = "3.4.0"
+version = "3.5.0"
 description = "Scientifically-grounded abiogenesis sandbox (5- and 10-stage chemistry-to-life pipelines + 6 additional origin-of-life processes + Conway + Wolfram)."
 readme = "README.md"
 license = { file = "LICENSE" }

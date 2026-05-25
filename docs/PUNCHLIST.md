@@ -189,7 +189,7 @@ gets "twelve disconnected runs glued together".
 
 ## Tier 2 · Engineering quality
 
-### P2-1 · `cellauto/app.py` is a 2121-line god-object with 0% coverage
+### P2-1 · `cellauto/app.py` is a 2121-line god-object with 0% coverage — ◻ PARTIAL (active_rule/active_state properties extracted onto Engine; full Recorder/Timeline/Stats extraction deferred to v4 roadmap)
 
 **Smoking gun:** One `App` class, ~60 methods, all explicitly omitted
 from coverage (`pyproject.toml:51-58`). Half the time it reads from
@@ -208,7 +208,7 @@ runners can use xvfb).
 
 **Effort:** 2-3 days.
 
-### P2-2 · Per-cell Python loops in RNA / LUCA / code rules
+### P2-2 · Per-cell Python loops in RNA / LUCA / code rules — ✅ DONE (vectorised `_mutated_copy` / `_mutated_strand` / `_mutated_code` / LUCA mutation loop via per-call numpy Generator seeded from `self.rng`)
 
 **Smoking gun:** `stage_rna.py:114–145`, `stage_luca.py:176–207`,
 `stage_code.py:156–189`. Three nested `for y in range(H): for x in
@@ -221,7 +221,7 @@ already in the code.
 
 **Effort:** 1 day for all three.
 
-### P2-3 · Catalytic Silence fonts only ship on Windows
+### P2-3 · Catalytic Silence fonts only ship on Windows — ✅ DONE (best-effort per-user font install on Linux via `~/.local/share/fonts/cellauto/` + `fc-cache`, and macOS via `~/Library/Fonts/cellauto/`)
 
 **Smoking gun:** `cellauto/app.py` font registration via
 `gdi32.AddFontResourceExW` early-returns when `sys.platform != "win32"`.
@@ -236,7 +236,7 @@ ATSUI (macOS).
 **Effort:** 4 hours (Linux), +4 hours (macOS) — testable in CI on
 Linux at minimum.
 
-### P2-4 · `Engine.__post_init__` wastes a `rule.init_state` call on every `Engine.load`
+### P2-4 · `Engine.__post_init__` wastes a `rule.init_state` call on every `Engine.load` — ✅ DONE (Engine.load uses `cls.__new__` + manual init to bypass the eager init_state)
 
 **Smoking gun:** `engine.py:43`. `Engine.load` immediately overwrites
 `engine.state` after construction, so the `init_state` call in
@@ -248,7 +248,7 @@ False before constructing.
 
 **Effort:** 15 min.
 
-### P2-5 · Snapshot schema version never checked on load
+### P2-5 · Snapshot schema version never checked on load — ✅ DONE (rolled into P0-1: `version` field is now read in both `Engine.load` and the web `session_load`)
 
 **Smoking gun:** `engine.py:83` writes `"version": 2`. `engine.py:103-117`
 never reads it. A future format change has no migration path.
@@ -258,7 +258,7 @@ a version-specific deserializer if/when ≥3 ships.
 
 **Effort:** 30 min, plus future-proofs every subsequent schema bump.
 
-### P2-6 · `test_protocol.py::test_every_rule_can_init_state_and_step` is a tautology
+### P2-6 · `test_protocol.py::test_every_rule_can_init_state_and_step` is a tautology — ✅ DONE (now asserts non-empty Mapping[str, number] population, step advances, render_rgb returns (H, W, 3) uint8 for every registered rule)
 
 **Smoking gun:** Asserts `new_state is not None or state is not None`,
 which is `True` whenever either is non-None — i.e. always after
@@ -270,7 +270,7 @@ counter" claim that some rule must satisfy.
 
 **Effort:** 1 hour.
 
-### P2-7 · Canvas click-to-inspect has a 2-pixel borderwidth offset
+### P2-7 · Canvas click-to-inspect has a 2-pixel borderwidth offset — ✅ DONE
 
 **Smoking gun:** `app.py:1718` scales `event.x / (CANVAS_SIZE / w)`
 to grid-space without accounting for the canvas widget's
@@ -281,7 +281,7 @@ near the canvas edge misses by 1-2 cells.
 
 **Effort:** 5 minutes.
 
-### P2-8 · `_session_load` discrete-rule frame capture is 57k Python calls
+### P2-8 · `_session_load` discrete-rule frame capture is 57k Python calls — ✅ DONE (all rules now go through `render_rgb` in `_capture_frame`; eliminates 57k Python calls per 240² discrete frame)
 
 **Smoking gun:** `web/server.py:284` `_capture_frame` for discrete
 rules calls `rule.render_cell(...)` H×W times per frame. At 240×240,

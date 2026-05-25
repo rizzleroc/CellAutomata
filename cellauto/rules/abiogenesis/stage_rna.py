@@ -94,14 +94,17 @@ class AbiogenesisStageRNAWorld:
         return self.superiority if not seq.any() else 1.0
 
     def _mutated_copy(self, seq: np.ndarray) -> np.ndarray:
-        child = seq.copy()
-        eps = self.error_rate
-        for i in range(self.seq_length):
-            if self.rng.random() < eps:
-                # Replace with one of the (A-1) other symbols.
-                delta = self.rng.randrange(1, self.alphabet)
-                child[i] = (child[i] + delta) % self.alphabet
-        return child
+        # Vectorised per-base mutation. PUNCHLIST P2-2: the old per-base
+        # Python loop with `self.rng.random()` and `self.rng.randrange()`
+        # calls was the throughput bottleneck above 60×60. Draw a single
+        # numpy Generator seeded from the Python rng (preserving overall
+        # determinism: each call consumes exactly one int from self.rng).
+        gen = np.random.default_rng(self.rng.randrange(2**31))
+        mutate_mask = gen.random(self.seq_length) < self.error_rate
+        if not mutate_mask.any():
+            return seq.copy()
+        deltas = gen.integers(1, self.alphabet, size=self.seq_length, dtype=seq.dtype)
+        return np.where(mutate_mask, (seq + deltas) % self.alphabet, seq)
 
     def step(self, state: RNAWorldState) -> RNAWorldState:
         H, W, _ = state.seqs.shape

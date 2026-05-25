@@ -5,6 +5,99 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ---
 
+## [3.5.0] — 2026-05-24 — brutal-audit closure
+
+Three independent deep-dives (scientific accuracy, engineering quality,
+claims-vs-delivery) consolidated into a 19-item punchlist at
+[`docs/PUNCHLIST.md`](docs/PUNCHLIST.md). This release closes all 19
+across five tiers — 15 outright, 3 by honest re-framing, 1 partial.
+
+### Security · Tier 0
+
+- **P0-1 RCE in snapshot load fixed.** Both `Engine.load` and the web
+  `/api/sessions/<sid>/load` no longer `pickle.loads()` user-supplied
+  data. `random.Random.getstate()` is now serialised as a JSON-safe
+  nested list; snapshot format bumped 2 → 3. Legacy v2 snapshots still
+  load (their pickled rng_state is refused and the seed is restored
+  instead). Regression test posts a malicious `__reduce__` payload
+  and asserts the sentinel file does not appear after load.
+
+### Scientific honesty · Tier 1
+
+- **P1-3 Genetic-code stage now implements Vetsigian-Woese-Goldenfeld
+  horizontal gene transfer.** Two new knobs (`hgt_rate`,
+  `hgt_similarity_threshold`) wired into `PARAM_SPECS`. Regression
+  test pins HGT-vs-vertical convergence delta.
+- **P1-4 Vent synthesis rate is now ΔG-gated.** Pre-v3.5 the rate
+  used `|∇H|` as a magnitude multiplier; ΔG° was a hard-coded readout
+  number with no causal effect. v3.5 introduces a per-cell free-energy
+  factor: when global ΔG flips positive (gradient reversed) synthesis
+  vanishes. Regression test pins reversed-gradient.
+- **P1-2 Stage 4 error threshold now gates dynamics.** Above ε_c =
+  1/n_species the mutation drift amplifies, the genome melts; new
+  `error_catastrophe` population stat surfaces the crossing. Below
+  ε_c the behaviour is numerically identical to pre-v3.5.
+- **P1-1 Stage 3 vesicles** re-framed honestly: it's a Gray-Scott
+  concentration-regime proxy, not lipid self-assembly. Docstring,
+  tutorial, README table all disclose the scope.
+- **P1-5 Pipeline narrative** re-framed: "tours" / "curated
+  slideshow", with an explicit no-chemical-carry-over caveat.
+
+### Engineering · Tier 2
+
+- **P2-2** Per-cell Python loops in `_mutated_copy` / `_mutated_strand`
+  / `_mutated_code` / LUCA mutation step vectorised via per-call numpy
+  Generator seeded from `self.rng`.
+- **P2-3** Catalytic Silence fonts now best-effort install on Linux
+  (`~/.local/share/fonts/cellauto/` + `fc-cache`) and macOS
+  (`~/Library/Fonts/cellauto/`). The "Windows-only" qualifier dies.
+- **P2-1 (partial)** `engine.active_rule` / `engine.active_state`
+  properties centralise the pipeline-vs-standalone dispatch that
+  was hand-rolled in 5+ places.
+- **P2-4** `Engine.load` skips the wasteful `rule.init_state` call.
+- **P2-5** Snapshot `version` field now checked on load.
+- **P2-6** Tautological `test_protocol` smoke replaced with real
+  per-rule shape + population + render_rgb invariants.
+- **P2-7** Canvas-click 2-px borderwidth offset fixed.
+- **P2-8** Discrete-rule frame capture (web GIF export) now goes
+  through `render_rgb` — eliminates 57k Python calls per 240² frame.
+
+### Documentation · Tier 3
+
+- **P3-1** README stale "120 tests" count removed.
+- **P3-2** Extended-pipeline tutorial enumerates all 12 stages.
+- **P3-3** `--stage` CLI help reflects 0-4 / 0-11 ranges.
+- **P3-4** Four broken `PHASE2_BRUTAL.md` refs now point to
+  `docs/PUNCHLIST.md` (this *is* the self-audit doc now).
+- **P3-5** Render scripts no longer hardcode the author's Windows
+  font path; both compute `FONT_DIR` from the bundled
+  `cellauto/assets/fonts/`.
+- **P3-6** About dialog mentions both pipelines (5 + 12).
+- **P3-7** README "every constant traces to a published measurement"
+  softened to match `docs/science.md`'s "Honest limitations" section.
+
+### CI · Tier 4
+
+- **P4-1** `pip-audit` now audits the full resolved environment
+  (`.[web,dev]` installed) instead of just `requirements.txt`'s two
+  lines.
+- **P4-2** Dropped `mypy --no-error-summary`; added advisory
+  `mypy --strict` continue-on-error job.
+- **P4-3** Coverage caveat documented in README + CI step comment.
+
+### Test suite + coverage
+
+- 158 tests pass (was 147 pre-audit). New tests:
+  `test_snapshot_emits_format_v3`,
+  `test_load_refuses_legacy_pickle_rng_state`,
+  `test_load_rejects_malformed_rng_state`,
+  `test_legacy_pickle_rng_state_does_not_execute`,
+  three Stage 4 error-threshold tests, three HGT tests,
+  `test_reversed_gradient_yields_no_synthesis`.
+- Coverage 94% (was 89%) — promoted by the new tighter `test_protocol`.
+
+---
+
 ## [Unreleased]
 
 ### Added — browser sandbox

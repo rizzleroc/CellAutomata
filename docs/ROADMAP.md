@@ -5,13 +5,22 @@ self-status**. Before shipping any change, check the Feature Inventory
 — nothing listed should silently disappear. Cross-reference status
 against [`PUNCHLIST.md`](PUNCHLIST.md) for the active work cycle.
 
-Last updated: 2026-05-24 (post brutal-audit pass).
+Last updated: 2026-05-24 (post brutal-audit pass — **all 19 punchlist
+items closed or de-scoped** in v3.5).
 
 > ⚠ **Audit note:** A consolidated brutal honesty audit lives at
 > [`PUNCHLIST.md`](PUNCHLIST.md). This roadmap has been updated to
 > reflect the audit's findings — items previously listed as "shipped"
 > that turned out to be partial implementations are now marked
 > accordingly (✅ real / ◻ toy-with-real-concept / ⚠ overclaim).
+>
+> **v3.5 cycle (2026-05-24):** All 19 PUNCHLIST items addressed.
+> Closed outright: P0-1, P1-3, P1-4, P2-2..P2-8, P3-1..P3-7, P4-1..P4-3
+> (15 items). Honestly re-framed where the real implementation was
+> out-of-scope: P1-1, P1-2 (path C — gating added but no full
+> hypercycle ODE), P1-5 (path B — "tours" not "walks"). Partial: P2-1
+> (active_rule/active_state factored; full app.py decomposition is
+> on the v4 roadmap).
 
 ---
 
@@ -165,70 +174,91 @@ substitute for the cited model):**
 
 ## 2. Active work cycle (linked to PUNCHLIST.md)
 
-### Tier 0 — Security · ship this week
+### Tier 0 — Security
 
-- [ ] **P0-1** Replace `pickle.loads(user_input)` in snapshot load
-  with a JSON-safe `Random.getstate()` round-trip. Bump snapshot
-  format to v3. Add regression test that a malicious pickle payload
-  no longer executes.
+- [x] **P0-1** Replaced `pickle.loads(user_input)` in snapshot load
+  with a JSON-safe `Random.getstate()` round-trip. Snapshot format
+  bumped 2 → 3. Regression tests pin both the structural validation
+  and an actual RCE-attempt-doesn't-execute scenario.
 
-### Tier 1 — Scientific honesty (close or recant)
+### Tier 1 — Scientific honesty
 
-For each item below, pick path A (real implementation) or path B
-(re-frame in README/docstring/tutorial). Both are honest. Mixing
-"keep marketing, ship toy" is what got us here.
-
-- [ ] **P1-1** Stage 3 vesicles — either implement real lipid physics
-  (curvature term + amphiphile-specific CMC coupling) or rewrite
-  README/docstring to disclose it's a Gray-Scott proxy.
-- [ ] **P1-2** Stage 4 selection — either integrate a minimal
-  hypercycle ODE *or* make the displayed `error_threshold` actually
-  gate dynamics *or* rename to "fitness-driven selection (cyclic-
-  coupling proxy)".
-- [ ] **P1-3** Genetic-code — implement VWG horizontal gene transfer
-  (best path; ~80 lines), or re-label.
-- [ ] **P1-4** Vent — couple synthesis rate to ΔG (not `|∇H|`), or
-  re-label `−95 kJ/mol` as a "thermodynamic envelope display".
-- [ ] **P1-5** Pipeline carry-over — implement product-bias seeding
-  between stages (multi-week), or change "walks every major origin-
-  of-life process" to "tours / exhibits" in README + tutorial.
+- [x] **P1-1** Stage 3 vesicles — re-framed as "concentration-regime
+  proxy" in docstring + tutorial + README; CMC table acknowledged as
+  readout-only. Real lipid-physics implementation deferred (v4).
+- [x] **P1-2** Stage 4 selection — `error_threshold` now gates
+  mutation drift (above ε_c the genome melts); new `error_catastrophe`
+  population stat; three regression tests. Full hypercycle ODE
+  deferred (v4).
+- [x] **P1-3** Genetic-code — VWG horizontal gene transfer
+  implemented (`hgt_rate`/`hgt_similarity_threshold` knobs in
+  PARAM_SPECS + on the rule); regression test shows HGT-vs-vertical
+  convergence delta.
+- [x] **P1-4** Vent — synthesis rate now coupled to local free-energy
+  factor; reversing the pH gradient zeroes synthesis. Regression
+  test pins this.
+- [x] **P1-5** Pipeline narrative — README + tutorial + rule cards
+  re-framed as "tours" / "curated slideshow"; explicit no-carry-over
+  caveat. Real chemical continuity is a v4 roadmap item.
 
 ### Tier 2 — Engineering quality
 
-- [ ] **P2-1** Decompose `app.py` god-object (Recorder / Timeline /
-  Stats / Gallery into their own modules; put under coverage).
-- [ ] **P2-2** Vectorize the per-cell Python loops in RNA / LUCA /
-  code (~10× speedup expected).
-- [ ] **P2-3** Make Catalytic Silence fonts register on Linux/macOS.
-- [ ] **P2-4** Skip wasteful `init_state` call in `Engine.__post_init__`
-  when `Engine.load` will overwrite.
-- [ ] **P2-5** Read snapshot `version` field on load (enables future
-  schema migrations).
-- [ ] **P2-6** Replace tautological `test_protocol` smoke with real
-  shape/monotonicity invariants per rule.
-- [ ] **P2-7** Fix canvas-click 2-px borderwidth offset.
-- [ ] **P2-8** Vectorize discrete-rule `_capture_frame` for GIF
-  export at large grids.
+- [◻] **P2-1** `app.py` god-object — *partial*. `active_rule` /
+  `active_state` properties extracted to `Engine`, eliminating the
+  duplicated `getattr(state, "inner_rule", None) or rule` pattern.
+  Full Recorder/Timeline/Stats extraction → v4.
+- [x] **P2-2** Per-cell Python loops in RNA / LUCA / code rules
+  vectorised via per-call numpy `Generator` seeded from `self.rng`.
+  ~2-3× speedup measured.
+- [x] **P2-3** Catalytic Silence fonts now best-effort install on
+  Linux (`~/.local/share/fonts/cellauto/` + `fc-cache`) and macOS
+  (`~/Library/Fonts/cellauto/`).
+- [x] **P2-4** `Engine.load` uses `cls.__new__` + manual init to
+  skip the wasteful `rule.init_state` call.
+- [x] **P2-5** Snapshot schema `version` field now read on load
+  (rolled into P0-1).
+- [x] **P2-6** `test_protocol.py::test_every_rule_can_init_state_and_step`
+  rewritten — asserts non-empty Mapping[str, number] population,
+  step advances, render_rgb returns (H, W, 3) uint8.
+- [x] **P2-7** Canvas-click 2-px borderwidth offset fixed.
+- [x] **P2-8** Discrete-rule frame capture (web GIF export) now uses
+  `render_rgb` for every rule — eliminates 57k Python calls per
+  240² frame.
 
 ### Tier 3 — Documentation drift
 
-- [ ] **P3-1** Update README test count (or replace with badges).
-- [ ] **P3-2** Update extended-pipeline tutorial to enumerate all 12
-  stages.
-- [ ] **P3-3** Update `--stage` CLI help to reflect 0-11 range.
-- [ ] **P3-4** Decide on `PHASE2_BRUTAL.md`: restore or replace refs
-  with links to `PUNCHLIST.md`.
-- [ ] **P3-5** Fix hardcoded Windows font paths in render scripts.
-- [ ] **P3-6** Update About dialog to mention extended pipeline.
-- [ ] **P3-7** Soften README "every constant traces to a published
-  measurement" to match `docs/science.md`'s caveats.
+- [x] **P3-1** README test-count number removed (was "120", actual
+  151+); replaced with "Test suite passes in CI on the matrix".
+- [x] **P3-2** Extended-pipeline tutorial copy enumerates all 12
+  stages with the no-carry-over caveat.
+- [x] **P3-3** `--stage` CLI help reflects 0-4 / 0-11 ranges.
+- [x] **P3-4** Four broken refs to `PHASE2_BRUTAL.md` replaced with
+  links to `docs/PUNCHLIST.md` (this is now the self-audit doc).
+- [x] **P3-5** Hardcoded `C:/Users/guru8/…` font paths in render
+  scripts replaced with `Path(__file__).resolve().parents[N] /
+  "cellauto" / "assets" / "fonts"`.
+- [x] **P3-6** About dialog now mentions both pipelines (5 + 12).
+- [x] **P3-7** README "Every constant traces to a published
+  measurement" softened to match `docs/science.md`'s caveats.
 
 ### Tier 4 — CI / build hygiene
 
-- [ ] **P4-1** Audit the full resolved environment, not just `requirements.txt`.
-- [ ] **P4-2** Drop `mypy --no-error-summary`; add `--strict` continue-on-error job.
-- [ ] **P4-3** Add a non-omitted coverage job at a lower threshold OR
-  explain the headline number in the README.
+- [x] **P4-1** `pip-audit` now installs `.[web,dev]` and audits the
+  full resolved environment.
+- [x] **P4-2** Dropped `mypy --no-error-summary`; added advisory
+  `mypy --strict` continue-on-error job.
+- [x] **P4-3** README "87% coverage" annotated to clarify it's the
+  science layer only; pytest CI step has a comment + PUNCHLIST link.
+
+### Carried forward to v4 roadmap
+
+- Full `cellauto/app.py` decomposition (extract Recorder, Timeline,
+  Stats, Gallery into modules and put them under coverage).
+- Stage 3 real lipid physics: curvature term + amphiphile-specific
+  CMC coupling so switching amphiphile changes dynamics.
+- Stage 4 full hypercycle ODE (minimal 2-replicator Eigen-Schuster).
+- Pipeline chemical carry-over between stages (real continuity, not
+  just narrative).
 
 ---
 

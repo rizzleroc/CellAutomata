@@ -27,9 +27,49 @@ def test_every_rule_has_to_config_returning_dict():
 
 
 def test_every_rule_can_init_state_and_step():
-    """Smoke: each rule must be able to construct + step from an empty state."""
+    """Each rule must initialise, step without raising, and produce a
+    state with the right shape + at least one population statistic.
+
+    Pre-v3.5 this test asserted ``new_state is not None or state is not
+    None`` — a tautology (always True after init_state runs). PUNCHLIST
+    P2-6 swapped that for the per-rule invariants below.
+    """
+    from collections.abc import Mapping
+
+    import numpy as np
+
+    from cellauto.engine import Engine
+
     for name, cls in REGISTRY.items():
-        rule = cls()
-        state = rule.init_state(8, 8)
-        new_state = rule.step(state)
-        assert new_state is not None or state is not None, name
+        # Construct via Engine so RNG seeding goes through the documented
+        # path (rules expect `engine.seed` → `rule.rng`).
+        engine = Engine(width=16, height=16, rule=cls(), seed=1)
+
+        # init_state must produce a non-None state.
+        assert engine.state is not None, f"{name}.init_state returned None"
+
+        # population() must return a non-empty Mapping[str, int|float]
+        # with at least one stat.
+        pop = engine.rule.population(engine.state)
+        assert isinstance(pop, Mapping), f"{name}.population() returned {type(pop)}"
+        assert len(pop) > 0, f"{name}.population() is empty"
+        for k, v in pop.items():
+            assert isinstance(k, str), f"{name}.population key {k!r} not str"
+            assert isinstance(v, (int, float, np.integer, np.floating)), (
+                f"{name}.population[{k!r}] = {v!r} ({type(v)})"
+            )
+
+        # step() must not raise on a fresh state.
+        engine.step()
+        assert engine.step_count == 1, f"{name}: step_count didn't advance"
+
+        # The state shape after step must still be coherent — i.e. the
+        # rule's render_rgb must produce an (H, W, 3) uint8 array
+        # (every rule in REGISTRY implements render_rgb per the Rule
+        # protocol).
+        rgb = engine.rule.render_rgb(engine.state)
+        rgb = np.asarray(rgb)
+        assert rgb.ndim == 3 and rgb.shape[2] == 3, (
+            f"{name}.render_rgb returned shape {rgb.shape}, expected (H, W, 3)"
+        )
+        assert rgb.dtype == np.uint8, f"{name}.render_rgb returned dtype {rgb.dtype}, expected uint8"

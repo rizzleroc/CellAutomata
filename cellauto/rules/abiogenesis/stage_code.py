@@ -138,21 +138,23 @@ class AbiogenesisStageGeneticCode:
         return matches.astype(np.float32) / self.strand_length
 
     def _mutated_strand(self, strand: np.ndarray) -> np.ndarray:
-        out = strand.copy()
-        for i in range(self.strand_length):
-            if self.rng.random() < self.strand_mutation:
-                delta = self.rng.randrange(1, self.n_codons)
-                out[i] = (out[i] + delta) % self.n_codons
-        return out
+        # Vectorised: PUNCHLIST P2-2. One numpy Generator per call, seeded
+        # from self.rng so determinism is preserved at the population level.
+        gen = np.random.default_rng(self.rng.randrange(2**31))
+        mask = gen.random(self.strand_length) < self.strand_mutation
+        if not mask.any():
+            return strand.copy()
+        deltas = gen.integers(1, self.n_codons, size=self.strand_length, dtype=strand.dtype)
+        return np.where(mask, (strand + deltas) % self.n_codons, strand)
 
     def _mutated_code(self, code: np.ndarray) -> np.ndarray:
-        out = code.copy()
-        for i in range(self.n_codons):
-            if self.rng.random() < self.code_mutation:
-                # Reassign one codon to a different amino acid (a code swap).
-                delta = self.rng.randrange(1, self.n_amino)
-                out[i] = (out[i] + delta) % self.n_amino
-        return out
+        # Vectorised: PUNCHLIST P2-2. Same pattern as _mutated_strand.
+        gen = np.random.default_rng(self.rng.randrange(2**31))
+        mask = gen.random(self.n_codons) < self.code_mutation
+        if not mask.any():
+            return code.copy()
+        deltas = gen.integers(1, self.n_amino, size=self.n_codons, dtype=code.dtype)
+        return np.where(mask, (code + deltas) % self.n_amino, code)
 
     def step(self, state: GeneticCodeState) -> GeneticCodeState:
         H, W, _ = state.strand.shape
