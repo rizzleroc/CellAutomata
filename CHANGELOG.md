@@ -5,6 +5,69 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ---
 
+## [3.6.0] — 2026-05-24
+
+The **local-vs-web parity** release. The project ships two clients running
+the same Python engine: the desktop Tk app (the rich, mature one) and the
+Flask web client at `cellauto/web/` (on a feature branch). A side-by-side
+audit found that while the Tk app is feature-RICHER functionally (Gallery,
+scrubber, protocell inspector, RAF network view, sparkline, keyboard
+shortcuts, CSV export, font scaling), the web client has a set of
+specific UX qualities the Tk app lacked. v3.6 closes nine of those gaps.
+
+### Tk UX upgrades — closes L1, L3-L9, L11, L12 from the parity punchlist
+- **L1: always-visible stage wall-label.** A dedicated panel above
+  CONFIGURATION always shows the active pipeline stage's title,
+  citation, principle, and legend. Hides for non-pipeline rules.
+- **L3: Pearson preset chips.** The Gray-Scott regime preset
+  combobox is now a row of toggle-button chips (spots / stripes /
+  mitosis / waves / labyrinth) so all five regimes are visible at
+  once with the active one highlighted in the accent style.
+- **L4: debounced parameter slider updates** (250 ms for reinit
+  params, 60 ms for live params). Dragging a structural slider no
+  longer triggers five `init_state()` rebuilds per second.
+- **L5: batch stepping at high FPS.** When the requested FPS exceeds
+  30 Hz, the playback loop now batches N engine steps per Tk tick
+  and renders once at the end — smooth high-throughput playback
+  instead of clamping at the Tk scheduler ceiling.
+- **L6: reduced-motion preference toggle** (View ▸ Reduced motion).
+  Caps FPS at 10 Hz, freezes the playback pulse animation, and
+  suppresses chapter-card fades — for users with vestibular or
+  photosensitive disorders (WCAG 2.2.2 / 2.3.3).
+- **L7: population stats as wrap-friendly chips.** Stage-II vent's
+  10+ stat fields now flow as `key = value` chip-labels that wrap
+  across multiple rows instead of crowding a single line.
+- **L8 + L9: pulsing playback animations.** A small teal status dot
+  next to the title and the canvas-rim colour both pulse in sync
+  (2.2-second cycle) while the sim is live; both freeze when
+  paused or when reduced-motion is on.
+- **L11: tutorial-as-modal-listing** (Help ▸ Tutorial — all steps…).
+  Modal Toplevel lists every tutorial step with click-to-jump
+  navigation; complements the existing one-step-at-a-time mode.
+- **L12: non-blocking toast notifications.** Snapshot saved /
+  GIF exported / no frames captured / etc. now show as a 6-second
+  auto-fading strip above the header instead of blocking
+  `messagebox.showinfo` modals.
+
+### Deferred (with rationale documented in ROADMAP §5)
+- **L2: tabbed control panels** — Tk's vertical-scroll layout already
+  reaches every control with one interaction; a tab refactor would
+  touch 600+ lines for an aesthetic change. Not a parity gap.
+- **L10: background grain texture** — Tk has no CSS-equivalent
+  background-image support; achieving the 1 % noise overlay would
+  require a Canvas behind every Frame for nearly-imperceptible
+  effect. Not worth the complexity.
+
+### Other
+- The full audit report (web features Tk lacks, Tk features web
+  lacks, aesthetic/UX differences, behavioural/scientific
+  differences, web's HTTP API surface) is captured in
+  `docs/ROADMAP.md` §5.
+- All four CI gates still green: ruff, ruff-format, mypy, pytest
+  (141/141, 88 % coverage).
+
+---
+
 ## [3.5.0] — 2026-05-24
 
 The **honest-gap closure** release. v3.4 shipped 12 named origin-of-life

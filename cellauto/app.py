@@ -136,6 +136,13 @@ class App(tk.Frame):
         # `_animate` ticks (~20 Hz) so it fades regardless of play state.
         self._chapter_card_ticks_left = 0
         self._chapter_card_duration = 90  # ~4.5 s at 20 Hz
+        # L8 + L9 — playback animation. A single 44-frame cycle (2.2 s at
+        # 20 Hz) drives both the title-block status dot and the canvas
+        # border pulse so they read as one visual heartbeat.
+        self._playback_cycle = 44
+        self._reduced_motion = False
+        self._status_dot_id: int | None = None  # canvas item id for the pulse dot
+        self._status_dot_canvas: tk.Canvas | None = None
 
         self._setup_theme()
         self._build_widgets()
@@ -207,6 +214,9 @@ class App(tk.Frame):
         style.configure("Apparatus.TLabel", background=BG, foreground=TEXT_DIM, font=self._font_label)
         style.configure("Value.TLabel", background=BG, foreground=TEXT, font=self._font_value)
         style.configure("Caption.TLabel", background=BG, foreground=TEXT, font=self._font_caption)
+        # L1 — stage wall-label title style: a small-display serif, halfway
+        # between the section-numeral and the page title.
+        style.configure("StageTitle.TLabel", background=BG, foreground=TEXT, font=self._font_section_num)
 
         # Outlined museum-card buttons.
         style.configure(
@@ -498,12 +508,64 @@ class App(tk.Frame):
 
         self._build_header(outer)
         self._build_observation(outer)
+        self._build_wall_label(outer)
         self._build_configuration(outer)
         self._build_transport(outer)
         self._build_register(outer)
         self._build_marginalia(outer)
 
+    def _build_wall_label(self, parent: ttk.Frame) -> None:
+        """L1 — always-visible stage wall-label.
+
+        Mirrors the web client's left-column "wall label" that always
+        shows the active pipeline stage's title, citation, principle, and
+        what the colours mean. The Tk version sits as a quiet block above
+        CONFIGURATION; it auto-hides for non-pipeline rules so it doesn't
+        confuse users running Conway or a single-stage rule.
+        """
+        body = self._section(parent, "I*", "STAGE", pad_top=4)
+        self._wall_label_frame = body
+        self._wall_title_var = tk.StringVar(value="")
+        self._wall_principle_var = tk.StringVar(value="")
+        self._wall_citation_var = tk.StringVar(value="")
+        self._wall_legend_var = tk.StringVar(value="")
+        # Title row — large display style.
+        ttk.Label(body, textvariable=self._wall_title_var, style="StageTitle.TLabel").pack(anchor="w")
+        # Citation row — small mono.
+        ttk.Label(body, textvariable=self._wall_citation_var, style="Apparatus.TLabel").pack(
+            anchor="w", pady=(2, 6)
+        )
+        # Principle (italic serif) — the one-liner that explains the stage.
+        ttk.Label(
+            body,
+            textvariable=self._wall_principle_var,
+            style="Caption.TLabel",
+            wraplength=WINDOW_W - 100,
+            justify="left",
+        ).pack(anchor="w")
+        # Legend — what the colours mean.
+        ttk.Label(
+            body,
+            textvariable=self._wall_legend_var,
+            style="Value.TLabel",
+            wraplength=WINDOW_W - 100,
+            justify="left",
+        ).pack(anchor="w", pady=(6, 0))
+
     def _build_header(self, parent: ttk.Frame) -> None:
+        # L12 — non-blocking toast strip. A thin horizontal label that sits
+        # above the header; messages are shown via ``_toast(msg, kind=…)``
+        # and auto-clear after 6 s. Keeps disruptive blocking modals out of
+        # the export / snapshot UX. The widget is created hidden (height 0)
+        # and pack-forgets itself when there's nothing to show.
+        self._toast_frame = ttk.Frame(parent)
+        self._toast_var = tk.StringVar(value="")
+        self._toast_label = ttk.Label(
+            self._toast_frame, textvariable=self._toast_var, style="Apparatus.TLabel"
+        )
+        self._toast_label.pack(side="left", padx=10, pady=4)
+        self._toast_token: str | None = None
+        # Don't pack the frame yet — only appear when there's a toast.
 
         header = ttk.Frame(parent)
         header.pack(fill="x")
@@ -521,9 +583,22 @@ class App(tk.Frame):
         title_col = ttk.Frame(header)
         title_col.pack(side="left", fill="both", expand=True)
 
-        ttk.Label(title_col, text="  ".join("PLATE I  ·  CELLAUTO  ·  MMXXVI"), style="Eyebrow.TLabel").pack(
-            anchor="center"
+        # Eyebrow row with the playback status dot tucked at the right.
+        # L8 — pulsing brand mark: a single teal circle drawn on a 10×10
+        # canvas that fades opacity (via stipple) at the playback cycle so
+        # the user can see at a glance whether the sim is live.
+        eyebrow_row = ttk.Frame(title_col)
+        eyebrow_row.pack(anchor="center")
+        ttk.Label(
+            eyebrow_row,
+            text="  ".join("PLATE I  ·  CELLAUTO  ·  MMXXVI"),
+            style="Eyebrow.TLabel",
+        ).pack(side="left")
+        self._status_dot_canvas = tk.Canvas(
+            eyebrow_row, width=10, height=10, background=BG, highlightthickness=0
         )
+        self._status_dot_canvas.pack(side="left", padx=(8, 0))
+        self._status_dot_id = self._status_dot_canvas.create_oval(1, 1, 9, 9, fill=HAIRLINE_HI, outline="")
         ttk.Label(title_col, text="cellauto", style="Title.TLabel").pack(anchor="center", pady=(4, 2))
         ttk.Label(
             title_col,
@@ -536,10 +611,18 @@ class App(tk.Frame):
         body = self._section(parent, "I", "OBSERVATION", pad_top=18)
 
         # Frame with a 2-px teal rim — same vocabulary as the plate's specimens.
-        frame = tk.Frame(body, background=HAIRLINE_HI, highlightthickness=0)
-        frame.pack(anchor="center", pady=(2, 0))
+        # L9 — keep a reference so we can pulse the rim colour between
+        # HAIRLINE (dim) and ACCENT (bright) at the playback cycle while
+        # the sim is running.
+        self._canvas_rim_frame = tk.Frame(body, background=HAIRLINE_HI, highlightthickness=0)
+        self._canvas_rim_frame.pack(anchor="center", pady=(2, 0))
         self.canvas = tk.Canvas(
-            frame, width=CANVAS_SIZE, height=CANVAS_SIZE, background=BG, highlightthickness=0, borderwidth=2
+            self._canvas_rim_frame,
+            width=CANVAS_SIZE,
+            height=CANVAS_SIZE,
+            background=BG,
+            highlightthickness=0,
+            borderwidth=2,
         )
         self.canvas.pack(padx=2, pady=2)
         # Click → per-protocell inspector for Stage 4 discs (direct rule or
@@ -679,6 +762,61 @@ class App(tk.Frame):
         self._render()
         self._update_status()
 
+    def _toast(self, msg: str, kind: str = "info") -> None:
+        """L12 — non-blocking toast. Show ``msg`` in the strip above the
+        header for 6 seconds. ``kind`` chooses the colour ('info' = bone,
+        'success' = bone with subtle teal, 'error' = warm brick).
+        """
+        if not msg:
+            return
+        # Colour by kind. Error and success use distinct foreground colours.
+        colour = {
+            "info": TEXT,
+            "success": "#9ad8d0",  # soft teal-bone
+            "error": "#d47d57",  # warm brick — same family as the STOP button
+        }.get(kind, TEXT)
+        try:
+            self._toast_label.configure(foreground=colour)
+            self._toast_var.set(msg)
+            self._toast_frame.pack(fill="x", side="top", before=self.winfo_children()[1])
+        except (tk.TclError, IndexError):
+            return
+        # Cancel any pending fade and schedule a new one.
+        if self._toast_token is not None:
+            try:
+                self.master_window.after_cancel(self._toast_token)
+            except tk.TclError:
+                pass
+        self._toast_token = self.master_window.after(6000, self._clear_toast)
+
+    def _clear_toast(self) -> None:
+        self._toast_token = None
+        try:
+            self._toast_var.set("")
+            self._toast_frame.pack_forget()
+        except tk.TclError:
+            pass
+
+    def _on_reduced_motion_toggle(self) -> None:
+        """L6 — apply the reduced-motion preference.
+
+        When ON: cap visible playback FPS at 10 Hz (the WCAG-suggested
+        ceiling for users with vestibular or photosensitive disorders),
+        freeze the title-block + canvas-rim pulse, and skip the
+        chapter-card fade. The chapter card still appears but stays
+        on-screen until dismissed with Escape (no auto-fade).
+        """
+        self._reduced_motion = bool(self._reduced_motion_var.get())
+        # Force pulse to idle immediately so the user sees the change.
+        self._set_pulse_phase(0.0)
+        # Cap any in-flight FPS slider down to 10 Hz if currently higher.
+        try:
+            fps_var = getattr(self, "_fps_var", None)
+            if fps_var is not None and float(fps_var.get()) > 10:
+                fps_var.set(10)
+        except (tk.TclError, ValueError):
+            pass
+
     def _reset_params(self) -> None:
         """Reset every slider on the active rule to its dataclass defaults."""
         target = self._param_target()
@@ -709,21 +847,29 @@ class App(tk.Frame):
         header.pack(fill="x", pady=(0, 4))
         ttk.Label(header, text="PARAMETERS", style="Section.TLabel").pack(side="left")
         ttk.Button(header, text="RESET", command=self._reset_params).pack(side="right")
-        # Pearson regime preset picker (Gray-Scott only) — sets F and k together.
+        # L3 — Pearson regime preset chips (replaces the dropdown). All five
+        # presets are visible at once as a row of toggle-button chips —
+        # users see the full menu of Gray-Scott regimes without clicking
+        # to expand.
         if getattr(target, "name", "") in PEARSON_PRESET_RULES:
             prow = ttk.Frame(self._param_frame)
             prow.pack(fill="x", pady=(0, 6))
             ttk.Label(prow, text="preset", style="Apparatus.TLabel", width=16).pack(side="left")
+            chip_row = ttk.Frame(prow)
+            chip_row.pack(side="left", fill="x", expand=True)
             self._preset_var.set("")
-            picker = ttk.Combobox(
-                prow,
-                textvariable=self._preset_var,
-                width=12,
-                state="readonly",
-                values=list(GRAY_SCOTT_PRESETS),
-            )
-            picker.pack(side="left")
-            picker.bind("<<ComboboxSelected>>", lambda _e: self._on_preset_change())
+            self._preset_chip_buttons: dict[str, ttk.Button] = {}
+            for name in GRAY_SCOTT_PRESETS:
+
+                def _select(n: str = name) -> None:
+                    self._preset_var.set(n)
+                    self._on_preset_change()
+                    self._refresh_preset_chips()
+
+                btn = ttk.Button(chip_row, text=name, command=_select)
+                btn.pack(side="left", padx=(0, 4))
+                self._preset_chip_buttons[name] = btn
+            self._refresh_preset_chips()
         for spec in specs:
             srow = ttk.Frame(self._param_frame)
             srow.pack(fill="x", pady=1)
@@ -761,13 +907,40 @@ class App(tk.Frame):
     def _fmt_param(value: float, spec: ParamSpec) -> str:
         return str(int(round(value))) if spec.integer else f"{float(value):.3f}"
 
+    # L4 — debounce reinit-param slider drags. Without this, dragging a
+    # structural slider (e.g. `n_species`, `seq_length`) triggers a full
+    # init_state() rebuild on every Tk slider tick, which is both wasteful
+    # and visually janky. The web client debounces at 250 ms for reinit
+    # params and 60 ms for live params; we mirror that here.
+    _PARAM_DEBOUNCE_MS_REINIT = 250
+    _PARAM_DEBOUNCE_MS_LIVE = 60
+
     def _on_param_change(self, spec: ParamSpec) -> None:
         var, readout, _ = self._param_vars[spec.attr]
         value: float = var.get()
         if spec.integer:
             value = int(round(value))
+        # Apply the value to the rule immediately (cheap attribute write)
+        # and update the readout so the user sees the current number...
         setattr(self._param_target(), spec.attr, value)
         readout.set(self._fmt_param(value, spec))
+        # ...but DEBOUNCE the expensive reinit / status refresh.
+        delay = self._PARAM_DEBOUNCE_MS_REINIT if spec.reinit else self._PARAM_DEBOUNCE_MS_LIVE
+        token = getattr(self, "_param_debounce_token", None)
+        if token is not None:
+            try:
+                self.master_window.after_cancel(token)
+            except tk.TclError:
+                pass
+        self._param_debounce_token = self.master_window.after(
+            delay,
+            lambda s=spec: self._apply_param_change(s),  # type: ignore[misc]
+        )
+
+    def _apply_param_change(self, spec: ParamSpec) -> None:
+        """Fire the deferred work from ``_on_param_change`` — the reinit
+        and status update — after the debounce window expires."""
+        self._param_debounce_token = None  # type: ignore[assignment]
         if spec.reinit:
             self._reinit_param_target()
         self._update_status()
@@ -794,6 +967,21 @@ class App(tk.Frame):
             self._stats_history.clear()
         self._init_renderer()
         self._render()
+
+    def _refresh_preset_chips(self) -> None:
+        """L3 — highlight the active preset chip with the accent style; the
+        rest stay in the default outline. ttk's button-state mechanism is
+        too fiddly for a custom toggled look, so we swap the style instead.
+        """
+        chips = getattr(self, "_preset_chip_buttons", None)
+        if not chips:
+            return
+        active = self._preset_var.get()
+        for name, btn in chips.items():
+            try:
+                btn.configure(style="Primary.TButton" if name == active else "TButton")
+            except tk.TclError:
+                pass
 
     def _on_preset_change(self) -> None:
         name = self._preset_var.get()
@@ -896,14 +1084,12 @@ class App(tk.Frame):
         cell(grid, "FPS", self._status_fps_var, 6, 3, padx=0)
 
         ttk.Label(body, text="POPULATION", style="Apparatus.TLabel").pack(anchor="w", pady=(10, 2))
-        ttk.Label(
-            body,
-            textvariable=self._status_pop_var,
-            style="Value.TLabel",
-            anchor="w",
-            wraplength=WINDOW_W - 80,
-            justify="left",
-        ).pack(anchor="w", fill="x")
+        # L7 — population stats as wrap-friendly chips. Stage II's vent
+        # readout has 10+ stats and clipped on one line; rendering each
+        # key:value pair as its own small label inside a flow container
+        # lets them wrap naturally and stay readable.
+        self._status_pop_chips = ttk.Frame(body)
+        self._status_pop_chips.pack(anchor="w", fill="x")
 
     def _build_marginalia(self, parent: ttk.Frame) -> None:
         body = self._section(parent, "V", "MARGINALIA", pad_bottom=0)
@@ -983,10 +1169,21 @@ class App(tk.Frame):
             variable=self._colorblind_var,
             command=self._on_colorblind_toggle,
         )
+        # L6 — reduced-motion preference. Mirrors the browser's
+        # prefers-reduced-motion media query: caps sim FPS at 10 Hz,
+        # freezes the title-block pulse + canvas rim pulse, and skips
+        # the chapter-card fade animation. Persists in-process only.
+        self._reduced_motion_var = tk.BooleanVar(value=False)
+        viewmenu.add_checkbutton(
+            label="Reduced motion (cap fps, freeze pulses)",
+            variable=self._reduced_motion_var,
+            command=self._on_reduced_motion_toggle,
+        )
         menubar.add_cascade(label="View", menu=viewmenu)
 
         helpmenu = tk.Menu(menubar, tearoff=0)
         helpmenu.add_command(label="Start tutorial", command=self._tutorial_start)
+        helpmenu.add_command(label="Tutorial — all steps…", command=self._tutorial_all_steps)
         helpmenu.add_command(label="Keyboard shortcuts…", command=self._show_keyboard_help)
         helpmenu.add_command(label="About", command=self._about)
         menubar.add_cascade(label="Help", menu=helpmenu)
@@ -1262,8 +1459,33 @@ class App(tk.Frame):
     def _loop(self) -> None:
         if not self.running:
             return
+        # L5 — batch stepping at high FPS. Tk's `after()` minimum granularity
+        # (~16 ms ≈ 60 Hz) and the renderer cost cap visible playback at
+        # ~30 Hz on most hardware. Above that, we batch multiple
+        # engine.step() calls per tick and render once at the end — the
+        # user sees a smooth high-throughput stream instead of clamped 30 Hz.
+        # Reduced-motion mode caps to 10 Hz and disables batching.
+        target_fps = max(float(self.fps_var.get()), 1.0)
+        if self._reduced_motion:
+            target_fps = min(target_fps, 10.0)
+            steps_per_tick = 1
+            delay_ms = max(int(1000 / target_fps), 16)
+        elif target_fps > 30:
+            # Batch: do enough steps per 16-ms tick to hit the target rate.
+            delay_ms = 16
+            steps_per_tick = max(1, int(round(target_fps / 60)))  # 60 Hz tick base
+        else:
+            steps_per_tick = 1
+            delay_ms = max(int(1000 / target_fps), 16)
+        for _ in range(steps_per_tick - 1):
+            # Step without rendering for the in-between steps — render
+            # once at the end via `_step_once` for the final pixel update.
+            try:
+                self.engine.step()
+                self._record_stats_sample()
+            except Exception:  # pragma: no cover — defensive
+                break
         self._step_once()
-        delay_ms = max(int(1000 / max(self.fps_var.get(), 1)), 16)
         self.canvas.after(delay_ms, self._loop)
 
     def _animate(self) -> None:
@@ -1287,10 +1509,70 @@ class App(tk.Frame):
                 renderer.animate(self._anim_frame)
             except tk.TclError:
                 pass  # don't return — we still need to reschedule the next tick
+        # L8 + L9 — drive both playback pulses from this same tick.
+        self._tick_playback_pulse()
         try:
             self.master_window.after(50, self._animate)
         except tk.TclError:
             return
+
+    def _tick_playback_pulse(self) -> None:
+        """L8 + L9 — pulse the title-block status dot + canvas rim while the
+        sim is running. When paused (or when reduced motion is on) the dot
+        stays dim and the rim sits at its idle teal colour.
+
+        The pulse is driven by a triangular wave over a 44-frame cycle:
+        bright at the peak, dim at the trough. We pick discrete colours
+        rather than alpha-blending because Tk Canvas items can't carry
+        true alpha — but three stepped shades read as a pulse just fine.
+        """
+        # Reduced motion → freeze both pulses at idle.
+        if self._reduced_motion or not getattr(self, "running", False):
+            self._set_pulse_phase(0.0)
+            return
+        cycle = max(self._playback_cycle, 1)
+        # Triangle wave in [0, 1]: 0 at the start of each cycle, 1 at the
+        # midpoint, back to 0 at the end. cos-based for a smoother feel.
+        import math
+
+        t = (self._anim_frame % cycle) / cycle
+        phase = 0.5 - 0.5 * math.cos(2 * math.pi * t)  # [0, 1]
+        self._set_pulse_phase(phase)
+
+    def _set_pulse_phase(self, phase: float) -> None:
+        """Apply a [0, 1] pulse phase to the status dot and canvas rim.
+
+        ``HAIRLINE_HI`` (#39d4c8) is the bright accent teal — the existing
+        canvas-rim colour. ``HAIRLINE`` (#1f4f4c) is the dim hairline.
+
+        Idle (paused / reduced motion): dot is dim, rim is at its bright
+        accent (preserving the existing always-on rim aesthetic).
+        Playing: dot pulses dim → mid → bright → mid → dim; rim does
+        the inverse pulse around the bright pole so the playback signal
+        is subtle on the canvas (rim was already a focal element) but
+        unmistakable on the dot.
+        """
+        # Phase 0 = idle pole, phase 1 = bright pole.
+        if phase < 0.34:
+            dot_color = HAIRLINE  # dim
+            rim_color = HAIRLINE_HI  # bright (idle preserves the existing look)
+        elif phase < 0.67:
+            dot_color = "#2c8d86"  # mid teal
+            rim_color = "#2c8d86"
+        else:
+            dot_color = HAIRLINE_HI  # bright
+            rim_color = HAIRLINE_HI  # bright
+        if self._status_dot_canvas is not None and self._status_dot_id is not None:
+            try:
+                self._status_dot_canvas.itemconfigure(self._status_dot_id, fill=dot_color)
+            except tk.TclError:
+                pass
+        rim = getattr(self, "_canvas_rim_frame", None)
+        if rim is not None:
+            try:
+                rim.configure(background=rim_color)
+            except tk.TclError:
+                pass
 
     def _clear_chapter_card(self) -> None:
         """Hide any in-progress chapter card immediately (reset the fade timer
@@ -1375,7 +1657,7 @@ class App(tk.Frame):
         if not path:
             return
         self.engine.save(path)
-        messagebox.showinfo("Saved", f"Snapshot saved to\n{path}")
+        self._toast(f"Snapshot saved to {path}", kind="success")
 
     def _open_snapshot(self) -> None:
         path = filedialog.askopenfilename(initialdir="snapshots", filetypes=[("JSON snapshot", "*.json")])
@@ -1405,7 +1687,7 @@ class App(tk.Frame):
         self._recording_gif = False
         self.record_button.configure(text="●  RECORD  GIF")
         if not self._gif_frames:
-            messagebox.showinfo("No frames", "No frames captured.")
+            self._toast("No frames captured.", kind="error")
             return
         path = filedialog.asksaveasfilename(
             defaultextension=".gif",
@@ -1417,14 +1699,14 @@ class App(tk.Frame):
             return
         export_gif(self._gif_frames, path, fps=max(int(self.fps_var.get()), 1))
         self._gif_frames = []
-        messagebox.showinfo("Exported", f"GIF saved to\n{path}")
+        self._toast(f"GIF saved to {path}", kind="success")
 
     def _export_csv(self) -> None:
         """Export the recorded per-step population stats as a CSV. Recording
         happens in ``_record_stats_sample`` and is capped to keep memory
         bounded; RESTART clears it."""
         if not self._stats_history:
-            messagebox.showinfo("Stats", "No samples recorded yet — step or play the simulation first.")
+            self._toast("No samples recorded yet — step or play the simulation first.", kind="error")
             return
         path = filedialog.asksaveasfilename(
             defaultextension=".csv", filetypes=[("CSV", "*.csv")], title="Export stats as CSV"
@@ -1548,7 +1830,7 @@ class App(tk.Frame):
                 def _on_saved() -> None:
                     dlg.destroy()
                     self._update_status()
-                    messagebox.showinfo("Exported", f"GIF saved to\n{path}")
+                    self._toast(f"GIF saved to {path}", kind="success")
 
                 threading.Thread(target=save_worker, daemon=True).start()
                 return
@@ -1593,6 +1875,45 @@ class App(tk.Frame):
             return
         roman = "i ii iii iv v vi vii viii ix x".split()[min(self._tutorial_index, 9)]
         self.tutorial_var.set(f"{roman}.  {steps[self._tutorial_index]}")
+
+    def _tutorial_all_steps(self) -> None:
+        """L11 — open a modal listing every tutorial step for the current
+        rule with click-to-jump. The marginalia caption updates to the
+        chosen step. Mirrors the web client's "all steps at once" modal.
+        """
+        steps = tutorial_for(self.engine.rule.name)
+        if not steps:
+            self._toast("No tutorial for this rule.", kind="info")
+            return
+        dlg = tk.Toplevel(self.master_window)
+        dlg.title("Tutorial — all steps")
+        dlg.configure(background=BG)
+        dlg.transient(self.master_window)
+        dlg.grab_set()
+        body = ttk.Frame(dlg, padding=(28, 22))
+        body.pack(fill="both", expand=True)
+        ttk.Label(body, text="  ".join("TUTORIAL"), style="Eyebrow.TLabel").pack(anchor="w")
+        ttk.Label(body, text=self.engine.rule.name, style="Title.TLabel").pack(anchor="w", pady=(2, 12))
+        self._hairline(body, color=HAIRLINE_HI).pack(fill="x", pady=(0, 10))
+
+        # Step list — each is a button that jumps to that step in the
+        # marginalia caption when clicked.
+        roman = "i ii iii iv v vi vii viii ix x xi xii xiii xiv".split()
+        for idx, text in enumerate(steps):
+            row = ttk.Frame(body)
+            row.pack(fill="x", pady=(2, 2))
+            label_text = roman[min(idx, len(roman) - 1)]
+
+            def _jump(i: int = idx) -> None:
+                # Setting _tutorial_index = i-1 means the next call to
+                # _tutorial_next() (which increments first) will show step i.
+                self._tutorial_index = i - 1
+                self._tutorial_next()
+                dlg.destroy()
+
+            ttk.Button(row, text=f"  {label_text}.  {text}", command=_jump).pack(anchor="w", fill="x")
+
+        ttk.Button(body, text="CLOSE", command=dlg.destroy).pack(anchor="e", pady=(14, 0))
 
     # ── Gallery viewer ──────────────────────────────────────────────────────
 
@@ -1775,9 +2096,9 @@ class App(tk.Frame):
         inner = getattr(state, "inner_state", None)
         candidate = inner if inner is not None and hasattr(inner, "network") else state
         if not (hasattr(candidate, "network") and hasattr(candidate, "raf")):
-            messagebox.showinfo(
-                "Reaction network",
+            self._toast(
                 "Switch to Stage 2 (autocatalytic sets) to view its reaction network and RAF.",
+                kind="info",
             )
             return
         from cellauto.netviz import render_reaction_network
@@ -1851,7 +2172,7 @@ class App(tk.Frame):
         try:
             raw = tk.PhotoImage(file=str(img_path))
         except tk.TclError as exc:
-            messagebox.showerror("Couldn't open", str(exc))
+            self._toast(f"Couldn't open: {exc}", kind="error")
             dlg.destroy()
             return
         tw, th = target_size
@@ -1916,7 +2237,6 @@ class App(tk.Frame):
             self._render()
 
     def _update_status(self) -> None:
-        pop = "    ".join(f"{k}={v}" for k, v in self.engine.population().items())
         rule_name = self.engine.rule.name
         if len(rule_name) > 24:
             rule_name = rule_name[:21] + "…"
@@ -1924,8 +2244,79 @@ class App(tk.Frame):
         self._status_seed_var.set(str(self.engine.seed))
         self._status_step_var.set(str(self.engine.step_count))
         self._status_fps_var.set(f"{self.engine.fps():.1f}")
-        self._status_pop_var.set(pop or "—")
+        # L7 — rebuild the population chip flow. Keep the legacy
+        # ``_status_pop_var`` in sync (some tests / debug scripts read it)
+        # but the visible widget is now a wrap-friendly chip grid.
+        pop_items = list(self.engine.population().items())
+        pop_text = "    ".join(f"{k}={v}" for k, v in pop_items)
+        self._status_pop_var.set(pop_text or "—")
+        self._rebuild_population_chips(pop_items)
         self._sync_stage_caption()
+
+    def _rebuild_population_chips(self, pop_items: list) -> None:
+        """L7 — render each population stat as a chip-shaped label that
+        wraps naturally in the parent frame instead of crowding one row.
+        """
+        chips_frame = getattr(self, "_status_pop_chips", None)
+        if chips_frame is None:
+            return
+        # Clear previous chips.
+        for child in list(chips_frame.winfo_children()):
+            try:
+                child.destroy()
+            except tk.TclError:
+                pass
+        if not pop_items:
+            ttk.Label(chips_frame, text="—", style="Value.TLabel").pack(anchor="w")
+            return
+        # Tkinter has no real flow layout; we simulate one by packing
+        # each chip with side=left into a sequence of rows. We let each
+        # chip take its natural width and create a new row once a
+        # threshold is reached. The threshold is approximate (number of
+        # chips per row scales with the window width minus the section
+        # padding).
+        row_pixel_budget = max(WINDOW_W - 120, 200)
+        row: ttk.Frame | None = None
+        current_pixels = 0
+        approx_chip_pixels = 130  # conservative average for mono-style labels
+        for k, v in pop_items:
+            if row is None or current_pixels + approx_chip_pixels > row_pixel_budget:
+                row = ttk.Frame(chips_frame)
+                row.pack(anchor="w", fill="x")
+                current_pixels = 0
+            chip = ttk.Label(
+                row,
+                text=f"{k} = {v}",
+                style="Apparatus.TLabel",
+                padding=(8, 2, 8, 2),
+            )
+            chip.pack(side="left", padx=(0, 6), pady=(2, 2))
+            current_pixels += approx_chip_pixels
+
+    def _update_wall_label(self, stage: int | None) -> None:
+        """L1 — refresh the always-visible stage wall-label.
+
+        When the active rule is a pipeline (Stage IV's pipeline-extended,
+        the canonical 5-stage one), show the current stage's title,
+        principle, citation, and legend. Hide for non-pipeline rules
+        (Conway, Wolfram, single stages) so the panel doesn't lie about
+        having stage context.
+        """
+        frame = getattr(self, "_wall_label_frame", None)
+        if frame is None:
+            return
+        if stage is None:
+            self._wall_title_var.set("")
+            self._wall_citation_var.set("")
+            self._wall_principle_var.set("")
+            self._wall_legend_var.set("")
+            return
+        rule = self.engine.rule
+        info = rule.stage_info_for(stage) if hasattr(rule, "stage_info_for") else stage_info(stage)
+        self._wall_title_var.set(f"{stage} · {info.title}")
+        self._wall_citation_var.set(info.citation)
+        self._wall_principle_var.set(info.principle)
+        self._wall_legend_var.set(info.legend)
 
     def _sync_stage_caption(self) -> None:
         """Keep the on-canvas specimen label (and, on a transition, the
@@ -1944,6 +2335,10 @@ class App(tk.Frame):
         self._draw_legend_bar()
         self._draw_sparkline()
         stage = getattr(self.engine.state, "current_stage", None)
+        # L1 — update the always-visible wall label even when there's no
+        # pipeline (clear it instead). Then continue the existing canvas-
+        # overlay flow below.
+        self._update_wall_label(stage)
         if stage is None:
             self._displayed_stage = None
             return
