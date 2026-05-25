@@ -1,164 +1,301 @@
-# cellauto — Feature Inventory, Punchlist & Roadmap
+# cellauto — Feature Inventory, Honest Status & Roadmap
 
-This document is the project's **regression guard**. Before shipping any
-change, check it against the Feature Inventory: nothing listed there should
-silently disappear. The Punchlist tracks the current work cycle; the Roadmap
-captures what's deliberately deferred.
+This document is the project's **regression guard** and its **honest
+self-status**. Before shipping any change, check the Feature Inventory
+— nothing listed should silently disappear. Cross-reference status
+against [`PUNCHLIST.md`](PUNCHLIST.md) for the active work cycle.
 
-Last updated: 2026-05-22.
+Last updated: 2026-05-24 (post brutal-audit pass).
+
+> ⚠ **Audit note:** A consolidated brutal honesty audit lives at
+> [`PUNCHLIST.md`](PUNCHLIST.md). This roadmap has been updated to
+> reflect the audit's findings — items previously listed as "shipped"
+> that turned out to be partial implementations are now marked
+> accordingly (✅ real / ◻ toy-with-real-concept / ⚠ overclaim).
 
 ---
 
 ## 1. Feature Inventory (must not regress)
 
-Every feature below is implemented and expected to keep working. A change that
-removes or breaks one of these is a regression, not a simplification.
+### Simulation science — by honest classification
 
-### Simulation science
-- **Five abiogenesis stages**, each an independently runnable rule:
-  - Stage 0 — primordial soup (discrete four-rule mixing/condensation).
-  - Stage 1 — Gray-Scott reaction-diffusion (forward-Euler, 5-pt Laplacian, CFL-stable).
-  - Stage 2 — Kauffman autocatalytic sets via the **correct Hordijk-Steel RAF closure** (layered food-generated closure; catalysis mandatory).
-  - Stage 3 — lipid vesicle self-assembly (CMC threshold + connected-component vesicle counting).
-  - Stage 4 — protocell selection (hypercycle-flavoured fitness, growth/division/death, mutation).
-- **Pipeline rule** (`abiogenesis-pipeline`) — walks all five stages end-to-end with auto-promotion.
-- **Reference automata**: Conway's Game of Life, Wolfram 1D (rules 0–255).
-- **Legacy alias** `natural-selection` → Stage 0 (kept for old snapshots/CLI).
-- **Real published data** backing the constants:
-  - Stage 0 soup sampled by **Miller's 1953 measured product yields** (`MILLER_UREY_SPECIES`).
-  - Stage 3 named fatty acid + **measured CMCs** (`AMPHIPHILE_CMC_MM`: decanoic C10 ≈ 85 mM, etc.).
-  - Stage 2 reports **Kauffman catalysis level** (n_reactions/n_species).
-  - Stage 4 exposes **Eigen error threshold** (≈ 1/L) + mutation-rate stat.
-  - Gray-Scott Du:Dv grounded against real ~10⁻⁹ m²/s diffusion coefficients (docs).
+**Real implementations (would survive a domain-expert review):**
+
+- ✅ **Conway** (B3/S23, Gardner 1970). Textbook.
+- ✅ **Wolfram 1D** (elementary CA, Wolfram 2002). Textbook.
+- ✅ **Gray-Scott reaction-diffusion** (Pearson 1993). Canonical
+  forward-Euler PDE, 5-pt Laplacian, CFL-stable, Pearson's preset
+  table verbatim. `stage1_grayscott.py`.
+- ✅ **Frank homochirality** (Frank 1953). Real 2D reaction-diffusion
+  Frank model with autocatalysis + mutual antagonism.
+  `stage_chirality.py`.
+- ✅ **Cahn-Hilliard coacervates** (Oparin 1924; Cahn-Hilliard 1958).
+  Correct conservative discretisation, Ostwald ripening emerges.
+  `stage_coacervate.py`.
+- ✅ **Hordijk-Steel RAF closure** (Hordijk & Steel 2004). The
+  *correct* layered closure with mandatory catalysis. Fixes a v3.1
+  false-positive bug; regression test pins the fix. `science.py
+  find_raf`.
+- ✅ **Spatial Eigen RNA quasispecies** (Eigen 1971; Gilbert 1986).
+  Per-base mutation, single-peak fitness, ε_c = ln(σ)/L threshold.
+  Spatial Moran dynamics (not the Eigen ODE), but the error-catastrophe
+  transition is real and tested. `stage_rna.py`.
+
+**Real-concept toys (the concept is honest, the implementation is
+phenomenological — usable as educational visualization, not as a
+substitute for the cited model):**
+
+- ◻ **Stage 0 primordial soup** — Miller-Urey-weighted initial
+  distribution (real data) over a random Moore-neighbor color
+  propagation rule (toy chemistry). `stage0_soup.py` /
+  `natural_selection.py`.
+- ◻ **Stage 2 RAF dynamics** — RAF *detection* is real; the on-grid
+  *firing* is generic mass-action A+B→C with a catalyst multiplier.
+  No stoichiometry, no conservation. The narrative "RAFs ignite"
+  qualitatively holds. `stage2_raf.py`.
+- ◻ **Alkaline vents** — Two-domain proton field + diffusion +
+  gradient-magnitude-coupled synthesis. PMF (mV) and ΔG (kJ/mol)
+  readouts are *thermodynamically correct* (Nernst, Faraday).
+  ⚠ The synthesis rate uses `|∇H|`, not the ΔG. See
+  [`PUNCHLIST.md`](PUNCHLIST.md) P1-4. `stage_vents.py`.
+- ◻ **Mineral catalysis** — Static clay-disc mask gates a first-order
+  monomer→polymer rate. Polymer is a scalar, not a length distribution.
+  Qualitative localization claim does hold. `stage_minerals.py`.
+- ◻ **LUCA distillation** — Per-cell genome bitset with per-gene
+  additive fitness + 70% prevalence threshold. Gene names are labels;
+  the fitness values are hand-tuned. The "luca_size converges to
+  essential_target" claim does hold numerically. `stage_luca.py`.
+
+**Overclaim — needs to be fixed or recanted (see PUNCHLIST Tier 1):**
+
+- ⚠ **Stage 3 lipid vesicles** — Gray-Scott on a relabeled field.
+  `AMPHIPHILE_CMC_MM` is a display string; the simulation ignores
+  it. ([PUNCHLIST P1-1](PUNCHLIST.md))
+- ⚠ **Stage 4 protocell selection** — File's own docstring admits
+  "scalar proxy, not the hypercycle". The Eigen `error_threshold`
+  is shown but doesn't gate any dynamic. ([PUNCHLIST P1-2](PUNCHLIST.md))
+- ⚠ **Genetic-code coevolution** — VWG 2006's central mechanism
+  (horizontal gene transfer between lineages with similar codes) is
+  *not implemented*. Only vertical mutation. ([PUNCHLIST P1-3](PUNCHLIST.md))
+- ⚠ **12-stage pipeline narrative** — Each stage re-inits from scratch;
+  no chemical carry-over between stages. ([PUNCHLIST P1-5](PUNCHLIST.md))
 
 ### Engine & reproducibility
-- Deterministic from `--seed`, **including across save/load** (RNG state serialized).
-- Stage 2 serializes its **full reaction network** so resumed runs use the same chemistry.
-- Headless `simulate` and `export` subcommands.
+
+- ✅ Deterministic from `--seed`, including across save/load
+  (RNG state serialized).
+- ✅ Stage 2 RAF serializes its full reaction network so resumed runs
+  use the same chemistry.
+- ✅ Headless `simulate` and `export` subcommands.
+- ⚠ Snapshot load uses `pickle.loads()` on user-supplied data
+  — RCE on the public Railway URL.
+  See **[PUNCHLIST P0-1](PUNCHLIST.md)**. Fix this week.
+- ◻ Snapshot writes `version: 2` but never reads it on load.
+  ([PUNCHLIST P2-5](PUNCHLIST.md))
 
 ### GUI (Tk, "Catalytic Silence" museum aesthetic)
-- **Scrollable content** inside the fixed 720×1000 window — every section reachable on any screen.
-- Rule + Grid dropdowns; **Reseed**; **Promote stage**.
-- **Live parameter sliders** per stage (F/k/Du/Dv, CMC, mutation rate, etc.) + Stage 1 Pearson preset picker; the panel swaps as the pipeline promotes.
-- **On-canvas colour legend** — viridis colorbar (field stages) / red→green fitness key (Stage 4).
-- Transport: **Step / Play / Stop**, FPS slider.
-- **Live on-canvas specimen caption** — names the current stage + decodes the colour legend.
-- **Transition announcements** — entering a stage shows its principle + detail + citations in the marginalia.
-- **Tutorial** walkthrough with citations.
-- **Record GIF** (threaded, progress bar + Cancel) and **File ▸ Export GIF**.
-- **File ▸ Save / Open snapshot** (JSON, exact RNG + config round-trip).
-- **Gallery** — 9 museum plates (5 stage heroes + full-arc poster + hero/pipeline/prima).
-- Animated **mascot**; bundled Italiana / Crimson Pro / IBM Plex Mono fonts; window icon.
 
-### Assets
-- `docs/generated/` — 6 whipgen-generated "Catalytic Silence" plates (stage0–4 + pipeline poster).
-- `docs/hero.png`, `docs/pipeline.png`, `docs/prima-materia.png`, `docs/icon.png`, `cellauto/assets/icon.png`.
+- ✅ All mandated controls present (transport, stage nav, parameters,
+  observation, export, pedagogy, accessibility — see §3).
+- ⚠ **Visual identity only fully ships on Windows** — bundled
+  Cormorant/Plex fonts are registered via `gdi32` on Windows and
+  fall back to system serifs on Linux/macOS.
+  ([PUNCHLIST P2-3](PUNCHLIST.md))
+- ⚠ `cellauto/app.py` is 2121 lines on one class, 0% coverage by
+  design. Dispatch logic for pipeline vs. standalone rules is
+  duplicated 5× across methods. ([PUNCHLIST P2-1](PUNCHLIST.md))
+- ◻ About dialog still says "five stages" — predates the 12-stage
+  extended pipeline. ([PUNCHLIST P3-6](PUNCHLIST.md))
 
-### Quality gates
-- Test suite (currently **72 tests**) green.
-- CI: Windows + Ubuntu matrix, ruff format/check, mypy, coverage threshold, pip-audit.
+### Web sandbox
+
+- ✅ Flask server + vanilla-JS frontend; per-session `threading.Lock`
+  with a real lock-identity test (`test_web.py`).
+- ✅ Hard caps on grid (≤240), steps-per-request (≤50), GIF steps
+  (≤240), sessions (≤64). LRU eviction.
+- ✅ Deploys via Dockerfile + railway.toml; `/api/health` endpoint;
+  public URL at https://cellautomata-production.up.railway.app/.
+- ⚠ **RCE via `pickle.loads(user_input)` on `/api/sessions/<sid>/load`.**
+  ([PUNCHLIST P0-1](PUNCHLIST.md))
+
+### Tests & CI
+
+- ✅ 147 tests pass (README says "120" — stale by 27).
+- ✅ Tests pin *quantitative* scientific claims, not just smoke:
+  RAF closure correctness, Eigen ε_c transition, LUCA convergence,
+  Cahn-Hilliard coarsening, Frank symmetry breaking.
+- ◻ "87% coverage" reflects the science layer only — ~55% of total
+  Python LOC (GUI + web + CLI + renderer) is omitted from coverage
+  measurement. ([PUNCHLIST P4-3](PUNCHLIST.md))
+- ◻ `pip-audit` audits only Pillow + numpy (the contents of
+  `requirements.txt`); Flask, gunicorn, pytest, etc. are not audited.
+  ([PUNCHLIST P4-1](PUNCHLIST.md))
+- ◻ One tautological test (`test_protocol::test_every_rule_can_init_state_and_step`).
+  ([PUNCHLIST P2-6](PUNCHLIST.md))
+
+### Documentation
+
+- ✅ `docs/science.md` has an "Honest limitations" section that
+  acknowledges toy time scales, no real thermodynamics, phenomenological
+  constants — more honest than the README hero copy.
+- ⚠ README hero claim ("every constant traces to a published
+  measurement") is CHARITABLE. ([PUNCHLIST P3-7](PUNCHLIST.md))
+- ⚠ README test count stale (120 → 147). ([PUNCHLIST P3-1](PUNCHLIST.md))
+- ⚠ Extended-pipeline tutorial copy enumerates 10 stages; code has 12.
+  ([PUNCHLIST P3-2](PUNCHLIST.md))
+- ⚠ Four broken references to a non-existent `PHASE2_BRUTAL.md`
+  self-audit document. ([PUNCHLIST P3-4](PUNCHLIST.md))
+- ⚠ `tools/render_aaa_visuals.py` and `docs/design/render_prima_materia.py`
+  hardcode `C:/Users/guru8/...` paths — render scripts crash on any
+  machine but the author's. ([PUNCHLIST P3-5](PUNCHLIST.md))
 
 ---
 
-## 2. Punchlist (current cycle — v3.2 scientific-rigor + AAA overhaul)
+## 2. Active work cycle (linked to PUNCHLIST.md)
 
-### Done
-- [x] **Correctness:** `find_raf` rewritten to the real Hordijk-Steel layered closure; catalysis made mandatory; false-positive-RAF regression test added.
-- [x] **Correctness:** Stage 2 serializes its full reaction network (was fabricating a random one on load).
-- [x] **Accuracy:** Stage 4 hypercycle docstring corrected to "fitness proxy"; Gray-Scott CFL/rescaling documented; mitosis preset harmonized; Stage 3 coacervate/vesicle conflation fixed.
-- [x] **Real data:** Miller-Urey yields, fatty-acid CMC table, catalysis level, Eigen error threshold, diffusion-coefficient grounding.
-- [x] **UI narrative:** per-stage `StageInfo` metadata; live stage caption + legend; transition announcements with citations.
-- [x] **AAA assets:** 6 stage plates generated via whipgen MCP and wired into the Gallery.
-- [x] **Regression fix:** scrollable content container so the controls are never pushed off the fixed-height window.
+### Tier 0 — Security · ship this week
 
-### Done (cont.)
-- [x] **#6 Live parameter controls (live-applicable knobs)** — `cellauto/rules/params.py` `PARAM_SPECS` + a dynamic PARAMETERS panel in the GUI; sliders set the rule's dataclass fields live (read each step, no re-init), and the pipeline swaps the slider set per stage. Includes the Stage 1 Pearson preset picker. Structural params deferred (see group C).
+- [ ] **P0-1** Replace `pickle.loads(user_input)` in snapshot load
+  with a JSON-safe `Random.getstate()` round-trip. Bump snapshot
+  format to v3. Add regression test that a malicious pickle payload
+  no longer executes.
 
-### Done (cont.)
-- [x] **#9 Visual colorbar + RAF graph** — on-canvas viridis colorbar / red→green fitness key for the field stages, AND the Stage 2 reaction-network / RAF graph view (Gallery ▸ Reaction network): a PIL-rendered node-edge diagram highlighting the Hordijk-Steel RAF with magenta catalyst links and amber food species. `cellauto/netviz.py`; tests in `tests/test_netviz.py`.
+### Tier 1 — Scientific honesty (close or recant)
 
-### In progress / next
-- [ ] Structural parameter controls (re-init plumbing) + reset-to-defaults.
-- [ ] **#7 Missing origin-of-life processes** (RNA world, hydrothermal vents, homochirality, mineral catalysis, error-catastrophe demo, coacervates) — see Roadmap §3.
+For each item below, pick path A (real implementation) or path B
+(re-frame in README/docstring/tutorial). Both are honest. Mixing
+"keep marketing, ship toy" is what got us here.
 
-### Mandated UI toolset (REQUIRED — every control below must exist in the GUI)
+- [ ] **P1-1** Stage 3 vesicles — either implement real lipid physics
+  (curvature term + amphiphile-specific CMC coupling) or rewrite
+  README/docstring to disclose it's a Gray-Scott proxy.
+- [ ] **P1-2** Stage 4 selection — either integrate a minimal
+  hypercycle ODE *or* make the displayed `error_threshold` actually
+  gate dynamics *or* rename to "fitness-driven selection (cyclic-
+  coupling proxy)".
+- [ ] **P1-3** Genetic-code — implement VWG horizontal gene transfer
+  (best path; ~80 lines), or re-label.
+- [ ] **P1-4** Vent — couple synthesis rate to ΔG (not `|∇H|`), or
+  re-label `−95 kJ/mol` as a "thermodynamic envelope display".
+- [ ] **P1-5** Pipeline carry-over — implement product-bias seeding
+  between stages (multi-week), or change "walks every major origin-
+  of-life process" to "tours / exhibits" in README + tutorial.
 
-This is the contract for the GUI. The simulator is not considered complete
-until every tool here is present and working. `[x]` = shipped, `[ ]` = owed.
-Build new controls into existing sections or the scroll container — never in a
-way that clips other controls (see [[cellauto-fixed-window-layout]]).
+### Tier 2 — Engineering quality
+
+- [ ] **P2-1** Decompose `app.py` god-object (Recorder / Timeline /
+  Stats / Gallery into their own modules; put under coverage).
+- [ ] **P2-2** Vectorize the per-cell Python loops in RNA / LUCA /
+  code (~10× speedup expected).
+- [ ] **P2-3** Make Catalytic Silence fonts register on Linux/macOS.
+- [ ] **P2-4** Skip wasteful `init_state` call in `Engine.__post_init__`
+  when `Engine.load` will overwrite.
+- [ ] **P2-5** Read snapshot `version` field on load (enables future
+  schema migrations).
+- [ ] **P2-6** Replace tautological `test_protocol` smoke with real
+  shape/monotonicity invariants per rule.
+- [ ] **P2-7** Fix canvas-click 2-px borderwidth offset.
+- [ ] **P2-8** Vectorize discrete-rule `_capture_frame` for GIF
+  export at large grids.
+
+### Tier 3 — Documentation drift
+
+- [ ] **P3-1** Update README test count (or replace with badges).
+- [ ] **P3-2** Update extended-pipeline tutorial to enumerate all 12
+  stages.
+- [ ] **P3-3** Update `--stage` CLI help to reflect 0-11 range.
+- [ ] **P3-4** Decide on `PHASE2_BRUTAL.md`: restore or replace refs
+  with links to `PUNCHLIST.md`.
+- [ ] **P3-5** Fix hardcoded Windows font paths in render scripts.
+- [ ] **P3-6** Update About dialog to mention extended pipeline.
+- [ ] **P3-7** Soften README "every constant traces to a published
+  measurement" to match `docs/science.md`'s caveats.
+
+### Tier 4 — CI / build hygiene
+
+- [ ] **P4-1** Audit the full resolved environment, not just `requirements.txt`.
+- [ ] **P4-2** Drop `mypy --no-error-summary`; add `--strict` continue-on-error job.
+- [ ] **P4-3** Add a non-omitted coverage job at a lower threshold OR
+  explain the headline number in the README.
+
+---
+
+## 3. Mandated GUI controls (regression contract — all shipped)
+
+The simulator is not considered complete unless every control here is
+present and working. `[x]` = shipped, `[ ]` = owed.
 
 **A. Run control / transport**
-- [x] Play / Pause (Play + Stop)
-- [x] Single Step
-- [x] Stop
+- [x] Play / Pause, Step, Stop
 - [x] Speed (FPS) control
-- [x] Reseed / new run
-- [x] Restart-to-step-0 — `RESTART` button: re-inits the state under the current rule and seed (preserves slider edits) and clears the stats buffer.
-- [x] Step-back / timeline scrubber — bounded ring buffer of serialized state per step (cap 120) with a `SCRUB` Scale in TRANSPORT; drag back to restore any captured frame. Stepping after a scrub-back **truncates the future** so timelines branch rather than overwrite.
+- [x] Reseed, Restart-to-step-0
+- [x] Step-back / timeline scrubber (bounded ring buffer; truncate-future on edit)
 
 **B. Stage navigation**
-- [x] Rule selector (incl. each stage individually)
+- [x] Rule selector (each stage individually + pipelines)
 - [x] Grid-size selector
-- [x] Promote stage (manual, forward)
-- [x] Jump-to-stage picker (direct select 0–4) — `JUMP` combobox in the pipeline row.
-- [x] Auto-promote toggle + stage-duration control — `AUTO-PROMOTE` checkbox and `DUR` spinbox in the pipeline row.
+- [x] Promote stage (manual)
+- [x] Jump-to-stage picker
+- [x] Auto-promote toggle + duration
 
-**C. Scientific parameters (the core teaching tools)**
-- [x] Live parameter sliders for each stage's live-applicable knobs *(#6)* — Stage 0 amoeba lifespan; Stage 1 F/k/Du/Dv; Stage 2 food supply/diffusion; Stage 3 CMC/F/k; Stage 4 mutation rate/division radius/decay age. Pipeline swaps the slider set as stages promote.
-- [x] Pearson regime preset picker for Stage 1 *(#6)*
-- [x] Structural parameters with auto re-init — `ParamSpec.reinit=True` triggers `_reinit_param_target` (deterministic reseed from `engine.seed`). Shipped sliders: Stage 2 `n_species` / `n_reactions` / `food_fraction`, Wolfram1D `rule_number`. Grid size remains the GRID picker (already full-engine re-init via `_on_rule_change`).
-- [x] Reset-parameters-to-defaults — `RESET` button in the PARAMETERS header.
+**C. Scientific parameters**
+- [x] Live parameter sliders for each stage's live-applicable knobs
+- [x] Pearson regime preset picker for Gray-Scott
+- [x] Structural parameters with auto re-init (`reinit=True` flag)
+- [x] Reset-parameters-to-defaults button
 
 **D. Observation, legends & plots**
 - [x] Main simulation canvas
-- [x] Live stage caption + colour legend (canvas overlay)
-- [x] Visual colorbar (viridis ramp with hi/lo) for field stages *(#9)*
-- [x] Fitness key (red→green) for Stage 4 *(#9)*
-- [x] Reaction-network / RAF graph view (highlight RAF members) *(#9)* — Gallery ▸ Reaction network
-- [x] Population / fitness time-series plot (sparkline) — live canvas overlay tracing the first non-meta population key with `min..max` annotation.
+- [x] Live stage caption + colour legend
+- [x] Visual colorbar (viridis) for field stages
+- [x] Fitness key (red→green or CVD-safe blue→yellow) for Stage 4
+- [x] Reaction-network / RAF graph view (Gallery)
+- [x] Population sparkline overlay
 
 **E. Data & export**
-- [x] Save / Open snapshot (JSON, exact round-trip)
+- [x] Save / Open snapshot (JSON, exact round-trip) ⚠ (P0-1: pickle path needs replacement)
 - [x] Export GIF (threaded, progress + cancel)
-- [x] Export current frame as PNG — `File ▸ Export frame as PNG…`.
-- [x] Export run statistics as CSV — `File ▸ Export stats as CSV…` writes the recorded per-step population samples (bounded to 5000).
+- [x] Export current frame as PNG
+- [x] Export run statistics as CSV
 
 **F. Pedagogy & information**
 - [x] Tutorial walkthrough with citations
 - [x] Per-stage principle + citations (marginalia on transition)
-- [x] Gallery of museum plates
-- [x] About dialog
+- [x] Chapter-card overlay on stage promotion
+- [x] Gallery of museum plates (5 stage heroes + composite posters)
+- [x] About dialog ⚠ (P3-6: mentions only 5 stages, not 12)
 - [x] Status register (rule / seed / step / FPS / population stats)
 
 **G. Accessibility**
-- [x] Colourblind-safe palette option — `View ▸ Colour-blind safe palette` checkbox swaps Stage 4's red→green disc colour (the audit's flagged CVD offender) for a blue→yellow ramp; the legend bar follows. Other diverging maps in the project (chirality teal↔magenta, vents blue↔orange, viridis) are already CVD-friendly.
-- [x] Text-scaling / zoom control — `View ▸ Small/Default/Large/Extra-large text` calls `_apply_font_scale(scale)`, which recomputes every font tuple and re-applies the ttk styles uniformly; canvas overlays refresh via `_sync_stage_caption`. Clamped to [0.6, 2.0].
+- [x] Colourblind-safe palette toggle (View menu)
+- [x] Text-scaling / zoom (View menu, four presets)
+- [x] Keyboard navigation (Space / → / R / P / [ / ]) with text-entry guard
 
 ---
 
-## 3. Roadmap (deferred / future)
+## 4. Web sandbox (the parallel deliverable)
 
-### Missing origin-of-life processes (to fully tell the story)
-- [x] **RNA world** (Gilbert 1986) — SHIPPED as the `abiogenesis-rna-world` rule: a spatial Eigen quasispecies with a tunable per-base error rate that crosses the threshold ε_c = ln(σ)/L to show the error catastrophe live. `stage_rna.py`; tests in `test_rna_world.py`. *Still to do: weave it into the auto-promoting pipeline.*
-- [x] **Metabolism-first / alkaline hydrothermal vents** (Russell, Martin & Lane) — SHIPPED as `abiogenesis-hydrothermal-vent`: an alkaline chimney vs acidic ocean proton gradient (Dirichlet sources) whose steepness (proton-motive force) drives interface-localised organic synthesis; flattening the gradient stops all synthesis. `stage_vents.py`; `test_vents.py`.
-- [x] **Homochirality** (Frank 1953; Soai 1995) — SHIPPED as `abiogenesis-homochirality`: a 2D Frank model (autocatalysis + mutual antagonism) that spontaneously breaks mirror symmetry into teal/magenta chiral domains; turning antagonism k_x→0 restores the stable racemic state. `stage_chirality.py`; `test_homochirality.py`.
-- [x] **Mineral-surface catalysis** (Cairns-Smith; Ferris) — SHIPPED as `abiogenesis-mineral-catalysis`: a static montmorillonite clay mask where monomer→polymer condensation is catalysed, so polymer accumulates on the clay (~12× the bulk); equalising the bulk and clay rates removes the localisation. `stage_minerals.py`; `test_minerals.py`.
-- **Error catastrophe demo** — make Eigen's 1/L threshold a visible, sweepable regime in Stage 4.
-- [x] **Oparin coacervates** — SHIPPED as `abiogenesis-coacervate`: Cahn-Hilliard liquid-liquid phase separation; gold droplets nucleate from a near-uniform mix and coarsen (Ostwald ripening), a membraneless alternative to Stage 3's vesicles. `stage_coacervate.py`; `test_coacervate.py`.
+The Python desktop GUI ships alongside two web artifacts:
 
-### Platform & polish
-- [x] Extended auto-promote pipeline weaving every shipped origin-of-life process — SHIPPED as `abiogenesis-pipeline-extended` (10 stages: soup → vent → RD → mineral → RAF → chirality → RNA → coacervate → vesicles → selection). `AbiogenesisPipelineRule` was parameterised with `stage_classes`/`stage_infos`, so the original 5-stage default is unchanged.
-- [x] Web port (Pyodide / JS) so no Python install is needed — **SHIPPED as an MVP**: vanilla-JS Gray-Scott reaction-diffusion explorer in `docs/web/` (~400 lines: `index.html` + `styles.css` + `sim.js` + `viridis.js` + `presets.js`). Deployable to GitHub Pages from `/docs`. Other stages exhibited as static museum-plate gallery; the full 12-rule sandbox remains the Python build. No Pyodide — direct JS port of `gray_scott_step`.
-- [x] Accessibility: colourblind-safe palettes, text scaling.
-- [x] Accessibility: keyboard navigation — Space (play/pause), → (step), R (restart), P (promote), [ / ] (prev/next pipeline stage), with text-entry focus guard so Spinbox/Combobox typing isn't hijacked. Help ▸ Keyboard shortcuts lists them.
-- [x] Per-protocell inspector — `Button-1` on the canvas hit-tests Stage 4 `Protocell` discs (direct rule or pipeline-wrapped) and opens a Toplevel showing position, radius, age, fitness, and the genome vector, plus a caption explaining the hypercycle-coupling fitness.
-- [x] In-app concentration / population time-series plot (sparkline overlay).
-- [x] Story-mode chapter transition cards — when the pipeline promotes, a centered overlay shows "CHAPTER N · TITLE" + principle + citation, fades after ~4.5 s via `_animate` countdown. Works for both 5- and 10-stage pipelines.
+- ✅ **`cellauto web`** — Flask + vanilla JS, every rule playable in
+  any browser. Per-session lock, hard caps, snapshot/PNG/GIF download.
+  Deploys via the bundled Dockerfile / `railway.toml`. ⚠ Pickle RCE in
+  snapshot load (P0-1).
+- ✅ **`docs/web/`** — Static JS Gray-Scott explorer, deployable to
+  GitHub Pages from `/docs`. Vanilla JS port of `gray_scott_step`,
+  identical math to Python. Stage 1 only.
 
 ---
 
-## 4. How to use this doc
-- **Adding a feature?** Add it to the Feature Inventory.
-- **Starting work?** Move the item from Roadmap → Punchlist "in progress."
-- **Shipping?** Re-read the Feature Inventory and confirm nothing on it broke.
+## 5. How to use this doc
+
+- **Adding a feature?** Add it to the Feature Inventory under the
+  honest classification (✅ / ◻ / ⚠).
+- **Starting work?** Pick an item from the Active Work Cycle and
+  link it to a PUNCHLIST entry.
+- **Shipping?** Re-read the Feature Inventory and confirm nothing
+  regressed; add a CHANGELOG entry; update PUNCHLIST status; do not
+  silently bump claim severity.
+- **Disagreeing with an audit verdict?** Open a PR that either fixes
+  the gap or rewrites the marketing. Both are honest. Stale
+  marketing + toy implementation is what this doc exists to prevent.
