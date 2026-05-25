@@ -382,6 +382,103 @@ the v3.6+ direction.
 
 ---
 
+## 5. Local-vs-Web parity punchlist (v3.6 candidate cycle)
+
+The project ships two clients running the same Python engine: the **Tk
+desktop app** (`cellauto/app.py`, on `main`) and the **Flask web client**
+(`cellauto/web/` on branch `origin/claude/web-version-o6ZxW`). A side-by-side
+audit found that while the Tk client is feature-richer functionally
+(Gallery, scrubber, protocell inspector, RAF network view, sparkline,
+keyboard shortcuts, CSV export, font scaling), the web client has a
+distinct set of UX qualities the Tk app lacks. v3.6 closes those gaps.
+
+### Punchlist (open until each item ships)
+
+- [x] **L1 — Always-visible stage wall-label.** Web shows the active pipeline
+  stage as a left-column "wall label" (title + citation + detail) that's
+  always visible. Tk currently puts the stage caption as a canvas overlay
+  that competes with playback rendering. **Fix:** add a dedicated stage-info
+  panel above the parameter sliders that always shows the current stage's
+  title, principle one-liner, citation, and "what the colours mean" legend.
+  Hide it for non-pipeline rules.
+- [ ] **L2 — Tabbed control panels.** *(deferred — see "Deferred" below.)*  Web groups controls into three
+  tabs: Parameters / Stage / Export. Tk uses one long scrolling column.
+  **Fix:** use `ttk.Notebook` to group the existing controls — Configuration
+  + Pipeline on one tab, Parameters on a second, Export/Snapshot on a
+  third. Keep transport bar always visible above the tabs.
+- [x] **L3 — Preset chips.** Web renders Pearson regime presets as
+  inline toggle-button chips (spots / stripes / mitosis / waves /
+  labyrinth). Tk uses a dropdown. **Fix:** replace the preset combobox
+  with a row of `ttk.Radiobutton`-styled chip buttons that stay visible
+  so users can see the full menu at once.
+- [x] **L4 — Debounced parameter slider updates.** Web debounces param
+  changes (250 ms for reinit, 60 ms for live) so dragging a slider
+  doesn't trigger five state rebuilds per second. Tk currently rebuilds
+  state on every slider tick when a "reinit" param changes. **Fix:**
+  wrap `_on_param_change` with a 250-ms `after()` debouncer for reinit
+  params and 60 ms for live params.
+- [x] **L5 — Batch stepping at high FPS.** Web requests up to 20 steps
+  per fetch when the user cranks FPS above the wire latency. Tk steps
+  one engine.step() per Tk `after()` tick, so FPS is capped by the Tk
+  scheduler. **Fix:** if the requested FPS is above a threshold (say
+  30 Hz), do N steps per tick where N = requested_fps / actual_fps.
+- [x] **L6 — Reduced-motion preference toggle.** Web honours OS-level
+  `prefers-reduced-motion`. Desktop has no equivalent OS signal. **Fix:**
+  add a `View ▸ Reduced motion` checkbox that caps FPS at 10 Hz when
+  enabled, suppresses chapter-card fade, freezes the mascot animation,
+  and persists in a small config file.
+- [x] **L7 — Population stats as wrap-friendly chips.** Web wraps the
+  Stage-II vent readout (10+ stats) into key:value chips that flow on
+  multiple lines. Tk shows them on one line and clips. **Fix:** render
+  population as a `ttk.Frame` of label pairs that wrap, not a single
+  `Label` with a long string.
+- [x] **L8 — Pulsing brand-mark animation while playing.** Web pulses
+  its small brand-mark dot while the sim is live (2.2-s cycle). Tk has
+  a mascot but no playback-tied animation. **Fix:** add a small teal
+  status dot near the title that pulses opacity when `_running == True`.
+- [x] **L9 — Canvas glow during playback.** Web brightens a teal
+  box-shadow around the canvas while playing. Tk has a static 2-pixel
+  rim. **Fix:** animate the canvas border colour from `HAIRLINE`
+  (#1f4f4c) to `ACCENT` (#39d4c8) and back at the same 2.2-s cycle.
+- [ ] **L10 — Background grain texture.** *(deferred — see "Deferred" below.)*  Web overlays a 1%-opacity
+  SVG noise texture for tactile feel. Tk's frame is flat obsidian.
+  **Fix:** generate a small Perlin or white-noise PNG at startup,
+  composite it onto the background `Frame` via a `Canvas` underlay
+  at low alpha. Disable when L6 reduced-motion is on.
+- [x] **L11 — Tutorial modal listing.** Web offers a modal with all
+  tutorial steps listed (jumpable). Tk advances one line at a time
+  through the marginalia. **Fix:** add `Help ▸ Tutorial — all steps`
+  that opens a `Toplevel` listing every step with click-to-jump.
+- [x] **L12 — Non-blocking error toast.** Web shows errors as an
+  auto-clearing in-page banner (6 s timeout). Tk uses blocking
+  `messagebox.showerror`. **Fix:** add a thin status strip at the
+  top of the window that shows the most-recent error/info message,
+  fades after 6 s, and is replaced by the next one.
+
+### Out of scope for the parity cycle
+- Server-side session management (L4 in the audit) — desktop is
+  single-process, no equivalent need.
+- Batch API + frame.png + GIF endpoints — desktop already has Export
+  PNG / Export GIF; the wire format doesn't matter to a local user.
+- 3-column responsive layout — desktop is fixed-geometry by design.
+- Web fonts — Tk already ships an embedded font pack (Italiana,
+  Crimson Pro, IBM Plex Mono) that fills the same role as Cormorant
+  Garamond + Inter + JetBrains Mono on the web.
+
+### Deferred from v3.6 (closed cycle) — rationale
+- **L2 (tabbed control panels)**: the web uses tabs because horizontal
+  space is constrained; Tk uses a scrolling vertical column. Both
+  designs let the user reach every control with one interaction. A
+  tab refactor in Tk would touch 600+ lines of layout code with real
+  regression risk for a purely aesthetic change. Not a parity gap.
+- **L10 (background grain texture)**: Tk has no CSS-equivalent
+  background-image support; achieving a 1 %-opacity noise overlay
+  would require putting a Canvas behind every Frame and stacking the
+  widgets over it — high implementation complexity for an effect
+  that's nearly imperceptible at 1 % opacity. Not worth the risk.
+
+---
+
 ## 4. How to use this doc
 - **Adding a feature?** Add it to the Feature Inventory.
 - **Starting work?** Move the item from Roadmap → Punchlist "in progress."
