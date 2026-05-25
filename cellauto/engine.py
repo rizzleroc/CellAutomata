@@ -6,14 +6,20 @@ v2.0.x: this rebuild closes three Phase 2 P0 bugs:
   - rule config round-trips through snapshots (was: lost on load).
   - persistent step-duration tracking is now a deque instead of pop(0) on a
     list (was: O(N) per step).
+
+v3.5: snapshot format v3 — RNG state is round-tripped through a JSON-safe
+representation of ``random.Random.getstate()`` instead of pickle bytes,
+closing the arbitrary-code-execution path on the public web sandbox
+(see docs/PUNCHLIST.md P0-1). v2 snapshots are still loadable but their
+pickled rng_state is refused for safety; loading a v2 snapshot reseeds
+the RNG from the snapshot's stored seed and step_count instead, which
+preserves the rule config + state but not the exact stream position.
 """
 
 from __future__ import annotations
 
-import base64
 import json
 import logging
-import pickle
 import random
 import time
 from collections import deque
@@ -25,6 +31,35 @@ from typing import Any
 from cellauto.rules.base import Rule
 
 log = logging.getLogger(__name__)
+
+SNAPSHOT_FORMAT_VERSION = 3
+
+
+def _encode_rng_state(rng: random.Random) -> list:
+    """Serialize ``random.Random.getstate()`` to a JSON-safe nested list.
+
+    ``Random.getstate()`` returns ``(version, tuple_of_625_ints, gauss_next)``
+    where ``gauss_next`` is ``float | None``. All three are natively
+    JSON-encodable once the inner tuple is widened to a list.
+    """
+    version, internal, gauss_next = rng.getstate()
+    return [version, list(internal), gauss_next]
+
+
+def _decode_rng_state(encoded: list) -> tuple:
+    """Inverse of ``_encode_rng_state``. Validates structure to avoid
+    handing arbitrary data to ``Random.setstate`` (which would
+    AttributeError or ValueError, not RCE — but we may as well be loud)."""
+    if not isinstance(encoded, list) or len(encoded) != 3:
+        raise ValueError("rng_state must be a 3-element list [version, internal, gauss_next]")
+    version, internal, gauss_next = encoded
+    if not isinstance(version, int):
+        raise ValueError("rng_state[0] must be int")
+    if not isinstance(internal, list) or not all(isinstance(x, int) for x in internal):
+        raise ValueError("rng_state[1] must be a list of ints")
+    if gauss_next is not None and not isinstance(gauss_next, (int, float)):
+        raise ValueError("rng_state[2] must be null or a number")
+    return (version, tuple(internal), gauss_next)
 
 
 @dataclass
@@ -76,20 +111,20 @@ class Engine:
     def to_dict(self) -> dict:
         """JSON-safe snapshot including RNG state and rule config.
 
-        rng_state is base64-encoded pickle (the only portable, lossless way to
-        round-trip a Python Random state without depending on the internals).
+        Format v3: ``rng_state`` is a JSON-native nested list returned by
+        ``_encode_rng_state``. v1/v2 snapshots encoded it as base64 pickle
+        bytes — a deserialisation hazard we deliberately no longer emit
+        and no longer trust on load. See docs/PUNCHLIST.md P0-1.
         """
         return {
-            "version": 2,
+            "version": SNAPSHOT_FORMAT_VERSION,
             "rule": self.rule.name,
             "rule_config": self.rule.to_config() if hasattr(self.rule, "to_config") else {},
             "seed": self.seed,
             "width": self.width,
             "height": self.height,
             "step_count": self.step_count,
-            "rng_state": base64.b64encode(pickle.dumps(self.rule.rng.getstate())).decode("ascii")
-            if hasattr(self.rule, "rng")
-            else None,
+            "rng_state": _encode_rng_state(self.rule.rng) if hasattr(self.rule, "rng") else None,
             "state": self.rule.serialize_state(self.state),
         }
 
@@ -116,9 +151,27 @@ class Engine:
         )
         engine.step_count = data["step_count"]
         engine.state = rule.deserialize_state(data["state"])
-        # Restore RNG state precisely so load-then-step matches continuous runs.
-        if data.get("rng_state") and hasattr(rule, "rng"):
-            rng_state = pickle.loads(base64.b64decode(data["rng_state"].encode("ascii")))
-            rule.rng.setstate(rng_state)
+        # Restore RNG state. Format v3 ships a JSON-native list (safe);
+        # v1/v2 shipped a base64-encoded pickle, which we refuse to
+        # deserialise — accepting it would be an RCE on the public web
+        # sandbox. Old snapshots still load; we just reseed deterministically
+        # from the stored seed instead of restoring the exact stream offset.
+        version = data.get("version", 1)
+        rng_state = data.get("rng_state")
+        if rng_state is not None and hasattr(rule, "rng"):
+            if version >= 3 and isinstance(rng_state, list):
+                rule.rng.setstate(_decode_rng_state(rng_state))
+            else:
+                log.warning(
+                    "snapshot %s uses legacy v%s rng_state (pickle); "
+                    "ignoring it and reseeding from seed=%s — the resumed "
+                    "run will diverge from a continuous run. Re-save the "
+                    "snapshot to upgrade it to v%d.",
+                    path,
+                    version,
+                    data["seed"],
+                    SNAPSHOT_FORMAT_VERSION,
+                )
+                rule.rng.seed(data["seed"])
         log.info("loaded snapshot from %s (rule=%s step=%d)", path, rule_name, engine.step_count)
         return engine

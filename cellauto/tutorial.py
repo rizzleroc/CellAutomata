@@ -18,10 +18,11 @@ _TUTORIALS: dict[str, tuple[str, ...]] = {
         "Click 'Promote stage' to step manually; the pipeline auto-promotes every 60 steps. See docs/science.md for citations.",
     ),
     "abiogenesis-pipeline-extended": (
-        "Extended pipeline — every shipped origin-of-life process in narrative order.",
-        "0 Soup → 1 Alkaline vent → 2 Reaction-diffusion → 3 Mineral catalysis → 4 RAFs → 5 Homochirality → 6 RNA world → 7 Coacervates → 8 Vesicles → 9 Protocell selection.",
-        "The vent supplies the proton-motive force (Lane-Martin chemiosmosis). Mineral surfaces localise polymerisation (Ferris). Chirality breaks before the first replicators (Frank). RNA world meets the error threshold. Coacervates and vesicles offer parallel compartmentalisation routes.",
-        "Auto-promotes every 50 steps by default — use AUTO-PROMOTE / DUR to slow it, JUMP to skip ahead, or SCRUB to rewind.",
+        "Extended pipeline — every shipped origin-of-life process toured in narrative order.",
+        "0 Soup → 1 Alkaline vent → 2 Reaction-diffusion → 3 Mineral catalysis → 4 RAFs → 5 Homochirality → 6 RNA world → 7 Genetic code → 8 Coacervates → 9 Vesicles → 10 Protocell selection → 11 LUCA.",
+        "The vent supplies the proton-motive force (Lane-Martin chemiosmosis). Mineral surfaces localise polymerisation (Ferris). Chirality breaks before the first replicators (Frank). RNA world meets the error threshold (Eigen). Genetic code coevolves under selection (Vetsigian-Woese-Goldenfeld). Coacervates and vesicles offer parallel compartmentalisation routes. LUCA is distilled from a population of cells under selection.",
+        "Each stage runs to its own steady-ish state and then promotes — there is no chemical carry-over between stages, so think of this as a curated slideshow of 12 honest models, not one continuous simulation. (See docs/PUNCHLIST.md P1-5.)",
+        "Auto-promotes every 90 steps by default — use AUTO-PROMOTE / DUR to slow it, JUMP to skip ahead, or SCRUB to rewind.",
         "Use the canonical 5-stage abiogenesis-pipeline for the museum-plate tour; use this rule when you want to see every process.",
     ),
     "abiogenesis-stage0-soup": (

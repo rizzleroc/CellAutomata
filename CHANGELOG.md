@@ -321,7 +321,8 @@ as loop-iteration-sized.
   time via non-blocking `after()` callbacks, showing a modal progress bar with a
   Cancel button; the final Pillow rendering runs in a background thread.
 - **Stage 4 fitness function replaced.** Shannon-entropy × concentration
-  (acknowledged placeholder in PHASE2_BRUTAL §29) is replaced with the
+  (acknowledged placeholder in the v2.0 self-audit; see docs/PUNCHLIST.md
+  P1-2 for the current honesty status of Stage 4) is replaced with the
   Eigen-Schuster hypercycle coupling: `Σ g[i]·g[(i+1)%n]`. This is zero when
   any species is absent and maximised at equal concentrations — the
   cooperatively stable state from Eigen & Schuster (1977). Growth/shrink

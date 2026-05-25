@@ -565,8 +565,11 @@ def build_app() -> Any:
             rule_name = data["rule"]
             if rule_name not in REGISTRY:
                 return jsonify({"error": f"unknown rule '{rule_name}' in snapshot"}), 400
-            import base64
-            import pickle
+
+            from cellauto.engine import (
+                SNAPSHOT_FORMAT_VERSION,
+                _decode_rng_state,
+            )
 
             rule_cls = REGISTRY[rule_name]
             rule_config = data.get("rule_config", {}) or {}
@@ -579,9 +582,24 @@ def build_app() -> Any:
             )
             engine.step_count = int(data["step_count"])
             engine.state = rule.deserialize_state(data["state"])
-            if data.get("rng_state") and hasattr(rule, "rng"):
-                rng_state = pickle.loads(base64.b64decode(data["rng_state"].encode("ascii")))
-                rule.rng.setstate(rng_state)
+            # Restore RNG state. v3 ships a JSON-native list (safe);
+            # v1/v2 shipped a base64-encoded pickle, which we refuse on
+            # the web path entirely — accepting it would be RCE. Old
+            # snapshots still load; we reseed deterministically from the
+            # stored seed instead. See docs/PUNCHLIST.md P0-1.
+            version = data.get("version", 1)
+            rng_state = data.get("rng_state")
+            if rng_state is not None and hasattr(rule, "rng"):
+                if version >= SNAPSHOT_FORMAT_VERSION and isinstance(rng_state, list):
+                    rule.rng.setstate(_decode_rng_state(rng_state))
+                else:
+                    log.warning(
+                        "session_load: legacy v%s snapshot — discarding pickled "
+                        "rng_state, reseeding from seed=%s",
+                        version,
+                        data["seed"],
+                    )
+                    rule.rng.seed(int(data["seed"]))
         except (KeyError, TypeError, ValueError) as e:
             return jsonify({"error": f"bad snapshot: {e}"}), 400
         with s.lock:

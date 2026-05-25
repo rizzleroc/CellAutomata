@@ -37,9 +37,23 @@ jobs:
         run: ruff format --check cellauto tests
 
       - name: Type check — mypy
-        run: mypy cellauto --ignore-missing-imports --no-error-summary
+        # Drop --no-error-summary so the "Success: X files checked" line is
+        # visible in CI logs — without it a regression to "0 errors over 0
+        # files" would be undetectable. (PUNCHLIST P4-2)
+        run: mypy cellauto --ignore-missing-imports
+
+      - name: Type check (strict, advisory) — mypy --strict
+        # Aspirational strict-mode pass. Allowed to fail today so contributors
+        # see where the gap is without blocking; promote to required once
+        # the warnings are cleaned up. (PUNCHLIST P4-2)
+        run: mypy cellauto --ignore-missing-imports --strict
+        continue-on-error: true
 
       - name: Tests (pytest + coverage)
+        # 80% threshold applies to the science layer (engine + rules) only;
+        # cellauto/app.py, mascot.py, renderer.py, web/server.py, web/wsgi.py,
+        # __main__.py are explicitly omitted from coverage in pyproject.toml.
+        # See PUNCHLIST P4-3 for the full caveat.
         run: pytest --cov=cellauto --cov-report=term-missing --cov-fail-under=80
 
       - name: Headless smoke — CLI simulate
@@ -60,7 +74,13 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
-      - name: Install pip-audit
-        run: pip install pip-audit
-      - name: Audit dependencies
-        run: pip-audit -r requirements.txt
+      - name: Install project + web extras
+        # Audit the actual resolved environment (Flask, gunicorn, Pillow,
+        # numpy, every transitive dep) instead of just the two lines in
+        # requirements.txt. PUNCHLIST P4-1.
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e ".[web,dev]"
+          pip install pip-audit
+      - name: Audit installed environment
+        run: pip-audit

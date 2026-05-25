@@ -318,6 +318,45 @@ def test_bad_snapshot_rejected(client):
     assert res.status_code == 400
 
 
+def test_legacy_pickle_rng_state_does_not_execute(client):
+    """Regression test for PUNCHLIST P0-1. A crafted v2 snapshot whose
+    rng_state is a base64 pickle payload that — if unpickled — would
+    write a sentinel file. The fixed loader must NOT unpickle it;
+    instead it must accept the rest of the snapshot and reseed from
+    the stored seed. The sentinel file must NOT exist after load.
+    """
+    import base64
+    import os
+    import pickle
+    import tempfile
+
+    sentinel_dir = tempfile.mkdtemp(prefix="cellauto-rce-test-")
+    sentinel = os.path.join(sentinel_dir, "pwned")
+
+    class RCEPayload:
+        """Anything `pickle.loads()` would execute on a malicious payload.
+        We use __reduce__ to make pickle call `open(...)` at load time."""
+
+        def __reduce__(self):
+            return (open, (sentinel, "w"))
+
+    malicious = base64.b64encode(pickle.dumps(RCEPayload())).decode("ascii")
+
+    # Establish a session first.
+    sid = client.post("/api/sessions", json={"rule": "conway", "grid": 8, "seed": 7}).get_json()["session_id"]
+    # Fetch a real snapshot so the rest of the payload is well-formed.
+    snap = client.get(f"/api/sessions/{sid}/snapshot.json").get_json()
+    # Re-dress it as a legacy v2 snapshot with the malicious rng_state.
+    snap["version"] = 2
+    snap["rng_state"] = malicious
+
+    res = client.post(f"/api/sessions/{sid}/load", json=snap)
+    assert res.status_code == 200, "loader should still accept v2 snapshots — just refuse the pickle"
+    assert not os.path.exists(sentinel), (
+        "CRITICAL: malicious pickle was executed during snapshot load — RCE regression"
+    )
+
+
 # --- PNG download + GIF export ------------------------------------------------
 
 

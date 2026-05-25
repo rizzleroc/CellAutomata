@@ -152,7 +152,11 @@ def build_parser() -> argparse.ArgumentParser:
             help="repeatable rule-specific parameter, e.g. rule_number=110",
         )
         sp.add_argument(
-            "--stage", type=int, default=None, help="for abiogenesis-pipeline: starting stage 0-4"
+            "--stage",
+            type=int,
+            default=None,
+            help="for abiogenesis-pipeline: starting stage 0-4; "
+            "for abiogenesis-pipeline-extended: starting stage 0-11",
         )
 
     sp_gui = sub.add_parser("gui", help="launch the Tk sandbox")

@@ -39,11 +39,10 @@ TEAL = (57, 212, 200)
 MAGENTA = (212, 57, 164)
 
 # ── Fonts (canvas-design pack) ──────────────────────────────────────────────
-FONT_DIR = Path(
-    "C:/Users/guru8/AppData/Roaming/Claude/local-agent-mode-sessions/"
-    "skills-plugin/b8479bcb-49c5-490c-9c54-5a5f7d6d20f5/"
-    "23339d37-fc49-4612-b536-c30b630a3402/skills/canvas-design/canvas-fonts"
-)
+# Load the bundled fonts from the repo so this script runs on any
+# machine, not just the author's. The TTFs are shipped at
+# cellauto/assets/fonts/. docs/design/ → ../../cellauto/assets/fonts/.
+FONT_DIR = Path(__file__).resolve().parents[2] / "cellauto" / "assets" / "fonts"
 
 
 def font(name: str, size: int) -> ImageFont.FreeTypeFont:

@@ -157,7 +157,7 @@ Repo is public with no license. Legally, nobody can use, fork, or contribute to 
 
 ## 4. Recommended Product Roadmap
 
-> **Status (2026-05-21):** v1.1 → v3.1 are **shipped**. v3.0's original "web build" stretch was deliberately descoped (platform change, not a feature). The live roadmap is now **v3.2 — Living colony & visual identity**, below. See [PHASE2_BRUTAL.md §POST2](../PHASE2_BRUTAL.md) for the verified punch-list checkoff.
+> **Status (2026-05-24):** v1.1 → v3.4 are **shipped** (including the web build, which was un-descoped in v3.4 and now ships as both `cellauto web` and a static GitHub-Pages port at `docs/web/`). The live roadmap is the brutal honesty audit at [docs/PUNCHLIST.md](docs/PUNCHLIST.md), tracked against the inventory in [docs/ROADMAP.md](docs/ROADMAP.md).
 
 ### v1.1 — Honesty release ✅ shipped
 - Delete `main_new.py`.
@@ -205,7 +205,7 @@ The infrastructure is honest but the *experience* is unfinished. The signature "
 - **UI polish:** apply Catalytic Silence consistently to the canvas frame; review spacing/typography.
 - **Residual test/doc nits:** Wolfram rule-110 test, CLI-subprocess tests, fix the stale Stage-4 fitness string in the tutorial.
 
-See [PHASE2_BRUTAL.md §POST2](../PHASE2_BRUTAL.md) for the prioritized V0–V2 punch list.
+See [docs/PUNCHLIST.md](docs/PUNCHLIST.md) for the current prioritized punch list across all tiers.
 
 ---
 

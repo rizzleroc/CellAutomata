@@ -52,11 +52,10 @@ HAIRLINE = (31, 79, 76)
 TEAL = (57, 212, 200)
 
 # ── Fonts ───────────────────────────────────────────────────────────────────
-FONT_DIR = Path(
-    "C:/Users/guru8/AppData/Roaming/Claude/local-agent-mode-sessions/"
-    "skills-plugin/b8479bcb-49c5-490c-9c54-5a5f7d6d20f5/"
-    "23339d37-fc49-4612-b536-c30b630a3402/skills/canvas-design/canvas-fonts"
-)
+# Load the bundled fonts from the repo so this script runs on any
+# machine, not just the author's. The TTFs are shipped at
+# cellauto/assets/fonts/ — same filenames as before.
+FONT_DIR = Path(__file__).resolve().parents[1] / "cellauto" / "assets" / "fonts"
 
 
 def font(name: str, size: int) -> ImageFont.FreeTypeFont:

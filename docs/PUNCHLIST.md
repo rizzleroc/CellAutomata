@@ -36,7 +36,7 @@ estimate. Tier 0 should ship this week.
 
 ## Tier 0 · Security — fix this week
 
-### P0-1 · Arbitrary code execution via snapshot load
+### P0-1 · Arbitrary code execution via snapshot load — ✅ DONE (commit pending)
 
 **Smoking gun:** `cellauto/web/server.py:582` (and `cellauto/engine.py:121`)
 unconditionally `pickle.loads()` the `rng_state` field of a user-posted
@@ -298,7 +298,7 @@ one numpy pass.
 
 ## Tier 3 · Documentation drift
 
-### P3-1 · README claims 120 tests; actual is 147
+### P3-1 · README claims 120 tests; actual is 147 — ✅ DONE
 
 **Smoking gun:** README line ≈140 says "120 tests, all passing".
 Actual: 147 pass.
@@ -308,7 +308,7 @@ badge, or remove the number entirely and reference CI.
 
 **Effort:** 5 min.
 
-### P3-2 · Extended-pipeline tutorial copy lists 10 stages; code has 12
+### P3-2 · Extended-pipeline tutorial copy lists 10 stages; code has 12 — ✅ DONE
 
 **Smoking gun:** `cellauto/tutorial.py:22-25` enumerates "0 Soup → 1
 Alkaline vent → 2 Reaction-diffusion → 3 Mineral catalysis → 4 RAFs
@@ -321,7 +321,7 @@ line to enumerate all 12.
 
 **Effort:** 5 min.
 
-### P3-3 · CLI `--stage 0-4` help wrong for extended pipeline
+### P3-3 · CLI `--stage 0-4` help wrong for extended pipeline — ✅ DONE
 
 **Smoking gun:** `cellauto/__main__.py:155` advertises `--stage 0-4`
 but the extended pipeline has 12 stages (0-11).
@@ -330,7 +330,7 @@ but the extended pipeline has 12 stages (0-11).
 
 **Effort:** 5 min.
 
-### P3-4 · Four broken references to `PHASE2_BRUTAL.md`
+### P3-4 · Four broken references to `PHASE2_BRUTAL.md` — ✅ DONE (replaced with PUNCHLIST.md links)
 
 **Smoking gun:** README (2x), CHANGELOG (1x), PRD (2x) reference
 `PHASE2_BRUTAL.md` as the project's self-audit document. The file
@@ -347,7 +347,7 @@ artifact the repo was implicitly referencing.
 
 **Effort:** 15 min.
 
-### P3-5 · Render scripts hardcode the author's Windows path
+### P3-5 · Render scripts hardcode the author's Windows path — ✅ DONE
 
 **Smoking gun:** `tools/render_aaa_visuals.py:55` and
 `docs/design/render_prima_materia.py:42` both set
@@ -365,7 +365,7 @@ FONT_DIR = Path(__file__).resolve().parents[1] / "cellauto" / "assets" / "fonts"
 **Effort:** 10 min, including verifying the render still produces
 the same poster.
 
-### P3-6 · About dialog still says "five stages"
+### P3-6 · About dialog still says "five stages" — ✅ DONE
 
 **Smoking gun:** `cellauto/app.py:1899` "five stages: primordial soup
 · reaction-diffusion · autocatalytic sets · vesicles · protocell
@@ -376,7 +376,7 @@ pipeline and the 12-stage extended one.
 
 **Effort:** 10 min.
 
-### P3-7 · README hero copy oversells beyond docs/science.md
+### P3-7 · README hero copy oversells beyond docs/science.md — ✅ DONE
 
 **Smoking gun:** README line ≈80 says "Every constant traces to a
 published measurement". `docs/science.md` has an "Honest limitations"
@@ -394,7 +394,7 @@ phenomenological values)."
 
 ## Tier 4 · CI / build hygiene
 
-### P4-1 · `pip-audit` only audits Pillow + numpy
+### P4-1 · `pip-audit` only audits Pillow + numpy — ✅ DONE
 
 **Smoking gun:** `.github/workflows/ci.yml` `security` job runs
 `pip-audit -r requirements.txt`. `requirements.txt` is two lines
@@ -407,7 +407,7 @@ extras.
 
 **Effort:** 15 min.
 
-### P4-2 · `mypy --no-error-summary` hides what's checked
+### P4-2 · `mypy --no-error-summary` hides what's checked — ✅ DONE (also added advisory --strict job)
 
 **Smoking gun:** CI runs `mypy cellauto --ignore-missing-imports
 --no-error-summary`. The summary line ("Success: no issues found
@@ -419,7 +419,7 @@ in N source files") is suppressed. A regression to "0 errors over
 
 **Effort:** 15 min.
 
-### P4-3 · Coverage threshold theater
+### P4-3 · Coverage threshold theater — ✅ DONE (README clarified; CI comment added)
 
 **Smoking gun:** CI requires `--cov-fail-under=80`. `pyproject.toml:51-58`
 omits `app.py`, `mascot.py`, `renderer.py`, `web/server.py`, `web/wsgi.py`,

@@ -1892,10 +1892,15 @@ class App(tk.Frame):
         ttk.Label(
             body,
             text=(
+                "canonical pipeline (5 stages):\n"
                 "primordial soup  ·  reaction-diffusion  ·\n"
                 "autocatalytic sets  ·  vesicles  ·  protocell selection\n\n"
+                "extended pipeline (12 stages) adds:\n"
+                "alkaline vent  ·  mineral catalysis  ·  homochirality  ·\n"
+                "RNA world  ·  genetic code  ·  coacervates  ·  LUCA\n\n"
                 "reference automata: Conway, Wolfram 1D.\n"
-                "MIT licensed — see docs/science.md."
+                "MIT licensed — see docs/science.md\n"
+                "honest status: see docs/PUNCHLIST.md"
             ),
             justify="center",
             style="Apparatus.TLabel",

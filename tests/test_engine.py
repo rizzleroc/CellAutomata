@@ -77,11 +77,82 @@ def test_step_count_round_trips(tmp_path: Path):
 def test_load_rejects_unknown_rule(tmp_path: Path):
     path = tmp_path / "bogus.json"
     path.write_text(
-        '{"version":2,"rule":"does-not-exist","rule_config":{},'
+        '{"version":3,"rule":"does-not-exist","rule_config":{},'
         '"seed":1,"width":2,"height":2,"step_count":0,'
         '"rng_state":null,"state":{}}'
     )
     import pytest
 
     with pytest.raises(ValueError, match="unknown rule"):
+        Engine.load(path, REGISTRY)
+
+
+def test_snapshot_emits_format_v3(tmp_path: Path):
+    """Confirm the writer is on the new format (P0-1)."""
+    from cellauto.engine import SNAPSHOT_FORMAT_VERSION
+
+    engine = Engine(width=4, height=4, rule=NaturalSelectionRule(), seed=1)
+    d = engine.to_dict()
+    assert d["version"] == SNAPSHOT_FORMAT_VERSION == 3
+    # rng_state is a 3-element JSON-safe list, not a base64 pickle string.
+    assert isinstance(d["rng_state"], list)
+    assert len(d["rng_state"]) == 3
+    version, internal, gauss_next = d["rng_state"]
+    assert isinstance(version, int)
+    assert isinstance(internal, list)
+    assert all(isinstance(x, int) for x in internal)
+    assert gauss_next is None or isinstance(gauss_next, (int, float))
+
+
+def test_load_refuses_legacy_pickle_rng_state(tmp_path: Path, caplog):
+    """A v2 snapshot with a base64-pickle rng_state must NOT be unpickled.
+    The loader should warn and reseed from the stored seed instead.
+    Demonstrating the security fix (P0-1)."""
+    import base64
+    import json
+    import logging
+    import pickle
+
+    # Build a "v2" snapshot the old code would have happily pickle-loaded.
+    rule = NaturalSelectionRule()
+    engine = Engine(width=4, height=4, rule=rule, seed=99)
+    engine.step()
+    snap = engine.to_dict()
+    # Overwrite with v2-style pickled rng_state (this is the attack surface).
+    legacy_rng = base64.b64encode(pickle.dumps(rule.rng.getstate())).decode("ascii")
+    snap["version"] = 2
+    snap["rng_state"] = legacy_rng
+
+    path = tmp_path / "v2.json"
+    path.write_text(json.dumps(snap))
+
+    with caplog.at_level(logging.WARNING):
+        loaded = Engine.load(path, REGISTRY)
+    # State/config/step count still load — only the rng stream offset is lost.
+    assert loaded.rule.amoeba_lifespan == 25
+    assert loaded.step_count == 1
+    assert any("legacy v2 rng_state" in r.getMessage() for r in caplog.records)
+
+
+def test_load_rejects_malformed_rng_state(tmp_path: Path):
+    """A v3 snapshot with a malicious rng_state shape must be refused
+    cleanly (no AttributeError leak, no setstate crash with surprise)."""
+    import json
+
+    import pytest
+
+    snap = {
+        "version": 3,
+        "rule": "conway",
+        "rule_config": {},
+        "seed": 1,
+        "width": 4,
+        "height": 4,
+        "step_count": 0,
+        "rng_state": ["not", "a", "valid", "shape"],  # too long
+        "state": {"width": 4, "height": 4, "cells": [[False] * 4 for _ in range(4)]},
+    }
+    path = tmp_path / "bad.json"
+    path.write_text(json.dumps(snap))
+    with pytest.raises(ValueError, match="rng_state"):
         Engine.load(path, REGISTRY)

@@ -79,9 +79,16 @@ math behind each stage. The short version:
 | 3 — vesicle formation | Lipid self-assembly above the **measured CMC** of a named fatty acid | Helfrich (1973), Deamer, Hanczyc & Szostak (2003) |
 | 4 — protocell selection | Hypercycle-flavoured fitness; **Eigen error threshold ≈ 1/L** | Eigen & Schuster (1977), Szostak |
 
-Every constant traces to a published measurement; see
-[docs/science.md](docs/science.md) for the values and citations. The
-`abiogenesis-pipeline` rule walks all five stages end to end.
+Where a constant has a published measurement, the code uses it —
+Miller-Urey yields, fatty-acid CMCs (decanoic ≈ 85 mM, oleic ≈ 0.1
+mM), the Nernst factor 59.16 mV/pH, the Faraday constant, Wood-
+Ljungdahl ΔG° = −95 kJ/mol, the LUCA core gene families. Dynamical
+parameters (mutation rates, decay rates, rate constants) are
+phenomenological tuning knobs; see [`docs/science.md`'s "Honest
+limitations"](docs/science.md) section and
+[`docs/PUNCHLIST.md`](docs/PUNCHLIST.md) for the per-stage
+real-vs-toy classification. The `abiogenesis-pipeline` rule
+tours all five stages end to end.
 
 Seven more origin-of-life processes ship as standalone selectable rules
 and together appear as the **12-stage `abiogenesis-pipeline-extended`** in
@@ -301,7 +308,8 @@ The project's history is its own gap analysis:
   [PRD.md](PRD.md) for the brutal gap analysis.
 - **v2.0** (2026-05-18): a working sandbox with pluggable rules, headless
   CLI, GIF export, tests, CI. Three of the headline claims didn't survive
-  a careful read; see [PHASE2_BRUTAL.md](../PHASE2_BRUTAL.md) (the self-audit).
+  a careful read; the v2.0 self-audit was rolled into the project's
+  current honesty doc at [docs/PUNCHLIST.md](docs/PUNCHLIST.md).
 - **v3.0** (2026-05-19): the science-based rebuild. Reframed as
   abiogenesis (the project's true premise). Stage 0 fixes the Rule 3 bug
   v2.0 left as a no-op. Stages 1–4 add real reaction-diffusion (Turing /
@@ -309,7 +317,8 @@ The project's history is its own gap analysis:
   protocell selection with citations to the original literature.
 - **v3.1** (2026-05-19): AAA polish pass. GIF export threaded with a
   progress bar and Cancel button. Stage 4 fitness replaced with the
-  Eigen-Schuster hypercycle coupling (PHASE2_BRUTAL §29 closed). CI adds
+  Eigen-Schuster hypercycle coupling (see docs/PUNCHLIST.md P1-2 for the
+  current honest status of this claim). CI adds
   Windows job, mypy, ruff format, 80% coverage threshold, pip-audit, and
   concurrency cancellation.
 - **v3.2** (2026-05-22): scientific-rigor + AAA overhaul. Fixed a genuine
@@ -349,11 +358,17 @@ The project's history is its own gap analysis:
   AAA release poster generated via the whipgen MCP. Fixed two bugs
   reported in the field: chapter-card overlays now dismiss reliably, and
   the default sim speed is slower so transitions are observable. CI gates
-  all green (ruff, ruff-format, mypy, pytest with 87 % coverage).
+  all green (ruff, ruff-format, mypy, pytest with ≈ 89 % coverage on
+  the science layer — GUI shell, web server, and CLI entry are verified
+  by smoke tests rather than line coverage; see
+  [`docs/PUNCHLIST.md`](docs/PUNCHLIST.md) P4-3 for the full caveat).
 
-**120 tests, all passing.** See [docs/science.md](docs/science.md) for the
-math and citations, and [docs/ROADMAP.md](docs/ROADMAP.md) for the feature
-inventory, mandated UI toolset, and remaining roadmap. Full version history in
+**Test suite passes in CI on the matrix (Ubuntu + Windows × Python
+3.10/3.11/3.12).** See [docs/science.md](docs/science.md) for the
+math and citations, [docs/ROADMAP.md](docs/ROADMAP.md) for the feature
+inventory, mandated UI toolset, and remaining roadmap, and
+[docs/PUNCHLIST.md](docs/PUNCHLIST.md) for the project's brutal
+self-audit + active work items. Full version history in
 [CHANGELOG.md](CHANGELOG.md).
 
 ## License
