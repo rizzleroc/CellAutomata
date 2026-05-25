@@ -65,7 +65,7 @@ These are stages where the marketing reads "real implementation of
 make the code match the claim, or rewrite the claim to match the code.**
 Both are honest. The current state is not.
 
-### P1-1 · Stage 3 vesicles is Gray-Scott with relabeled fields
+### P1-1 · Stage 3 vesicles is Gray-Scott with relabeled fields — ✅ DONE (path B — honest re-framing)
 
 **Smoking gun:** `cellauto/rules/abiogenesis/stage3_vesicles.py:86–94`.
 The simulation is `gray_scott_step` on `(u, v)` with the `v` field
@@ -89,7 +89,7 @@ self-assembly kinetics.
 
 **Recommendation:** Ship B today, file A as a roadmap item.
 
-### P1-2 · Stage 4 selection is not the hypercycle, and the error threshold doesn't gate anything
+### P1-2 · Stage 4 selection is not the hypercycle, and the error threshold doesn't gate anything — ✅ DONE (path C — threshold now gates mutation drift; added `error_catastrophe` stat + regression test)
 
 **Smoking gun:** `cellauto/rules/abiogenesis/stage4_selection.py:62–88,
 163–169`. The file's *own docstring* admits "This is a scalar *proxy*,
@@ -111,7 +111,7 @@ readout, not a switch.
 
 **Effort:** A = 2 days, B = 1 hour, C-with-B = 4 hours.
 
-### P1-3 · Genetic-code stage doesn't implement Vetsigian-Woese-Goldenfeld
+### P1-3 · Genetic-code stage doesn't implement Vetsigian-Woese-Goldenfeld — ✅ DONE (path A — added horizontal gene transfer between similar-coded neighbours, with regression test that HGT drives faster code convergence)
 
 **Smoking gun:** `cellauto/rules/abiogenesis/stage_code.py:138–145, 147–189`.
 VWG 2006's central mechanism is **horizontal gene transfer between
@@ -133,7 +133,7 @@ becomes, which is just selection-driven fixation on a target peptide.
 
 **Effort:** A = 1 day, B = 30 min.
 
-### P1-4 · Vent ΔG° is a hard-coded display number, not a thermodynamic driver
+### P1-4 · Vent ΔG° is a hard-coded display number, not a thermodynamic driver — ✅ DONE (path A — synthesis rate now scales with the local free-energy availability, vanishes when ΔG flips positive; regression test pins the reversed-gradient case)
 
 **Smoking gun:** `cellauto/rules/abiogenesis/stage_vents.py:175–184,
 99–122`. The README says "Wood-Ljungdahl carbon fixation models the
@@ -161,7 +161,7 @@ there; using it to gate the rate is small.
 
 **Effort:** A = 4 hours, B = 30 min.
 
-### P1-5 · The 12-stage pipeline is a slideshow, not a chemical narrative
+### P1-5 · The 12-stage pipeline is a slideshow, not a chemical narrative — ✅ DONE (path B — README + tutorial copy now say "tours" / "curated slideshow", and explicitly disclose no chemical carry-over between stages; path A real-continuity work is now on the roadmap)
 
 **Smoking gun:** `cellauto/rules/abiogenesis/pipeline.py:189–209`.
 Each stage's `init_state` runs fresh on promotion — the soup's

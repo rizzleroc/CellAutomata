@@ -109,12 +109,19 @@ PARAM_SPECS: dict[str, list[ParamSpec]] = {
         ParamSpec("feed", "monomer feed", 0.0, 0.3, 0.01),
     ],
     "abiogenesis-genetic-code": [
-        # Lower strand mutation + lower code mutation → faster convergence to
-        # a shared universal code (Vetsigian-Woese-Goldenfeld coevolution).
+        # Lower strand mutation + lower code mutation → faster convergence
+        # to a shared universal code under selection + horizontal gene
+        # transfer (Vetsigian-Woese-Goldenfeld coevolution).
         ParamSpec("strand_mutation", "msg error", 0.0, 0.20, 0.005),
         ParamSpec("code_mutation", "code drift", 0.0, 0.05, 0.001),
         ParamSpec("death_rate", "death rate", 0.02, 0.30, 0.01),
         ParamSpec("repro_prob", "replication", 0.1, 1.0, 0.05),
+        # hgt_rate is the VWG knob: 0 disables horizontal transfer and
+        # reverts to pure vertical inheritance (much slower / shallower
+        # code convergence — universality becomes single-lineage
+        # fixation rather than collective).
+        ParamSpec("hgt_rate", "HGT rate", 0.0, 0.20, 0.005),
+        ParamSpec("hgt_similarity_threshold", "HGT similarity", 0.0, 1.0, 0.05),
     ],
     "abiogenesis-luca": [
         # gene_cost is the selection knob — higher cost trims the genome

@@ -89,6 +89,16 @@ class AbiogenesisStageGeneticCode:
     strand_mutation: float = 0.04  # per-codon mutation when copying the strand
     code_mutation: float = 0.01  # per-position swap when copying the code
     seed_fraction: float = 0.35
+    # ── Vetsigian-Woese-Goldenfeld horizontal gene transfer ────────────
+    # The core mechanism of the cited paper: two neighbour cells with
+    # *similar* codes (similarity ≥ hgt_similarity_threshold) exchange a
+    # fraction of their codon→amino-acid assignments at rate hgt_rate per
+    # cell per step. Without this, "code convergence" is just selection-
+    # driven fixation of a single lineage's code — the VWG insight is
+    # that horizontal transfer makes universality emerge collectively.
+    # See docs/PUNCHLIST.md P1-3 for the v3.5 implementation history.
+    hgt_rate: float = 0.04
+    hgt_similarity_threshold: float = 0.5
     rng: random.Random = field(default_factory=random.Random)
 
     @property
@@ -186,7 +196,55 @@ class AbiogenesisStageGeneticCode:
         state.occupied = new_occ
         state.strand = new_strand
         state.code = new_code
+
+        # Horizontal gene transfer (Vetsigian-Woese-Goldenfeld 2006).
+        # Each occupied cell may swap one codon→amino-acid assignment
+        # with a similar neighbour at rate hgt_rate per step. Similarity
+        # is the fraction of codon positions that already agree.
+        if self.hgt_rate > 0:
+            self._apply_hgt(state)
         return state
+
+    def _apply_hgt(self, state: GeneticCodeState) -> None:
+        """Vetsigian-Woese-Goldenfeld horizontal gene transfer.
+
+        For each occupied cell that draws hgt_rate, pick a random
+        occupied Moore neighbour; if their code similarity ≥
+        ``hgt_similarity_threshold``, copy one randomly-chosen codon
+        assignment from the neighbour into this cell's code. This is
+        the mechanism the cited paper identifies as the driver of
+        code universality — convergence emerges *collectively*, not
+        just via vertical inheritance under selection.
+
+        The asymmetric copy (this cell adopts neighbour's assignment,
+        not bidirectional swap) is the simpler interpretation; it
+        produces the same population-level convergence dynamics.
+        """
+        H, W = state.occupied.shape
+        for y in range(H):
+            for x in range(W):
+                if not state.occupied[y, x]:
+                    continue
+                if self.rng.random() >= self.hgt_rate:
+                    continue
+                # Pick a random occupied Moore neighbour.
+                neighbours: list[tuple[int, int]] = []
+                for dy in (-1, 0, 1):
+                    for dx in (-1, 0, 1):
+                        if dx == 0 and dy == 0:
+                            continue
+                        ny, nx = y + dy, x + dx
+                        if 0 <= ny < H and 0 <= nx < W and state.occupied[ny, nx]:
+                            neighbours.append((ny, nx))
+                if not neighbours:
+                    continue
+                ny, nx = self.rng.choice(neighbours)
+                similarity = float(np.mean(state.code[y, x] == state.code[ny, nx]))
+                if similarity < self.hgt_similarity_threshold:
+                    continue
+                # Adopt one randomly-chosen codon assignment from neighbour.
+                pos = self.rng.randrange(self.n_codons)
+                state.code[y, x, pos] = state.code[ny, nx, pos]
 
     def _code_consensus(self, state: GeneticCodeState) -> float:
         """Fraction of the *population* that shares the modal codon→amino-acid

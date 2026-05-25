@@ -30,6 +30,25 @@ def test_flat_gradient_yields_no_synthesis():
     assert _run(flat) == 0
 
 
+def test_reversed_gradient_yields_no_synthesis():
+    """PUNCHLIST P1-4 regression: pre-v3.5 the rate used |∇H| so flipping
+    which side was alkaline still produced synthesis — the absolute
+    steepness was all that mattered, not the sign of ΔG. With the v3.5
+    free-energy gating, when pH_alkaline < pH_acidic (the chimney is now
+    acidic, the ocean alkaline) the global ΔG flips positive and the
+    rate factor becomes zero everywhere.
+    """
+    reversed_rule = AbiogenesisStageVents(
+        pH_alkaline=5.5,  # acidic where alkaline used to be
+        pH_acidic=10.0,  # alkaline where acidic used to be
+        rng=random.Random(1),
+    )
+    # ΔG = −F · PMF. PMF = 59.16 × (pH_alkaline − pH_acidic).
+    # With pH_alkaline < pH_acidic, PMF < 0, so ΔG > 0 (endergonic).
+    assert reversed_rule.delta_G_kJ_per_mol() > 0
+    assert _run(reversed_rule) == 0
+
+
 def test_serialization_round_trip():
     import numpy as np
 

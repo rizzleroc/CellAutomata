@@ -169,10 +169,33 @@ class AbiogenesisStageVents:
             self._apply_sources(H, h2, co2)
             # Proton-motive force ∝ steepness of the proton gradient.
             gy, gx = np.gradient(H)
-            pmf = np.hypot(gx, gy).astype(np.float32)
-            # Wood-Ljungdahl mass-action rate, capped by 2:1 stoichiometry —
-            # the reaction can't run faster than its limiting reagent allows.
-            mass_action = self.k_synth * pmf * h2 * co2
+            grad_mag = np.hypot(gx, gy).astype(np.float32)
+            # Per-cell ΔG: scale the global PMF by local gradient steepness
+            # so that flat regions (no gradient) get ΔG → 0 and synthesis
+            # vanishes — the Lane-Martin point that the gradient does the
+            # work. Negative ΔG = exergonic (favours acetate formation).
+            # The global pmf_mV() is the maximal PMF the configuration
+            # supports; local ΔG is bounded by that envelope.
+            # PUNCHLIST P1-4: pre-v3.5 this used |∇H| directly as a rate
+            # multiplier and Wood-Ljungdahl's ΔG° = −95 kJ/mol was only
+            # surfaced as a readout. Now the rate scales with the actual
+            # free-energy availability, and flipping the gradient flips
+            # the sign of ΔG so synthesis switches off.
+            global_dG = self.delta_G_kJ_per_mol()  # kJ/mol, negative when exergonic
+            # Local free-energy multiplier in [0, 1]: scales with how steep
+            # the local gradient is, modulated by the sign of the global ΔG.
+            # When global_dG > 0 (no thermodynamic drive — gradient is
+            # backwards), the multiplier is 0 and synthesis stops.
+            if global_dG < 0:
+                # Normalised local gradient magnitude (0..1 over the field).
+                gmax = float(grad_mag.max()) if grad_mag.size else 0.0
+                norm_grad = grad_mag / max(gmax, 1e-6)
+                free_energy_factor = norm_grad
+            else:
+                free_energy_factor = np.zeros_like(grad_mag)
+            # Wood-Ljungdahl mass-action rate, modulated by the local
+            # free-energy availability and capped by 2:1 stoichiometry.
+            mass_action = self.k_synth * free_energy_factor * h2 * co2
             stoich_cap = np.minimum(h2 / self.wl_h2_per_acetate, co2 / self.wl_co2_per_acetate)
             rate = np.minimum(mass_action, stoich_cap / max(self.dt, 1e-6))
             rate = np.clip(rate, 0.0, None)

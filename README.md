@@ -11,11 +11,16 @@
 
 A scientifically-grounded cellular sandbox exploring the **chemistry-to-life
 transition** — the abiogenesis problem — across a canonical five-stage
-pipeline *and* a **12-stage extended pipeline** that walks every major
+pipeline *and* a **12-stage extended pipeline** that tours every major
 origin-of-life process (alkaline hydrothermal vents with real Wood-Ljungdahl
 chemistry, mineral catalysis, autocatalytic sets, homochirality, RNA world,
-genetic-code coevolution, coacervates, vesicles, protocell selection, and
-LUCA distillation) in scientific order. Plus the two canonical reference
+genetic-code coevolution with horizontal gene transfer, coacervates,
+vesicles, protocell selection, and LUCA distillation) in scientific
+order. The pipeline is a *curated slideshow* of 12 honest models —
+each stage re-initialises from scratch on promotion, so there is no
+chemical carry-over between stages; see
+[`docs/PUNCHLIST.md`](docs/PUNCHLIST.md) P1-5 for context. Plus the
+two canonical reference
 cellular automata (Conway, Wolfram 1D) for comparison.
 
 ![Self-replicating Gray-Scott spots — protocell-like division](docs/hero.png)
@@ -30,7 +35,7 @@ visualised.*
 
 *The five stages of the `abiogenesis-pipeline` rule, left → right: primordial
 soup, Gray-Scott reaction-diffusion, Kauffman autocatalytic sets, lipid
-vesicles, protocell selection. The pipeline rule walks all five end-to-end;
+vesicles, protocell selection. The pipeline rule tours all five end-to-end;
 each can also be run in isolation. See [docs/science.md](docs/science.md) for
 the math and citations.*
 
@@ -76,8 +81,8 @@ math behind each stage. The short version:
 | 0 — primordial soup | Molecules mixing/condensing; initial mix weighted by **Miller's 1953 measured yields** | Oparin (1924), Haldane (1929), Miller-Urey (1953) |
 | 1 — reaction-diffusion | Gray-Scott PDE producing self-replicating spots | Turing (1952), Gray-Scott (1985), Pearson (1993) |
 | 2 — autocatalytic sets | Kauffman RAFs via the **correct Hordijk-Steel layered closure** (catalysis mandatory) | Kauffman (1986), Hordijk & Steel (2004) |
-| 3 — vesicle formation | Lipid self-assembly above the **measured CMC** of a named fatty acid | Helfrich (1973), Deamer, Hanczyc & Szostak (2003) |
-| 4 — protocell selection | Hypercycle-flavoured fitness; **Eigen error threshold ≈ 1/L** | Eigen & Schuster (1977), Szostak |
+| 3 — vesicle formation | Concentration-threshold proxy on a Gray-Scott field; named fatty-acid CMC table (decanoic ≈ 85 mM etc.) is real measured data but appears as readout only — see [PUNCHLIST P1-1](docs/PUNCHLIST.md) | Helfrich (1973), Deamer, Hanczyc & Szostak (2003) |
+| 4 — protocell selection | Cyclic-coupling fitness proxy + **Eigen error threshold ≈ 1/L gates mutation drift** (above ε_c the genome melts; surfaced as `error_catastrophe` stat) | Eigen & Schuster (1977), Szostak |
 
 Where a constant has a published measurement, the code uses it —
 Miller-Urey yields, fatty-acid CMCs (decanoic ≈ 85 mM, oleic ≈ 0.1
@@ -97,11 +102,11 @@ genetic code → coacervate → vesicles → selection → LUCA:
 
 | Process | Science |
 |---|---|
-| **Alkaline hydrothermal vent** | Proton gradient does the thermodynamic work; PMF (mV) and ΔG (kJ/mol) read out live from the Nernst equation. Wood-Ljungdahl carbon fixation models the actual chemistry (2 CO₂ + 4 H₂ → acetate, ΔG° = −95 kJ/mol). (Russell & Hall 1997; Lane & Martin 2012) |
+| **Alkaline hydrothermal vent** | Proton gradient does the thermodynamic work; PMF (mV) and ΔG (kJ/mol) read out live from the Nernst equation **and gate the synthesis rate** — flip ΔG positive (acidic chimney, alkaline ocean) and synthesis vanishes. Wood-Ljungdahl carbon fixation models the actual chemistry (2 CO₂ + 4 H₂ → acetate, ΔG° = −95 kJ/mol). (Russell & Hall 1997; Lane & Martin 2012) |
 | **Mineral-surface catalysis** | Polymerisation of activated ImpA monomers localised to Na-montmorillonite (Ferris 1996; Cairns-Smith 1982) |
 | **Homochirality** | Frank-model autocatalysis + mutual antagonism (Frank 1953; Soai 1995) |
 | **RNA world** | Spatial Eigen quasispecies; error catastrophe at `ε_c = ln(σ)/L` (Gilbert 1986; Eigen 1971) |
-| **Genetic-code coevolution** | Code → translation product → selection feedback drives convergence (Vetsigian-Woese-Goldenfeld 2006; Ikehara GADV-protein world) |
+| **Genetic-code coevolution** | Code → translation product → selection feedback drives convergence, **plus horizontal gene transfer between cells with similar codes** (Vetsigian-Woese-Goldenfeld 2006; Ikehara GADV-protein world). Toggle `hgt_rate` slider to 0 to see vertical-only behaviour as a control. |
 | **Coacervates** | Cahn-Hilliard liquid-liquid phase separation (Oparin 1924; Banani et al. 2017) |
 | **LUCA distillation** | Comparative-genomics parsimony with a 70 % prevalence threshold; surfaces the conserved gene families shared by every surviving lineage (Weiss et al. 2016) |
 
@@ -206,11 +211,11 @@ than v1 in practice.
 | Rule name | Renderer | What it is |
 |---|---|---|
 | `abiogenesis-pipeline` | mixed | Canonical 5-stage pipeline, auto-promoting |
-| `abiogenesis-pipeline-extended` | mixed | **12-stage pipeline** walking *every* shipped origin-of-life process in scientific order |
+| `abiogenesis-pipeline-extended` | mixed | **12-stage curated tour** of every shipped origin-of-life process in scientific order (no chemical carry-over between stages — see [PUNCHLIST P1-5](docs/PUNCHLIST.md)) |
 | `abiogenesis-stage0-soup` | discrete | Primordial soup; init weighted by Miller's 1953 yields |
 | `abiogenesis-stage1-grayscott` | field | Gray-Scott reaction-diffusion |
 | `abiogenesis-stage2-raf` | field | Kauffman RAF autocatalytic chemistry |
-| `abiogenesis-stage3-vesicles` | field | Lipid bilayer self-assembly (CMC threshold of a named fatty acid) |
+| `abiogenesis-stage3-vesicles` | field | Lipid concentration regime (Gray-Scott + threshold proxy; see [PUNCHLIST P1-1](docs/PUNCHLIST.md)) |
 | `abiogenesis-stage4-selection` | field | Protocell selection / hypercycle proxy |
 | `abiogenesis-rna-world` | field | Spatial Eigen quasispecies — error catastrophe live (Gilbert 1986) |
 | `abiogenesis-homochirality` | field | Frank (1953) chiral symmetry breaking — teal/magenta domains |
@@ -336,7 +341,7 @@ The project's history is its own gap analysis:
   RESET/RESTART, PNG/CSV export.
 - **v3.3** (2026-05-22): completing the genesis-of-life mandate. Added the
   **`abiogenesis-pipeline-extended`** rule — a 10-stage auto-promoting
-  pipeline that walks every shipped process end-to-end in scientific order
+  pipeline that tours every shipped process end-to-end in scientific order
   (soup → vent → RD → mineral → RAF → chirality → RNA → coacervate →
   vesicles → selection). Story-mode chapter transition cards. Per-protocell
   inspector (click any Stage 4 disc → genome / fitness / age popup).

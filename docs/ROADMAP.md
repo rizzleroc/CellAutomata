@@ -66,19 +66,31 @@ substitute for the cited model):**
   the fitness values are hand-tuned. The "luca_size converges to
   essential_target" claim does hold numerically. `stage_luca.py`.
 
-**Overclaim — needs to be fixed or recanted (see PUNCHLIST Tier 1):**
+**Previously-overclaimed, now closed in v3.5 (see PUNCHLIST Tier 1):**
 
-- ⚠ **Stage 3 lipid vesicles** — Gray-Scott on a relabeled field.
-  `AMPHIPHILE_CMC_MM` is a display string; the simulation ignores
-  it. ([PUNCHLIST P1-1](PUNCHLIST.md))
-- ⚠ **Stage 4 protocell selection** — File's own docstring admits
-  "scalar proxy, not the hypercycle". The Eigen `error_threshold`
-  is shown but doesn't gate any dynamic. ([PUNCHLIST P1-2](PUNCHLIST.md))
-- ⚠ **Genetic-code coevolution** — VWG 2006's central mechanism
-  (horizontal gene transfer between lineages with similar codes) is
-  *not implemented*. Only vertical mutation. ([PUNCHLIST P1-3](PUNCHLIST.md))
-- ⚠ **12-stage pipeline narrative** — Each stage re-inits from scratch;
-  no chemical carry-over between stages. ([PUNCHLIST P1-5](PUNCHLIST.md))
+- ◻ **Stage 3 lipid vesicles** — still Gray-Scott on a relabeled field,
+  but docstring / tutorial / README now disclose this honestly. Real
+  lipid-physics implementation deferred. ([PUNCHLIST P1-1](PUNCHLIST.md))
+- ◻ **Stage 4 protocell selection** — fitness is still a cyclic-coupling
+  proxy, but the Eigen `error_threshold` now actually **gates mutation
+  drift** — above ε_c the genome melts (visible via the new
+  `error_catastrophe` population stat, pinned by regression test).
+  ([PUNCHLIST P1-2](PUNCHLIST.md))
+- ✅ **Genetic-code coevolution** — VWG 2006's horizontal gene
+  transfer between similar-coded cells is now implemented; an
+  `hgt_rate` slider lets you toggle it off as a vertical-only
+  control. Regression test pins HGT-vs-vertical convergence.
+  ([PUNCHLIST P1-3](PUNCHLIST.md))
+- ✅ **Vent** — synthesis rate now scales with local free-energy
+  availability (per-cell ΔG), not just `|∇H|`. Reversing the
+  gradient (alkaline outside / acidic inside) makes ΔG positive
+  and synthesis vanishes. Regression test pins this.
+  ([PUNCHLIST P1-4](PUNCHLIST.md))
+- ◻ **12-stage pipeline narrative** — each stage still re-inits from
+  scratch (no chemical carry-over), but README / tutorial copy now
+  honestly call this a "curated slideshow" / "tours" rather than
+  "walks every process". Real continuity work is on the roadmap.
+  ([PUNCHLIST P1-5](PUNCHLIST.md))
 
 ### Engine & reproducibility
 

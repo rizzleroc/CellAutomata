@@ -48,11 +48,10 @@ _TUTORIALS: dict[str, tuple[str, ...]] = {
         "Real prebiotic chemistry research (Joyce, Sutherland) is trying to construct minimal RAFs in the lab right now.",
     ),
     "abiogenesis-stage3-vesicles": (
-        "Lipid self-assembly. Reaction-diffusion grows amphiphile concentration locally.",
-        "Above the critical micelle concentration (CMC), lipids spontaneously assemble into bilayer membranes.",
-        "Amber rings are vesicle membranes — enclosed regions of chemistry. These are the simplest possible protocells.",
-        "Real lipid bilayer dynamics include curvature, fluidity, and pore formation; see Helfrich (1973), Deamer.",
-        "Once chemistry is compartmentalized, evolution can act on the compartments — see Stage 4.",
+        "Lipid concentration regime (Gray-Scott proxy). Reaction-diffusion grows a 'lipid' field locally.",
+        "Above a dimensionless threshold (cmc_threshold), the field is marked as 'membrane' and connected components are counted as vesicles. The threshold is NOT the CMC in mM — the named amphiphile (decanoic, oleic, …) sets the cmc_mM readout but does not change the dynamics.",
+        "Amber rings are membrane pixels — enclosed regions of high field value. Real lipid self-assembly requires curvature elasticity, surface tension, and amphiphile-specific kinetics, none of which are modelled here. See Helfrich (1973), Deamer for the real physics; see docs/PUNCHLIST.md P1-1 for the honest scope of THIS implementation.",
+        "Once compartments exist (here as field regions), evolution can act on the compartments — see Stage 4.",
     ),
     "abiogenesis-stage4-selection": (
         "Protocell selection. Vesicles tracked as discrete agents with internal 'genomes'.",
@@ -85,8 +84,8 @@ _TUTORIALS: dict[str, tuple[str, ...]] = {
     "abiogenesis-genetic-code": (
         "Origin of the genetic code (Crick 1968; Woese 1965; Wong 1975). The deepest unsolved problem at the chemistry-to-biology boundary — and the conceptual bridge from this simulator's protocells to actual life.",
         "Each cell holds an RNA-like strand AND its own private codon→amino-acid code. Fitness is how well the peptide (strand decoded via the cell's own code) matches a needed catalyst.",
-        "Crucially, both the strand AND the code mutate when copied. Any code that happens to make a useful peptide spreads — selection acts on the code itself.",
-        "Watch the `code_consensus` stat rise: this is the population converging on a SHARED code, which is what happened on Earth ~4 billion years ago. Vetsigian-Woese-Goldenfeld (2006) showed this is the mechanism behind the code's universality.",
+        "Crucially, both the strand AND the code mutate when copied (vertical inheritance). AND adjacent cells with similar codes exchange codon assignments at rate hgt_rate (horizontal gene transfer — the Vetsigian-Woese-Goldenfeld 2006 mechanism). HGT is what makes code universality emerge collectively rather than via single-lineage fixation; drag hgt_rate to 0 to see the vertical-only baseline.",
+        "Watch the `code_consensus` stat rise: this is the population converging on a SHARED code, which is what happened on Earth ~4 billion years ago.",
         "This is the last hand-off before biology proper: with a shared code, the population now has a translation system. Everything downstream is evolution within bounded chemical individuals.",
     ),
     "abiogenesis-luca": (

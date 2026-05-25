@@ -152,6 +152,25 @@ class AbiogenesisStage4Selection:
         state.chemistry[:, :, 0], state.chemistry[:, :, 1] = u, v
 
         # Update each protocell.
+        # Eigen error-catastrophe gating: above the threshold ε_c = 1/L,
+        # the master sequence cannot be maintained against copying errors.
+        # We *honour* that by amplifying mutation noise when mutation_rate
+        # exceeds error_threshold — past ε_c the genome melts into a
+        # random ensemble, exactly as Eigen's quasispecies theory predicts.
+        # See docs/PUNCHLIST.md P1-2 for the honesty story behind this.
+        # The infrastructure (error_threshold property) was a readout-only
+        # decoration until v3.5; now it actually gates dynamics.
+        eps_c = self.error_threshold
+        catastrophe = self.mutation_rate > eps_c
+        # Effective σ: linear below ε_c (small drift), then doubles per
+        # extra 1/n_species of overshoot — qualitative regime, not the
+        # exact Eigen ODE. Cap at 0.5 so np.clip still has a chance.
+        if catastrophe:
+            overshoot = (self.mutation_rate - eps_c) / max(eps_c, 1e-6)
+            sigma_eff = min(0.5, self.mutation_rate * (1.0 + overshoot))
+        else:
+            sigma_eff = self.mutation_rate
+
         new_cells: list[Protocell] = []
         for cell in state.cells:
             if not cell.alive:
@@ -161,9 +180,12 @@ class AbiogenesisStage4Selection:
             # Grow if fitness is high, shrink otherwise.
             cell.radius += 0.2 if fit > 0.05 else -0.1
             cell.radius = max(0.0, cell.radius)
-            # Genome drift (mutation).
+            # Genome drift (mutation). Uses sigma_eff so the error
+            # catastrophe actually changes the dynamics, not just the
+            # readout. Below ε_c, sigma_eff == mutation_rate (identical
+            # to pre-v3.5 behavior); above ε_c the drift amplifies.
             cell.genome = cell.genome + np.array(
-                [self.rng.gauss(0, self.mutation_rate) for _ in range(self.n_species)],
+                [self.rng.gauss(0, sigma_eff) for _ in range(self.n_species)],
                 dtype=np.float32,
             )
             np.clip(cell.genome, 0.0, 1.0, out=cell.genome)
@@ -236,12 +258,18 @@ class AbiogenesisStage4Selection:
     def population(self, state: SelectionState) -> Mapping[str, int]:
         alive = [c for c in state.cells if c.alive]
         avg_fit = float(np.mean([c.fitness() for c in alive])) if alive else 0.0
+        # error_catastrophe = 1 when mutation_rate > 1/n_species (Eigen).
+        # Past the threshold the genome drift is amplified — the master
+        # sequence can no longer be maintained against copying errors and
+        # the population melts. See docs/PUNCHLIST.md P1-2.
+        catastrophe = 1 if self.mutation_rate > self.error_threshold else 0
         return {
             "protocells": len(alive),
             "avg_radius": int(round(np.mean([c.radius for c in alive]) if alive else 0)),
             "avg_fitness_x1000": int(round(avg_fit * 1000)),
             "mutation_rate_x1000": int(round(self.mutation_rate * 1000)),
             "error_threshold_x1000": int(round(self.error_threshold * 1000)),
+            "error_catastrophe": catastrophe,
         }
 
     def serialize_state(self, state: SelectionState) -> dict:

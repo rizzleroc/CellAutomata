@@ -1,4 +1,4 @@
-"""Stage 3 — Vesicle formation (lipid self-assembly).
+"""Stage 3 — Lipid concentration regime (Gray-Scott proxy).
 
 Chemistry compartmentalises. Once enough amphiphilic (lipid-like) molecules
 accumulate in a region, they spontaneously self-assemble into a bilayer
@@ -6,18 +6,30 @@ membrane that encloses an interior. The first stable membrane around a patch
 of self-sustaining chemistry is a protocell — the threshold the original
 v1.0 README called "evolving into an amoeba."
 
-This stage runs a Gray-Scott-like reaction-diffusion for a "lipid precursor"
-species (L) and a substrate (S), then marks cells where L exceeds the
-critical micelle concentration (CMC) threshold as belonging to a vesicle.
-Connected high-L regions become discrete vesicles tracked by ID.
+⚠ HONEST STATUS — see docs/PUNCHLIST.md P1-1:
 
-Toy in scope, real in concept: real lipid bilayer dynamics involve fluid
-mechanics, curvature elasticity, and surface tension — see Helfrich (1973),
-Lipowsky & Sackmann (1995). This implementation is a discrete approximation:
-threshold + connected-component labelling. Sufficient for the educational
-demo; not sufficient to publish a paper.
+The stage runs a **Gray-Scott reaction-diffusion on (u, v)** with v
+relabelled "lipid concentration", thresholds at ``cmc_threshold``
+(a dimensionless field value, NOT the CMC in mM), and counts
+connected components above the threshold as "vesicles". This is a
+useful visualisation of concentration regimes but it is **not lipid
+self-assembly** in any physical sense — there is no surface tension,
+no curvature elasticity (Helfrich 1973), no fluid mechanics, and no
+amphiphile-specific kinetics. The ``AMPHIPHILE_CMC_MM`` table
+(decanoic ≈ 85 mM, oleic ≈ 0.1 mM) ships real measured CMCs but they
+appear only as the ``cmc_mM`` display readout — switching the
+``amphiphile`` knob between fatty acids does not change any dynamics.
 
-References:
+To make this an actual lipid model would require: (a) coupling the
+field threshold to ``AMPHIPHILE_CMC_MM[amphiphile]`` non-trivially,
+(b) adding a curvature/line-tension term so closed shells are
+energetically preferred over arbitrary blobs, (c) acknowledging
+real measured fatty-acid kinetics. None of those are present.
+
+References (for the concepts the stage gestures at, not what the
+code implements):
+    Pearson, J. E. (1993). Complex patterns in a simple system. Science,
+        261(5118), 189-192.
     Helfrich, W. (1973). Elastic properties of lipid bilayers: theory and
         possible experiments. Z. Naturforsch. C, 28(11-12), 693-703.
     Deamer, D. W. (2008). Origins of life: How leaky were primitive cells?
