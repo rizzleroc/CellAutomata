@@ -1,0 +1,140 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>cellauto · web 2.0 — multi-rule sandbox</title>
+  <meta name="description" content="A live in-browser multi-rule cellular automata sandbox — Conway's Life, Wolfram 1D, Gray–Scott reaction–diffusion, and the primordial soup. Brush-paint cells, scrub presets, share state by URL." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;1,400&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <header class="plate-header">
+    <p class="eyebrow">P L A T E &nbsp; II &nbsp; · &nbsp; C E L L A U T O &nbsp; W E B &nbsp; 2 . 0 &nbsp; · &nbsp; M M X X V I</p>
+    <h1>cellauto <span class="version-tag">2.0</span></h1>
+    <p class="subtitle">a multi-rule observation bench — four automata, one canvas</p>
+    <hr class="hairline" />
+  </header>
+
+  <main class="layout">
+    <!-- ── LEFT COLUMN: canvas + readout ──────────────────────────────────── -->
+    <section class="observation">
+      <p class="section-label"><span class="roman">I</span> &nbsp; O B S E R V A T I O N</p>
+
+      <div class="canvas-frame">
+        <canvas id="ca-canvas" width="256" height="256" aria-label="Live cellular automaton"></canvas>
+        <div id="brush-hint" class="brush-hint" aria-hidden="true">click·drag to paint</div>
+      </div>
+
+      <div class="readout-bar">
+        <div class="readout-cell"><span class="rk">rule</span><span class="rv" id="rd-rule">—</span></div>
+        <div class="readout-cell"><span class="rk">gen</span><span class="rv" id="rd-gen">0</span></div>
+        <div class="readout-cell"><span class="rk">pop</span><span class="rv" id="rd-pop">—</span></div>
+        <div class="readout-cell"><span class="rk">fps</span><span class="rv" id="rd-fps">—</span></div>
+      </div>
+
+      <p class="caption" id="stage-caption">SELECT A RULE</p>
+      <p class="caption-detail" id="stage-detail">&nbsp;</p>
+    </section>
+
+    <!-- ── RIGHT COLUMN: controls ────────────────────────────────────────── -->
+    <section class="controls">
+      <p class="section-label"><span class="roman">II</span> &nbsp; C O N F I G U R A T I O N</p>
+
+      <div class="control-row">
+        <label class="ctl-label" for="rule-select">rule</label>
+        <select id="rule-select" class="select"></select>
+      </div>
+
+      <div class="control-row">
+        <label class="ctl-label" for="speed-slider">speed</label>
+        <input id="speed-slider" class="slider" type="range" min="1" max="60" step="1" value="30" />
+        <span class="readout" id="speed-readout">30</span>
+      </div>
+
+      <div class="control-row">
+        <label class="ctl-label" for="brush-slider">brush</label>
+        <input id="brush-slider" class="slider" type="range" min="1" max="20" step="1" value="5" />
+        <span class="readout" id="brush-readout">5</span>
+      </div>
+
+      <!-- Per-rule controls injected here. -->
+      <div id="rule-controls" class="rule-controls"></div>
+
+      <div class="control-row buttons">
+        <button id="btn-play" class="btn primary">PLAY</button>
+        <button id="btn-stop" class="btn danger" disabled>STOP</button>
+        <button id="btn-step" class="btn">STEP</button>
+        <button id="btn-reset" class="btn">RESET</button>
+      </div>
+      <div class="control-row buttons">
+        <button id="btn-clear" class="btn">CLEAR</button>
+        <button id="btn-random" class="btn">RANDOMIZE</button>
+        <button id="btn-share" class="btn">COPY LINK</button>
+        <button id="btn-full" class="btn">FULLSCREEN</button>
+      </div>
+
+      <p class="keymap">
+        <span class="kbd">space</span> play/pause &nbsp;&nbsp;
+        <span class="kbd">s</span> step &nbsp;&nbsp;
+        <span class="kbd">r</span> reset &nbsp;&nbsp;
+        <span class="kbd">c</span> clear &nbsp;&nbsp;
+        <span class="kbd">n</span> randomize &nbsp;&nbsp;
+        <span class="kbd">1–4</span> rule
+      </p>
+    </section>
+
+    <!-- ── MARGINALIA ─────────────────────────────────────────────────────── -->
+    <section class="marginalia">
+      <p class="section-label"><span class="roman">III</span> &nbsp; M A R G I N A L I A</p>
+      <p class="commentary" id="marginalia">
+        Four automata share one canvas — Conway's Life (1970), Wolfram's
+        elementary 1D rules (2002), Pearson's Gray–Scott reaction–diffusion
+        (1993), and a Brownian primordial soup. Pick a rule. Paint with the
+        mouse. The link in <em>COPY LINK</em> serialises the rule and its
+        parameters into the URL, so you can hand a coworker the exact frame
+        you're looking at.
+      </p>
+    </section>
+
+    <!-- ── GALLERY ────────────────────────────────────────────────────────── -->
+    <section class="gallery">
+      <p class="section-label"><span class="roman">IV</span> &nbsp; T H E &nbsp; R E S T &nbsp; O F &nbsp; T H E &nbsp; S T O R Y</p>
+      <p class="caption-detail">
+        The four rules above are the JS-portable subset. The other eight
+        origin-of-life stages — alkaline vents, autocatalytic sets, mineral
+        catalysis, RAFs, homochirality, the RNA world, the genetic code,
+        coacervates, vesicles, and LUCA distillation — run in the Python
+        build. Plates rendered from each:
+      </p>
+      <div class="gallery-grid">
+        <figure><img src="../generated/stage0_soup.png" alt="Stage 0 — primordial soup" /><figcaption>0 · PRIMORDIAL SOUP</figcaption></figure>
+        <figure><img src="../generated/stage1_reaction_diffusion.png" alt="Stage 1 — reaction–diffusion" /><figcaption>1 · REACTION–DIFFUSION</figcaption></figure>
+        <figure><img src="../generated/stage2_autocatalytic.png" alt="Stage 2 — autocatalytic sets" /><figcaption>2 · AUTOCATALYTIC SETS</figcaption></figure>
+        <figure><img src="../generated/stage3_vesicles.png" alt="Stage 3 — vesicles" /><figcaption>3 · VESICLE FORMATION</figcaption></figure>
+        <figure><img src="../generated/stage4_selection.png" alt="Stage 4 — protocell selection" /><figcaption>4 · PROTOCELL SELECTION</figcaption></figure>
+        <figure><img src="../generated/pipeline_poster.png" alt="Pipeline poster — chemistry into life" /><figcaption>Ω · CHEMISTRY INTO LIFE</figcaption></figure>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <p class="footer-text">
+      cellauto web 2.0 — multi-rule sandbox · MIT · source on
+      <a href="https://github.com/rizzleroc/CellAutomata">GitHub</a>
+      · the Stage-1-only v1 demo lives at <a href="../web/">/docs/web/</a>
+    </p>
+  </footer>
+
+  <div id="toast" class="toast" aria-live="polite"></div>
+
+  <script src="viridis.js"></script>
+  <script src="rules/conway.js"></script>
+  <script src="rules/wolfram1d.js"></script>
+  <script src="rules/grayscott.js"></script>
+  <script src="rules/soup.js"></script>
+  <script src="main.js"></script>
+</body>
+</html>

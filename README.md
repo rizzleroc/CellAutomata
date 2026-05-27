@@ -109,11 +109,18 @@ genetic code → coacervate → vesicles → selection → LUCA:
 
 ## Try it in your browser (no install)
 
-A live in-browser Stage 1 demo lives at [`docs/web/`](docs/web/) — a single
-static page with the Gray-Scott reaction-diffusion PDE running on a `<canvas>`
-via vanilla JS (no Pyodide). F/k sliders, Pearson preset chips, and the same
-viridis colormap as the desktop build. The other stages are exhibited as
-static museum plates beneath. Deployable to GitHub Pages from `/docs`.
+Two static demos, both deployable to GitHub Pages from `/docs`:
+
+- [`docs/web2/`](docs/web2/) — **web 2.0**, the multi-rule sandbox: Conway's
+  Life, Wolfram 1D, Gray-Scott, and a Brownian primordial soup share one
+  canvas. Brush-paint cells with the mouse, scrub Pearson presets, share
+  the exact frame you're looking at by URL hash. Speed/brush/FPS readouts,
+  keyboard shortcuts (`space`, `1`-`4`, …), responsive layout, fullscreen.
+- [`docs/web/`](docs/web/) — **web 1.0**, the original Stage-1-only Gray-Scott
+  demo. Kept around as a single-purpose museum plate.
+
+Both pages are vanilla JS, no build step, no Pyodide. The other eight
+origin-of-life stages run only in the Python build below.
 
 ## Install
 
