@@ -10,7 +10,10 @@
 (function () {
   "use strict";
 
-  const RULE_ORDER = ["conway", "wolfram1d", "grayscott", "soup"];
+  const RULE_ORDER = [
+    "conway", "wolfram1d", "grayscott", "soup",
+    "natural-selection", "chirality", "coacervate", "vents",
+  ];
 
   // ── Per-rule marginalia ticker copy ─────────────────────────────────────
   // Short notes cycled in the marginalia section every MARGINALIA_INTERVAL_MS.
@@ -40,6 +43,30 @@
       "Six \"species\" colour-tag the tracers — a stand-in for the actual chemical diversity of Stage 0 in the Python build.",
       "Inject more matter with the brush. Tune diffusion D and drift; raise evaporation to thin the trail field.",
     ],
+    "natural-selection": [
+      "Miller, S. L. (1953). \"A production of amino acids under possible primitive Earth conditions.\" Science 117:528.",
+      "Sixteen species — the Miller-Urey product mix, weighted by reported yields. Formic acid dominates; glycine, glycolic acid, alanine follow.",
+      "Rule 1 mixes neighbouring colours (diffusion). Rule 2 lets same-species \"new\" pairs combine into amoebas — the first compartmentalisation.",
+      "Amoebas age and die; the soup never freezes. Paint with the brush to inject a fresh patch of new chemistry.",
+    ],
+    chirality: [
+      "Frank, F. C. (1953). \"On spontaneous asymmetric synthesis.\" Biochim. Biophys. Acta 11:459 — autocatalysis + mutual inhibition → racemic instability.",
+      "Real proteins are L-amino-acid only; real RNA is D-ribose only. Why? The Frank kinetics here are the canonical mathematical answer.",
+      "The mirror symmetry of the soup is broken by a single noise kick; once one enantiomer is ahead, β·L·R amplifies the lead.",
+      "Paint to inject pure L or R locally and watch the front advance into the racemic substrate.",
+    ],
+    coacervate: [
+      "Oparin (1924) proposed coacervate droplets as proto-cells. Banani et al. (2017) showed modern cells use the same physics — liquid–liquid phase separation.",
+      "Cahn-Hilliard: ∂φ/∂t = M ∇²(φ³ − φ − κ ∇²φ). The φ³ − φ term is the free-energy double-well; κ ∇²φ is the surface tension.",
+      "Spinodal decomposition first, coarsening second — droplets grow by absorbing their neighbours, area scaling like t^(1/3).",
+      "Paint a droplet seed to bias the steady-state; the system finds its own balance from any initial condition.",
+    ],
+    vents: [
+      "Russell & Hall (1997), Martin & Russell (2003), Lane (2009) — alkaline hydrothermal vents as the energetically plausible origin site.",
+      "The chimney's pH gradient + porous mineral honeycomb gives free energy + spatial compartmentalisation, the two preconditions for chemistry-to-life.",
+      "Acetate is the canonical product of the abiotic acetyl-CoA pathway — the first carbon-fixation cycle the engine simulates here.",
+      "The plume rises by drift and diffuses laterally; the mineral wall both confines it and seeds further reactions.",
+    ],
   };
 
   const MARGINALIA_INTERVAL_MS = 6500;
@@ -47,10 +74,14 @@
   // SEM scale-bar microcopy per rule (the simulation is abstract — these
   // are stage-appropriate units, not physical SI).
   const SCALE_BAR_UNITS = {
-    conway:    "10 cells",
-    wolfram1d: "16 cells",
-    grayscott: "1 μm",
-    soup:      "1 μm",
+    conway:               "10 cells",
+    wolfram1d:            "16 cells",
+    grayscott:            "1 μm",
+    soup:                 "1 μm",
+    "natural-selection":  "10 μm",
+    chirality:            "1 μm",
+    coacervate:           "5 μm",
+    vents:                "10 μm",
   };
 
   // ── DOM refs ────────────────────────────────────────────────────────────
@@ -500,6 +531,10 @@
       case "Digit2": setRule(RULE_ORDER[1]); break;
       case "Digit3": setRule(RULE_ORDER[2]); break;
       case "Digit4": setRule(RULE_ORDER[3]); break;
+      case "Digit5": if (RULE_ORDER[4]) setRule(RULE_ORDER[4]); break;
+      case "Digit6": if (RULE_ORDER[5]) setRule(RULE_ORDER[5]); break;
+      case "Digit7": if (RULE_ORDER[6]) setRule(RULE_ORDER[6]); break;
+      case "Digit8": if (RULE_ORDER[7]) setRule(RULE_ORDER[7]); break;
       case "KeyM":
         if (semCheckbox) {
           semCheckbox.checked = !semCheckbox.checked;
