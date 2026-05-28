@@ -231,11 +231,6 @@ are interim and explicitly marked so.
 
 ### 2026-05-28 · interim · single-judge (Claude, in-session)
 
-**Why interim:** the whipgen MCP server disconnected / required
-re-authorisation when this verdict was written, so the multi-provider
-fanout couldn't run. This entry is a single-LLM stand-in; re-run the
-fanout when whipgen is back and either ratify or override.
-
 #### TOP 5 ranked (highest goal-lift per unit work)
 
 1. **P0-A1** — one-sentence "what this is" line per rule. Smallest
@@ -315,4 +310,34 @@ rows, *show* the parameter response) and P0-G2 (per-control
 consequence sentences). After Explanation + Control are both shipped,
 the goal is structurally satisfied for the 8 currently-shipped rules,
 and the remaining work is purely additive (more rules: B1–B5).
+
+### 2026-05-28 · MCP fanout attempt — partial · diagnostic only
+
+**Why partial:** the user re-authorised the whipgen MCP and requested
+the full `fanout_with_judge` jury. After the OAuth handshake the tool
+catalog came back and `whipgen_health` reported every provider
+`available: true`, but the actual LLM browser tabs the daemon drives
+were almost all dormant:
+
+  - **chatgpt** — responded to a short ping in 10 s; timed out on the
+    full punchlist prompt under the MCP's 60 s call cap.
+  - **claude** — 60 s timeout on a one-word ping; tab dormant.
+  - **kimi** — 60 s timeout on a one-word ping; tab dormant.
+  - **gemini** — 60 s timeout (even on `model: fast`); tab dormant.
+  - **openllm** — `OpenLLM connect failed at http://127.0.0.1:1234`,
+    i.e. LMStudio was not listening on the Windows host.
+
+`whipgen_connect` returned `connected: true` but the underlying browser
+sessions were still asleep — connect re-attaches the daemon to *existing*
+tabs, it can't revive ones that have lost their auth. A real multi-LLM
+verdict needs the user to wake the dormant tabs (re-log into Claude.ai
+/ Kimi / Gemini in the daemon's debug Chrome window and re-start
+LMStudio). The interim Claude-in-session ranking above stands as the
+operative verdict until that happens.
+
+**Operational implication for THIS round:** ship the "Explanation
+Round" batch named in the interim verdict (G1 → A1 → D1 → A2 → A3 →
+E1). When the MCP jury is reachable again, run it on the *post-batch*
+state, not the pre-batch state — we won't waste a fanout asking
+"should we still ship the batch we just shipped".
 
