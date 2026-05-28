@@ -12,40 +12,92 @@
 
   const RULE_ORDER = ["conway", "wolfram1d", "grayscott", "soup"];
 
+  // ── Per-rule marginalia ticker copy ─────────────────────────────────────
+  // Short notes cycled in the marginalia section every MARGINALIA_INTERVAL_MS.
+  // Mirrors the "chapter-card" mechanism described in the v4.0 PRD §5.
+  const MARGINALIA = {
+    conway: [
+      "Conway's Game of Life — Gardner, M. (1970). \"The fantastic combinations of John Conway's new solitaire game 'life'.\" Scientific American.",
+      "B3/S23: a dead cell with exactly three live neighbours is born; a live cell with two or three lives on. Every other state dies.",
+      "Universal computation — Berlekamp, Conway and Guy (1982) sketch a way to encode a Turing machine in gliders. Life is decidable in principle.",
+      "Paint with the mouse to seed a still life or a glider. Right-click to erase. \"r\" reseeds at the current density.",
+    ],
+    wolfram1d: [
+      "Wolfram, S. (2002). A New Kind of Science. The 256 elementary one-dimensional rules partition into four classes.",
+      "Rule 30 generates the column-1 sequence used in Mathematica's pseudo-random generator — chaotic class 3 behaviour.",
+      "Rule 110 was proved Turing-complete — Cook, M. (2004). Universality in elementary cellular automata. Complex Systems 15:1.",
+      "History scrolls upward; the bottom row is the current generation. Paint on it to perturb the seed.",
+    ],
+    grayscott: [
+      "Turing, A. M. (1952). \"The chemical basis of morphogenesis.\" Phil. Trans. R. Soc. B 237:37 — the founding paper of reaction–diffusion biology.",
+      "Pearson, J. E. (1993). \"Complex patterns in a simple system.\" Science 261:189 — the (F, k) parameter map this slider lives inside.",
+      "Self-replicating spots are not designed; they emerge from a four-parameter PDE with no notion of \"cell\" in its equations.",
+      "Try the mitosis preset (F=0.0367, k=0.0649) — each spot splits into two, then four, then eight, in finite time.",
+    ],
+    soup: [
+      "Oparin (1924) and Haldane (1929) — the \"primordial soup\" hypothesis: simple organics + energy → diversifying chemistry.",
+      "Each tracer here is a Brownian particle, dx = √(2D·dt)·N(0,1). The trail field is the time-integrated occupancy.",
+      "Six \"species\" colour-tag the tracers — a stand-in for the actual chemical diversity of Stage 0 in the Python build.",
+      "Inject more matter with the brush. Tune diffusion D and drift; raise evaporation to thin the trail field.",
+    ],
+  };
+
+  const MARGINALIA_INTERVAL_MS = 6500;
+
+  // SEM scale-bar microcopy per rule (the simulation is abstract — these
+  // are stage-appropriate units, not physical SI).
+  const SCALE_BAR_UNITS = {
+    conway:    "10 cells",
+    wolfram1d: "16 cells",
+    grayscott: "1 μm",
+    soup:      "1 μm",
+  };
+
   // ── DOM refs ────────────────────────────────────────────────────────────
-  const canvas       = document.getElementById("ca-canvas");
-  const ctx          = canvas.getContext("2d");
-  const ruleSelect   = document.getElementById("rule-select");
-  const speedSlider  = document.getElementById("speed-slider");
-  const speedReadout = document.getElementById("speed-readout");
-  const brushSlider  = document.getElementById("brush-slider");
-  const brushReadout = document.getElementById("brush-readout");
-  const ruleControls = document.getElementById("rule-controls");
-  const playBtn      = document.getElementById("btn-play");
-  const stopBtn      = document.getElementById("btn-stop");
-  const stepBtn      = document.getElementById("btn-step");
-  const resetBtn     = document.getElementById("btn-reset");
-  const clearBtn     = document.getElementById("btn-clear");
-  const randomBtn    = document.getElementById("btn-random");
-  const shareBtn     = document.getElementById("btn-share");
-  const fullBtn      = document.getElementById("btn-full");
-  const rdRule       = document.getElementById("rd-rule");
-  const rdGen        = document.getElementById("rd-gen");
-  const rdPop        = document.getElementById("rd-pop");
-  const rdFps        = document.getElementById("rd-fps");
-  const captionEl    = document.getElementById("stage-caption");
-  const detailEl     = document.getElementById("stage-detail");
-  const toastEl      = document.getElementById("toast");
+  const canvas        = document.getElementById("ca-canvas");
+  const ctx           = canvas.getContext("2d");
+  const ruleSelect    = document.getElementById("rule-select");
+  const speedSlider   = document.getElementById("speed-slider");
+  const speedReadout  = document.getElementById("speed-readout");
+  const brushSlider   = document.getElementById("brush-slider");
+  const brushReadout  = document.getElementById("brush-readout");
+  const semCheckbox   = document.getElementById("sem-mode");
+  const paletteSelect = document.getElementById("palette-select");
+  const ruleControls  = document.getElementById("rule-controls");
+  const playBtn       = document.getElementById("btn-play");
+  const stopBtn       = document.getElementById("btn-stop");
+  const stepBtn       = document.getElementById("btn-step");
+  const resetBtn      = document.getElementById("btn-reset");
+  const clearBtn      = document.getElementById("btn-clear");
+  const randomBtn     = document.getElementById("btn-random");
+  const shareBtn      = document.getElementById("btn-share");
+  const fullBtn       = document.getElementById("btn-full");
+  const rdRule        = document.getElementById("rd-rule");
+  const rdGen         = document.getElementById("rd-gen");
+  const rdPop         = document.getElementById("rd-pop");
+  const rdFps         = document.getElementById("rd-fps");
+  const captionEl     = document.getElementById("stage-caption");
+  const detailEl      = document.getElementById("stage-detail");
+  const toastEl       = document.getElementById("toast");
+  const badgeTextEl   = document.querySelector(".sem-badge-text");
+  const scaleBarText  = document.getElementById("scale-bar-text");
+  const marginaliaEl  = document.getElementById("marginalia");
+  const bodyEl        = document.body;
 
   // ── State ───────────────────────────────────────────────────────────────
   let currentRule = null;
   let imageData   = null;
+  let heightBuf   = null;    // Float32Array reused for SEM height field
   let running     = false;
   let rafHandle   = 0;
   let lastStep    = 0;       // ms timestamp of last simulation step
   let stepsPerSec = 30;
   let brushRadius = 5;
   let fpsSamples  = [];      // ring of last frame timestamps for FPS
+  let semMode     = true;    // v4.0 default-on
+  let palette     = "warm-sepia";
+  let marginaliaTimer = 0;
+  let marginaliaIdx   = 0;
 
   // ── Rule dropdown ───────────────────────────────────────────────────────
   for (const id of RULE_ORDER) {
@@ -91,12 +143,20 @@
     canvas.width  = currentRule.width;
     canvas.height = currentRule.height;
     imageData = ctx.createImageData(currentRule.width, currentRule.height);
+    heightBuf = new Float32Array(currentRule.width * currentRule.height);
 
     rebuildRuleControls();
     currentRule.reset();
     captionEl.textContent = currentRule.shortCaption;
     detailEl.textContent  = currentRule.formula;
     rdRule.textContent    = id;
+    if (badgeTextEl) {
+      badgeTextEl.textContent = "LIVE SEM FEED · " + currentRule.shortCaption;
+    }
+    if (scaleBarText) {
+      scaleBarText.textContent = SCALE_BAR_UNITS[id] || "1 unit";
+    }
+    resetMarginalia(id);
     render();
     refreshReadouts();
     writeUrlState();
@@ -236,8 +296,45 @@
   }
 
   function render() {
-    currentRule.render(imageData.data);
+    if (semMode && typeof currentRule.renderHeight === "function" && window.SEM) {
+      currentRule.renderHeight(heightBuf);
+      SEM.render(heightBuf, currentRule.width, currentRule.height,
+                 imageData.data, { palette });
+    } else {
+      currentRule.render(imageData.data);
+    }
     ctx.putImageData(imageData, 0, 0);
+  }
+
+  // ── Marginalia ticker ──────────────────────────────────────────────────
+  function resetMarginalia(ruleId) {
+    clearInterval(marginaliaTimer);
+    marginaliaIdx = 0;
+    const notes = MARGINALIA[ruleId] || [];
+    if (!notes.length) {
+      marginaliaEl.textContent = "";
+      return;
+    }
+    marginaliaEl.textContent = notes[0];
+    marginaliaTimer = setInterval(() => advanceMarginalia(ruleId), MARGINALIA_INTERVAL_MS);
+  }
+
+  function advanceMarginalia(ruleId) {
+    const notes = MARGINALIA[ruleId] || [];
+    if (notes.length < 2) return;
+    // Respect prefers-reduced-motion — no fade, just a swap.
+    const reduce = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    if (reduce) {
+      marginaliaIdx = (marginaliaIdx + 1) % notes.length;
+      marginaliaEl.textContent = notes[marginaliaIdx];
+      return;
+    }
+    marginaliaEl.classList.add("fading");
+    setTimeout(() => {
+      marginaliaIdx = (marginaliaIdx + 1) % notes.length;
+      marginaliaEl.textContent = notes[marginaliaIdx];
+      marginaliaEl.classList.remove("fading");
+    }, 400);
   }
 
   function refreshReadouts() {
@@ -356,6 +453,26 @@
 
   ruleSelect.addEventListener("change", () => setRule(ruleSelect.value));
 
+  // SEM mode toggle (v4.0 F7).
+  if (semCheckbox) {
+    semCheckbox.addEventListener("change", () => {
+      semMode = semCheckbox.checked;
+      bodyEl.dataset.sem = semMode ? "on" : "off";
+      render();
+      writeUrlState();
+      toast(semMode ? "sem mode on" : "sem mode off");
+    });
+  }
+  // SEM palette picker.
+  if (paletteSelect) {
+    paletteSelect.addEventListener("change", () => {
+      palette = paletteSelect.value;
+      bodyEl.dataset.palette = palette;
+      render();
+      writeUrlState();
+    });
+  }
+
   speedSlider.addEventListener("input", () => {
     stepsPerSec = parseInt(speedSlider.value, 10) || 1;
     speedReadout.textContent = String(stepsPerSec);
@@ -383,6 +500,20 @@
       case "Digit2": setRule(RULE_ORDER[1]); break;
       case "Digit3": setRule(RULE_ORDER[2]); break;
       case "Digit4": setRule(RULE_ORDER[3]); break;
+      case "KeyM":
+        if (semCheckbox) {
+          semCheckbox.checked = !semCheckbox.checked;
+          semCheckbox.dispatchEvent(new Event("change"));
+        }
+        break;
+      case "KeyP":
+        if (paletteSelect) {
+          const names = SEM.paletteNames();
+          const i = (names.indexOf(palette) + 1) % names.length;
+          paletteSelect.value = names[i];
+          paletteSelect.dispatchEvent(new Event("change"));
+        }
+        break;
     }
   });
 
@@ -405,6 +536,8 @@
   function writeUrlState() {
     if (!currentRule) return;
     const parts = ["rule=" + encodeURIComponent(currentRule.id)];
+    parts.push("sem=" + (semMode ? "1" : "0"));
+    parts.push("palette=" + encodeURIComponent(palette));
     for (const [name, slot] of Object.entries(currentRule.params || {})) {
       parts.push(encodeURIComponent(name) + "=" + encodeURIComponent(String(slot.value)));
     }
@@ -431,6 +564,20 @@
   brushReadout.textContent = String(brushRadius);
 
   const fromUrl = readUrlState();
+  if (fromUrl && fromUrl.params) {
+    if (fromUrl.params.sem !== undefined) {
+      semMode = fromUrl.params.sem === "1";
+      if (semCheckbox) semCheckbox.checked = semMode;
+      delete fromUrl.params.sem;
+    }
+    if (fromUrl.params.palette !== undefined && SEM && SEM.PALETTES[fromUrl.params.palette]) {
+      palette = fromUrl.params.palette;
+      if (paletteSelect) paletteSelect.value = palette;
+      delete fromUrl.params.palette;
+    }
+  }
+  bodyEl.dataset.sem = semMode ? "on" : "off";
+  bodyEl.dataset.palette = palette;
   const bootId = (fromUrl && fromUrl.rule && CA.RULES[fromUrl.rule]) ? fromUrl.rule : "grayscott";
   setRule(bootId, fromUrl ? fromUrl.params : null);
   play();

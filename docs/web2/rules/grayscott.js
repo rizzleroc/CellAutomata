@@ -154,6 +154,13 @@
         generation += SUBSTEPS;
       },
 
+      // SEM mode: v ∈ [0,1] is already a continuous scalar — perfect as a
+      // height field.  Reaction-diffusion spots become bone-coloured 3-D
+      // domes under the depth shader.
+      renderHeight(out) {
+        for (let i = 0; i < v.length; i++) out[i] = v[i];
+      },
+
       render(pixels) {
         const lutLen = (typeof VIRIDIS_LUT !== "undefined") ? (VIRIDIS_LUT.length / 3) : 0;
         if (lutLen > 0) {

@@ -82,6 +82,10 @@
         generation++;
       },
 
+      renderHeight(out) {
+        for (let i = 0; i < cells.length; i++) out[i] = cells[i];
+      },
+
       render(pixels) {
         const [br, bg, bb] = this.paletteBg;
         const [fr, fg, fb] = this.paletteFg;

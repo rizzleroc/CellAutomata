@@ -71,6 +71,13 @@
         generation++;
       },
 
+      // SEM mode: write the cell grid as a scalar height field (0 dead,
+      // 1 alive).  The renderer's Gaussian blur turns hard binary cells
+      // into smooth shadeable mounds.
+      renderHeight(out) {
+        for (let i = 0; i < cells.length; i++) out[i] = cells[i];
+      },
+
       render(pixels) {
         const [br, bg, bb] = this.paletteBg;
         const [fr, fg, fb] = this.paletteFg;

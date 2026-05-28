@@ -127,6 +127,25 @@
         generation++;
       },
 
+      // SEM mode: collapse the RGB trail field to luminance and normalise.
+      // The Brownian trails read as granular substrate under depth shading.
+      renderHeight(out) {
+        let maxL = 0;
+        for (let i = 0; i < W * H; i++) {
+          const fi = i * 3;
+          const L = 0.299 * field[fi] + 0.587 * field[fi+1] + 0.114 * field[fi+2];
+          out[i] = L;
+          if (L > maxL) maxL = L;
+        }
+        // Normalise to [0,1] so the SEM shader gets a usable dynamic range.
+        const scale = maxL > 0 ? (1 / Math.max(8, maxL)) : 0;
+        if (scale > 0) {
+          for (let i = 0; i < W * H; i++) {
+            out[i] = Math.min(1, out[i] * scale);
+          }
+        }
+      },
+
       render(pixels) {
         const [br, bg, bb] = this.paletteBg;
         for (let i = 0; i < W * H; i++) {

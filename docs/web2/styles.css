@@ -16,6 +16,20 @@
   --stop-r: #7a3036;
   --font-display: "Cormorant Garamond", "Constantia", "Cambria", "Georgia", serif;
   --font-mono: "IBM Plex Mono", "Cascadia Mono", "Consolas", monospace;
+
+  /* SEM palette tokens (overridden by [data-palette]) */
+  --sem-frame: var(--hairline-hi);
+  --sem-reticle: var(--hairline-hi);
+  --sem-badge-bg: rgba(10, 14, 22, 0.78);
+  --sem-badge-fg: var(--hairline-hi);
+}
+
+/* Warm-sepia palette overrides for the SEM chrome. */
+[data-palette="warm-sepia"] {
+  --sem-frame: #6f5840;
+  --sem-reticle: #d6c39a;
+  --sem-badge-bg: rgba(26, 20, 16, 0.78);
+  --sem-badge-fg: #d6c39a;
 }
 
 * { box-sizing: border-box; }
@@ -138,11 +152,12 @@ section { margin: 0; }
   position: relative;
   display: block;
   padding: 2px;
-  background: var(--hairline-hi);
+  background: var(--sem-frame);
   margin: 4px auto 14px;
   width: 100%;
   max-width: 720px;
   aspect-ratio: 1 / 1;
+  transition: background-color 0.3s;
 }
 
 #ca-canvas {
@@ -435,6 +450,117 @@ footer a:hover { color: var(--hairline-hi); border-color: var(--hairline-hi); }
 .toast.show {
   opacity: 1;
   transform: translateX(-50%) translateY(0);
+}
+
+/* ── SEM instrument identity (v4.0) ─────────────────────────────────────── */
+
+.sem-badge {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 8px 4px 6px;
+  background: var(--sem-badge-bg);
+  color: var(--sem-badge-fg);
+  font-family: var(--font-mono);
+  font-size: 9px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  pointer-events: none;
+  border: 1px solid var(--sem-frame);
+  animation: sem-pulse 2.2s ease-in-out infinite;
+  z-index: 3;
+}
+
+.sem-dot {
+  width: 6px;
+  height: 6px;
+  background: var(--sem-badge-fg);
+  border-radius: 50%;
+}
+
+@keyframes sem-pulse {
+  0%, 100% { opacity: 0.55; }
+  50%      { opacity: 1.00; }
+}
+
+.sem-reticle {
+  position: absolute;
+  inset: 2px;          /* match the .canvas-frame padding so the reticle aligns with the canvas */
+  width: calc(100% - 4px);
+  height: calc(100% - 4px);
+  color: var(--sem-reticle);
+  opacity: 0.65;
+  pointer-events: none;
+  z-index: 2;
+}
+
+.sem-vignette {
+  position: absolute;
+  inset: 2px;
+  width: calc(100% - 4px);
+  height: calc(100% - 4px);
+  pointer-events: none;
+  z-index: 2;
+  background: radial-gradient(ellipse at center,
+              rgba(0,0,0,0) 55%,
+              rgba(0,0,0,0.35) 88%,
+              rgba(0,0,0,0.55) 100%);
+}
+
+.scale-bar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  margin: 0 auto 12px;
+  font-family: var(--font-mono);
+  font-size: 9px;
+  color: var(--text-dim);
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+}
+
+.scale-bar-line {
+  display: inline-block;
+  width: 56px;
+  height: 1px;
+  background: var(--text-dim);
+}
+
+/* SEM-disabled state — hide the instrument chrome, restore teal frame. */
+[data-sem="off"] .sem-badge,
+[data-sem="off"] .sem-reticle,
+[data-sem="off"] .sem-vignette,
+[data-sem="off"] .scale-bar {
+  display: none;
+}
+
+[data-sem="off"] .canvas-frame {
+  background: var(--hairline-hi);
+}
+
+/* ── Marginalia ticker ─────────────────────────────────────────────────── */
+
+.marginalia-ticker {
+  min-height: 4em;
+  transition: opacity 0.4s ease-in-out;
+}
+
+.marginalia-ticker.fading {
+  opacity: 0;
+}
+
+/* ── Reduced motion (F4.7 — v3.6 reduced-motion mode carried into v4) ──── */
+
+@media (prefers-reduced-motion: reduce) {
+  .sem-badge        { animation: none; opacity: 1; }
+  .marginalia-ticker { transition: none; }
+  .toast            { transition: none; }
+  .btn              { transition: none; }
+  .canvas-frame     { transition: none; }
 }
 
 /* ── Fullscreen ─────────────────────────────────────────────────────────── */

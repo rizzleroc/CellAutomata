@@ -23,9 +23,36 @@
     <section class="observation">
       <p class="section-label"><span class="roman">I</span> &nbsp; O B S E R V A T I O N</p>
 
-      <div class="canvas-frame">
+      <div class="canvas-frame" id="canvas-frame">
         <canvas id="ca-canvas" width="256" height="256" aria-label="Live cellular automaton"></canvas>
+        <!-- v4.0 instrument identity overlays. -->
+        <div id="sem-badge" class="sem-badge" aria-hidden="true">
+          <span class="sem-dot"></span>
+          <span class="sem-badge-text">LIVE SEM FEED · STAGE — —</span>
+        </div>
+        <svg class="sem-reticle" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">
+          <!-- Crosshair + quadrant tick marks. -->
+          <line x1="50" y1="38" x2="50" y2="48" stroke="currentColor" stroke-width="0.18" />
+          <line x1="50" y1="52" x2="50" y2="62" stroke="currentColor" stroke-width="0.18" />
+          <line x1="38" y1="50" x2="48" y2="50" stroke="currentColor" stroke-width="0.18" />
+          <line x1="52" y1="50" x2="62" y2="50" stroke="currentColor" stroke-width="0.18" />
+          <circle cx="50" cy="50" r="0.6" fill="currentColor" />
+          <line x1="25" y1="0.4" x2="25" y2="1.4" stroke="currentColor" stroke-width="0.18" />
+          <line x1="75" y1="0.4" x2="75" y2="1.4" stroke="currentColor" stroke-width="0.18" />
+          <line x1="25" y1="98.6" x2="25" y2="99.6" stroke="currentColor" stroke-width="0.18" />
+          <line x1="75" y1="98.6" x2="75" y2="99.6" stroke="currentColor" stroke-width="0.18" />
+          <line x1="0.4" y1="25" x2="1.4" y2="25" stroke="currentColor" stroke-width="0.18" />
+          <line x1="0.4" y1="75" x2="1.4" y2="75" stroke="currentColor" stroke-width="0.18" />
+          <line x1="98.6" y1="25" x2="99.6" y2="25" stroke="currentColor" stroke-width="0.18" />
+          <line x1="98.6" y1="75" x2="99.6" y2="75" stroke="currentColor" stroke-width="0.18" />
+        </svg>
+        <div class="sem-vignette" aria-hidden="true"></div>
         <div id="brush-hint" class="brush-hint" aria-hidden="true">click·drag to paint</div>
+      </div>
+
+      <div class="scale-bar" id="scale-bar" aria-hidden="true">
+        <span class="scale-bar-line"></span>
+        <span class="scale-bar-text" id="scale-bar-text">1 μm</span>
       </div>
 
       <div class="readout-bar">
@@ -60,6 +87,19 @@
         <span class="readout" id="brush-readout">5</span>
       </div>
 
+      <!-- v4.0 SEM rendering controls. -->
+      <div class="control-row">
+        <label class="ctl-label" for="sem-mode">SEM mode</label>
+        <input id="sem-mode" type="checkbox" checked />
+      </div>
+      <div class="control-row">
+        <label class="ctl-label" for="palette-select">palette</label>
+        <select id="palette-select" class="select">
+          <option value="warm-sepia" selected>warm-sepia</option>
+          <option value="cool-mono">cool-mono</option>
+        </select>
+      </div>
+
       <!-- Per-rule controls injected here. -->
       <div id="rule-controls" class="rule-controls"></div>
 
@@ -82,20 +122,17 @@
         <span class="kbd">r</span> reset &nbsp;&nbsp;
         <span class="kbd">c</span> clear &nbsp;&nbsp;
         <span class="kbd">n</span> randomize &nbsp;&nbsp;
-        <span class="kbd">1–4</span> rule
+        <span class="kbd">1–4</span> rule &nbsp;&nbsp;
+        <span class="kbd">m</span> SEM mode &nbsp;&nbsp;
+        <span class="kbd">p</span> palette
       </p>
     </section>
 
-    <!-- ── MARGINALIA ─────────────────────────────────────────────────────── -->
+    <!-- ── MARGINALIA TICKER ────────────────────────────────────────────── -->
     <section class="marginalia">
       <p class="section-label"><span class="roman">III</span> &nbsp; M A R G I N A L I A</p>
-      <p class="commentary" id="marginalia">
-        Four automata share one canvas — Conway's Life (1970), Wolfram's
-        elementary 1D rules (2002), Pearson's Gray–Scott reaction–diffusion
-        (1993), and a Brownian primordial soup. Pick a rule. Paint with the
-        mouse. The link in <em>COPY LINK</em> serialises the rule and its
-        parameters into the URL, so you can hand a coworker the exact frame
-        you're looking at.
+      <p class="commentary marginalia-ticker" id="marginalia" aria-live="polite">
+        Loading…
       </p>
     </section>
 
@@ -131,6 +168,7 @@
   <div id="toast" class="toast" aria-live="polite"></div>
 
   <script src="viridis.js"></script>
+  <script src="sem.js"></script>
   <script src="rules/conway.js"></script>
   <script src="rules/wolfram1d.js"></script>
   <script src="rules/grayscott.js"></script>
