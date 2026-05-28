@@ -1,19 +1,21 @@
 # Railway service config.
 #
-# Serves docs/ as a static site on the platform-provided $PORT. Python is
-# already a hard dependency of this project, so `python -m http.server` is
-# a zero-install start command — no Nixpacks/Docker layer needed.
+# Forces the Dockerfile builder so Nixpacks doesn't try to install the
+# cellauto Python package (Pillow/numpy build) — the Railway service only
+# needs to serve docs/, not run the simulator.
 #
-# Root layout:
+# Route map (served from docs/):
 #   /            → docs/index.html       (redirects to /web2/)
 #   /web2/       → web 2.0 multi-rule sandbox  (headline)
 #   /web/        → web 1.0 Gray-Scott museum plate  (preserved)
 #   /generated/  → static stage plates referenced by both demos
 
 [build]
-builder = "nixpacks"
+builder = "dockerfile"
+dockerfilePath = "Dockerfile"
 
 [deploy]
-startCommand = "python -m http.server ${PORT:-8080} --directory docs --bind 0.0.0.0"
 restartPolicyType = "on_failure"
 restartPolicyMaxRetries = 3
+healthcheckPath = "/web2/"
+healthcheckTimeout = 30

@@ -1,0 +1,15 @@
+.git
+.github
+cellauto
+tests
+tools
+*.md
+!docs/**/*.md
+pyproject.toml
+requirements.txt
+main.py
+LICENSE
+PRD.md
+manual.md
+CHANGELOG.md
+README.md
