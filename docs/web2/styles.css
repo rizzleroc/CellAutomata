@@ -136,19 +136,20 @@ section { margin: 0; }
 
 .canvas-frame {
   position: relative;
-  display: inline-block;
+  display: block;
   padding: 2px;
   background: var(--hairline-hi);
   margin: 4px auto 14px;
-  max-width: 100%;
+  width: 100%;
+  max-width: 720px;
+  aspect-ratio: 1 / 1;
 }
 
 #ca-canvas {
   display: block;
   background: var(--bg);
   width: 100%;
-  max-width: 720px;
-  aspect-ratio: 1 / 1;
+  height: 100%;
   image-rendering: pixelated;
   image-rendering: crisp-edges;
   cursor: crosshair;
