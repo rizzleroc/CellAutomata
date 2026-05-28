@@ -136,6 +136,25 @@ end-to-end.
   ported and which aren't, with a one-line explanation of why
   (NumPy/SciPy density).
 
+### G · Goal framing (added 2026-05-28 by single-judge pass; see §7)
+
+The judging pass surfaced three gaps the original A–F sections didn't
+capture, all directly demanded by the goal statement.
+
+- [ ] **P0-G1** Replace the subtitle "a multi-rule observation bench —
+  four automata, one canvas" with the goal itself: *"the building blocks
+  of life, and how each is controlled."* One-line edit; tells every
+  visitor what the page is *for* before they touch a control.
+- [ ] **P0-G2** Per-control *consequence* sentence (distinct from the
+  A2 tooltip explaining what the parameter *is*). E.g. *"F: how much
+  fresh substrate is fed. Raise it and spots replicate faster; below
+  ~0.02 the system goes extinct."* A2 + G2 jointly fulfil the
+  *show how they're controlled* half of the goal.
+- [ ] **P0-G3** First-visit orientation lede — 50-word dismissable
+  card explaining the arc (chemistry → compartmentalisation →
+  information). Dismissed forever via localStorage so returning
+  visitors aren't nagged.
+
 ### F · Layout & UX
 
 - [ ] **P2-F1** Move marginalia from a full-width band into a vertical
@@ -188,6 +207,112 @@ Every PR that touches `docs/web2/` should:
      priority tag.
   3. Update §2's *Explanation depth* column if a rule's framing
      changed.
+  4. If goal alignment is uncertain or the punchlist has materially
+     changed, run a judgment pass via `whipgen_fanout_with_judge`
+     (prompt template in §7) and append the verdict to §7.
 
 The file is plain Markdown so `grep '\[ \]'` gives a punchlist of open
 items at any time.
+
+---
+
+## 7 · Judgment log
+
+Each entry below is a prioritisation pass against the GOAL. The goal is
+the single criterion: *"Explain the building blocks of life and show
+how they are controlled."*
+
+The **preferred** judging route is `whipgen_fanout_with_judge` — fan out
+the open punchlist to ChatGPT / Claude / Kimi / OpenLLM in parallel, let
+a judge LLM pick the strongest analysis with confidence. When the
+whipgen MCP server is reachable, every entry below should ideally carry
+a `judge: …  confidence: …` line from that route. Single-judge entries
+are interim and explicitly marked so.
+
+### 2026-05-28 · interim · single-judge (Claude, in-session)
+
+**Why interim:** the whipgen MCP server disconnected / required
+re-authorisation when this verdict was written, so the multi-provider
+fanout couldn't run. This entry is a single-LLM stand-in; re-run the
+fanout when whipgen is back and either ratify or override.
+
+#### TOP 5 ranked (highest goal-lift per unit work)
+
+1. **P0-A1** — one-sentence "what this is" line per rule. Smallest
+   possible change that turns each rule from "pretty math on a canvas"
+   into "explained building block." This is the *Explain* half of the
+   goal in one paragraph of work.
+2. **P0-D1** — physical-name slider labels for every rule (only
+   chirality has them today). Cheapest possible win for the
+   *how-they're-controlled* half — costs less than an hour, every
+   slider stops being a Greek letter.
+3. **P0-A2** — per-slider hover tooltip with the physical
+   interpretation. The natural depth-up from D1: D1 names the knob, A2
+   says what the knob does to the biology. Pair them in one PR.
+4. **P0-A3** — marginalia first-card = the building-block claim
+   ("This shows X; it matters because Y."). Completes the explanation
+   triad with A1+A2; uses the existing ticker infrastructure, no new
+   UI surface.
+5. **P1-B3** — `vesicles` rule. Of the five missing stages, this is
+   the easiest port and adds the most goal-relevant building block:
+   *true* membrane compartmentalisation (Helfrich curvature), as
+   distinct from coacervate's liquid-liquid kind. The other four
+   missing stages (B1, B2, B4, B5) are higher-effort and lower-lift
+   per hour.
+
+#### Deprioritise / cut
+
+- **P2-C2** chapter rail — superseded by **P1-C1** TOUR; pick one.
+- **P2-F1** marginalia side-card — pure UX rearrangement, no
+  goal-lift.
+- **P2-F2** localStorage persistence — URL hash already covers the
+  share/restore use-case; the bare-URL re-entry is a niche.
+- **P2-F3** surface reduced-motion to user — the CSS already respects
+  it; advertising it doesn't advance the goal.
+- **P2-D3** regime-boundary badges — interesting but advanced; only
+  the small fraction of viewers who already know the param physics
+  would notice. Park for a later "depth" pass.
+
+#### Missing from the punchlist (the goal demands these, list doesn't capture them)
+
+- **NEW · P0-G1** *Goal subtitle on the page.* The current subtitle
+  reads "a multi-rule observation bench — four automata, one canvas"
+  — mechanics, not goal. A viewer lands without knowing what the page
+  is *for*. Replace with: "the building blocks of life, and how each
+  is controlled." One-line edit; clarifies intent for every visitor.
+- **NEW · P0-G2** *Per-control consequence sentence.* Slider tooltips
+  (A2) explain what the parameter *is*; this item explains what it
+  *does to behaviour* — e.g. "F: how much fresh substrate is fed.
+  Raise it and spots replicate faster; below ~0.02 the system goes
+  extinct." A2 + G2 together fulfil the *show how they're controlled*
+  half of the goal.
+- **NEW · P0-G3** *Orientation lede shown at boot, dismissable.* A
+  50-word card overlaying the canvas on first visit, explaining the
+  arc (chemistry → compartmentalisation → information). Dismissed
+  forever in localStorage. Without this, the viewer lands mid-arc on
+  whatever rule the URL points to.
+
+#### Ship-next batch — "The Explanation Round"
+
+Ordered: **P0-G1 → P0-A1 → P0-D1 → P0-A2 → P0-A3 → P1-E1**
+
+Why ship these together as one unit: this batch closes the *Explain*
+half of the goal in a single PR. The page (G1) declares what it's
+for; every rule (A1) tells the viewer what building block it is;
+every slider (D1+A2) is named and explained; the marginalia ticker
+(A3) leads with the building-block claim instead of a citation; and
+the two reference automata (E1) stop pretending to be on the arc.
+After this round the page can pass the test *"does a first-time
+visitor understand what each canvas means without leaving the page?"*
+
+Estimated effort: 2–3 hours. No new rules; no rendering changes;
+copy + a tooltip system + one CSS pass.
+
+#### Next-batch-after-that
+
+The natural follow-on is **"The Control Round"** — P1-D2 (preset
+rows, *show* the parameter response) and P0-G2 (per-control
+consequence sentences). After Explanation + Control are both shipped,
+the goal is structurally satisfied for the 8 currently-shipped rules,
+and the remaining work is purely additive (more rules: B1–B5).
+
