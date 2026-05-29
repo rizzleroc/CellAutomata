@@ -270,6 +270,73 @@ section { margin: 40px 0; }
   margin-top: 6px;
 }
 
+/* ── Support / Pricing ──────────────────────────────────────────────────── */
+
+a.btn {
+  display: inline-block;
+  text-decoration: none;
+}
+
+.support-buttons { flex-wrap: wrap; }
+
+.price-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 14px;
+  margin: 22px 0 8px;
+}
+
+.price-card {
+  border: 1px solid var(--hairline);
+  padding: 18px 16px;
+  background: var(--bg);
+}
+
+.price-card.featured {
+  border-color: var(--hairline-hi);
+}
+
+.price-card .tier {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.22em;
+  color: var(--text-dim);
+  margin: 0 0 6px;
+}
+
+.price-card.featured .tier { color: var(--hairline-hi); }
+
+.price-card .price {
+  font-family: var(--font-display);
+  font-size: 32px;
+  color: var(--text);
+  margin: 0 0 12px;
+  line-height: 1;
+}
+
+.price-card .price span {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--text-dim);
+  letter-spacing: 0.08em;
+}
+
+.price-card ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.price-card li {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--text-dim);
+  letter-spacing: 0.04em;
+  padding: 4px 0;
+  border-top: 1px solid var(--hairline);
+  line-height: 1.4;
+}
+
 /* ── Footer ─────────────────────────────────────────────────────────────── */
 
 footer {

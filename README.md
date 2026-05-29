@@ -356,6 +356,30 @@ math and citations, and [docs/ROADMAP.md](docs/ROADMAP.md) for the feature
 inventory, mandated UI toolset, and remaining roadmap. Full version history in
 [CHANGELOG.md](CHANGELOG.md).
 
+## Support this work · Pro · Classroom
+
+The browser explorer and the open-source desktop build are **free forever**
+(MIT). If cellauto is useful to you, here's how to support it and what a paid
+tier would unlock:
+
+- **♥ [Sponsor on GitHub](https://github.com/sponsors/rizzleroc)** — funds the
+  free core the whole project depends on. Live now.
+- **Pro ($15/mo)** — cloud deep-runs, large grids, 4K/poster export, the
+  museum-plate generator, save & share, batch API, and a commercial-use license
+  for exported art.
+- **Classroom (from $299/yr)** — NGSS-aligned lessons, a teacher dashboard, and
+  rostered student accounts. Free for verified educators' own classes.
+- **Institution / Museum** — kiosk/on-prem licensing and the high-res plate
+  series.
+
+We never paywall *learning* — only *scale, convenience, and production output*.
+The full reasoning, competitor research, pricing, and go-to-market plan:
+
+- [docs/MONETIZATION.md](docs/MONETIZATION.md) — strategy + why people pay
+- [docs/PRICING.md](docs/PRICING.md) — tiers & feature matrix
+- [docs/GO_TO_MARKET.md](docs/GO_TO_MARKET.md) — promotion plan + launch copy
+- [docs/VALIDATION_KIT.md](docs/VALIDATION_KIT.md) — how to price-test before building
+
 ## License
 
 MIT — see [LICENSE](LICENSE).
