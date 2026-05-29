@@ -341,3 +341,39 @@ E1). When the MCP jury is reachable again, run it on the *post-batch*
 state, not the pre-batch state — we won't waste a fanout asking
 "should we still ship the batch we just shipped".
 
+### 2026-05-28 · MCP async fanout attempt — no settled answers
+
+Async fanout `fanout_mpr78lxi_54481c` over `[chatgpt, claude, kimi]`
+with `perProviderTimeoutMs: 120000`. All three settled as
+`per-provider-timeout`:
+
+  - **chatgpt**  durationMs: 120010, errorCode: per-provider-timeout
+  - **claude**   durationMs: 120003, errorCode: per-provider-timeout
+  - **kimi**     durationMs: 120002, errorCode: per-provider-timeout
+
+The ChatGPT tab had answered a one-word "pong" prompt in 10s
+immediately beforehand, so the daemon-to-tab path is alive but the
+tab cannot complete a long-prompt generation in 2 min — typical sign
+of a stuck conversation, an unfinished captcha, or an expired session
+that lets you type but never responds.
+
+**No usable jury verdict came out of this attempt.** The interim
+Claude-in-session ranking remains operative; the "Explanation Round"
+batch is still the recommended ship-next.
+
+**To unblock for next round:** on the Windows host running the
+whipgen daemon, in the debug-Chrome window —
+
+  1. Open `chat.openai.com`, `claude.ai`, `kimi.com`,
+     `gemini.google.com` tabs and confirm each shows a working composer
+     (type "hi" and hit send; should get an answer).
+  2. If any tab shows a captcha, expired session, or "rate limited"
+     banner, log in / dismiss it; whipgen drives the existing tab and
+     can't fix the auth state.
+  3. Start LMStudio (or any OpenAI-compatible server) on
+     `127.0.0.1:1234` if you want the `openllm` provider in the jury
+     pool — optional, three other providers are enough.
+
+Then re-run `whipgen_fanout_with_judge` (sync) with the same prompt;
+it should land in ~30-60 s of wall-clock.
+
