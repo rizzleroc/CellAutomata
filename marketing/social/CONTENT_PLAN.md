@@ -30,6 +30,7 @@ claims (see the v3.5 "honest-gap-closure" release) — rare and trust-building.
 | **X / Twitter** | sci-curious devs, #scicomm, ALife crowd | punchy, visual-first, 1 hook + thread | ≤280 chars/tweet, 2–4 tweet thread |
 | **LinkedIn** | engineering leaders, researchers, recruiters | professional, "science × software" showcase | 1–3 short paragraphs |
 | **Reddit** | r/cellular_automata, r/abiogenesis, r/Python, r/alife | technical, community-first, citations, *no marketing voice* | title + body, link last |
+| **TikTok** (@ai.news760) | gen-z sci-curious, "oddly satisfying", #LearnOnTikTok | video-first, fast hook (<3s), captions on-screen | 15–45s script + shot list + caption |
 
 ## Visual assets (attach where relevant)
 
@@ -45,15 +46,30 @@ claims (see the v3.5 "honest-gap-closure" release) — rare and trust-building.
 - **X:** #ArtificialLife #ALife #abiogenesis #originoflife #cellularautomata #Python #scicomm #openscience #ReactionDiffusion
 - **LinkedIn:** #ArtificialLife #ComputationalBiology #OpenSource #Python #ScientificComputing #OriginOfLife
 - **Reddit:** no hashtags; pick the right subreddit and lead with substance.
+- **TikTok:** #LearnOnTikTok #sciencetok #ArtificialLife #originoflife #simulation #oddlysatisfying #STEM #abiogenesis
+
+## Publishing & accounts (manual)
+
+Posts are generated as **drafts only** — nothing is auto-published. A human
+publishes them. Known accounts:
+
+- **TikTok:** @ai.news760 — video platform, so a post here needs a rendered
+  clip (GIF/MP4 from the simulator) plus the TikTok script variant. The
+  loop can produce the script + shot list; rendering an MP4 asset is a
+  separate on-request step (`cellauto export … --out exports/clip.gif`).
+
+The assistant cannot log into any social account or access email, so the
+upload step is always manual. Keep credentials and inbox details OUT of this
+repo.
 
 ## Rules of the loop (operating procedure)
 
 1. Read this file and list existing files in `posts/`.
 2. The **next topic** = backlog item at index `N` where `N` = count of existing
    `post-*.md` files (zero-based against the numbered list below).
-3. Write `posts/post-NNN-<slug>.md` containing all three platform variants,
-   the suggested asset, and the hashtag set. Keep facts accurate — only claim
-   what the README/CHANGELOG support.
+3. Write `posts/post-NNN-<slug>.md` containing all four platform variants
+   (X, LinkedIn, Reddit, TikTok), the suggested asset, and the hashtag set.
+   Keep facts accurate — only claim what the README/CHANGELOG support.
 4. Commit (`social: post NNN — <topic>`), push to `claude/cool-shannon-Sa9Tu`.
 5. Surface the post text in chat.
 6. When the backlog is exhausted, generate a **fresh angle** (deeper dive on a
