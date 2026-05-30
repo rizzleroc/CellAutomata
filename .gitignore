@@ -13,6 +13,7 @@ venv/
 snapshots/*.json
 exports/*.gif
 exports/*.png
+marketing/social/reels/*.mp4
 
 # Local-only dev artefacts (visual audits + MCP server config).
 .ruff_cache/
