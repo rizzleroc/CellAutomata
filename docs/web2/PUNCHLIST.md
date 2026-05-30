@@ -101,10 +101,11 @@ The 8 rules sit side-by-side in a dropdown; there's no story connecting
 them. The Python build has a `pipeline` rule that runs the whole arc
 end-to-end.
 
-- [ ] **P1-C1** Add a "TOUR" button that auto-advances rules every ~30 s
-  in the canonical order (`grayscott` → `vents` → `soup` →
-  `natural-selection` → `chirality` → `coacervate` → … → `vesicles` →
-  `luca`), with the marginalia narrating each chapter transition.
+- [x] **P1-C1** TOUR button — auto-advances rules every 30 s through
+  the canonical chemistry-to-life arc (`soup` → `vents` → `grayscott` →
+  `natural-selection` → `chirality` → `coacervate`). Skips conway /
+  wolfram1d (off-arc). Hotkey `t`. Stops on manual rule change.
+  Shipped 2026-05-30 in "The Arc Round."
 - [ ] **P2-C2** Add a small horizontal "chapter" rail above the canvas
   showing where the viewer is in the arc, with completed stages dimmed
   and current stage lit.
@@ -129,9 +130,9 @@ end-to-end.
   cards now lead with "Off-arc reference automaton — not a building
   block of life." Closed organically as part of the "Goal-Legibility
   Pass" 2026-05-30 (the A1 / A3 work both surfaced this honestly).
-- [ ] **P1-E2** Footer copy: state which of the 12 Python stages are
-  ported and which aren't, with a one-line explanation of why
-  (NumPy/SciPy density).
+- [x] **P1-E2** Footer carries an honesty paragraph listing the five
+  Python-only stages (RAF, RNA world, vesicles, genetic code, LUCA)
+  with the install command. Shipped 2026-05-30 in "The Arc Round."
 
 ### G · Goal framing (added 2026-05-28 by single-judge pass; see §7)
 
@@ -144,17 +145,17 @@ capture, all directly demanded by the goal statement.
   hover any slider and the `control-hint` line under the rule-controls
   says what raising/lowering does to the biology. Shipped 2026-05-30
   in "Goal-Legibility Pass." Subsumes the earlier P0-A2 tooltip idea.
-- [ ] **P0-G3** First-visit orientation lede — 50-word dismissable
-  card explaining the arc (chemistry → compartmentalisation →
-  information). Dismissed forever via localStorage so returning
-  visitors aren't nagged.
-- [ ] **P0-G4** *Control-mechanism legend* — one paragraph + a small
-  table listing the building blocks the sandbox demonstrates and the
-  *type* of control each one represents (Stage 1 = pattern
-  self-control; Stage 2 = thermodynamic compartment; Stage 6 = chiral
-  symmetry-breaking; Stage 9 = membraneless droplet formation; etc.).
-  Added 2026-05-30 by the three-provider MCP jury — all three
-  providers surfaced this exact gap independently. See §7.
+- [x] **P0-G3** First-visit welcome modal explains the arc in plain
+  English, dismissable, persists via `localStorage`
+  (`cellauto-web2.welcomeDismissed`). Deep-link visits skip it so
+  shared URLs aren't intercepted. Hotkey `?` re-opens. Shipped
+  2026-05-30 in "The Arc Round."
+- [x] **P0-G4** Control-mechanism legend table inside the welcome
+  modal — each shipped stage paired with the type of control it
+  demonstrates (chemistry without organisation · compartment-from-
+  mixing · pattern self-organisation · geological compartment + energy
+  · symmetry-breaking · membrane-less proto-cell). Shipped 2026-05-30
+  in "The Arc Round."
 
 ### F · Layout & UX
 
@@ -172,6 +173,14 @@ capture, all directly demanded by the goal statement.
 
 ## 4 · Done so far (history)
 
+- [x] **The Arc Round** (2026-05-30) — four items shipped as one batch,
+  giving the eight rules a narrative spine. Items: P0-G3 first-visit
+  welcome modal with arc-summary lede, P0-G4 control-mechanism legend
+  table inside the same modal, P1-C1 TOUR button (auto-advances rules
+  every 30 s through the canonical chemistry-to-life order, hotkey
+  `t`), P1-E2 footer honesty paragraph listing the five Python-only
+  stages. Adds two hotkeys: `t` (tour), `?` (about). No new simulation
+  code; pure DOM + JS + CSS.
 - [x] **Goal-Legibility Pass** (2026-05-30) — six items shipped as one
   batch following the three-provider MCP jury verdict (see §7):
   P0-G1 subtitle = goal, P0-A1 per-rule "what this is" line,
@@ -464,4 +473,39 @@ its top 5) is **overridden** on two items:
   - P1-B3 (vesicles) drops out of *this* batch — still a strong
     item, but the jury is unanimous that explanation layer ships
     first, new rules ship second.
+
+### 2026-05-30 (round 2) · "The Arc Round" — shipped without jury
+
+User said "keep improving" after the Goal-Legibility Pass landed.
+Attempted `whipgen_fanout` async over `[chatgpt, claude, kimi]` for a
+fresh ranking; the call timed out at 60 s and a follow-up
+`whipgen_status` probe also timed out — the whipgen daemon got stuck
+on lingering in-flight jobs after the previous round.
+
+Shipped without a fresh jury verdict, using the previous round's
+guidance: of round 1's unanimous "next-round" candidates, the
+**P0-G3 / P0-G4 / P1-C1 / P1-E2** quartet was the strongest coherent
+batch — gives the eight rules a narrative spine (welcome lede → arc
+in canonical order → control-type legend → honest port-status). No
+new simulation code; pure DOM + JS + CSS.
+
+**Items shipped:**
+  - **P0-G3** first-visit welcome modal (dismissable, localStorage
+    persists, deep-link visits skip it).
+  - **P0-G4** control-mechanism legend table inside the same modal —
+    closes the gap all three round-1 providers surfaced.
+  - **P1-C1** TOUR button + hotkey `t`, walks the 6 on-arc rules at
+    30 s cadence; skips conway/wolfram1d; stops on manual override.
+  - **P1-E2** footer honesty paragraph naming the 5 Python-only
+    stages with the install command.
+
+Hotkeys added: `t` (tour toggle), `?` (about modal), `Esc` (close
+modal / stop tour). All 5 round-2 items remaining (P1-A4, B1, B2, B3,
+B4, B5, C2, D2, D3, F1, F2, F3) are unaffected.
+
+**Re-run the MCP jury** at next opportunity so round-3 starts from a
+real verdict not the previous round's stale next-step advice. The
+likely next batch — pending jury — is "Add a Rule": port P1-B3
+(vesicles) or P1-B1 (RAF) as the first additive building block to
+follow the explanation-layer + arc-spine rounds.
 

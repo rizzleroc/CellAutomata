@@ -120,6 +120,10 @@
         <button id="btn-share" class="btn">COPY LINK</button>
         <button id="btn-full" class="btn">FULLSCREEN</button>
       </div>
+      <div class="control-row buttons">
+        <button id="btn-tour" class="btn">START TOUR</button>
+        <button id="btn-help" class="btn">ABOUT</button>
+      </div>
 
       <p class="keymap">
         <span class="kbd">space</span> play/pause &nbsp;
@@ -129,7 +133,9 @@
         <span class="kbd">n</span> randomize &nbsp;
         <span class="kbd">1–8</span> rule &nbsp;
         <span class="kbd">m</span> SEM &nbsp;
-        <span class="kbd">p</span> palette
+        <span class="kbd">p</span> palette &nbsp;
+        <span class="kbd">t</span> tour &nbsp;
+        <span class="kbd">?</span> about
       </p>
     </section>
 
@@ -147,11 +153,58 @@
     <p class="footer-text">
       cellauto web 2.0 — multi-rule sandbox · MIT · source on
       <a href="https://github.com/rizzleroc/CellAutomata">GitHub</a>
-      · the Stage-1-only v1 demo lives at <a href="../web/">/docs/web/</a>
+      · v1 (Stage 1 only) at <a href="../web/">/docs/web/</a>
+    </p>
+    <p class="footer-text footer-honesty">
+      Five further building blocks — autocatalytic sets (Kauffman),
+      the RNA world (Eigen quasispecies), lipid vesicles (Helfrich
+      curvature), the genetic code (Vetsigian–Woese–Goldenfeld), and
+      LUCA — run only in the Python desktop build. Each is several
+      hundred lines of NumPy / SciPy and resists a faithful JS port.
+      <code>pip install -e .</code> then <code>cellauto gui</code>.
     </p>
   </footer>
 
   <div id="toast" class="toast" aria-live="polite"></div>
+
+  <!-- P0-G3 first-visit orientation lede + P0-G4 control-mechanism
+       legend, packaged as one welcome modal.  Dismissed forever via
+       localStorage.  A "?" button in the header (and the keyboard
+       shortcut "?") re-opens it on demand. -->
+  <div id="welcome" class="welcome" role="dialog" aria-modal="true" aria-labelledby="welcome-title" hidden>
+    <div class="welcome-card">
+      <button class="welcome-close" id="welcome-close" aria-label="Close">×</button>
+      <p class="eyebrow">W E L C O M E</p>
+      <h2 class="welcome-title" id="welcome-title">cellauto — the building blocks of life</h2>
+      <p class="welcome-lede">
+        Eight live simulations, in canonical chemistry-to-life order. Each
+        one is a separate <em>building block</em> — a different way the
+        universe organises itself into something life-like. Each one is
+        <em>controlled</em> by sliders that the right-hand panel says — in
+        plain English — what each knob does to the biology. Press
+        <span class="kbd">space</span> to pause, <span class="kbd">1</span>–<span class="kbd">8</span>
+        to jump rules, <span class="kbd">t</span> to start a guided tour.
+      </p>
+      <p class="welcome-legend-label">B U I L D I N G   B L O C K S   ·   C O N T R O L   T Y P E</p>
+      <table class="welcome-legend">
+        <tbody>
+          <tr><td>Stage 0 · primordial soup</td>           <td>chemistry without organisation</td></tr>
+          <tr><td>Stage 0 · natural selection</td>         <td>compartment-from-mixing</td></tr>
+          <tr><td>Stage 1 · reaction–diffusion</td>        <td>pattern self-organisation</td></tr>
+          <tr><td>Stage 2 · alkaline vents</td>            <td>geological compartment + energy</td></tr>
+          <tr><td>Stage 6 · homochirality</td>             <td>symmetry-breaking</td></tr>
+          <tr><td>Stage 9 · coacervate</td>                <td>membrane-less proto-cell</td></tr>
+          <tr><td class="aside">Stage ∞ · Conway / Wolfram</td><td class="aside">off-arc reference automata</td></tr>
+        </tbody>
+      </table>
+      <p class="welcome-footer">
+        Five more stages — autocatalytic sets, the RNA world, lipid
+        vesicles, the genetic code, and LUCA — run in the Python build
+        only; see the footer link.
+      </p>
+      <button class="btn primary welcome-cta" id="welcome-cta">START EXPLORING</button>
+    </div>
+  </div>
 
   <script src="viridis.js"></script>
   <script src="sem.js"></script>

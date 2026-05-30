@@ -569,6 +569,153 @@ footer a:hover { color: var(--hairline-hi); border-color: var(--hairline-hi); }
   .canvas-frame     { transition: none; }
 }
 
+/* ── P0-G3 first-visit lede + P0-G4 control-mechanism legend ─────────── */
+
+.welcome {
+  position: fixed;
+  inset: 0;
+  background: rgba(10, 14, 22, 0.86);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  z-index: 50;
+  animation: welcome-fade 0.35s ease-out;
+}
+
+.welcome[hidden] { display: none; }
+
+@keyframes welcome-fade {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+.welcome-card {
+  position: relative;
+  background: var(--bg-soft);
+  border: 1px solid var(--hairline-hi);
+  padding: 28px 32px 28px;
+  max-width: 620px;
+  width: 100%;
+  max-height: calc(100vh - 48px);
+  overflow-y: auto;
+}
+
+.welcome-close {
+  position: absolute;
+  top: 8px;
+  right: 12px;
+  background: transparent;
+  border: 0;
+  color: var(--text-dim);
+  font-size: 22px;
+  line-height: 1;
+  cursor: pointer;
+  padding: 4px 8px;
+}
+
+.welcome-close:hover { color: var(--hairline-hi); }
+
+.welcome-title {
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-size: 26px;
+  line-height: 1.15;
+  margin: 0 0 14px;
+  color: var(--text);
+}
+
+.welcome-lede {
+  font-family: var(--font-display);
+  font-size: 15px;
+  line-height: 1.55;
+  color: var(--text);
+  margin: 0 0 18px;
+}
+
+.welcome-legend-label {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--text-dim);
+  letter-spacing: 0.28em;
+  margin: 18px 0 8px;
+  border-bottom: 1px solid var(--hairline);
+  padding-bottom: 6px;
+}
+
+.welcome-legend {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 0 0 18px;
+  font-family: var(--font-mono);
+  font-size: 11px;
+}
+
+.welcome-legend td {
+  padding: 6px 4px;
+  border-bottom: 1px solid var(--hairline);
+  vertical-align: top;
+  color: var(--text);
+}
+
+.welcome-legend td:first-child {
+  width: 48%;
+  letter-spacing: 0.04em;
+}
+
+.welcome-legend td:last-child {
+  color: var(--text-dim);
+  font-style: italic;
+  font-family: var(--font-display);
+  font-size: 13px;
+}
+
+.welcome-legend td.aside {
+  color: var(--text-faint);
+}
+
+.welcome-footer {
+  font-family: var(--font-display);
+  font-style: italic;
+  font-size: 12px;
+  color: var(--text-dim);
+  margin: 0 0 18px;
+}
+
+.welcome-cta {
+  display: block;
+  margin: 0 auto;
+}
+
+/* P1-C1 — tour running state */
+.btn.tour-active {
+  color: var(--hairline-hi);
+  border-color: var(--hairline-hi);
+  background: rgba(57, 212, 200, 0.07);
+}
+
+/* P1-E2 — footer honesty paragraph */
+.footer-honesty {
+  font-family: var(--font-display);
+  font-style: italic;
+  font-size: 11px;
+  color: var(--text-faint);
+  letter-spacing: 0.02em;
+  text-transform: none;
+  margin-top: 8px;
+  max-width: 760px;
+  margin-left: auto;
+  margin-right: auto;
+  line-height: 1.55;
+}
+
+.footer-honesty code {
+  font-family: var(--font-mono);
+  background: var(--bg-soft);
+  padding: 1px 4px;
+  border: 1px solid var(--hairline);
+}
+
 /* ── Fullscreen ─────────────────────────────────────────────────────────── */
 
 #ca-canvas:fullscreen,

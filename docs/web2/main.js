@@ -15,6 +15,23 @@
     "natural-selection", "chirality", "coacervate", "vents",
   ];
 
+  // P1-C1 — canonical chemistry-to-life tour order, skipping the two
+  // off-arc reference automata.  When the user hits TOUR (or "t"), the
+  // selector walks this list every TOUR_INTERVAL_MS.
+  const TOUR_ORDER = [
+    "soup",
+    "vents",
+    "grayscott",
+    "natural-selection",
+    "chirality",
+    "coacervate",
+  ];
+  const TOUR_INTERVAL_MS = 30000;
+
+  // P0-G3 / P0-G4 — show the welcome lede + legend once, then again
+  // whenever the user explicitly asks.
+  const WELCOME_LS_KEY = "cellauto-web2.welcomeDismissed";
+
   // ── Per-rule marginalia ticker copy ─────────────────────────────────────
   // Short notes cycled in the marginalia section every MARGINALIA_INTERVAL_MS.
   // Mirrors the "chapter-card" mechanism described in the v4.0 PRD §5.
@@ -116,6 +133,11 @@
   const randomBtn     = document.getElementById("btn-random");
   const shareBtn      = document.getElementById("btn-share");
   const fullBtn       = document.getElementById("btn-full");
+  const tourBtn       = document.getElementById("btn-tour");
+  const helpBtn       = document.getElementById("btn-help");
+  const welcomeEl     = document.getElementById("welcome");
+  const welcomeClose  = document.getElementById("welcome-close");
+  const welcomeCta    = document.getElementById("welcome-cta");
   const rdRule        = document.getElementById("rd-rule");
   const rdGen         = document.getElementById("rd-gen");
   const rdPop         = document.getElementById("rd-pop");
@@ -144,6 +166,8 @@
   let palette     = "warm-sepia";
   let marginaliaTimer = 0;
   let marginaliaIdx   = 0;
+  let tourTimer       = 0;
+  let tourIdx         = 0;
 
   // ── Rule dropdown ───────────────────────────────────────────────────────
   for (const id of RULE_ORDER) {
@@ -525,7 +549,65 @@
     }
   });
 
-  ruleSelect.addEventListener("change", () => setRule(ruleSelect.value));
+  // ── Welcome modal (P0-G3 + P0-G4) ──────────────────────────────────────
+  function openWelcome() {
+    if (!welcomeEl) return;
+    welcomeEl.hidden = false;
+  }
+  function closeWelcome(persist) {
+    if (!welcomeEl) return;
+    welcomeEl.hidden = true;
+    if (persist) {
+      try { localStorage.setItem(WELCOME_LS_KEY, "1"); } catch {}
+    }
+  }
+  if (welcomeClose) welcomeClose.addEventListener("click", () => closeWelcome(true));
+  if (welcomeCta)   welcomeCta.addEventListener("click", () => closeWelcome(true));
+  if (helpBtn)      helpBtn.addEventListener("click", () => openWelcome());
+  if (welcomeEl) {
+    // Click outside the card closes (but doesn't persist — user hasn't
+    // necessarily read it).
+    welcomeEl.addEventListener("click", (ev) => {
+      if (ev.target === welcomeEl) closeWelcome(false);
+    });
+  }
+
+  // ── TOUR (P1-C1) ────────────────────────────────────────────────────────
+  function startTour() {
+    if (tourTimer) return;
+    tourIdx = 0;
+    setRule(TOUR_ORDER[tourIdx]);
+    toast("tour: " + TOUR_ORDER[tourIdx]);
+    tourTimer = setInterval(() => {
+      tourIdx = (tourIdx + 1) % TOUR_ORDER.length;
+      setRule(TOUR_ORDER[tourIdx]);
+      toast("tour: " + TOUR_ORDER[tourIdx] + "  (" + (tourIdx + 1) + "/" + TOUR_ORDER.length + ")");
+    }, TOUR_INTERVAL_MS);
+    if (tourBtn) {
+      tourBtn.textContent = "STOP TOUR";
+      tourBtn.classList.add("tour-active");
+    }
+  }
+  function stopTour() {
+    if (!tourTimer) return;
+    clearInterval(tourTimer);
+    tourTimer = 0;
+    if (tourBtn) {
+      tourBtn.textContent = "START TOUR";
+      tourBtn.classList.remove("tour-active");
+    }
+    toast("tour stopped");
+  }
+  if (tourBtn) {
+    tourBtn.addEventListener("click", () => {
+      tourTimer ? stopTour() : startTour();
+    });
+  }
+
+  ruleSelect.addEventListener("change", () => {
+    if (tourTimer) stopTour();   // manual override cancels the tour
+    setRule(ruleSelect.value);
+  });
 
   // SEM mode toggle (v4.0 F7).
   if (semCheckbox) {
@@ -591,6 +673,19 @@
           paletteSelect.value = names[i];
           paletteSelect.dispatchEvent(new Event("change"));
         }
+        break;
+      case "KeyT":
+        tourTimer ? stopTour() : startTour();
+        break;
+      case "Slash":
+        // "?" is shift+/ — both shift+/ and / open the modal.
+        ev.preventDefault();
+        if (welcomeEl && welcomeEl.hidden) openWelcome();
+        else closeWelcome(false);
+        break;
+      case "Escape":
+        if (welcomeEl && !welcomeEl.hidden) closeWelcome(false);
+        else if (tourTimer) stopTour();
         break;
     }
   });
@@ -659,6 +754,17 @@
   const bootId = (fromUrl && fromUrl.rule && CA.RULES[fromUrl.rule]) ? fromUrl.rule : "grayscott";
   setRule(bootId, fromUrl ? fromUrl.params : null);
   play();
+
+  // P0-G3 — first-visit welcome lede.  Skip if the URL already pinpoints
+  // a rule (means a coworker shared a deep link; don't get in their way).
+  try {
+    const dismissed = localStorage.getItem(WELCOME_LS_KEY) === "1";
+    const hasDeepLink = !!(fromUrl && fromUrl.rule);
+    if (!dismissed && !hasDeepLink) openWelcome();
+  } catch {
+    // localStorage blocked (private mode, embed iframe).  Skip silently —
+    // the "?" button still works.
+  }
 
   // ── Rule contract ───────────────────────────────────────────────────────
   // A rule registered on CA.RULES is a zero-arg factory returning an object
