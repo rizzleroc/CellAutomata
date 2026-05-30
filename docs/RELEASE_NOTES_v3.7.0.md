@@ -1,11 +1,11 @@
 # cellauto v3.7.0 — Free Edition MVP
 
 **The release that turns cellauto from a project into a product.** It defines the
-free tier, makes the browser explorer a real shareable product (not just a demo),
-and ships the whole monetization + go-to-market scaffolding around it.
+free tier and makes the browser explorer a real shareable product (not just a
+demo).
 
 No breaking changes. The science engine, the desktop app, and all 141 tests are
-unchanged. This release is additive: a productized free tier + the business layer.
+unchanged. This release is additive: a productized free tier.
 
 ## ✨ Highlights
 
@@ -17,15 +17,9 @@ unchanged. This release is additive: a productized free tier + the business laye
   and the poster generator are the Pro upgrade.
 - Clean GitHub Pages root URL (a redirect → the explorer) for one shareable link.
 
-**The business layer (docs + landing):**
+**Free tier & pricing (docs + landing):**
 - `docs/FREE_MVP.md` — what the free version is and where the paid line sits.
-- `docs/MONETIZATION.md` — open-core freemium strategy, competitor research,
-  funnel math, and an honest grade of the "free 30s → pay" idea (re-aimed as a
-  Preview Meter on cloud/export, not a wall on learning).
 - `docs/PRICING.md` — Free / Plus / Pro / Classroom / Institution tiers.
-- `docs/GO_TO_MARKET.md` — channel-ranked launch plan + ready-to-post copy.
-- `docs/VALIDATION_KIT.md` + `docs/POND_BOUNTY.md` — price-test the plan with real
-  users before building a backend.
 - `.github/FUNDING.yml` — GitHub Sponsors, live with zero infra.
 - Landing page: pricing/support section + Sponsor CTA; README support section.
 
@@ -39,7 +33,7 @@ meter *cloud* compute and *production* export.
 
 Accounts, billing, cloud "deep runs", the Preview Meter, and GIF/4K/poster
 export are scoped but deferred — to be built against validated demand, not ahead
-of it. See `docs/VALIDATION_KIT.md`.
+of it.
 
 ## Install
 

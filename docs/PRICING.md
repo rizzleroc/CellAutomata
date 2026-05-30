@@ -1,8 +1,7 @@
 # cellauto — Pricing
 
 *The free core stays free forever (MIT). You pay for scale, convenience, and
-production output — never for learning.* See the reasoning in
-[MONETIZATION.md](MONETIZATION.md).
+production output — never for learning.*
 
 > Status: proposed pricing for validation. Sponsorship is live now; paid cloud
 > tiers open as the backend ships. Prices in USD; annual = ~2 months free.
@@ -28,10 +27,9 @@ production output — never for learning.* See the reasoning in
 | Kiosk / on-prem license + co-branding | — | — | — | — | ✅ |
 | Priority support | community | email | email | email | dedicated |
 
-¹ **The Preview Meter** (your "free taste, then pay"): cloud renders, deep runs,
-and HD/4K exports run free for the first ~30 seconds / first preview
-(watermarked), then prompt to unlock. Threshold is A/B-tested — see
-[VALIDATION_KIT.md](VALIDATION_KIT.md).
+¹ **The Preview Meter**: cloud renders, deep runs, and HD/4K exports run free
+for the first ~30 seconds / first preview (watermarked), then prompt to unlock.
+The exact threshold is A/B-tested.
 
 ## Support / Sponsor — $0+
 

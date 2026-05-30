@@ -373,12 +373,9 @@ tier would unlock:
   series.
 
 We never paywall *learning* — only *scale, convenience, and production output*.
-The full reasoning, competitor research, pricing, and go-to-market plan:
 
-- [docs/MONETIZATION.md](docs/MONETIZATION.md) — strategy + why people pay
 - [docs/PRICING.md](docs/PRICING.md) — tiers & feature matrix
-- [docs/GO_TO_MARKET.md](docs/GO_TO_MARKET.md) — promotion plan + launch copy
-- [docs/VALIDATION_KIT.md](docs/VALIDATION_KIT.md) — how to price-test before building
+- [docs/FREE_MVP.md](docs/FREE_MVP.md) — what's free, and where the paid line sits
 
 ## License
 

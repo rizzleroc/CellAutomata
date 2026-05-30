@@ -1,8 +1,7 @@
 # cellauto Free Edition — MVP definition
 
 *What the free version is, where the line to paid sits, and the bar it has to
-clear to count as "done."* This is the funnel from
-[MONETIZATION.md](MONETIZATION.md); it ships as **v3.7.0**.
+clear to count as "done."* It ships as **v3.7.0**.
 
 ---
 
@@ -95,9 +94,8 @@ in-browser full 12-stage pipeline.
 | Virality | **shared-link opens** / visitor | the new feature working |
 | Intent | Sponsor clicks, early-access clicks | demand |
 
-Validate the *paid* appetite with the Pond bounty + survey
-([VALIDATION_KIT.md](VALIDATION_KIT.md)) **before** building the billing/compute
-backend.
+Validate the *paid* appetite with real users **before** building the
+billing/compute backend.
 
 ---
 
