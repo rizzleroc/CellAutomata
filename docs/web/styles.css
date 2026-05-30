@@ -277,6 +277,14 @@ a.btn {
   text-decoration: none;
 }
 
+.caption-detail a {
+  color: var(--hairline-hi);
+  text-decoration: none;
+  border-bottom: 1px solid var(--hairline);
+}
+
+.caption-detail a:hover { border-color: var(--hairline-hi); }
+
 .support-buttons { flex-wrap: wrap; }
 
 .price-grid {
