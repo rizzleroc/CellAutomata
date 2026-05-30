@@ -154,6 +154,13 @@ capture, all directly demanded by the goal statement.
   card explaining the arc (chemistry → compartmentalisation →
   information). Dismissed forever via localStorage so returning
   visitors aren't nagged.
+- [ ] **P0-G4** *Control-mechanism legend* — one paragraph + a small
+  table listing the building blocks the sandbox demonstrates and the
+  *type* of control each one represents (Stage 1 = pattern
+  self-control; Stage 2 = thermodynamic compartment; Stage 6 = chiral
+  symmetry-breaking; Stage 9 = membraneless droplet formation; etc.).
+  Added 2026-05-30 by the three-provider MCP jury — all three
+  providers surfaced this exact gap independently. See §7.
 
 ### F · Layout & UX
 
@@ -376,4 +383,82 @@ whipgen daemon, in the debug-Chrome window —
 
 Then re-run `whipgen_fanout_with_judge` (sync) with the same prompt;
 it should land in ~30-60 s of wall-clock.
+
+### 2026-05-30 · MCP fanout — three-provider jury verdict (operative)
+
+Async fanout `fanout_mpru0g40_b15e1b` over `[chatgpt, claude, kimi]`
+settled cleanly: 3/3 in 67 s wall-clock (perProviderTimeoutMs:
+180000). All three providers returned full structured responses.
+
+**This entry supersedes both interim entries above.** It is the
+operative MCP-mediated verdict.
+
+#### Cross-provider consensus
+
+  - **Unanimous in top 5:** P0-A1, P0-G2.
+  - **Two of three:** P0-G1 (Claude + Kimi), P0-D1 (Claude + ChatGPT),
+    P0-A3 (Claude + ChatGPT).
+  - **One vote each:** P1-B1 (Kimi — RAF), P1-B2 (ChatGPT — RNA),
+    P1-C1 (Kimi — TOUR).
+
+  - **Unanimous cut:** P2-F1, P2-F2, P2-F3 (all three call these
+    layout/UX-only, off-goal).
+  - **Two-of-three cut:** P2-D3 (ChatGPT + Kimi — "too technical
+    before the plain-English layer exists"), P2-C2 (ChatGPT + Claude
+    — redundant with TOUR).
+
+#### Meta-judge verdict
+
+Winner: **Claude's "Goal-Legibility Pass"** —
+`P0-G1 → P0-A1 → P0-D1 → P0-G2 → P0-A3`.
+
+Reasoning: strictest ordering, most actionable framing, and the only
+provider that surfaces the single strongest missing item (a
+control-mechanism legend mapping each building block to the
+*type* of control it demonstrates — autocatalysis, information,
+compartmentalisation). ChatGPT and Kimi converge on a near-identical
+batch but with weaker ordering rationale.
+
+Confidence: **0.85** — three independent providers converging on the
+same 5-item shape from different angles is high signal; the only
+delta is whether `P0-G3` (orientation lede) belongs in this batch
+(ChatGPT + Kimi yes; Claude leaves it for round 2).
+
+#### Items the jury surfaced that the punchlist lacked
+
+All three providers, in different vocabulary, named the same gap:
+the page never synthesises *what "control" means across rules*.
+Folded into §3-G as a new P0:
+
+  - **P0-G4** *Control-mechanism legend* — a single small artifact
+    (one paragraph + a table) listing the building blocks the
+    sandbox demonstrates and the type of control each one represents
+    (Stage 1 = pattern self-control; Stage 2 = thermodynamic
+    compartment; Stage 6 = chiral symmetry-breaking; Stage 9 =
+    membraneless droplet formation; etc.). Without this the viewer
+    sees eight rules but never sees the cross-rule organising
+    principle.
+
+ChatGPT also flagged secondary candidates worth tracking but not in
+the immediate batch: an *input → output causality readout* per
+slider (a richer cousin of P0-G2), a canonical life-arc ordering
+(subsumed by P1-C1), and a *stage success criterion* per rule
+(subsumed by P0-A3 with stricter wording).
+
+#### Action
+
+Punchlist §3-G has been updated with **P0-G4** as a new item.
+**Operative ship-next batch:** P0-G1 → P0-A1 → P0-D1 → P0-G2 →
+P0-A3 (Claude's "Goal-Legibility Pass"). Estimated effort: 2–3 h.
+No new simulation code; pure text + tooltip + minor CSS.
+
+The interim Claude-in-session ranking (which had A1/D1/A2/A3/B3 in
+its top 5) is **overridden** on two items:
+  - P0-G2 promoted into the batch (jury 3/3 votes).
+  - P0-A2 (hover tooltip) drops out — superseded by P0-G2's
+    "consequence sentence" which subsumes the tooltip idea with a
+    biology-first framing the tooltip lacked.
+  - P1-B3 (vesicles) drops out of *this* batch — still a strong
+    item, but the jury is unanimous that explanation layer ships
+    first, new rules ship second.
 
