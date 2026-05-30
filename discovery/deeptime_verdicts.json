@@ -1,0 +1,34 @@
+[
+  {
+    "name": "Soliton Lattice",
+    "F": 0.07,
+    "k": 0.061,
+    "act_end": 6e-05,
+    "ent_end": 0.691,
+    "verdict": "freezes into a static structure by ~day 136"
+  },
+  {
+    "name": "Plasma Chaos",
+    "F": 0.0264,
+    "k": 0.0579,
+    "act_end": 0.0,
+    "ent_end": 0.613,
+    "verdict": "freezes into a static structure by ~day 75,518"
+  },
+  {
+    "name": "Coral",
+    "F": 0.0545,
+    "k": 0.062,
+    "act_end": 7e-05,
+    "ent_end": 0.67,
+    "verdict": "freezes into a static structure by ~day 136"
+  },
+  {
+    "name": "Wave Storm",
+    "F": 0.0198,
+    "k": 0.0495,
+    "act_end": 0.01162,
+    "ent_end": 0.639,
+    "verdict": "churns forever \u2014 bounded chaos, still moving at day 100,000 (act 0.0116)"
+  }
+]
