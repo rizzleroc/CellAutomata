@@ -5,6 +5,53 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ---
 
+## [Unreleased]
+
+### Added
+- **v4 preview page** (`docs/v4/`) — a live, in-browser "LIVE SEM FEED"
+  preview of the v4.0 SEM-grade renderer. Runs the real Gray-Scott engine,
+  then applies the PRD §6 Phase-1 depth-shading pipeline (height → blur →
+  normals → Lambertian + specular + ambient occlusion → warm-sepia / cool-mono
+  tone-map) so protocell forms read as lit micrograph spheres on a granular
+  substrate, with reticle, "LIVE SEM FEED" badge, scale-bar, and vignette
+  overlays. Deployable to GitHub Pages at `/v4/`; cross-linked from the v3.7
+  explorer. Includes a rendered social-preview still and an early-access /
+  sponsor CTA. The full v4 renderer (all 12 stages, desktop) remains the
+  shipped deliverable per `docs/PRD_SEM_VISUALIZATION.md`.
+
+---
+
+## [3.7.0] — 2026-05-30
+
+The **Free Edition MVP** release — cellauto becomes a product. It defines the
+free tier and turns the browser explorer into a real shareable product (not just
+a demo). Additive only; the science engine, desktop app, and 141 tests are
+unchanged. See [docs/RELEASE_NOTES_v3.7.0.md](docs/RELEASE_NOTES_v3.7.0.md).
+
+### Added — Free Edition MVP (the funnel)
+- **Shareable state via URL.** The browser explorer encodes the current
+  F/k/preset into the address bar and restores it on load; a **SHARE LINK**
+  button copies a permalink. This is the free tier's growth feature — sharing
+  the current state is free; saving *named* runs to an account is the Plus
+  upgrade.
+- **SAVE PNG.** Free single still-frame export (3× nearest-neighbour upscale).
+  Animated GIF, 4K, and the museum-plate poster generator are Pro.
+- **Clean Pages root URL.** `docs/index.html` redirects the GitHub Pages root to
+  the explorer so the bounty and promo share one link.
+
+### Added — free tier & pricing
+- `docs/FREE_MVP.md` — free-tier scope, the free/paid boundary, definition of
+  done, success metrics.
+- `docs/PRICING.md` — Free / Plus / Pro / Classroom / Institution tiers + matrix.
+- `.github/FUNDING.yml` — GitHub Sponsors (live with zero infra).
+- Landing page: pricing/support section + Sponsor CTA; README support section.
+
+### Deferred (scoped, not built — pending validated demand)
+Accounts, billing, cloud "deep runs", the Preview Meter, and GIF/4K/poster
+export.
+
+---
+
 ## [3.6.0] — 2026-05-24
 
 The **local-vs-web parity** release. The project ships two clients running

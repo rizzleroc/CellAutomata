@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "cellauto"
-version = "3.6.0"
+version = "3.7.0"
 description = "Scientifically-grounded abiogenesis sandbox with a *coupled* 12-stage chemistry-to-life pipeline. Real Eigen-Schuster hypercycle ODE, Helfrich curvature, Miyazawa-Jernigan fitness, pathway-graph LUCA. Desktop Tk client has UX parity with the Flask web client (wall-label, debounced sliders, batch stepping, pulse animations, toast notifications, reduced-motion mode). Plus Conway and Wolfram for reference."
 readme = "README.md"
 license = { file = "LICENSE" }

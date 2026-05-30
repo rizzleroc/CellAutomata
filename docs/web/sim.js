@@ -39,6 +39,13 @@
   const stopBtn = document.getElementById("btn-stop");
   const stepBtn = document.getElementById("btn-step");
   const resetBtn = document.getElementById("btn-reset");
+  const shareBtn = document.getElementById("btn-share");
+  const pngBtn = document.getElementById("btn-png");
+
+  const F_MIN = 0.0, F_MAX = 0.09;
+  const K_MIN = 0.03, K_MAX = 0.075;
+  const clampF = (x) => Math.min(F_MAX, Math.max(F_MIN, x));
+  const clampK = (x) => Math.min(K_MAX, Math.max(K_MIN, x));
 
   let running = false;
   let rafHandle = 0;
@@ -158,21 +165,60 @@
     if (preset !== undefined) presetSelect.value = preset;
   }
 
+  // ── Shareable state via the URL (the free tier's growth feature) ──────────
+  // Encodes the current F/k/preset into the address bar so any state can be
+  // shared as a link. Read back on load. Saving *named* runs to an account is
+  // the Pro upgrade; sharing the current state is free.
+  function updateURL() {
+    const params = new URLSearchParams();
+    const preset = presetSelect.value;
+    if (preset) params.set("preset", preset);
+    params.set("F", F.toFixed(3));
+    params.set("k", k.toFixed(3));
+    history.replaceState(null, "", location.pathname + "?" + params.toString());
+  }
+
+  function applyFromURL() {
+    const params = new URLSearchParams(location.search);
+    const preset = params.get("preset");
+    if (preset && PEARSON_PRESETS[preset]) {
+      const { F: nf, k: nk } = PEARSON_PRESETS[preset];
+      setFK(nf, nk, preset);
+      return true;
+    }
+    const pf = parseFloat(params.get("F"));
+    const pk = parseFloat(params.get("k"));
+    if (!Number.isNaN(pf) && !Number.isNaN(pk)) {
+      setFK(clampF(pf), clampK(pk), "");
+      return true;
+    }
+    return false;
+  }
+
+  function flash(btn, msg) {
+    const prev = btn.textContent;
+    btn.textContent = msg;
+    setTimeout(() => { btn.textContent = prev; }, 1400);
+  }
+
   fSlider.addEventListener("input", () => {
     F = parseFloat(fSlider.value);
     fReadout.textContent = F.toFixed(3);
     presetSelect.value = "";
+    updateURL();
   });
   kSlider.addEventListener("input", () => {
     k = parseFloat(kSlider.value);
     kReadout.textContent = k.toFixed(3);
     presetSelect.value = "";
+    updateURL();
   });
   presetSelect.addEventListener("change", () => {
     const name = presetSelect.value;
     if (PEARSON_PRESETS[name]) {
       const { F: nf, k: nk } = PEARSON_PRESETS[name];
       setFK(nf, nk, name);
+      updateURL();
     }
   });
   playBtn.addEventListener("click", play);
@@ -186,6 +232,41 @@
     reset();
   });
 
+  // SHARE — copy a permalink to the current F/k state.
+  if (shareBtn) {
+    shareBtn.addEventListener("click", async () => {
+      updateURL();
+      try {
+        await navigator.clipboard.writeText(location.href);
+        flash(shareBtn, "LINK COPIED ✓");
+      } catch {
+        window.prompt("Copy this link:", location.href);
+      }
+    });
+  }
+
+  // SAVE PNG — free single-frame export (upscaled 3× nearest-neighbour).
+  // Animated GIF, 4K, and the poster generator are the Pro upgrade.
+  if (pngBtn) {
+    pngBtn.addEventListener("click", () => {
+      const scale = 3;
+      const off = document.createElement("canvas");
+      off.width = W * scale;
+      off.height = H * scale;
+      const octx = off.getContext("2d");
+      octx.imageSmoothingEnabled = false;
+      octx.drawImage(canvas, 0, 0, off.width, off.height);
+      off.toBlob((blob) => {
+        const a = document.createElement("a");
+        a.href = URL.createObjectURL(blob);
+        a.download = `cellauto-F${F.toFixed(3)}-k${k.toFixed(3)}.png`;
+        a.click();
+        URL.revokeObjectURL(a.href);
+        flash(pngBtn, "SAVED ✓");
+      });
+    });
+  }
+
   // Keyboard: Space → play/pause.
   window.addEventListener("keydown", (e) => {
     if (e.code === "Space" && document.activeElement.tagName !== "INPUT") {
@@ -194,8 +275,9 @@
     }
   });
 
-  // Start.
+  // Start — restore a shared state from the URL, else default to "spots".
   reset();
-  setFK(0.035, 0.065, "spots");
+  if (!applyFromURL()) setFK(0.035, 0.065, "spots");
+  updateURL();
   play();
 })();
