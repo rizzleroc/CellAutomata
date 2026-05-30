@@ -39,16 +39,26 @@
       label: "Homochirality · Frank kinetics",
       formula: "dL/dt = αL(1−L−R) − βLR;   dR/dt = αR(1−L−R) − βLR  (Frank 1953).",
       shortCaption: "STAGE 6 · HOMOCHIRALITY",
+      whatThisIs: "Symmetry-breaking as a building block. A racemic 50/50 mix of left- and " +
+                  "right-handed molecules spontaneously collapses to one handedness. Real biology " +
+                  "uses only L-amino-acids and D-sugars — this is the mathematical answer to why.",
       paletteBg: [10, 14, 22],
       paletteFg: [230, 224, 208],
       width: W,
       height: H,
 
       params: {
-        alpha:     { label: "α growth", min: 0.01, max: 0.30, step: 0.005, value: 0.12 },
-        beta:      { label: "β mutual", min: 0.05, max: 1.50, step: 0.01,  value: 0.50 },
-        diffusion: { label: "diff D",   min: 0.00, max: 0.30, step: 0.01,  value: 0.10 },
-        noise:     { label: "noise",    min: 0.00, max: 0.05, step: 0.001, value: 0.005 },
+        alpha:     { label: "α — autocatalytic growth", min: 0.01, max: 0.30, step: 0.005, value: 0.12 },
+        beta:      { label: "β — mutual inhibition",    min: 0.05, max: 1.50, step: 0.01,  value: 0.50 },
+        diffusion: { label: "diffusion D",              min: 0.00, max: 0.30, step: 0.01,  value: 0.10 },
+        noise:     { label: "symmetry-breaking noise",  min: 0.00, max: 0.05, step: 0.001, value: 0.005 },
+      },
+
+      controlConsequence: {
+        alpha:     "How fast each enantiomer reproduces itself. Raise it: symmetry breaks faster. Lower it: the racemic state lingers.",
+        beta:      "How strongly L and R inhibit each other. This is the term that BREAKS the symmetry — set β=0 and the system stays racemic forever, no matter what.",
+        diffusion: "Smooths out local imbalances. Raise it: one enantiomer eventually wins globally. Lower it: rival domains persist in stable patches.",
+        noise:     "The random kick that lets the system fall off the racemic ridge. With zero noise it's metastable forever; a real noise floor is essential.",
       },
 
       randomize() { seed(); },

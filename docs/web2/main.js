@@ -18,50 +18,63 @@
   // ── Per-rule marginalia ticker copy ─────────────────────────────────────
   // Short notes cycled in the marginalia section every MARGINALIA_INTERVAL_MS.
   // Mirrors the "chapter-card" mechanism described in the v4.0 PRD §5.
+  // Each rule's ticker starts with a P0-A3 BUILDING-BLOCK CLAIM card
+  // (terse: "this shows X, and it matters because Y"), then cycles through
+  // the citation / context cards.  The claim is distinct from the
+  // persistent `whatThisIs` line under the formula caption — A1 explains,
+  // A3 stakes the claim.
   const MARGINALIA = {
     conway: [
+      "BUILDING-BLOCK CLAIM. Off-arc reference automaton — not a building block of life. Included so anyone can sanity-check the engine against the CA everyone already knows.",
       "Conway's Game of Life — Gardner, M. (1970). \"The fantastic combinations of John Conway's new solitaire game 'life'.\" Scientific American.",
       "B3/S23: a dead cell with exactly three live neighbours is born; a live cell with two or three lives on. Every other state dies.",
       "Universal computation — Berlekamp, Conway and Guy (1982) sketch a way to encode a Turing machine in gliders. Life is decidable in principle.",
       "Paint with the mouse to seed a still life or a glider. Right-click to erase. \"r\" reseeds at the current density.",
     ],
     wolfram1d: [
+      "BUILDING-BLOCK CLAIM. Off-arc reference automaton — not a building block of life. Sets the lower bound on \"how little machinery do you need to compute anything?\" — Rule 110 is Turing-complete on three input bits.",
       "Wolfram, S. (2002). A New Kind of Science. The 256 elementary one-dimensional rules partition into four classes.",
       "Rule 30 generates the column-1 sequence used in Mathematica's pseudo-random generator — chaotic class 3 behaviour.",
       "Rule 110 was proved Turing-complete — Cook, M. (2004). Universality in elementary cellular automata. Complex Systems 15:1.",
       "History scrolls upward; the bottom row is the current generation. Paint on it to perturb the seed.",
     ],
     grayscott: [
+      "BUILDING-BLOCK CLAIM. This shows that pure chemistry — no genes, no cells, no rules beyond two ODE terms — can produce structures that grow, divide, and replicate. The building block: pattern.",
       "Turing, A. M. (1952). \"The chemical basis of morphogenesis.\" Phil. Trans. R. Soc. B 237:37 — the founding paper of reaction–diffusion biology.",
       "Pearson, J. E. (1993). \"Complex patterns in a simple system.\" Science 261:189 — the (F, k) parameter map this slider lives inside.",
       "Self-replicating spots are not designed; they emerge from a four-parameter PDE with no notion of \"cell\" in its equations.",
       "Try the mitosis preset (F=0.0367, k=0.0649) — each spot splits into two, then four, then eight, in finite time.",
     ],
     soup: [
+      "BUILDING-BLOCK CLAIM. This shows chemistry without organisation — the starting condition for every downstream rule. The building block: matter, undirected.",
       "Oparin (1924) and Haldane (1929) — the \"primordial soup\" hypothesis: simple organics + energy → diversifying chemistry.",
       "Each tracer here is a Brownian particle, dx = √(2D·dt)·N(0,1). The trail field is the time-integrated occupancy.",
       "Six \"species\" colour-tag the tracers — a stand-in for the actual chemical diversity of Stage 0 in the Python build.",
       "Inject more matter with the brush. Tune diffusion D and drift; raise evaporation to thin the trail field.",
     ],
     "natural-selection": [
+      "BUILDING-BLOCK CLAIM. This shows the first hint of compartments emerging from random mixing. Without compartments there's no individual to be selected, no inside vs outside, no life. The building block: identity.",
       "Miller, S. L. (1953). \"A production of amino acids under possible primitive Earth conditions.\" Science 117:528.",
       "Sixteen species — the Miller-Urey product mix, weighted by reported yields. Formic acid dominates; glycine, glycolic acid, alanine follow.",
       "Rule 1 mixes neighbouring colours (diffusion). Rule 2 lets same-species \"new\" pairs combine into amoebas — the first compartmentalisation.",
       "Amoebas age and die; the soup never freezes. Paint with the brush to inject a fresh patch of new chemistry.",
     ],
     chirality: [
+      "BUILDING-BLOCK CLAIM. This shows how a racemic 50/50 mixture spontaneously picks a single handedness. The building block: symmetry-breaking. Without it, biology's L-amino-acid / D-sugar preference has no chemical basis.",
       "Frank, F. C. (1953). \"On spontaneous asymmetric synthesis.\" Biochim. Biophys. Acta 11:459 — autocatalysis + mutual inhibition → racemic instability.",
       "Real proteins are L-amino-acid only; real RNA is D-ribose only. Why? The Frank kinetics here are the canonical mathematical answer.",
       "The mirror symmetry of the soup is broken by a single noise kick; once one enantiomer is ahead, β·L·R amplifies the lead.",
       "Paint to inject pure L or R locally and watch the front advance into the racemic substrate.",
     ],
     coacervate: [
+      "BUILDING-BLOCK CLAIM. This shows membrane-less proto-cells forming by phase separation — concentrated chemistry pulling away from a dilute background. The building block: confinement without yet inventing membranes.",
       "Oparin (1924) proposed coacervate droplets as proto-cells. Banani et al. (2017) showed modern cells use the same physics — liquid–liquid phase separation.",
       "Cahn-Hilliard: ∂φ/∂t = M ∇²(φ³ − φ − κ ∇²φ). The φ³ − φ term is the free-energy double-well; κ ∇²φ is the surface tension.",
       "Spinodal decomposition first, coarsening second — droplets grow by absorbing their neighbours, area scaling like t^(1/3).",
       "Paint a droplet seed to bias the steady-state; the system finds its own balance from any initial condition.",
     ],
     vents: [
+      "BUILDING-BLOCK CLAIM. This shows the geological setting that combines free compartments (porous mineral walls) and free energy (a pH gradient) — the plausible substrate on which Stages 1–9 unfold. The building block: a place + a power source.",
       "Russell & Hall (1997), Martin & Russell (2003), Lane (2009) — alkaline hydrothermal vents as the energetically plausible origin site.",
       "The chimney's pH gradient + porous mineral honeycomb gives free energy + spatial compartmentalisation, the two preconditions for chemistry-to-life.",
       "Acetate is the canonical product of the abiotic acetyl-CoA pathway — the first carbon-fixation cycle the engine simulates here.",
@@ -113,6 +126,8 @@
   const badgeTextEl   = document.querySelector(".sem-badge-text");
   const scaleBarText  = document.getElementById("scale-bar-text");
   const marginaliaEl  = document.getElementById("marginalia");
+  const whatThisIsEl  = document.getElementById("what-this-is");
+  const controlHintEl = document.getElementById("control-hint");
   const bodyEl        = document.body;
 
   // ── State ───────────────────────────────────────────────────────────────
@@ -181,6 +196,10 @@
     captionEl.textContent = currentRule.shortCaption;
     detailEl.textContent  = currentRule.formula;
     rdRule.textContent    = id;
+    if (whatThisIsEl) {
+      whatThisIsEl.textContent = currentRule.whatThisIs || "";
+    }
+    showFirstControlHint();
     if (badgeTextEl) {
       badgeTextEl.textContent = "LIVE SEM FEED · " + currentRule.shortCaption;
     }
@@ -191,6 +210,21 @@
     render();
     refreshReadouts();
     writeUrlState();
+  }
+
+  // Initial control-hint = the consequence sentence for the first param.
+  function showFirstControlHint() {
+    if (!controlHintEl || !currentRule) return;
+    const params = currentRule.params || {};
+    const cc = currentRule.controlConsequence || {};
+    const firstName = Object.keys(params)[0];
+    controlHintEl.textContent = (firstName && cc[firstName]) || "";
+  }
+
+  function setControlHint(paramName) {
+    if (!controlHintEl || !currentRule) return;
+    const cc = currentRule.controlConsequence || {};
+    controlHintEl.textContent = cc[paramName] || "";
   }
 
   function rebuildRuleControls() {
@@ -261,6 +295,15 @@
         row.appendChild(input);
         row.appendChild(readout);
       }
+
+      // P0-G2: focus/hover/interact on this control → control-hint
+      // line shows what the knob does to the biology.
+      const hint = () => setControlHint(name);
+      input.addEventListener("focus", hint);
+      input.addEventListener("input", hint);
+      input.addEventListener("change", hint);
+      row.addEventListener("mouseenter", hint);
+
       // Stash refs so syncRuleControlsToParams() can update bidirectionally.
       row.dataset.param = name;
       ruleControls.appendChild(row);

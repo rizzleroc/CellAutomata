@@ -233,6 +233,21 @@ section { margin: 0; }
   margin: 0;
 }
 
+/* v4-on-2 "Goal-Legibility Pass" — plain-English claim per rule. */
+.what-this-is {
+  font-family: var(--font-display);
+  font-size: 15px;
+  line-height: 1.45;
+  color: var(--text);
+  margin: 8px auto 0;
+  max-width: 580px;
+}
+
+.what-this-is:empty,
+.what-this-is:has(:only-child:empty) {
+  display: none;
+}
+
 /* ── Controls ───────────────────────────────────────────────────────────── */
 
 .control-row {
@@ -333,6 +348,18 @@ section { margin: 0; }
   margin: 10px 0 4px;
   padding: 8px 0 4px;
   border-top: 1px dashed var(--hairline);
+}
+
+/* v4-on-2 "Goal-Legibility Pass" — focus/hover a slider and this line
+   describes what raising or lowering the knob does to the biology. */
+.control-hint {
+  font-family: var(--font-display);
+  font-style: italic;
+  font-size: 12px;
+  line-height: 1.45;
+  color: var(--text-dim);
+  min-height: 3.6em;
+  margin: 6px 0 0;
 }
 
 .rule-controls:empty {

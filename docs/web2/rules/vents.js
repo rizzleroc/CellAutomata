@@ -59,16 +59,27 @@
       label: "Alkaline vents · acetate plume",
       formula: "∂A/∂t = D ∇²A + drift·∂A/∂y + S(mask) − decay·A",
       shortCaption: "STAGE 2 · ALKALINE VENTS",
+      whatThisIs: "Energy + compartments, supplied by geology. Alkaline hydrothermal vents combine " +
+                  "porous mineral walls (free compartments) with a pH gradient (free energy). " +
+                  "Russell, Martin and Lane argue this is where the chemistry of life most plausibly " +
+                  "began — the proton gradient cells still use today, fossilised in the rock.",
       paletteBg: [10, 14, 22],
       paletteFg: [230, 224, 208],
       width: W,
       height: H,
 
       params: {
-        diffusion: { label: "diff D",   min: 0.05, max: 0.40, step: 0.01,  value: 0.20 },
-        drift:     { label: "updraft",  min: 0.00, max: 0.50, step: 0.01,  value: 0.18 },
-        decay:     { label: "decay",    min: 0.000, max: 0.020, step: 0.001, value: 0.004 },
-        source:    { label: "source",   min: 0.00, max: 0.20, step: 0.005, value: 0.05 },
+        diffusion: { label: "diffusion D",       min: 0.05, max: 0.40, step: 0.01,  value: 0.20 },
+        drift:     { label: "updraft velocity",  min: 0.00, max: 0.50, step: 0.01,  value: 0.18 },
+        decay:     { label: "acetate decay",     min: 0.000, max: 0.020, step: 0.001, value: 0.004 },
+        source:    { label: "vent source rate",  min: 0.00, max: 0.20, step: 0.005, value: 0.05 },
+      },
+
+      controlConsequence: {
+        diffusion: "How fast acetate spreads sideways from the central duct. Raise it: a broader, fuzzier plume. Lower it: a narrow column hugging the duct.",
+        drift:     "Buoyant updraft pushing the warm plume up the chimney. Raise it: acetate reaches higher before it decays.",
+        decay:     "How fast acetate is consumed (or chemically lost) per step. Raise it: short plume — molecules don't get far. Lower it: long-lived chemistry that builds up.",
+        source:    "How fast new acetate is injected at the duct base. Raise it: a thicker plume that fills the chimney. Lower it: a thin trickle that quickly dilutes.",
       },
 
       randomize() { seed(); },

@@ -18,14 +18,22 @@
       label: "Conway · Life (B3/S23)",
       formula: "B3/S23 — born on 3 live neighbors, survives on 2 or 3.",
       shortCaption: "STAGE ∞ · CONWAY'S LIFE",
+      whatThisIs: "Reference automaton, not a building block of life. " +
+                  "Included so anyone can sanity-check the engine against the canonical " +
+                  "cellular-automaton everyone already knows.",
       paletteBg: [10, 14, 22],
       paletteFg: [230, 224, 208],
       width: W,
       height: H,
 
       params: {
-        density: { label: "density", min: 0.05, max: 0.6, step: 0.01, value: 0.30 },
-        wrap:    { label: "wrap",    type: "bool",                value: true  },
+        density: { label: "live-cell density", min: 0.05, max: 0.6, step: 0.01, value: 0.30 },
+        wrap:    { label: "toroidal edges",    type: "bool",                value: true  },
+      },
+
+      controlConsequence: {
+        density: "Initial fraction of live cells at reset. Sparse: the lattice goes empty fast. Dense: chaotic blooming that takes a while to settle.",
+        wrap:    "Toroidal boundaries. Off: edges act like walls and gliders die at them. On: gliders can fly forever.",
       },
 
       randomize() {

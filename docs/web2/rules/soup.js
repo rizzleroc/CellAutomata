@@ -57,16 +57,26 @@
       label: "Primordial soup · Brownian",
       formula: "dx = √(2D·dt)·N(0,1) — Brownian tracers, persistent trail.",
       shortCaption: "STAGE 0 · PRIMORDIAL SOUP",
+      whatThisIs: "Chemistry, before any organisation. Particles random-walk through a substrate, " +
+                  "laying down a fading occupancy trail. Oparin & Haldane's \"soup\" — the starting " +
+                  "condition for everything downstream in the origin-of-life arc.",
       paletteBg: [10, 14, 22],
       paletteFg: [230, 224, 208],
       width: W,
       height: H,
 
       params: {
-        count:       { label: "count",       min: 50, max: 1500, step: 50, value: 600 },
-        diffusion:   { label: "diff D",      min: 0.05, max: 2.5, step: 0.05, value: 0.6 },
-        evaporation: { label: "evap",        min: 0.00, max: 0.20, step: 0.01, value: 0.04 },
-        drift:       { label: "drift",       min: -0.5, max: 0.5, step: 0.01, value: 0.0 },
+        count:       { label: "particle count",    min: 50, max: 1500, step: 50, value: 600 },
+        diffusion:   { label: "diffusion D",       min: 0.05, max: 2.5, step: 0.05, value: 0.6 },
+        evaporation: { label: "trail evaporation", min: 0.00, max: 0.20, step: 0.01, value: 0.04 },
+        drift:       { label: "current drift",     min: -0.5, max: 0.5, step: 0.01, value: 0.0 },
+      },
+
+      controlConsequence: {
+        count:       "How many tracer particles in the soup. More tracers → denser substrate, more collisions, faster mixing.",
+        diffusion:   "How vigorously each particle random-walks. Raise it: trails blur into smoke. Lower it: tracks stay distinct.",
+        evaporation: "How fast the trail field fades. Raise it: only the recent past shows. Lower it: long-lived history builds up — closer to a real geological record.",
+        drift:       "Net current pushing every particle one way. Zero: pure diffusion. Non-zero: a flowing soup, like a real ocean current.",
       },
 
       onParamChange(name) {

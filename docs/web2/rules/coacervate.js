@@ -44,15 +44,25 @@
       label: "Coacervate · Cahn-Hilliard",
       formula: "∂φ/∂t = M ∇²( φ³ − φ − κ ∇²φ )   (Oparin 1924; Banani et al. 2017).",
       shortCaption: "STAGE 9 · COACERVATE",
+      whatThisIs: "Membrane-less compartments as a building block. Concentrated chemistry separates " +
+                  "from a dilute background into droplets — no lipid membrane required. " +
+                  "Modern cells still use this exact mechanism for organelles. Plausibly the first " +
+                  "compartment in the origin-of-life arc.",
       paletteBg: [10, 14, 22],
       paletteFg: [230, 224, 208],
       width: W,
       height: H,
 
       params: {
-        mobility:  { label: "M",    min: 0.05, max: 0.6,  step: 0.01, value: 0.30 },
-        kappa:     { label: "κ",    min: 0.1,  max: 2.0,  step: 0.05, value: 1.00 },
-        substeps:  { label: "iter", min: 1,    max: 8,    step: 1,    value: 3    },
+        mobility:  { label: "M — mobility",            min: 0.05, max: 0.6,  step: 0.01, value: 0.30 },
+        kappa:     { label: "κ — interface stiffness", min: 0.1,  max: 2.0,  step: 0.05, value: 1.00 },
+        substeps:  { label: "PDE iterations / frame",  min: 1,    max: 8,    step: 1,    value: 3    },
+      },
+
+      controlConsequence: {
+        mobility:  "How fast the field relaxes toward equilibrium. Time-scaling only — the final droplet pattern is unchanged.",
+        kappa:     "Interface stiffness — how much the field 'dislikes' sharp boundaries. Raise it: fewer, larger, smoother droplets. Lower it: many small ragged ones.",
+        substeps:  "How many PDE substeps per visible frame. Pure speed knob — coarser steps simulate faster but with less smooth dynamics.",
       },
 
       randomize() { seed(); },

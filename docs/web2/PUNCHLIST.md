@@ -59,17 +59,14 @@ marginalia is rotating citations, not a narrative. A first-time viewer
 sees "STAGE 9 · COACERVATE / Cahn-Hilliard" and learns nothing about why
 coacervates matter for the origin of life.
 
-- [ ] **P0-A1** Each rule gets a 1-sentence "what this is" line directly
-  under the formula caption — separate from the formula and from the
-  rotating marginalia. Plain English, no jargon.
-- [ ] **P0-A2** Each parameter slider gets a tooltip on hover with the
-  physical interpretation — e.g. `F` → "feed rate of fresh substrate"; `k`
-  → "kill rate of the catalyst v"; `κ` → "interface stiffness — high
-  values give fewer, larger droplets". Drives the "how they're
-  controlled" requirement directly.
-- [ ] **P0-A3** Marginalia ticker grows a *first* card per rule that is
-  the **building-block claim** ("This shows X. The reason it matters
-  for the origin of life is Y."), distinct from the citation cards.
+- [x] **P0-A1** Each rule gets a 1-sentence "what this is" line directly
+  under the formula caption. Shipped 2026-05-30 in "Goal-Legibility Pass."
+- [—] **P0-A2** Per-slider hover tooltip. Superseded by **P0-G2**
+  (per-control consequence sentence) — same content, biology-first
+  framing, displayed in the persistent control-hint area instead of a
+  hover tooltip so it's always visible. Jury verdict 2026-05-30.
+- [x] **P0-A3** Marginalia ticker's first card per rule is the
+  building-block claim. Shipped 2026-05-30 in "Goal-Legibility Pass."
 - [ ] **P1-A4** A persistent "About this stage" expandable panel under
   the readout — 50-word paragraph per rule, written from the
   origin-of-life perspective.
@@ -114,9 +111,9 @@ end-to-end.
 
 ### D · Control surfaces — labelling & affordance
 
-- [ ] **P0-D1** Parameter labels carry the physical name, not the
-  Greek-letter symbol alone. E.g. `α growth` exists today on chirality;
-  extend to every rule.
+- [x] **P0-D1** Every parameter label across all 8 rules carries the
+  physical name (`feed rate F`, `mobility M`, `interface stiffness κ`,
+  `acetate decay`, …). Shipped 2026-05-30 in "Goal-Legibility Pass."
 - [ ] **P1-D2** Add a "default / typical / extreme" three-button
   preset row for every continuous-parameter rule (currently only
   grayscott has presets). This *shows control* by showing the response
@@ -128,10 +125,10 @@ end-to-end.
 
 ### E · Honesty
 
-- [ ] **P1-E1** Note in the marginalia that `conway` / `wolfram1d` are
-  *not* building blocks of life — they're reference automata for
-  sanity-checking the engine. Currently their cards talk only about CA
-  history; a viewer might miss that those two are off-arc.
+- [x] **P1-E1** Conway and Wolfram 1D's marginalia BUILDING-BLOCK CLAIM
+  cards now lead with "Off-arc reference automaton — not a building
+  block of life." Closed organically as part of the "Goal-Legibility
+  Pass" 2026-05-30 (the A1 / A3 work both surfaced this honestly).
 - [ ] **P1-E2** Footer copy: state which of the 12 Python stages are
   ported and which aren't, with a one-line explanation of why
   (NumPy/SciPy density).
@@ -141,15 +138,12 @@ end-to-end.
 The judging pass surfaced three gaps the original A–F sections didn't
 capture, all directly demanded by the goal statement.
 
-- [ ] **P0-G1** Replace the subtitle "a multi-rule observation bench —
-  four automata, one canvas" with the goal itself: *"the building blocks
-  of life, and how each is controlled."* One-line edit; tells every
-  visitor what the page is *for* before they touch a control.
-- [ ] **P0-G2** Per-control *consequence* sentence (distinct from the
-  A2 tooltip explaining what the parameter *is*). E.g. *"F: how much
-  fresh substrate is fed. Raise it and spots replicate faster; below
-  ~0.02 the system goes extinct."* A2 + G2 jointly fulfil the
-  *show how they're controlled* half of the goal.
+- [x] **P0-G1** Subtitle now reads *"the building blocks of life, and
+  how each is controlled."* Shipped 2026-05-30 in "Goal-Legibility Pass."
+- [x] **P0-G2** Per-control consequence sentence wired up — focus or
+  hover any slider and the `control-hint` line under the rule-controls
+  says what raising/lowering does to the biology. Shipped 2026-05-30
+  in "Goal-Legibility Pass." Subsumes the earlier P0-A2 tooltip idea.
 - [ ] **P0-G3** First-visit orientation lede — 50-word dismissable
   card explaining the arc (chemistry → compartmentalisation →
   information). Dismissed forever via localStorage so returning
@@ -178,6 +172,15 @@ capture, all directly demanded by the goal statement.
 
 ## 4 · Done so far (history)
 
+- [x] **Goal-Legibility Pass** (2026-05-30) — six items shipped as one
+  batch following the three-provider MCP jury verdict (see §7):
+  P0-G1 subtitle = goal, P0-A1 per-rule "what this is" line,
+  P0-D1 physical-name slider labels across all 8 rules,
+  P0-G2 per-control consequence hint (focus a slider to see what the
+  knob does to the biology), P0-A3 marginalia leads with the
+  BUILDING-BLOCK CLAIM, P1-E1 conway / wolfram1d explicitly marked
+  off-arc reference automata. Pure text + minor CSS; no new
+  simulation code.
 - [x] Multi-rule sandbox (4 rules: conway, wolfram1d, grayscott, soup).
 - [x] v4.0 SEM port — depth-shaded rendering, warm-sepia / cool-mono
   palettes, LIVE SEM FEED badge with pulse, reticle, vignette,

@@ -45,13 +45,21 @@
       label: "Natural selection · 16-species soup",
       formula: "16-species lattice + neighbour mixing → same-species pairs become amoebas.",
       shortCaption: "STAGE 0 · NATURAL SELECTION",
+      whatThisIs: "The first hint of compartmentalisation. In a soup of 16 chemical species, " +
+                  "same-species pairs combine into longer-lived 'amoebas' — local pockets of identity. " +
+                  "It matters because compartments are the precondition for everything else: " +
+                  "without a boundary, there's no individual to be selected.",
       paletteBg: [10, 14, 22],
       paletteFg: [230, 224, 208],
       width: W,
       height: H,
 
       params: {
-        amoebaLifespan: { label: "lifespan", min: 10, max: 200, step: 5, value: AMOEBA_LIFESPAN },
+        amoebaLifespan: { label: "amoeba lifespan", min: 10, max: 200, step: 5, value: AMOEBA_LIFESPAN },
+      },
+
+      controlConsequence: {
+        amoebaLifespan: "How many steps an amoeba survives before dying. Shorter: fast turnover, sparse population. Longer: amoebas accumulate into dense 'cities' that crowd out the unbound soup.",
       },
 
       randomize() { seed(); },

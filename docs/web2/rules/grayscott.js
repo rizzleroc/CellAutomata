@@ -92,15 +92,24 @@
       label: "Gray–Scott · reaction–diffusion",
       formula: "∂u/∂t = Du ∇²u − uv² + F(1−u);   ∂v/∂t = Dv ∇²v + uv² − (F+k)v",
       shortCaption: "STAGE 1 · REACTION–DIFFUSION",
+      whatThisIs: "Pattern as a building block. Two reacting chemicals on a featureless lattice " +
+                  "spontaneously form spots that grow, divide, and replicate — no genes, no membranes, " +
+                  "no cells. Turing (1952) proposed exactly this as the chemical basis of biology.",
       paletteBg: [10, 14, 22],
       paletteFg: [230, 224, 208],
       width: W,
       height: H,
 
       params: {
-        preset: { label: "preset", type: "enum", options: Object.keys(PRESETS), value: "spots" },
-        F:      { label: "feed F", min: 0.000, max: 0.090, step: 0.001, value: 0.035 },
-        k:      { label: "kill k", min: 0.030, max: 0.075, step: 0.001, value: 0.065 },
+        preset: { label: "Pearson preset",    type: "enum", options: Object.keys(PRESETS), value: "spots" },
+        F:      { label: "feed rate F",       min: 0.000, max: 0.090, step: 0.001, value: 0.035 },
+        k:      { label: "kill rate k",       min: 0.030, max: 0.075, step: 0.001, value: 0.065 },
+      },
+
+      controlConsequence: {
+        preset: "Pearson (1993) catalogued the F/k landscape. Each preset is one named region — spots, stripes, mitosis, waves, labyrinth.",
+        F: "How much fresh substrate u is fed into the system. Raise it: spots replicate faster. Below ~0.02: starvation — the system goes extinct.",
+        k: "How fast the catalyst v is killed off. Raise it: spots shrink and die. Lower it: spots merge into stripes and labyrinths.",
       },
 
       onParamChange(name) {

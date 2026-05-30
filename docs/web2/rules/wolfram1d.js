@@ -19,14 +19,23 @@
       label: "Wolfram · 1D elementary",
       formula: "next[x] = (rule >> (4·L + 2·C + R)) & 1   —   3-cell neighborhood.",
       shortCaption: "STAGE ∞ · WOLFRAM 1D",
+      whatThisIs: "Reference automaton, not a building block of life. " +
+                  "The smallest possible CA — three input bits, one output bit — yet rule 110 " +
+                  "is already Turing-complete. Sets the lower bound for 'how little machinery do " +
+                  "you need to compute anything?'",
       paletteBg: [245, 241, 230],
       paletteFg: [17, 17, 17],
       width: W,
       height: H,
 
       params: {
-        ruleNumber: { label: "rule",  min: 0, max: 255, step: 1, value: 30 },
-        seedRandom: { label: "seed?", type: "bool",            value: false },
+        ruleNumber: { label: "Wolfram rule (0–255)",  min: 0, max: 255, step: 1, value: 30 },
+        seedRandom: { label: "random seed row",       type: "bool",            value: false },
+      },
+
+      controlConsequence: {
+        ruleNumber: "Wolfram's 0–255 rule number. 30: chaotic. 90: Sierpiński triangle. 110: Turing-complete. 0: blank. Different numbers literally select different universes of behaviour.",
+        seedRandom: "Off: seed is one live cell in the centre — the canonical view. On: seed is a random row, which tends to wash out distinctive structure.",
       },
 
       _seed() {
