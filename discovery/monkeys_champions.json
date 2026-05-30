@@ -1,0 +1,71 @@
+{
+  "soups_searched": 6000,
+  "champions": [
+    {
+      "seed": 3566,
+      "G": 90,
+      "S": 22,
+      "dens": 0.44,
+      "init_cells": 228,
+      "true_life": 2730,
+      "true_fate": "period-2",
+      "true_peak": 943,
+      "growth": 4.14
+    },
+    {
+      "seed": 1741,
+      "G": 90,
+      "S": 22,
+      "dens": 0.44,
+      "init_cells": 221,
+      "true_life": 3474,
+      "true_fate": "period-2",
+      "true_peak": 942,
+      "growth": 4.26
+    },
+    {
+      "seed": 1856,
+      "G": 90,
+      "S": 22,
+      "dens": 0.44,
+      "init_cells": 212,
+      "true_life": 2604,
+      "true_fate": "period-2",
+      "true_peak": 938,
+      "growth": 4.42
+    },
+    {
+      "seed": 2192,
+      "G": 90,
+      "S": 22,
+      "dens": 0.44,
+      "init_cells": 221,
+      "true_life": 2594,
+      "true_fate": "period-2",
+      "true_peak": 933,
+      "growth": 4.22
+    },
+    {
+      "seed": 5650,
+      "G": 90,
+      "S": 22,
+      "dens": 0.44,
+      "init_cells": 221,
+      "true_life": 3957,
+      "true_fate": "period-2",
+      "true_peak": 892,
+      "growth": 4.04
+    },
+    {
+      "seed": 2392,
+      "G": 90,
+      "S": 22,
+      "dens": 0.44,
+      "init_cells": 230,
+      "true_life": 3428,
+      "true_fate": "period-2",
+      "true_peak": 867,
+      "growth": 3.77
+    }
+  ]
+}
