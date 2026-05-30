@@ -16,6 +16,8 @@ exports/*.png
 marketing/social/reels/*.mp4
 marketing/social/reels_voiced/*.mp4
 marketing/social/voiceover/wav/*.wav
+discovery/results/*.jsonl
+replay_library/thumbs/*.gif
 
 # Local-only dev artefacts (visual audits + MCP server config).
 .ruff_cache/
