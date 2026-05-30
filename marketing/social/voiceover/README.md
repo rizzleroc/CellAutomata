@@ -58,3 +58,10 @@ the VibeVoice WAVs and re-run for the final, production-quality voiced reels.
 
 WAVs and voiced MP4s are gitignored (large/regenerable). `scripts.json` is the
 source of truth for the narration copy.
+
+## Productionizing: VibeVoice as a GPU service
+
+For a durable setup, host VibeVoice on a local GPU (e.g. an RTX 5090) as a
+persistent service exposed through the whipgen MCP, so any consumer can request
+synthesis without touching HuggingFace at call time. Design:
+**[docs/PRD_VIBEVOICE_MCP.md](../../../docs/PRD_VIBEVOICE_MCP.md)**.
