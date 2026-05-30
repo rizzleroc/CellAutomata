@@ -1,0 +1,132 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>cellauto v4 — LIVE SEM FEED (preview)</title>
+  <meta name="description" content="Preview of cellauto v4.0 — SEM-grade depth-shaded rendering of the origin-of-life simulation. A live in-browser approximation of the v4 instrument view, running on the real Gray-Scott reaction-diffusion engine." />
+  <meta property="og:title" content="cellauto v4 — LIVE SEM FEED (preview)" />
+  <meta property="og:description" content="The origin of life, rendered as an electron-microscope feed. A live in-browser preview of the cellauto v4 SEM renderer." />
+  <meta property="og:image" content="https://rizzleroc.github.io/CellAutomata/v4/sem-preview.png" />
+  <meta name="twitter:card" content="summary_large_image" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;1,400&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="sem.css" />
+</head>
+<body>
+  <header class="plate-header">
+    <p class="eyebrow">P L A T E &nbsp; v4 &nbsp; · &nbsp; C E L L A U T O &nbsp; · &nbsp; M M X X V I</p>
+    <h1>the LIVE&nbsp;SEM&nbsp;FEED</h1>
+    <p class="subtitle">a preview of v4.0 — the origin of life, as an instrument view</p>
+    <p class="devnote">▲ IN DEVELOPMENT · PREVIEW BUILD</p>
+    <hr class="hairline" />
+  </header>
+
+  <main>
+    <section class="observation">
+      <p class="section-label"><span class="roman">I</span> &nbsp; L I V E &nbsp; F E E D</p>
+
+      <div class="scope">
+        <div class="canvas-frame">
+          <canvas id="sem-canvas" width="220" height="220" aria-label="Live SEM-style reaction-diffusion feed"></canvas>
+          <!-- instrument overlays -->
+          <svg class="reticle" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">
+            <line x1="50" y1="0" x2="50" y2="100" /><line x1="0" y1="50" x2="100" y2="50" />
+            <line x1="25" y1="48" x2="25" y2="52" /><line x1="75" y1="48" x2="75" y2="52" />
+            <line x1="48" y1="25" x2="52" y2="25" /><line x1="48" y1="75" x2="52" y2="75" />
+          </svg>
+          <div class="vignette" aria-hidden="true"></div>
+          <p class="badge" id="sem-badge">● LIVE SEM FEED · STAGE 1 — REACTION–DIFFUSION</p>
+        </div>
+        <p class="scalebar"><span class="bar"></span>&nbsp;1&nbsp;μm&nbsp;&nbsp;·&nbsp;&nbsp;HV 5.0kV&nbsp;&nbsp;·&nbsp;&nbsp;det SE&nbsp;&nbsp;·&nbsp;&nbsp;cellauto v4</p>
+      </div>
+
+      <p class="caption-detail">
+        Depth-shaded from the real Gray-Scott v-field: gradients → surface
+        normals → Lambertian + specular + ambient occlusion → sepia tone-map.
+        Every lit pixel is the live PDE — not a texture.
+      </p>
+    </section>
+
+    <section class="controls">
+      <p class="section-label"><span class="roman">II</span> &nbsp; A P P A R A T U S</p>
+
+      <div class="chips">
+        <button class="chip active" data-preset="mitosis">mitosis</button>
+        <button class="chip" data-preset="spots">spots</button>
+        <button class="chip" data-preset="stripes">stripes</button>
+        <button class="chip" data-preset="waves">waves</button>
+        <button class="chip" data-preset="labyrinth">labyrinth</button>
+      </div>
+
+      <div class="control-row">
+        <label class="ctl-label" for="f-slider">feed&nbsp;&nbsp;F</label>
+        <input id="f-slider" class="slider" type="range" min="0.0" max="0.09" step="0.0001" value="0.0367" />
+        <span class="readout" id="f-readout">0.0367</span>
+      </div>
+      <div class="control-row">
+        <label class="ctl-label" for="k-slider">kill&nbsp;&nbsp;k</label>
+        <input id="k-slider" class="slider" type="range" min="0.030" max="0.075" step="0.0001" value="0.0649" />
+        <span class="readout" id="k-readout">0.0649</span>
+      </div>
+
+      <div class="control-row buttons">
+        <button id="btn-play" class="btn primary">PLAY</button>
+        <button id="btn-stop" class="btn danger" disabled>STOP</button>
+        <button id="btn-step" class="btn">STEP</button>
+        <button id="btn-reset" class="btn">RESET</button>
+        <button id="btn-palette" class="btn">PALETTE · WARM-SEPIA</button>
+      </div>
+    </section>
+
+    <section class="vision">
+      <p class="section-label"><span class="roman">III</span> &nbsp; W H A T &nbsp; v4 &nbsp; I S</p>
+      <p class="commentary">
+        “It should look like a real electron-microscope image of the chemistry
+        we’re simulating — not a viridis heat-map on a pixel grid.” v3.x earned
+        the science; v4 earns the <em>look</em>. The same coupled 12-stage
+        origin-of-life engine, rendered as a live instrument feed: depth-shaded
+        surfaces, recognisable protocell forms catching light, a reticle and
+        scale-bar — so the visual story finally matches the maths underneath it.
+      </p>
+      <ul class="roadmap">
+        <li><span>v4.0.0</span> Depth-shaded SEM renderer, all 12 stages, warm-sepia + cool-mono palettes, 20 FPS on a laptop — no GPU required.</li>
+        <li><span>v4.0.1</span> Sprite library — protocell spheres, vesicle bilayers, mineral chimneys, RNA isobars.</li>
+        <li><span>v4.1</span> Full 12-stage SEM gallery.</li>
+        <li><span>v4.2</span> Optional GPU path (moderngl) for large grids.</li>
+        <li><span>v4.3</span> Opt-in AI image-to-image refinement for hero shots.</li>
+      </ul>
+      <p class="caption-detail">
+        Full spec: <a href="https://github.com/rizzleroc/CellAutomata/blob/main/docs/PRD_SEM_VISUALIZATION.md">SEM-grade visualization PRD</a>.
+      </p>
+    </section>
+
+    <section class="cta">
+      <p class="section-label"><span class="roman">IV</span> &nbsp; G E T &nbsp; v4 &nbsp; E A R L Y</p>
+      <p class="caption-detail">
+        v4 is in active development. Early SEM exports and the museum-plate
+        generator land in the <strong>Pro</strong> tier. Back it now and you
+        shape what ships.
+      </p>
+      <div class="control-row buttons">
+        <a class="btn primary" href="https://github.com/sponsors/rizzleroc">♥ &nbsp;SPONSOR v4</a>
+        <a class="btn" href="https://github.com/rizzleroc/CellAutomata/issues/new?title=v4%20SEM%20early%20access&body=I%27d%20like%20early%20access%20to%20the%20v4%20LIVE%20SEM%20FEED%20build.%0A%0AWhat%20I%27d%20use%20it%20for%3A%20">JOIN&nbsp;THE&nbsp;WAITLIST</a>
+        <a class="btn" href="../web/">◀ &nbsp;v3.7 EXPLORER</a>
+        <a class="btn" href="https://github.com/rizzleroc/CellAutomata/blob/main/docs/PRICING.md">PRICING</a>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <p class="footer-text">
+      cellauto v4 preview — live in-browser approximation of the v4 SEM pipeline ·
+      the full renderer covers all 12 stages in the desktop build ·
+      <a href="https://github.com/rizzleroc/CellAutomata">GitHub</a>
+    </p>
+  </footer>
+
+  <script src="../web/presets.js"></script>
+  <script src="sem.js"></script>
+</body>
+</html>

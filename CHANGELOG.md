@@ -5,6 +5,22 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ---
 
+## [Unreleased]
+
+### Added
+- **v4 preview page** (`docs/v4/`) — a live, in-browser "LIVE SEM FEED"
+  preview of the v4.0 SEM-grade renderer. Runs the real Gray-Scott engine,
+  then applies the PRD §6 Phase-1 depth-shading pipeline (height → blur →
+  normals → Lambertian + specular + ambient occlusion → warm-sepia / cool-mono
+  tone-map) so protocell forms read as lit micrograph spheres on a granular
+  substrate, with reticle, "LIVE SEM FEED" badge, scale-bar, and vignette
+  overlays. Deployable to GitHub Pages at `/v4/`; cross-linked from the v3.7
+  explorer. Includes a rendered social-preview still and an early-access /
+  sponsor CTA. The full v4 renderer (all 12 stages, desktop) remains the
+  shipped deliverable per `docs/PRD_SEM_VISUALIZATION.md`.
+
+---
+
 ## [3.7.0] — 2026-05-30
 
 The **Free Edition MVP** release — cellauto becomes a product. It defines the
