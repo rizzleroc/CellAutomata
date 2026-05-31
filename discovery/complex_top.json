@@ -1,0 +1,137 @@
+{
+  "total_sims": 5148,
+  "winners": [
+    {
+      "rank": 1,
+      "name": "SOLITON LATTICE",
+      "complexity": 0.7972,
+      "classification": "living",
+      "params": {
+        "F": 0.07,
+        "k": 0.06102,
+        "Du": 0.16,
+        "Dv": 0.08
+      },
+      "seed": 1,
+      "metrics": {
+        "entropy_m": 0.6417,
+        "edge_m": 0.0521,
+        "var_m": 0.02284,
+        "activity_m": 0.01932,
+        "alive_frac": 0.971,
+        "entropy_f": 0.6812,
+        "activity_f": 0.00146
+      }
+    },
+    {
+      "rank": 18,
+      "name": "PLASMA CHAOS",
+      "complexity": 0.7642,
+      "classification": "chaotic",
+      "params": {
+        "F": 0.02636,
+        "k": 0.05788,
+        "Du": 0.16,
+        "Dv": 0.08
+      },
+      "seed": 1,
+      "metrics": {
+        "entropy_m": 0.6301,
+        "edge_m": 0.04476,
+        "var_m": 0.01089,
+        "activity_m": 0.03636,
+        "alive_frac": 0.971,
+        "entropy_f": 0.6223,
+        "activity_f": 0.02431
+      }
+    },
+    {
+      "rank": 5,
+      "name": "SOLITON GAS",
+      "complexity": 0.7882,
+      "classification": "living",
+      "params": {
+        "F": 0.06018,
+        "k": 0.06258,
+        "Du": 0.16,
+        "Dv": 0.08
+      },
+      "seed": 1,
+      "metrics": {
+        "entropy_m": 0.6172,
+        "edge_m": 0.04911,
+        "var_m": 0.02071,
+        "activity_m": 0.01949,
+        "alive_frac": 0.971,
+        "entropy_f": 0.6829,
+        "activity_f": 0.00181
+      }
+    },
+    {
+      "rank": 24,
+      "name": "PLASMA CHAOS",
+      "complexity": 0.7601,
+      "classification": "chaotic",
+      "params": {
+        "F": 0.02745,
+        "k": 0.05945,
+        "Du": 0.16,
+        "Dv": 0.08
+      },
+      "seed": 1,
+      "metrics": {
+        "entropy_m": 0.6065,
+        "edge_m": 0.04709,
+        "var_m": 0.01154,
+        "activity_m": 0.03143,
+        "alive_frac": 0.971,
+        "entropy_f": 0.6253,
+        "activity_f": 0.02845
+      }
+    },
+    {
+      "rank": 8,
+      "name": "SOLITON GAS",
+      "complexity": 0.7858,
+      "classification": "living",
+      "params": {
+        "F": 0.05909,
+        "k": 0.06258,
+        "Du": 0.16,
+        "Dv": 0.08
+      },
+      "seed": 1,
+      "metrics": {
+        "entropy_m": 0.6424,
+        "edge_m": 0.05198,
+        "var_m": 0.02018,
+        "activity_m": 0.01667,
+        "alive_frac": 0.971,
+        "entropy_f": 0.6827,
+        "activity_f": 0.00098
+      }
+    },
+    {
+      "rank": 27,
+      "name": "PLASMA CHAOS",
+      "complexity": 0.7572,
+      "classification": "chaotic",
+      "params": {
+        "F": 0.02418,
+        "k": 0.05631,
+        "Du": 0.16,
+        "Dv": 0.08
+      },
+      "seed": 1,
+      "metrics": {
+        "entropy_m": 0.628,
+        "edge_m": 0.04227,
+        "var_m": 0.0101,
+        "activity_m": 0.04346,
+        "alive_frac": 0.971,
+        "entropy_f": 0.6566,
+        "activity_f": 0.04267
+      }
+    }
+  ]
+}

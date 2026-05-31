@@ -1,0 +1,55 @@
+{
+  "goal": ">=5 diverse clips, each >=15s of continuous non-repeating change",
+  "clips": [
+    {
+      "name": "Conway Methuselah",
+      "mechanism": "Conway Life B3/S23 toroidal",
+      "seed": 5650,
+      "grid": 90,
+      "soup": 22,
+      "dens": 0.44,
+      "sustained_gens": 3957,
+      "clip": "media/magic_5650.mp4",
+      "secs": 24
+    },
+    {
+      "name": "Conway Dense Perpetual",
+      "mechanism": "Conway Life B3/S23 toroidal",
+      "seed": 917,
+      "grid": 120,
+      "soup": 36,
+      "dens": 0.4,
+      "sustained_gens": 8798,
+      "peak": 1081,
+      "clip": "media/magic_917.mp4",
+      "secs": 28
+    },
+    {
+      "name": "Wave Storm",
+      "mechanism": "Gray-Scott reaction-diffusion",
+      "F": 0.0198,
+      "k": 0.0495,
+      "fate": "perpetual",
+      "clip": "media/magic_wavestorm.mp4",
+      "secs": 22
+    },
+    {
+      "name": "Plasma Chaos",
+      "mechanism": "Gray-Scott reaction-diffusion",
+      "F": 0.0264,
+      "k": 0.0579,
+      "clip": "media/magic_plasma.mp4",
+      "secs": 22
+    },
+    {
+      "name": "Worm Turbulence",
+      "mechanism": "Gray-Scott reaction-diffusion",
+      "F": 0.0186,
+      "k": 0.0502,
+      "clip": "media/magic_worm.mp4",
+      "secs": 22
+    }
+  ],
+  "reel": "media/true_magic_reel.mp4",
+  "reel_secs": 118
+}
