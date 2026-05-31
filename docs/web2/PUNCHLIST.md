@@ -26,8 +26,7 @@ Status legend:
 
 ## 2 · Current state inventory
 
-What is shipped on `claude/zealous-meitner-SrX1L` (PR #6) as of this
-commit:
+What is shipped on `main` (live at `/web2/`) as of this commit:
 
 | Rule | Building block represented | Control surfaces today | Explanation depth today |
 |---|---|---|---|
@@ -37,12 +36,14 @@ commit:
 | `chirality` | Homochirality — symmetry-breaking of L vs D | α, β, D, noise | Frank citation. ⚠ ee% in readout but no "why this matters" copy |
 | `coacervate` | Membrane-less proto-cells (Oparin / LLPS) | M, κ, substeps | Cahn-Hilliard formula. ⚠ no link to "this is a proto-cell" |
 | `vents` | Energy source + porous compartment (Russell-Lane) | D, drift, decay, src | PDE formula. ⚠ no "this is where chemistry meets thermodynamics" |
+| `vesicles` | True compartmentalisation — closed lipid bilayer (Helfrich curvature) | κ_b, mobility M, substeps | Formula + "what this is" + marginalia claim. ✔ framed as *true* membrane compartment vs. coacervate |
 | `conway` | *Reference automaton* — not a building block of life | density, wrap | Honest citation. ✔ correctly framed as canonical CA |
 | `wolfram1d` | *Reference automaton* — not a building block of life | rule number, seed | Honest citation. ✔ correctly framed as canonical CA |
 
 **Building blocks represented today:** prebiotic chemistry · pattern
-formation · compartmentalisation (amoeba + coacervate) · homochirality ·
-hydrothermal-vent energy capture.
+formation · compartmentalisation — membrane-less (amoeba + coacervate)
+and membrane-bound (vesicle) · homochirality · hydrothermal-vent energy
+capture.
 
 **Control surfaces today:** every rule has parameter sliders, but the
 labels are physics symbols (F, k, α, β, κ, M) — the page does not yet
@@ -73,9 +74,9 @@ coacervates matter for the origin of life.
 
 ### B · Missing building blocks
 
-The four Python-only stages cover four building blocks the web client
-cannot yet demonstrate live. The previous PR's commit message said
-"vesicles + LUCA are the next-easiest"; the punchlist captures all four:
+With the vesicle rule shipped (P1-B3 — migrated to §4), four Python-only
+stages remain: building blocks the web client cannot yet demonstrate
+live.
 
 - [ ] **P1-B1** `raf` — Reflexively-autocatalytic-and-food-generated sets
   (Kauffman 1971). Graph-on-canvas: nodes = molecules, edges = catalysed
@@ -85,9 +86,6 @@ cannot yet demonstrate live. The previous PR's commit message said
   lattice. Demonstrates **information control** (replication fidelity →
   error catastrophe at ε_c = ln(σ)/L). Hardest of the four; needs a
   careful simplification.
-- [ ] **P1-B3** `vesicles` — Lipid-bilayer membrane sphere under
-  Helfrich curvature. Demonstrates **true compartmentalisation** (as
-  opposed to coacervate's liquid-liquid one). Easier than RAF.
 - [ ] **P2-B4** `genetic-code` — 4×4 codon → amino-acid table with
   selection feedback (Vetsigian-Woese-Goldenfeld). Demonstrates **the
   controller** (the literal genetic code) coming into being.
@@ -97,7 +95,7 @@ cannot yet demonstrate live. The previous PR's commit message said
 
 ### C · Narrative arc
 
-The 8 rules sit side-by-side in a dropdown; there's no story connecting
+The 9 rules sit side-by-side in a dropdown; there's no story connecting
 them. The Python build has a `pipeline` rule that runs the whole arc
 end-to-end.
 
@@ -136,9 +134,10 @@ end-to-end.
   cards now lead with "Off-arc reference automaton — not a building
   block of life." Closed organically as part of the "Goal-Legibility
   Pass" 2026-05-30 (the A1 / A3 work both surfaced this honestly).
-- [x] **P1-E2** Footer carries an honesty paragraph listing the five
-  Python-only stages (RAF, RNA world, vesicles, genetic code, LUCA)
-  with the install command. Shipped 2026-05-30 in "The Arc Round."
+- [x] **P1-E2** Footer carries an honesty paragraph listing the
+  Python-only stages with the install command. Shipped 2026-05-30 in
+  "The Arc Round"; trimmed from five to four (RAF, RNA world, genetic
+  code, LUCA) when the vesicle rule graduated to JS on 2026-05-31.
 
 ### G · Goal framing (added 2026-05-28 by single-judge pass; see §7)
 
@@ -179,6 +178,21 @@ capture, all directly demanded by the goal statement.
 
 ## 4 · Done so far (history)
 
+- [x] **The Membrane Round — vesicle rule** (2026-05-31) — P1-B3 shipped,
+  the first additive building block after the legibility + arc rounds.
+  `docs/web2/rules/vesicles.js`: an area-preserving, curvature-penalized
+  phase-field membrane flow (∂φ/∂t = −M(W'(φ) − κ_b∇²φ − ⟨·⟩)), a stable
+  caricature of Helfrich (1973) bilayer bending. A closed lipid bilayer
+  encloses a lumen — *true* compartmentalisation, distinct from
+  coacervate's membrane-less droplet. The φ=0.5 level-set render lights
+  the membrane ring across the whole bending range; SEM height = φ raises
+  the lumen as rounded domes. Adaptive dt = min(0.20, 0.24/(M·κ_b)) keeps
+  the field stable from floppy to stiff membranes. Three reseeding
+  regimes (many small / balanced / few large vesicles). Ninth rule on
+  digit `9`, appended to RULE_ORDER + TOUR_ORDER, with marginalia,
+  scale-bar unit (1 μm), and legend row. smoke.mjs now exercises 9 rules
+  (350 checks / 0 failures / 0 warnings); CI test→build→deploy green,
+  live at `/web2/`.
 - [x] **Production deploy — site live** (2026-05-31) — the web2 sandbox
   is reachable at `https://rizzleroc.github.io/CellAutomata/web2/`.
   Root cause of the earlier dark site: every Pages run failed at the

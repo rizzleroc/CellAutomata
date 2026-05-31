@@ -1,7 +1,7 @@
 # cellauto · web 2.0
 
 The follow-on to the original `docs/web/` Gray–Scott-only demo. Where v1
-showed one stage on one canvas, v2.0 is a **multi-rule sandbox**: eight
+showed one stage on one canvas, v2.0 is a **multi-rule sandbox**: nine
 automata share the same canvas, controls, brush, and URL-state encoder.
 v4.0 added SEM-grade rendering — depth-shaded, lit, tone-mapped through
 a warm-sepia or cool-mono LUT, framed as a live instrument feed.
@@ -24,8 +24,8 @@ GitHub Pages: same root as v1 (`/docs`). The demo lives at
 
 ## What's in the box
 
-Two reference automata frame six abiogenesis building blocks. Digit
-hotkeys `1`–`8` follow this order:
+Two reference automata frame seven abiogenesis building blocks. Digit
+hotkeys `1`–`9` follow this order:
 
 | # | Rule | Description | Per-rule controls |
 |---|---|---|---|
@@ -37,13 +37,14 @@ hotkeys `1`–`8` follow this order:
 | 6 | **Homochirality** | Frank kinetics — L/R autocatalysis + mutual inhibition break mirror symmetry. | α, β, diffusion, noise |
 | 7 | **Coacervate** | Cahn–Hilliard liquid–liquid phase separation into droplets. | mobility M, interface stiffness κ, substeps |
 | 8 | **Alkaline vents** | Buoyant acetate plume from a hydrothermal vent source. | diffusion D, updraft, decay, source rate |
+| 9 | **Vesicle** | Helfrich-type membrane flow — a lipid bilayer enclosing a lumen (*true* compartmentalisation, vs. coacervate's membrane-less kind). | membrane bending κ_b, relaxation M, substeps |
 
 ## What's new vs. v1
 
-- **Rule switcher.** Pick any of the eight from the dropdown or `1`–`8`.
+- **Rule switcher.** Pick any of the nine from the dropdown or `1`–`9`.
 - **Guided tour.** `t` (or the TOUR button) auto-walks the chemistry-to-life
-  arc — soup → vents → Gray–Scott → selection → chirality → coacervate —
-  skipping the two off-arc reference automata.
+  arc — soup → vents → Gray–Scott → selection → chirality → coacervate →
+  vesicle — skipping the two off-arc reference automata.
 - **Brush painting.** Click-drag to paint live cells / drop perturbation
   patches / inject particles. Right-click or shift-click to erase. Works
   on touch.
@@ -54,7 +55,7 @@ hotkeys `1`–`8` follow this order:
   URL — paste it into another browser, get the same rule at the same
   parameters in the same palette.
 - **Keyboard.** `space` play/pause, `s` step, `r` reset, `c` clear,
-  `n` randomize, `1`–`8` rule, `m` SEM mode, `p` palette, `t` tour,
+  `n` randomize, `1`–`9` rule, `m` SEM mode, `p` palette, `t` tour,
   `?` about/help, `esc` close.
 - **Fullscreen.** Canvas-only fullscreen for projection.
 - **Toast notifications.** Quiet confirmations on reset / clear / copy.
@@ -102,6 +103,7 @@ round-trip:
 - `rules/chirality.js`         — Frank kinetics, L/R symmetry-breaking.
 - `rules/coacervate.js`        — Cahn-Hilliard liquid–liquid phase separation.
 - `rules/vents.js`             — alkaline-vent acetate plume.
+- `rules/vesicles.js`          — area-preserving Helfrich-type membrane flow.
 - `viridis.js`  — 32-entry viridis LUT shared with v1 (legacy mode only).
 - `tests/smoke.mjs` — zero-dependency node harness exercising every rule.
 
@@ -134,16 +136,15 @@ regimes renders a one-click regime row above the sliders.
 
 ## What didn't make it
 
-Eight rules ship as JS ports: the two reference automata (Conway,
-Wolfram 1D) plus six building blocks — primordial soup, natural
-selection, Gray–Scott morphogenesis, alkaline vents, homochirality, and
-coacervates.
+Nine rules ship as JS ports: the two reference automata (Conway,
+Wolfram 1D) plus seven building blocks — primordial soup, natural
+selection, Gray–Scott morphogenesis, alkaline vents, homochirality,
+coacervates, and lipid vesicles.
 
-Five further building blocks remain Python-only — autocatalytic sets
-(Kauffman), the RNA world (Eigen quasispecies), lipid vesicles (Helfrich
-curvature), the genetic code (Vetsigian–Woese–Goldenfeld), and LUCA.
-Each is several hundred lines of NumPy / SciPy and resists a faithful JS
-port:
+Four further building blocks remain Python-only — autocatalytic sets
+(Kauffman), the RNA world (Eigen quasispecies), the genetic code
+(Vetsigian–Woese–Goldenfeld), and LUCA. Each is several hundred lines
+of NumPy / SciPy and resists a faithful JS port:
 
 ```
 pip install -e .

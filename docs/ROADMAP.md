@@ -26,6 +26,16 @@ Last updated: 2026-05-25.
 > refinement. The goal is photographic instrument-grade rendering of
 > every frame the engine produces, without changing the underlying
 > simulation.
+>
+> **v5.0 status (PROPOSED):** LIFE — virtual-CPU digital organisms
+> after LUCA. See §7 and the full PRD at
+> [PRD_LIFE_DIGITAL_ORGANISMS.md](PRD_LIFE_DIGITAL_ORGANISMS.md).
+> Inspired by the user's 400× Brachionus reference: post-LUCA, the
+> simulator extends into a thirteenth stage where digital organisms
+> with virtual-CPU genomes have **visible internal anatomy**, ingest
+> substrate, excrete waste, divide with mutation, and form lineages.
+> Draws on Tierra, Avida, Polyworld. Twelve V items (V1–V12) span
+> five phases.
 
 ---
 
@@ -488,6 +498,101 @@ See PRD §9. Headlines:
 3. Stage 1 under SEM mode reads as a microscope view, not a screenshot.
 4. Four CI gates green; ≥ 8 new tests.
 5. v4.0 entry in CHANGELOG with a before/after comparison image.
+
+---
+
+## 7. v5.0 — LIFE: Digital Organisms (proposed)
+
+Full PRD: **[docs/PRD_LIFE_DIGITAL_ORGANISMS.md](PRD_LIFE_DIGITAL_ORGANISMS.md)**.
+
+### One-line vision
+After LUCA distillation, real digital organisms. Inspired by the
+user-supplied 400× DIC reference of *Brachionus plicatilis* — a living
+rotifer with visible internal motion. A new Stage XIII populates the
+post-LUCA world with **virtual-CPU genomes** that execute instructions,
+ingest substrate, excrete waste, divide, mutate, and form lineages
+under selection. Draws from Tierra (Ray 1991), Avida (Ofria 1999), and
+the broader artificial-life canon.
+
+### Cycle direction
+The v3.x line stopped at the *recipe* for life (LUCA distillation).
+v5.0 walks one step further: from "the lineage that emerged" to "the
+lineages that lived." Every behaviour visible in the rendered organism
+maps to a real instruction or state in the virtual machine — no
+decorative motion. The Brachionus reference is the visual target:
+translucent body wall + visible internal compartments + cytoplasmic
+shimmer at instruction-execution rate.
+
+### Punchlist (open until each item ships)
+
+- [ ] **V1 — Virtual CPU + opcode set.** ~20 opcodes (load, store,
+  add, jump, copy, ingest, excrete, sense, move, …); ≤ 512-instruction
+  genome cap. Tierra-derived, Avida-flavoured. Per-organism private
+  memory (Tierra-shared variant comes later in V11).
+- [ ] **V2 — Energy + metabolism loop.** Every instruction costs
+  1 unit of energy; INGEST replenishes from the substrate field;
+  EXCRETE adds to waste. Energy = 0 → death; energy ≥ E_div → division.
+- [ ] **V3 — Stage XIII rule (`abiogenesis-life`).** Registered in
+  `cellauto/rules/`; appears as the thirteenth stage of the extended
+  pipeline. Pipeline hand-off (G1) from Stage XII seeds the initial
+  population at LUCA pathway-graph hot-spots.
+- [ ] **V4 — Substrate + waste grid.** 60 × 60 default grid; substrate
+  replenishes linearly; waste accumulates and increases nearby
+  death probability.
+- [ ] **V5 — Mutation + lineage tracking.** Per-instruction ε mutation
+  at copy time; per-organism parent pointer; ancestry chain
+  reconstructible to the founder.
+- [ ] **V6 — Per-organism inspector.** Click-to-inspect Toplevel
+  (Tk) / drawer (web) showing genome strip, energy, instruction
+  pointer, ancestry tree.
+- [ ] **V7 — V3.6 viridis rendering.** Default render: filled
+  energy-coloured discs on the substrate field; this is the v5.0.0
+  ship target. Internal anatomy (V9) requires SEM mode and waits for
+  v4.0.
+- [ ] **V8 — Twelve regression tests.** VM opcodes, energy → death,
+  energy → division, mutation gates lineage diversity, ε > ε_c →
+  catastrophe, distinct lineage within 10k steps at default seed,
+  substrate depletion → crash, ancestry tracked, pipeline hand-off,
+  no per-step allocation, serialisation round-trip, web/Python VM
+  parity (deferred).
+- [ ] **V9 — Translucent body sprite (Phase 5.1).** Each organism
+  rendered with a translucent ellipse body — no internal anatomy yet,
+  just the membrane. Requires SEM mode.
+- [ ] **V10 — Internal anatomy (Phase 5.1).** Gut compartment with
+  drifting ingested particles + genome strip + nucleus
+  visible inside each organism. Cytoplasmic shimmer at execution
+  rate. Brachionus-style preview shipped to
+  `docs/generated/stage13_life.png`.
+- [ ] **V11 — Ecology mechanics (Phase 5.2).** Predation between
+  lineages; cross-cell substrate gradients; self-organised
+  predator-prey cycle visible in the population sparkline within
+  20k steps.
+- [ ] **V12 — Tierra shared-memory variant (Phase 5.4).** Optional
+  `dynamics="tierra"` rule config puts all organisms in one shared
+  instruction tape so parasites can emerge as in Tierra 1991.
+  Pinned by a parasite-emergence regression.
+
+### Out of scope for v5.0
+- Multicellular organisms with differentiated tissues (v5.x+).
+- Neural-network controllers à la Polyworld.
+- 3-D bodies / physical morphology à la Framsticks.
+- Replacing the v4.0 SEM renderer (LIFE feeds it; doesn't replace it).
+
+### Acceptance criteria for v5.0.0
+See PRD §7. Headlines:
+1. New rule `abiogenesis-life` (or `digital-life`) registered;
+   thirteen-stage extended pipeline.
+2. Self-sustaining population for ≥ 10k steps at default seed.
+3. Per-organism click inspector shows genome, energy, ancestry.
+4. ≥ 12 new tests; four CI gates green.
+5. v5.0 entry in CHANGELOG; README updated to "13-stage pipeline".
+
+### Cycle direction recommendation
+See PRD §10. The recommended path is to **pair v4.0 SEM (S1–S5) with
+v5.0 LIFE (V1–V8)** on a shared cycle — the SEM substrate gives LIFE
+the rendering vocabulary the Brachionus reference demands, and LIFE
+provides content that exercises SEM in ways the existing 12 stages
+don't. Shipping them together is the cleanest story.
 
 ---
 

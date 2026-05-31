@@ -35,6 +35,7 @@ const RULE_FILES = [
   "chirality.js",
   "coacervate.js",
   "vents.js",
+  "vesicles.js",
 ];
 
 let failures = 0;
