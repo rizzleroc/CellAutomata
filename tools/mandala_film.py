@@ -130,8 +130,17 @@ def main():
 
     print("warming engines ...")
     engines = {}
-    for name in REGIME_ORDER:
+    for si, name in enumerate(REGIME_ORDER):
         e = Engine(width=a.grid, height=a.grid, rule=REGISTRY[RULE](**M.REGIMES[name]), seed=1)
+        # scatter-seed for a busier, more intricate texture (more pixels of detail)
+        rng = np.random.default_rng(13 + si)
+        g = a.grid; u = np.ones((g, g), np.float32); v = np.zeros((g, g), np.float32)
+        r = 5
+        for _ in range(g // 8):
+            cy = int(rng.integers(r, g - r)); cx = int(rng.integers(r, g - r))
+            u[cy - r:cy + r, cx - r:cx + r] = 0.5; v[cy - r:cy + r, cx - r:cx + r] = 0.25
+        v += rng.uniform(0, 0.02, (g, g)).astype(np.float32)
+        e.state.u = u; e.state.v = np.clip(v, 0, 1)
         for _ in range(M.REG_STEPS[name]):
             e.step()
         engines[name] = e
