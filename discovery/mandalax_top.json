@@ -1,0 +1,64 @@
+{
+  "champions": [
+    {
+      "idx": 14,
+      "regime": "plasma",
+      "seed": 7,
+      "grid": 360,
+      "n1": 16,
+      "n2": 3,
+      "octs": 2,
+      "score": 0.0856
+    },
+    {
+      "idx": 13,
+      "regime": "coral",
+      "seed": 7,
+      "grid": 360,
+      "n1": 16,
+      "n2": 6,
+      "octs": 2,
+      "score": 0.0806
+    },
+    {
+      "idx": 6,
+      "regime": "plasma",
+      "seed": 1,
+      "grid": 360,
+      "n1": 12,
+      "n2": 6,
+      "octs": 2,
+      "score": 0.0792
+    },
+    {
+      "idx": 5,
+      "regime": "coral",
+      "seed": 1,
+      "grid": 360,
+      "n1": 10,
+      "n2": 6,
+      "octs": 2,
+      "score": 0.0754
+    },
+    {
+      "idx": 2,
+      "regime": "maze",
+      "seed": 1,
+      "grid": 360,
+      "n1": 8,
+      "n2": 6,
+      "octs": 2,
+      "score": 0.0672
+    },
+    {
+      "idx": 15,
+      "regime": "stripes",
+      "seed": 7,
+      "grid": 360,
+      "n1": 16,
+      "n2": 5,
+      "octs": 1,
+      "score": 0.0664
+    }
+  ]
+}

@@ -137,7 +137,7 @@ def worker(idx):
     print(f"[{idx}] {nm} s{seed}: n1={best['n1']} n2={best['n2']} oct={best['octs']} score={best['score']}")
 
 
-def build_gif(b, pal, out, K=1000, OUTRES=600, dur=9, fps=20):
+def build_gif(b, pal, out, K=900, OUTRES=460, dur=7, fps=14, maxcolors=80):
     d = np.load(f"{OUT}/src_{b['idx']:02d}.npz"); V = d["V"].astype(np.float32)
     kal = Kal(K, int(d["grid"]))
     rgb = colorize(compound(kal, V, b["n1"], b["n2"], b["octs"]), pal)
@@ -155,11 +155,12 @@ def build_gif(b, pal, out, K=1000, OUTRES=600, dur=9, fps=20):
         im = im.crop((c - half, c - half, c + half, c + half)).resize((OUTRES, OUTRES), Image.BICUBIC)
         im.save(f"{fd}/{fi:04d}.png")
     subprocess.run([FF, "-y", "-hide_banner", "-loglevel", "error", "-framerate", str(fps),
-                    "-i", f"{fd}/%04d.png", "-vf", "palettegen=stats_mode=full", "/tmp/mxpal.png"], check=True)
+                    "-i", f"{fd}/%04d.png", "-vf", f"palettegen=max_colors={maxcolors}:stats_mode=diff",
+                    "/tmp/mxpal.png"], check=True)
     subprocess.run([FF, "-y", "-hide_banner", "-loglevel", "error", "-framerate", str(fps),
                     "-i", f"{fd}/%04d.png", "-i", "/tmp/mxpal.png",
-                    "-lavfi", "paletteuse=dither=bayer:bayer_scale=3", "-loop", "0", out], check=True)
-    print(f"  GIF -> {out} ({os.path.getsize(out)/1e6:.1f} MB)")
+                    "-lavfi", "paletteuse=dither=bayer:bayer_scale=4", "-loop", "0", out], check=True)
+    print(f"  GIF -> {out} ({os.path.getsize(out)/1e6:.1f} MB, {OUTRES}px {dur}s {fps}fps)")
 
 
 def render():
