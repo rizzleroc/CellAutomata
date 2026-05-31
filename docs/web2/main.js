@@ -13,6 +13,7 @@
   const RULE_ORDER = [
     "conway", "wolfram1d", "grayscott", "soup",
     "natural-selection", "chirality", "coacervate", "vents",
+    "vesicles",
   ];
 
   // P1-C1 — canonical chemistry-to-life tour order, skipping the two
@@ -25,6 +26,7 @@
     "natural-selection",
     "chirality",
     "coacervate",
+    "vesicles",
   ];
   const TOUR_INTERVAL_MS = 30000;
 
@@ -97,6 +99,13 @@
       "Acetate is the canonical product of the abiotic acetyl-CoA pathway — the first carbon-fixation cycle the engine simulates here.",
       "The plume rises by drift and diffuses laterally; the mineral wall both confines it and seeds further reactions.",
     ],
+    vesicles: [
+      "BUILDING-BLOCK CLAIM. This shows true membrane compartmentalisation — a lipid bilayer enclosing a lumen, a persistent inside vs outside. The building block: the protocell boundary itself, no longer membrane-less.",
+      "Helfrich, W. (1973). \"Elastic properties of lipid bilayers: theory and possible experiments.\" Z. Naturforsch. C 28:693 — the curvature-energy theory of membranes.",
+      "Unlike the coacervate (membrane-less liquid–liquid phase separation), this is a real bilayer: the interface is a closed membrane, not a fuzzy concentration gradient.",
+      "Bending energy + the area constraint make vesicles round up and coarsen — stiffer membranes (high κ_b) resist tight curves and favour fewer, larger spheres.",
+      "Paint to inject a vesicle (fill a disk with lumen); the curvature flow then rounds it and lets it merge with its neighbours. Right-click erases.",
+    ],
   };
 
   const MARGINALIA_INTERVAL_MS = 6500;
@@ -112,6 +121,7 @@
     chirality:            "1 μm",
     coacervate:           "5 μm",
     vents:                "10 μm",
+    vesicles:             "1 μm",
   };
 
   // ── DOM refs ────────────────────────────────────────────────────────────
@@ -743,6 +753,7 @@
       case "Digit6": if (RULE_ORDER[5]) setRule(RULE_ORDER[5]); break;
       case "Digit7": if (RULE_ORDER[6]) setRule(RULE_ORDER[6]); break;
       case "Digit8": if (RULE_ORDER[7]) setRule(RULE_ORDER[7]); break;
+      case "Digit9": if (RULE_ORDER[8]) setRule(RULE_ORDER[8]); break;
       case "KeyM":
         if (semCheckbox) {
           semCheckbox.checked = !semCheckbox.checked;
