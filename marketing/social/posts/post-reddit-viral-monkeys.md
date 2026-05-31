@@ -1,8 +1,8 @@
 # Post — Reddit viral launch: "Monkeys at keyboards" (Conway methuselah search)
 
 **Goal:** a high-engagement Reddit post (comments + upvotes) for the CA work.
-**Primary asset:** `media/magic_5650.mp4` (24s smooth Conway methuselah, gen counter on-screen).
-**Reach asset:** `media/mandala_morph.mp4` (oddly-satisfying mandala loop).
+**Primary asset:** `media/methuselah_5650.gif` (13s, 540², optimized) — r/cellular_automata is **image/GIF only, no native video**.
+**Reach asset:** `media/mandala_morph.mp4` (oddly-satisfying mandala loop; r/oddlysatisfying *does* allow video).
 **Date drafted:** 2026-05-31 · *Drafts only — for a human to publish. Nothing auto-posts.*
 
 ---
@@ -38,7 +38,10 @@ Tue–Thu 9–11 ET ✔ · you're free for the next 60 min to reply ✔
 > Niche but high-intent; it will dissect the method and upvote genuine OC.
 > **Crossposts after it gains traction:** r/conwaysgameoflife, r/proceduralgeneration, r/generative, r/alife.
 
-**Attach:** `media/magic_5650.mp4` (native upload, not a link).
+**Attach:** `media/methuselah_5650.gif` (upload directly — the sub allows
+image/GIF only, **not** native video). Fallback for smoother playback: host
+`media/magic_5650.mp4` on **Streamable / gfycat / Imgur** and post it as a *link*
+(those are accepted; a raw video upload is not).
 **Flair:** `OC` (or `Discussion`).
 
 **Title (pick one — A is the lead):**
@@ -126,7 +129,7 @@ how the fold works."
 
 | Asset | Hook | Best sub | Drives |
 |---|---|---|---|
-| `magic_5650.mp4` (methuselah) | "8,798 gens from a random scribble" + open question | r/cellular_automata | **comments / discussion** |
+| `methuselah_5650.gif` (methuselah) | "8,798 gens from a random scribble" + open question | r/cellular_automata *(GIF only)* | **comments / discussion** |
 | `mandala_morph.mp4` (sacred geometry) | hypnotic, never-repeats | r/oddlysatisfying, r/woahdude | **reach / upvotes** |
 | `monkeys_hall.mp4` (3×2 hall of fame) | leaderboard of survivors | r/conwaysgameoflife | backup / crosspost |
 | `complex_reactions.mp4` | "spatiotemporal chaos" | r/generative | backup |
