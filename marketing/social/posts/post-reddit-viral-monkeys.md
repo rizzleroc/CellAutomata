@@ -104,7 +104,9 @@ first hour, crosspost to r/conwaysgameoflife and r/proceduralgeneration.
 > *separately* (different day) once the hero post validates the asset.
 > **Crossposts:** r/woahdude, r/generative, r/mandalas, r/sacredgeometry.
 
-**Attach:** `media/mandala_morph.mp4` (ideally trimmed to a clean ~15–25s loop).
+**Attach:** `media/mandala_morph.mp4` (r/oddlysatisfying/r/woahdude allow video).
+**For GIF-only subs (r/mandalas, r/sacredgeometry):** use `media/mandala_x.gif`
+— the mind-bending compound/fractal mandala, a seamless 14 MB loop (Reddit-sized).
 **Flair:** `OC`.
 
 **Title (lead = A):**
