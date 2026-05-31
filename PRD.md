@@ -130,7 +130,7 @@ Clicking Step while Play is running races with the scheduled callback — cells 
 Python 3.1 is from 2009 and is not supported. Pick one — 3.9+ is reasonable for new work.
 
 #### **Gap D3: README exposes a personal email**
-`Justin@futurcraft.ai` is in the README. Use a GitHub issues link instead.
+A personal email address was exposed in the README. Use a GitHub issues link instead.
 
 #### **Gap D4: No screenshot, no GIF, no demo link**
 A visual project with no visual in the README. First-time visitors can't tell what it does without cloning and running.
