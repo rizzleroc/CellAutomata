@@ -179,6 +179,14 @@ capture, all directly demanded by the goal statement.
 
 ## 4 · Done so far (history)
 
+- [x] **Production deploy — site live** (2026-05-31) — the web2 sandbox
+  is reachable at `https://rizzleroc.github.io/CellAutomata/web2/`.
+  Root cause of the earlier dark site: every Pages run failed at the
+  `deploy` step with a 404 because the repo was private on a plan with
+  no private-Pages support — `test` and `build` always passed. Fixed by
+  making the repo public and enabling Pages (`build_type: workflow`).
+  Full pipeline (test gate → build → deploy) now green; index, `main.js`,
+  and rule modules all serve HTTP 200.
 - [x] **Rule smoke tests** (2026-05-30) — `docs/web2/tests/smoke.mjs`, a
   zero-dependency node harness that loads every rule module against a
   `window` stub and exercises seed → step → render → renderHeight →
