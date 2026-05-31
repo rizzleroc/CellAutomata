@@ -17,33 +17,66 @@ post-abiogenesis follow-on for **both**.
 - **v4.0 PRD merged, code unstarted.** SEM-grade depth-shaded
   rendering. Twelve items S1–S12 open in `ROADMAP.md` §6.
 
-### Track B — Web2 (`docs/web2/`)
-- **Production deploy live** at `https://rizzleroc.github.io/CellAutomata/web2/`.
-  Nine rules running in-browser with SEM rendering, 302 smoke-test checks.
-- **Five building blocks still missing from the web client (B1–B5)** —
-  RAF, RNA world, vesicles, genetic code, LUCA. These already exist in
-  the Python build; the web client doesn't ship them yet.
-- Layout / UX items open: C2 (chapter rail), D3 (regime-threshold
-  badge), F1 (marginalia side-card), F2 (localStorage persistence),
-  F3 (reduced-motion documented).
-- Track-B punchlist lives at `docs/web2/PUNCHLIST.md` — that's the
-  authoritative source for web-side gaps.
+### Track B — Web client (canonical: `docs/web3/`)
+Three bundles exist in `docs/`; the redirect chain says which is canonical:
+
+- **`docs/web3/`** — **CANONICAL CURRENT**. Implements the v4.0 SEM PRD
+  **plus** v4.1's §F3 bioform sprite-overlay layer (procedural canvas
+  painters for protocell spheres, amoebas, granules, L/D chirality
+  glyphs, coacervate droplets, mineral honeycombs, lipid bilayers).
+  Sprite mode opt-in via `x` hotkey or sidebar checkbox (defaults OFF
+  after the v4.1.1 calm-overlay revision found the launch defaults
+  too dominant). Lives on branch `origin/claude/zealous-meitner-SrX1L`;
+  not yet merged to `main`. Root `docs/index.html` redirects `/` →
+  `/web3/`. Web3 has the FIRST of the five Python-only stages
+  shipped — **B3 vesicles** (Helfrich-curvature bilayer,
+  `∂φ/∂t = D∇²φ − γφ(1−φ)(½−φ) − κ(∇²)²φ + noise`).
+- **`docs/web2/`** — production-deployed multi-rule sandbox, preserved
+  for history at `/web2/`. Nine rules, no sprite layer, no vesicles.
+  Shipped The Control Round (preset-regime rows for the continuous
+  rules) on 2026-05-30. Slightly ahead of web3 on preset surface,
+  behind on rendering + vesicles.
+- **`docs/web/`** — original Gray-Scott-only museum plate (v3.x), kept
+  at `/web/` for the historical record.
+
+The authoritative open-gap punchlist is `docs/web3/PUNCHLIST.md`.
+
+### Open punchlist on web3 (the canonical client)
+
+- **B1** RAF — Kauffman autocatalytic sets, graph-on-canvas.
+- **B2** RNA world — Eigen quasispecies, error-catastrophe knob.
+- **B3** ~~vesicles~~ — **CLOSED 2026-05-31** via web3 v4.1 (Helfrich
+  bilayer with biharmonic curvature term).
+- **B4** Genetic code — Vetsigian-Woese-Goldenfeld 4×4 codon table.
+- **B5** LUCA — pathway-graph parsimony.
+- **A4** "About this stage" persistent panel — 50-word origin-of-life
+  paragraph per rule.
+- **C2** Horizontal chapter rail above the canvas.
+- **D2** Preset row for non-Gray-Scott continuous rules (web2 closed
+  this via The Control Round; web3 forked before that and still has
+  it open — likely portable from web2).
+- **D3** Regime-threshold badges (Pearson F=k boundary, Frank ee
+  critical, Eigen catastrophe).
+- **F1** Marginalia → vertical side-card.
+- **F2** localStorage persistence of rule + palette + SEM mode.
+- **F3** Reduced-motion mode documented in the page UI.
 
 ### Combined open punchlist by priority
 
 | Bucket | Items | Where it lives |
 |---|---|---|
 | **P0 — none** | All P0 closed | — |
-| **P1 — web parity to Python** | B1 (RAF) · B2 (RNA world) · B3 (vesicles) · B4 (genetic code) · B5 (LUCA) | `docs/web2/PUNCHLIST.md` §3-B |
+| **P1 — web rule parity to Python** | B1 (RAF) · B2 (RNA world) · B4 (genetic code) · B5 (LUCA) — *B3 vesicles closed in web3 v4.1* | `docs/web3/PUNCHLIST.md` §3-B |
+| **P1 — web explanation layer** | A4 (about-stage panel), D2 (preset row port from web2) | `docs/web3/PUNCHLIST.md` |
 | **P1 — desktop SEM cycle** | S1 (renderer core) · S2 (palettes) · S3 (toggle) · S4 (framing) · S5 (Stage 1 hero) | `docs/ROADMAP.md` §6 |
-| **P2 — UX polish (web)** | C2 (chapter rail) · D3 (threshold badges) · F1–F3 | `docs/web2/PUNCHLIST.md` |
+| **P2 — web UX polish** | C2 (chapter rail) · D3 (threshold badges) · F1–F3 | `docs/web3/PUNCHLIST.md` |
 | **P2 — desktop SEM polish** | S6–S12 (sprite library → AI refinement) | `docs/ROADMAP.md` §6 |
 | **P2 — desktop L items deferred** | L2 (tab refactor) · L10 (grain texture) | `docs/ROADMAP.md` §5 |
 
 Nothing P0-blocking. The cycle direction question is now:
-**B1–B5 web parity** vs **S1–S5 desktop SEM** vs **the new LIFE module
-this PRD scopes**. The remainder of this document scopes LIFE so the
-choice can be made explicitly.
+**B1/B2/B4/B5 web rule parity** vs **S1–S5 desktop SEM** vs **the new
+LIFE module this PRD scopes**. The remainder of this document scopes
+LIFE so the choice can be made explicitly.
 
 ---
 
@@ -229,10 +262,15 @@ draws:
     instruction pointer, ancestry tree (parent → grandparent → …).
 
 ### F6 — Web parity
-  - LIFE ships in `docs/web2/rules/life.js` simultaneously with the
-    Python desktop implementation. The web's smaller default
-    population (200 organisms vs 600 desktop) keeps the JS-side
-    interpreter performant.
+  - LIFE ships in `docs/web3/rules/life.js` (the canonical web client)
+    simultaneously with the Python desktop implementation. The web's
+    smaller default population (200 organisms vs 600 desktop) keeps
+    the JS-side interpreter performant.
+  - Under web3, LIFE benefits from the v4.1 sprite-overlay layer for
+    free — the body-wall, gut, and genome-strip sprites slot into the
+    existing `sprites.js` painter library as new procedural painters.
+    Internal anatomy (V10) and Brachionus-style rendering (the
+    headline visual goal) requires sprite mode ON.
   - The web client cannot share Python's virtual-CPU code, so we
     write the interpreter twice — once in Python, once in JS. A
     `tests/test_life_vm_parity.py` pin asserts that the same genome
