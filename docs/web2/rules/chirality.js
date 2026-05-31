@@ -61,6 +61,20 @@
         noise:     "The random kick that lets the system fall off the racemic ridge. With zero noise it's metastable forever; a real noise floor is essential.",
       },
 
+      // P1-D2: regimes that reseed (symmetry only re-reads from a fresh,
+      // near-racemic field).
+      presets: [
+        { label: "near-racemic", reseed: true,
+          hint: "Almost no mutual inhibition (β at its floor) — the 50/50 mix barely breaks. ee hovers near zero, the way a symmetric soup stays symmetric.",
+          values: { alpha: 0.12, beta: 0.05, diffusion: 0.10, noise: 0.005 } },
+        { label: "symmetry-breaking", reseed: true,
+          hint: "The textbook Frank regime — rival L/R domains compete and one handedness slowly wins each patch.",
+          values: { alpha: 0.12, beta: 0.50, diffusion: 0.10, noise: 0.005 } },
+        { label: "homochiral sweep", reseed: true,
+          hint: "Strong autocatalysis, inhibition and diffusion together — one enantiomer rapidly takes the whole field. Life's single-handedness, fast.",
+          values: { alpha: 0.25, beta: 1.20, diffusion: 0.25, noise: 0.010 } },
+      ],
+
       randomize() { seed(); },
       clear() { L.fill(0); R.fill(0); generation = 0; },
       reset() { seed(); },

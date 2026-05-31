@@ -65,6 +65,19 @@
         substeps:  "How many PDE substeps per visible frame. Pure speed knob — coarser steps simulate faster but with less smooth dynamics.",
       },
 
+      // P1-D2: κ regimes that reseed so coarsening reads from scratch.
+      presets: [
+        { label: "many small droplets", reseed: true,
+          hint: "Low interface stiffness — the field shatters into many small, ragged droplets.",
+          values: { mobility: 0.30, kappa: 0.25, substeps: 3 } },
+        { label: "balanced", reseed: true,
+          hint: "The default coarsening — a spread of droplet sizes slowly merging.",
+          values: { mobility: 0.30, kappa: 1.00, substeps: 3 } },
+        { label: "few large droplets", reseed: true,
+          hint: "High stiffness — the field dislikes sharp boundaries, so a few big round droplets dominate.",
+          values: { mobility: 0.45, kappa: 1.80, substeps: 4 } },
+      ],
+
       randomize() { seed(); },
       clear()    { phi.fill(0); generation = 0; },
       reset()    { seed(); },

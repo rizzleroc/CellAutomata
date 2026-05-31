@@ -79,6 +79,19 @@
         drift:       "Net current pushing every particle one way. Zero: pure diffusion. Non-zero: a flowing soup, like a real ocean current.",
       },
 
+      // P1-D2: one-click regimes — snap the soup to a known condition.
+      presets: [
+        { label: "dilute pool",
+          hint: "A thin, calm soup — few molecules, slow random walk. Tracks stay distinct, like a still pond.",
+          values: { count: 200, diffusion: 0.30, evaporation: 0.02, drift: 0.0 } },
+        { label: "well-mixed",
+          hint: "A dense, well-mixed soup — many molecules colliding. The Oparin–Haldane baseline.",
+          values: { count: 600, diffusion: 0.60, evaporation: 0.04, drift: 0.0 } },
+        { label: "tidal current",
+          hint: "A flowing soup pushed by a current — molecules sweep one way, like an ocean tide carrying chemistry downstream.",
+          values: { count: 600, diffusion: 1.20, evaporation: 0.06, drift: 0.30 } },
+      ],
+
       onParamChange(name) {
         if (name === "count") {
           spawnParticles(this.params.count.value);

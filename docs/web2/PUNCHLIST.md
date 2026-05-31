@@ -115,10 +115,16 @@ end-to-end.
 - [x] **P0-D1** Every parameter label across all 8 rules carries the
   physical name (`feed rate F`, `mobility M`, `interface stiffness κ`,
   `acetate decay`, …). Shipped 2026-05-30 in "Goal-Legibility Pass."
-- [ ] **P1-D2** Add a "default / typical / extreme" three-button
-  preset row for every continuous-parameter rule (currently only
-  grayscott has presets). This *shows control* by showing the response
-  to known parameter changes.
+- [x] **P1-D2** Preset *regime* row added to every continuous-parameter
+  arc rule (soup, natural-selection, chirality, coacervate, vents) — a
+  one-click row of named regimes that snaps the sliders and lights the
+  active one. Named biologically (e.g. coacervate's *many small / balanced
+  / few large droplets*; chirality's *near-racemic / symmetry-breaking /
+  homochiral sweep*) rather than the generic "default/typical/extreme"
+  the gap originally proposed, because a named regime *shows* the control
+  more legibly. grayscott keeps its richer Pearson dropdown; conway and
+  wolfram1d are off-arc and discrete, so neither gets a row. Shipped
+  2026-05-30 in "The Control Round."
 - [ ] **P2-D3** Cross-rule param coupling badge: when a rule's params
   cross a published threshold (Pearson F=k boundary, Frank ee critical
   point, Eigen error catastrophe), surface a small "regime: X"
@@ -173,6 +179,18 @@ capture, all directly demanded by the goal statement.
 
 ## 4 · Done so far (history)
 
+- [x] **The Control Round** (2026-05-30) — P1-D2 preset-regime row.
+  Every continuous-parameter arc rule (soup, natural-selection,
+  chirality, coacervate, vents) gains a one-click row of named
+  parameter regimes above its sliders; clicking snaps the params and
+  lights the active regime, moving a slider de-highlights it, and
+  PDE-driven regimes (chirality, coacervate) reseed so the difference
+  reads from a fresh field. This closes the *show how they're
+  controlled* half of the goal for the eight shipped rules — with the
+  Goal-Legibility + Arc rounds, the goal is now structurally satisfied
+  and the remaining work is purely additive (new rules: B1–B5). Pure
+  DOM + JS + CSS; a generic `presets` array per rule, rendered by
+  main.js. No new simulation code.
 - [x] **The Arc Round** (2026-05-30) — four items shipped as one batch,
   giving the eight rules a narrative spine. Items: P0-G3 first-visit
   welcome modal with arc-summary lede, P0-G4 control-mechanism legend

@@ -344,6 +344,43 @@ section { margin: 0; }
 .btn.primary { color: var(--hairline-hi); border-color: var(--hairline-hi); }
 .btn.danger  { color: var(--stop-r); border-color: var(--stop-r); }
 
+/* P1-D2 "The Control Round" — a one-click row of named parameter
+   regimes per rule. Snap the sliders to a known regime and watch the
+   building block respond; the active regime stays lit. */
+.preset-row { align-items: flex-start; }
+
+.preset-btns {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  flex: 1;
+  min-width: 0;
+}
+
+.preset-btn {
+  background: var(--bg);
+  color: var(--text-dim);
+  border: 1px solid var(--hairline);
+  font-family: var(--font-mono);
+  font-size: 9.5px;
+  letter-spacing: 0.06em;
+  padding: 4px 9px;
+  cursor: pointer;
+  text-transform: lowercase;
+  transition: border-color 0.15s, color 0.15s, background 0.15s;
+}
+
+.preset-btn:hover {
+  border-color: var(--hairline-hi);
+  color: var(--hairline-hi);
+}
+
+.preset-btn.active {
+  color: var(--bg);
+  background: var(--hairline-hi);
+  border-color: var(--hairline-hi);
+}
+
 .rule-controls {
   margin: 10px 0 4px;
   padding: 8px 0 4px;

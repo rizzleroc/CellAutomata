@@ -254,6 +254,10 @@
   function rebuildRuleControls() {
     ruleControls.innerHTML = "";
     if (!currentRule.params) return;
+    // P1-D2: a one-click row of named parameter regimes, rendered above
+    // the individual sliders so the viewer can jump to a regime first,
+    // then fine-tune.
+    buildPresetRow();
     for (const [name, slot] of Object.entries(currentRule.params)) {
       const row = document.createElement("div");
       row.className = "control-row";
@@ -332,6 +336,84 @@
       row.dataset.param = name;
       ruleControls.appendChild(row);
     }
+    updatePresetActiveState();
+  }
+
+  // P1-D2: render a row of named-regime buttons for rules that declare a
+  // `presets` array. Each preset snaps one or more params to a known
+  // regime so the viewer can SEE the response to a controlled change.
+  function buildPresetRow() {
+    const presets = currentRule.presets;
+    if (!Array.isArray(presets) || presets.length === 0) return;
+    const row = document.createElement("div");
+    row.className = "control-row preset-row";
+
+    const label = document.createElement("label");
+    label.className = "ctl-label";
+    label.textContent = "regime";
+    row.appendChild(label);
+
+    const wrap = document.createElement("div");
+    wrap.className = "preset-btns";
+    presets.forEach((preset, idx) => {
+      const btn = document.createElement("button");
+      btn.type = "button";
+      btn.className = "preset-btn";
+      btn.textContent = preset.label;
+      btn.dataset.presetIdx = String(idx);
+      if (preset.hint) btn.title = preset.hint;
+      btn.addEventListener("click", () => applyPreset(preset));
+      // Hovering a regime previews its consequence in the control-hint line.
+      btn.addEventListener("mouseenter", () => {
+        if (controlHintEl && preset.hint) controlHintEl.textContent = preset.hint;
+      });
+      wrap.appendChild(btn);
+    });
+    row.appendChild(wrap);
+    ruleControls.appendChild(row);
+  }
+
+  function applyPreset(preset) {
+    if (!currentRule || !preset) return;
+    const values = preset.values || {};
+    for (const [k, v] of Object.entries(values)) {
+      const slot = currentRule.params && currentRule.params[k];
+      if (!slot) continue;
+      slot.value = v;
+      if (currentRule.onParamChange) currentRule.onParamChange(k);
+    }
+    syncRuleControlsToParams();
+    // Some regimes (symmetry-breaking, droplet coarsening) only read
+    // cleanly from a fresh field; those presets carry reseed:true.
+    if (preset.reseed && typeof currentRule.reset === "function") {
+      currentRule.reset();
+    }
+    if (controlHintEl && preset.hint) controlHintEl.textContent = preset.hint;
+    render();
+    refreshReadouts();
+    writeUrlState();
+  }
+
+  function presetMatches(preset) {
+    const values = preset.values || {};
+    for (const [k, v] of Object.entries(values)) {
+      const slot = currentRule.params && currentRule.params[k];
+      if (!slot) return false;
+      const tol = slot.step ? Number(slot.step) / 2 + 1e-9 : 1e-6;
+      if (Math.abs(Number(slot.value) - Number(v)) > tol) return false;
+    }
+    return true;
+  }
+
+  // Light the regime button whose param set matches the live params.
+  function updatePresetActiveState() {
+    if (!currentRule || !Array.isArray(currentRule.presets)) return;
+    const btns = ruleControls.querySelectorAll(".preset-btn");
+    btns.forEach((btn) => {
+      const idx = parseInt(btn.dataset.presetIdx, 10);
+      const preset = currentRule.presets[idx];
+      btn.classList.toggle("active", !!(preset && presetMatches(preset)));
+    });
   }
 
   // Reflect param changes (made by onParamChange) back into DOM widgets.
@@ -356,6 +438,7 @@
         }
       }
     }
+    updatePresetActiveState();
   }
 
   function formatNum(v, step) {

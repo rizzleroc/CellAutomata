@@ -82,6 +82,19 @@
         source:    "How fast new acetate is injected at the duct base. Raise it: a thicker plume that fills the chimney. Lower it: a thin trickle that quickly dilutes.",
       },
 
+      // P1-D2: vent-strength regimes — the plume reshapes live.
+      presets: [
+        { label: "trickle vent",
+          hint: "A weak vent — a thin acetate plume that decays before it climbs far up the chimney.",
+          values: { diffusion: 0.20, drift: 0.10, decay: 0.010, source: 0.02 } },
+        { label: "steady plume",
+          hint: "The baseline Russell–Lane vent — a steady plume rising against the mineral wall.",
+          values: { diffusion: 0.20, drift: 0.18, decay: 0.004, source: 0.05 } },
+        { label: "roaring vent",
+          hint: "A vigorous vent — a thick, fast updraft that fills the whole chimney with long-lived chemistry.",
+          values: { diffusion: 0.30, drift: 0.45, decay: 0.002, source: 0.15 } },
+      ],
+
       randomize() { seed(); },
       clear()    { A.fill(0); generation = 0; },
       reset()    { seed(); },
