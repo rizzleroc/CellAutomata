@@ -179,6 +179,15 @@ capture, all directly demanded by the goal statement.
 
 ## 4 · Done so far (history)
 
+- [x] **Rule smoke tests** (2026-05-30) — `docs/web2/tests/smoke.mjs`, a
+  zero-dependency node harness that loads every rule module against a
+  `window` stub and exercises seed → step → render → renderHeight →
+  paint, asserting no-throw and finite output (NaN-preserving buffers),
+  plus contract checks: controlConsequence keys must name real params,
+  preset values must sit inside their slider ranges. 302 checks across
+  8 rules. Wired into the Pages workflow as a `test` job that gates
+  `build`, so a broken rule can no longer deploy. Closes the web half of
+  PRD §3.4 "Tests (any kind)".
 - [x] **The Control Round** (2026-05-30) — P1-D2 preset-regime row.
   Every continuous-parameter arc rule (soup, natural-selection,
   chirality, coacervate, vents) gains a one-click row of named

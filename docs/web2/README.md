@@ -1,7 +1,7 @@
 # cellauto · web 2.0
 
 The follow-on to the original `docs/web/` Gray–Scott-only demo. Where v1
-showed one stage on one canvas, v2.0 is a **multi-rule sandbox**: four
+showed one stage on one canvas, v2.0 is a **multi-rule sandbox**: eight
 automata share the same canvas, controls, brush, and URL-state encoder.
 v4.0 added SEM-grade rendering — depth-shaded, lit, tone-mapped through
 a warm-sepia or cool-mono LUT, framed as a live instrument feed.
@@ -24,16 +24,26 @@ GitHub Pages: same root as v1 (`/docs`). The demo lives at
 
 ## What's in the box
 
-| Rule | Description | Per-rule controls |
-|---|---|---|
-| **Conway** | Game of Life (B3/S23), toroidal. | density, wrap |
-| **Wolfram 1D** | Elementary 1D CA, scrolling history. | rule number (0–255), random seed |
-| **Gray–Scott** | Stage 1 PDE — same numerics as v1. | F, k, Pearson preset |
-| **Primordial soup** | Stage 0 Brownian tracers with fading trails. | count, diffusion, evaporation, drift |
+Two reference automata frame six abiogenesis building blocks. Digit
+hotkeys `1`–`8` follow this order:
+
+| # | Rule | Description | Per-rule controls |
+|---|---|---|---|
+| 1 | **Conway** | Game of Life (B3/S23), toroidal. *Reference automaton.* | density, wrap |
+| 2 | **Wolfram 1D** | Elementary 1D CA, scrolling history. *Reference automaton.* | rule number (0–255), random seed |
+| 3 | **Gray–Scott** | Reaction–diffusion morphogenesis — same numerics as v1. | F, k, Pearson preset |
+| 4 | **Primordial soup** | Brownian tracers with fading trails. | count, diffusion, evaporation, drift |
+| 5 | **Natural selection** | 16-species soup; same-species pairs condense into amoeba compartments. | amoeba lifespan, regime presets |
+| 6 | **Homochirality** | Frank kinetics — L/R autocatalysis + mutual inhibition break mirror symmetry. | α, β, diffusion, noise |
+| 7 | **Coacervate** | Cahn–Hilliard liquid–liquid phase separation into droplets. | mobility M, interface stiffness κ, substeps |
+| 8 | **Alkaline vents** | Buoyant acetate plume from a hydrothermal vent source. | diffusion D, updraft, decay, source rate |
 
 ## What's new vs. v1
 
-- **Rule switcher.** Pick any of the four from the dropdown or `1`–`4`.
+- **Rule switcher.** Pick any of the eight from the dropdown or `1`–`8`.
+- **Guided tour.** `t` (or the TOUR button) auto-walks the chemistry-to-life
+  arc — soup → vents → Gray–Scott → selection → chirality → coacervate —
+  skipping the two off-arc reference automata.
 - **Brush painting.** Click-drag to paint live cells / drop perturbation
   patches / inject particles. Right-click or shift-click to erase. Works
   on touch.
@@ -44,7 +54,8 @@ GitHub Pages: same root as v1 (`/docs`). The demo lives at
   URL — paste it into another browser, get the same rule at the same
   parameters in the same palette.
 - **Keyboard.** `space` play/pause, `s` step, `r` reset, `c` clear,
-  `n` randomize, `1`–`4` rule, `m` SEM mode, `p` palette.
+  `n` randomize, `1`–`8` rule, `m` SEM mode, `p` palette, `t` tour,
+  `?` about/help, `esc` close.
 - **Fullscreen.** Canvas-only fullscreen for projection.
 - **Toast notifications.** Quiet confirmations on reset / clear / copy.
 - **Responsive 2-column layout** that collapses to single-column below
@@ -83,13 +94,31 @@ round-trip:
                  SEM toggle, palette picker, marginalia ticker.
 - `sem.js`     — v4.0 depth-shading pipeline + warm-sepia / cool-mono
                  LUTs. Pure JS, no allocations in the hot loop.
-- `rules/conway.js`     — Game of Life (B3/S23).
-- `rules/wolfram1d.js`  — elementary 1D CA, scrolling history.
-- `rules/grayscott.js`  — Gray–Scott PDE + Pearson presets.
-- `rules/soup.js`       — Brownian particles + fading trail field.
+- `rules/conway.js`            — Game of Life (B3/S23). *Reference automaton.*
+- `rules/wolfram1d.js`         — elementary 1D CA, scrolling history. *Reference automaton.*
+- `rules/grayscott.js`         — Gray–Scott PDE + Pearson presets.
+- `rules/soup.js`              — Brownian particles + fading trail field.
+- `rules/natural_selection.js` — 16-species soup → amoeba compartments.
+- `rules/chirality.js`         — Frank kinetics, L/R symmetry-breaking.
+- `rules/coacervate.js`        — Cahn-Hilliard liquid–liquid phase separation.
+- `rules/vents.js`             — alkaline-vent acetate plume.
 - `viridis.js`  — 32-entry viridis LUT shared with v1 (legacy mode only).
+- `tests/smoke.mjs` — zero-dependency node harness exercising every rule.
 
-## Rule contract (for adding a fifth rule)
+## Tests
+
+```
+node docs/web2/tests/smoke.mjs
+```
+
+Loads each rule module against a `window` stub and runs it through
+seed → step → render → renderHeight → paint, asserting no method throws
+and no buffer goes non-finite. Also checks the data contracts:
+`controlConsequence` keys must name real params, and every `presets`
+value must fall inside its slider range. The GitHub Pages workflow runs
+this as a gate before deploying, so a broken rule can't ship.
+
+## Rule contract (for adding a rule)
 
 Each rule is a zero-arg factory registered on `CA.RULES`. The expected
 object shape is documented in the footer comment of `main.js`. Drop a
@@ -100,20 +129,23 @@ To get a rule into SEM mode, also implement `renderHeight(out:
 Float32Array)` — write your primary scalar field (anything in [0, 1])
 into `out`; the SEM renderer does the rest. If you skip it, the rule
 falls back to its flat-colour `render(pixels)` path even with SEM mode
-on.
+on. Optional: a `presets` array of `{ label, hint, values, reseed? }`
+regimes renders a one-click regime row above the sliders.
 
 ## What didn't make it
 
-The other eight origin-of-life stages — alkaline vents, autocatalytic
-sets, mineral catalysis, RAFs, homochirality, the RNA world, the genetic
-code, coacervates, vesicles, LUCA distillation — are *not* JS ports.
-Each is hundreds to thousands of lines of Python with NumPy / SciPy
-dependencies. They remain Python-only:
+Eight rules ship as JS ports: the two reference automata (Conway,
+Wolfram 1D) plus six building blocks — primordial soup, natural
+selection, Gray–Scott morphogenesis, alkaline vents, homochirality, and
+coacervates.
+
+Five further building blocks remain Python-only — autocatalytic sets
+(Kauffman), the RNA world (Eigen quasispecies), lipid vesicles (Helfrich
+curvature), the genetic code (Vetsigian–Woese–Goldenfeld), and LUCA.
+Each is several hundred lines of NumPy / SciPy and resists a faithful JS
+port:
 
 ```
 pip install -e .
 cellauto gui --rule abiogenesis-pipeline-extended
 ```
-
-The gallery row at the bottom of the page links museum plates rendered
-from the Python build for each missing stage.
