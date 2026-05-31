@@ -137,18 +137,20 @@
         generation++;
       },
 
-      // v4.1 sprite layer — every live tracer renders as a coloured
-      // granule.  Trails are in the SEM substrate; the sprites are the
-      // tracers themselves.
+      // v4.1.1 sprite layer (calmer revision) — every Nth tracer
+      // renders as a coloured granule.  Default 600 tracers ÷ 3 = 200
+      // sprites, which reads as a granular surface without overwhelming
+      // the trail-field SEM substrate.
       sprites() {
         const out = [];
-        for (let i = 0; i < particles.length; i++) {
+        const stride = 3;
+        for (let i = 0; i < particles.length; i += stride) {
           const p = particles[i];
           const [r, g, b] = PALETTE[p.species];
           out.push({
             kind: "granule",
             x: p.x, y: p.y,
-            scale: 1.0,
+            scale: 1.1,
             color: "rgb(" + r + "," + g + "," + b + ")",
           });
         }

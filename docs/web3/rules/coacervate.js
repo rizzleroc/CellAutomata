@@ -116,8 +116,11 @@
       // maximum of φ in the positive (coacervate-rich) phase.
       sprites() {
         const out = [];
-        const DROPLET_THRESHOLD = 0.40;
-        const stride = 6;
+        // v4.1.1 — raised threshold + widened stride from 6 → 10 so only
+        // well-coarsened droplets get a sprite; early spinodal noise
+        // doesn't spam outline rings everywhere.
+        const DROPLET_THRESHOLD = 0.55;
+        const stride = 10;
         for (let y = stride; y < H - stride; y += stride) {
           for (let x = stride; x < W - stride; x += stride) {
             const ic = y * W + x;

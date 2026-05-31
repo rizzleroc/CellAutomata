@@ -147,25 +147,23 @@
         }
       },
 
-      // v4.1 sprite layer — amoeba cells render as larger spherical
-      // proto-cells.  Stride-sampled (every 2nd cell × 2nd cell) so a
-      // saturated 80×80 grid emits ~1600 sprites instead of ~6400; the
-      // sprites are larger than 1 cell so coverage is still visually
-      // dense, but the canvas draw cost stays bounded.
+      // v4.1.1 sprite layer (calmer revision) — amoeba cells render as
+      // outline ellipses on a stride-4 sample.  A saturated 80×80 grid
+      // emits ≤ 400 sprites instead of ~6400; even sparser than the
+      // v4.1.0 stride-2 cap, because the rings are larger than one cell
+      // anyway and the outline-only style covers the substrate gently.
       sprites() {
         const out = [];
-        const stride = 2;
+        const stride = 4;
         for (let y = 0; y < H; y += stride) {
           for (let x = 0; x < W; x += stride) {
             const i = y * W + x;
             if ((flags[i] & 0b10) === 0) continue;     // skip non-amoebas
-            const [r, g, b] = PALETTE[color[i]];
             out.push({
               kind: "amoeba",
               x: x + stride / 2, y: y + stride / 2,
-              scale: 1.4,
+              scale: 2.0,
               angle: ((x * 13 + y * 7) % 32) / 32 * Math.PI,
-              color: "rgb(" + r + "," + g + "," + b + ")",
             });
           }
         }

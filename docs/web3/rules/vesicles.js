@@ -20,7 +20,10 @@
 
   const W = 160;
   const H = 160;
-  const VESICLE_THRESHOLD = 0.62;
+  // v4.1.1: raised from 0.62 → 0.78 so only well-formed vesicles get
+  // a sprite (the lower threshold produced spammy maxima from
+  // half-collapsed bilayers, frame-to-frame churn).
+  const VESICLE_THRESHOLD = 0.78;
 
   function make() {
     let phi   = new Float32Array(W * H);
@@ -141,8 +144,10 @@
         if (generation === lastSpriteScan) return cachedSprites;
         lastSpriteScan = generation;
         const out = [];
-        // Coarse-grained local-maximum scan: stride = 4 cells.
-        const stride = 4;
+        // Coarse local-maximum scan; stride widened in v4.1.1 from 4 → 8
+        // so neighbouring near-degenerate maxima within the same vesicle
+        // don't both qualify (was producing 600+ overlapping rings).
+        const stride = 8;
         for (let y = stride; y < H - stride; y += stride) {
           for (let x = stride; x < W - stride; x += stride) {
             const ic = y * W + x;

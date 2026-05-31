@@ -176,7 +176,9 @@
   let brushRadius = 5;
   let fpsSamples  = [];      // ring of last frame timestamps for FPS
   let semMode     = true;    // v4.0 default-on
-  let spriteMode  = true;    // v4.1 default-on
+  let spriteMode  = false;   // v4.1 default-off — sprites are an opt-in
+                             //                    annotation layer; default
+                             //                    view is calm SEM substrate.
   let palette     = "warm-sepia";
   let marginaliaTimer = 0;
   let marginaliaIdx   = 0;

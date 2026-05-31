@@ -37,92 +37,92 @@
   }
 
   // ── Individual sprite painters ──────────────────────────────────────────
-  // ctx is a 2-D canvas already scaled so 1 unit = 1 grid cell.
+  //
+  // Design rule (v4.1.1 calm-overlay revision): EVERY painter is an
+  // outline-and-tiny-core "annotation," not a filled blob.  The SEM
+  // substrate underneath must remain visible through the sprite layer.
+  // Filled gradients dominated and made the layer feel like a paint job
+  // rather than a microscope-grade annotation.  Compose pass wraps all
+  // sprites in a globalAlpha ≈ 0.75 so even rings blend with the substrate.
+  //
+  // ctx is a 2-D canvas at native grid resolution (1 unit = 1 grid cell).
   // s is the sprite descriptor; pal is the live SEM palette Uint8Array.
 
   function drawProtocellSphere(ctx, s, pal) {
     const r = s.scale * 0.95;
-    // Radial gradient with a hot top-left highlight (matches the SEM L = (0.4,0.3,0.85)).
-    const grad = ctx.createRadialGradient(s.x - r * 0.35, s.y - r * 0.40, r * 0.05,
-                                          s.x, s.y, r);
-    grad.addColorStop(0.00, tint(pal, 0.98));
-    grad.addColorStop(0.55, tint(pal, 0.78));
-    grad.addColorStop(1.00, tint(pal, 0.18));
-    ctx.fillStyle = grad;
+    // Hairline outline only — let the SEM substrate show through.
+    ctx.strokeStyle = tint(pal, 0.92);
+    ctx.lineWidth = Math.max(0.4, r * 0.08);
     ctx.beginPath();
     ctx.arc(s.x, s.y, r, 0, Math.PI * 2);
-    ctx.fill();
-    // Tiny specular dot for that catching-light feel.
-    ctx.fillStyle = "rgba(255,255,255,0.65)";
+    ctx.stroke();
+    // Catching-light specular pip — single bright pixel.
+    ctx.fillStyle = tint(pal, 0.98);
     ctx.beginPath();
-    ctx.arc(s.x - r * 0.40, s.y - r * 0.45, Math.max(0.6, r * 0.10), 0, Math.PI * 2);
+    ctx.arc(s.x - r * 0.35, s.y - r * 0.40, Math.max(0.4, r * 0.12), 0, Math.PI * 2);
     ctx.fill();
   }
 
   function drawAmoeba(ctx, s, pal) {
-    const r = s.scale * 1.2;
-    const grad = ctx.createRadialGradient(s.x - r * 0.30, s.y - r * 0.30, r * 0.10,
-                                          s.x, s.y, r);
-    grad.addColorStop(0.00, tint(pal, 0.92));
-    grad.addColorStop(0.70, tint(pal, 0.55));
-    grad.addColorStop(1.00, tint(pal, 0.15));
-    ctx.fillStyle = grad;
+    const r = s.scale * 1.0;
+    // Outline ring only.  Slight ellipticity from the descriptor's angle
+    // keeps the colony from looking like a perfect dot grid.
+    ctx.strokeStyle = tint(pal, 0.85);
+    ctx.lineWidth = Math.max(0.35, r * 0.10);
     ctx.beginPath();
     ctx.ellipse(s.x, s.y, r, r * 0.85, s.angle || 0, 0, Math.PI * 2);
-    ctx.fill();
-    // Membrane rim.
-    ctx.strokeStyle = tint(pal, 0.88);
-    ctx.lineWidth = Math.max(0.5, r * 0.06);
     ctx.stroke();
   }
 
   function drawGranule(ctx, s, pal) {
+    // A single coloured dot, slightly translucent so trails compete.
     ctx.fillStyle = s.color || tint(pal, 0.85);
+    ctx.globalAlpha = 0.85;
     ctx.beginPath();
-    ctx.arc(s.x, s.y, Math.max(0.5, s.scale * 0.55), 0, Math.PI * 2);
+    ctx.arc(s.x, s.y, Math.max(0.4, s.scale * 0.45), 0, Math.PI * 2);
     ctx.fill();
+    ctx.globalAlpha = 1;
   }
 
   function drawChiralityGlyph(ctx, s, pal) {
     // Twin-loop "helix" glyph; the direction encodes L vs D.
-    const r = s.scale * 1.1;
+    const r = s.scale * 1.0;
     const dir = s.hand === "L" ? -1 : 1;
-    ctx.strokeStyle = tint(pal, s.hand === "L" ? 0.92 : 0.62);
-    ctx.lineWidth = Math.max(0.6, r * 0.18);
+    ctx.strokeStyle = tint(pal, s.hand === "L" ? 0.95 : 0.55);
+    ctx.lineWidth = Math.max(0.45, r * 0.14);
     ctx.lineCap = "round";
     ctx.beginPath();
-    // Two overlapping arcs that twist in the chosen direction.
-    ctx.arc(s.x, s.y - r * 0.30, r * 0.55, Math.PI * 0.10 * dir, Math.PI * 1.10 * dir, dir < 0);
+    ctx.arc(s.x, s.y - r * 0.30, r * 0.50,
+            Math.PI * 0.10 * dir, Math.PI * 1.10 * dir, dir < 0);
     ctx.stroke();
     ctx.beginPath();
-    ctx.arc(s.x, s.y + r * 0.30, r * 0.55, Math.PI * (1 + 0.10 * dir), Math.PI * (2 + 0.10 * dir), dir < 0);
+    ctx.arc(s.x, s.y + r * 0.30, r * 0.50,
+            Math.PI * (1 + 0.10 * dir), Math.PI * (2 + 0.10 * dir), dir < 0);
     ctx.stroke();
   }
 
   function drawCoacervateDroplet(ctx, s, pal) {
-    const r = s.scale * 1.05;
-    // Outer ring: the LLPS interface.
-    ctx.strokeStyle = tint(pal, 0.82);
-    ctx.lineWidth = Math.max(0.5, r * 0.10);
+    // Outline ring + small core dot.  No interior fill — the SEM
+    // substrate IS the LLPS density gradient.
+    const r = s.scale * 1.0;
+    ctx.strokeStyle = tint(pal, 0.85);
+    ctx.lineWidth = Math.max(0.4, r * 0.08);
     ctx.beginPath();
     ctx.arc(s.x, s.y, r, 0, Math.PI * 2);
     ctx.stroke();
-    // Inner gradient — concentrated chemistry.
-    const grad = ctx.createRadialGradient(s.x, s.y, r * 0.10, s.x, s.y, r * 0.95);
-    grad.addColorStop(0.00, tint(pal, 0.72));
-    grad.addColorStop(1.00, tint(pal, 0.30) + ""); // no alpha needed
-    ctx.fillStyle = grad;
+    ctx.fillStyle = tint(pal, 0.75);
     ctx.beginPath();
-    ctx.arc(s.x, s.y, r * 0.95, 0, Math.PI * 2);
+    ctx.arc(s.x, s.y, Math.max(0.5, r * 0.18), 0, Math.PI * 2);
     ctx.fill();
   }
 
   function drawMineralCell(ctx, s, pal) {
-    // Hexagonal honeycomb cell, edge-on.
-    const r = s.scale * 0.95;
-    ctx.strokeStyle = tint(pal, 0.65);
-    ctx.lineWidth = Math.max(0.4, r * 0.10);
-    ctx.fillStyle = tint(pal, 0.30);
+    // Hexagonal honeycomb cell — STROKE only.  No fill.  The chimney
+    // walls in the SEM substrate are already opaque mineral; the sprite
+    // just adds the lattice geometry on top.
+    const r = s.scale * 0.92;
+    ctx.strokeStyle = tint(pal, 0.70);
+    ctx.lineWidth = Math.max(0.3, r * 0.08);
     ctx.beginPath();
     for (let i = 0; i < 6; i++) {
       const a = (Math.PI / 3) * i + Math.PI / 6;
@@ -131,28 +131,22 @@
       if (i === 0) ctx.moveTo(px, py); else ctx.lineTo(px, py);
     }
     ctx.closePath();
-    ctx.fill();
     ctx.stroke();
   }
 
   function drawVesicleBilayer(ctx, s, pal) {
-    // Two concentric rings = the lipid bilayer; faint fill = lumen.
+    // Two concentric rings = the lipid bilayer.  No lumen fill — let
+    // the SEM substrate be the aqueous interior so the membrane reads
+    // as a true thin shell, not a painted disk.
     const r = s.scale * 1.0;
-    const inner = r * 0.78;
-    // Lumen fill (the aqueous interior).
-    ctx.fillStyle = tint(pal, 0.45);
-    ctx.beginPath();
-    ctx.arc(s.x, s.y, inner, 0, Math.PI * 2);
-    ctx.fill();
-    // Outer leaflet.
-    ctx.strokeStyle = tint(pal, 0.92);
-    ctx.lineWidth = Math.max(0.45, r * 0.07);
+    const inner = r * 0.76;
+    ctx.strokeStyle = tint(pal, 0.95);
+    ctx.lineWidth = Math.max(0.35, r * 0.06);
     ctx.beginPath();
     ctx.arc(s.x, s.y, r, 0, Math.PI * 2);
     ctx.stroke();
-    // Inner leaflet.
     ctx.strokeStyle = tint(pal, 0.78);
-    ctx.lineWidth = Math.max(0.35, r * 0.05);
+    ctx.lineWidth = Math.max(0.30, r * 0.04);
     ctx.beginPath();
     ctx.arc(s.x, s.y, inner, 0, Math.PI * 2);
     ctx.stroke();
@@ -178,13 +172,24 @@
   //   palette   the live SEM palette LUT (Uint8Array), used to tint sprites.
   //
   // The ctx is at canvas resolution (typically equal to gridW × gridH).
+  //
+  // Compose wraps every painter call in a globalAlpha so even outlined
+  // sprites blend into the SEM substrate rather than dominate it — this
+  // is the v4.1.1 calm-overlay revision after the v4.1.0 launch produced
+  // "distracting / sprites cover everything" feedback.
   function compose(ctx, sprites, gridW, gridH, palette) {
     if (!sprites || !sprites.length) return;
+    const prevAlpha = ctx.globalAlpha;
+    const prevLineCap = ctx.lineCap;
+    ctx.globalAlpha = 0.72;
+    ctx.lineCap = "round";
     for (const s of sprites) {
       const painter = PAINTERS[s.kind];
       if (!painter) continue;
       painter(ctx, s, palette);
     }
+    ctx.globalAlpha = prevAlpha;
+    ctx.lineCap = prevLineCap;
   }
 
   window.SPRITES = { compose, PAINTERS };

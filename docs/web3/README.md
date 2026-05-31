@@ -54,6 +54,15 @@ Toggle via the **sprites** checkbox in the configuration sidebar or
 the `x` hotkey — flips between substrate-only and substrate +
 sprites for direct comparison.
 
+**Sprite mode is OFF by default** (v4.1.1 calm-overlay revision —
+the v4.1.0 launch defaulted sprites on and the layer dominated the
+SEM substrate; the layer is now an opt-in annotation, not the
+default view). Painters are outline-and-core-dot rather than filled
+gradient blobs, composited at `globalAlpha 0.72` so the substrate
+shows through. Densities (per-rule local-max thresholds, stride
+sizes) are tuned so a saturated grid emits ~100-300 sprites, not
+~1000+.
+
 ### Ninth building block: lipid vesicles (Stage 3)
 
 ```

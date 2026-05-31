@@ -143,13 +143,15 @@
         }
       },
 
-      // v4.1 sprite layer — paint the chimney walls as a honeycomb of
-      // hexagonal mineral-cells.  We don't sprite the acetate plume —
-      // that's the depth-shaded SEM substrate's job.
+      // v4.1.1 sprite layer (calmer revision) — paint the chimney walls
+      // as a honeycomb of hexagonal mineral-cells.  We don't sprite the
+      // acetate plume — that's the depth-shaded SEM substrate's job.
+      // Widened cellR 5 → 7 so the lattice reads as architecture, not
+      // as a busy fishnet covering the substrate.
       sprites() {
         const out = [];
         // Sample on a hexagonal grid so the honeycomb tiles flush.
-        const cellR = 5;
+        const cellR = 7;
         const xStep = cellR * Math.sqrt(3);
         const yStep = cellR * 1.5;
         for (let row = 0, y = cellR; y < H - cellR; row++, y += yStep) {
