@@ -35,6 +35,10 @@ jobs:
         run: node docs/web3/tests/smoke.mjs
       - name: Web4 lab smoke tests
         run: node docs/web4/tests/smoke.mjs
+      - name: Web4 apparatus runtime verification
+        run: |
+          npm install three@0.162.0 --no-save --no-package-lock --silent
+          node docs/web4/tests/runtime.mjs
 
   build:
     needs: test

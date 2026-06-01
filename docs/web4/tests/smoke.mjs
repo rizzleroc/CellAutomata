@@ -50,7 +50,15 @@ for (const rel of ["styles.css", "main.js"]) {
 }
 
 // 3. Every JS module passes `node --check`, and its relative imports resolve.
-const MODULES = ["scene.js", "main.js", "apparatus/miller_urey.js", "apparatus/placeholder.js", "tests/smoke.mjs"];
+const APPARATUS = [
+  "miller_urey", "grayscott_dish", "raf_flask", "vesicle_microscope", "vent_reactor",
+  "mineral_flask", "chirality_polarimeter", "rna_thermocycler", "code_bench",
+  "coacervate_microscope", "microfluidic_chip", "luca_console", "stromatolite",
+];
+const MODULES = [
+  "scene.js", "main.js", "apparatus/lib.js", "apparatus/placeholder.js", "tests/smoke.mjs",
+  ...APPARATUS.map((a) => `apparatus/${a}.js`),
+];
 for (const rel of MODULES) {
   assert(exists(rel), `module missing: ${rel}`);
   if (!exists(rel)) continue;
@@ -69,23 +77,38 @@ for (const rel of MODULES) {
   }
 }
 
-// 4. main.js wires the full pipeline registry + the hero apparatus import.
+// 4. main.js wires every apparatus into the registry.
 const main = read("main.js");
-assert(/from\s+["']\.\/apparatus\/miller_urey\.js["']/.test(main),
-  "main.js does not import the Miller–Urey apparatus");
-assert(/buildPlaceholder/.test(main), "main.js does not use buildPlaceholder for pending stages");
-const phCount = (main.match(/ph\(/g) || []).length;
-// 13-stage pipeline = 1 hero (miller-urey) + 12 placeholder entries (stages 1–11 + capstone)
-assert(phCount >= 12, `expected ≥12 placeholder stage entries, found ${phCount}`);
+for (const a of APPARATUS) {
+  assert(new RegExp(`from\\s+["']\\.\\/apparatus\\/${a}\\.js["']`).test(main),
+    `main.js does not import apparatus/${a}.js`);
+}
+assert(/const\s+STAGES\s*=\s*\[/.test(main), "main.js has no STAGES registry");
+assert(/buildPlaceholder/.test(main), "main.js dropped the buildPlaceholder fallback");
 
-// 5. apparatus modules export what main.js expects.
-const mu = read("apparatus/miller_urey.js");
-assert(/export\s+function\s+buildMillerUrey/.test(mu), "miller_urey.js missing buildMillerUrey export");
-assert(/export\s+const\s+meta/.test(mu), "miller_urey.js missing meta export");
-assert(/anim\.update\s*=/.test(mu), "miller_urey.js apparatus has no anim.update");
-assert(/anim\.setRunning\s*=/.test(mu), "miller_urey.js apparatus has no anim.setRunning");
+// 5. Every apparatus module exports a contract-shaped `meta` (id + build) and a
+//    build() that installs the anim contract (setRunning / getProgress / update).
+const SPECIMEN = new Set(["stromatolite"]); // capstone: setRunning/getProgress may be no-ops
+for (const a of APPARATUS) {
+  const src = read(`apparatus/${a}.js`);
+  assert(/export\s+const\s+meta\s*=/.test(src), `${a}.js missing meta export`);
+  assert(/\bid:\s*['"][\w-]+['"]/.test(src), `${a}.js meta has no id`);
+  assert(/\bbuild\b/.test(src), `${a}.js meta has no build reference`);
+  assert(/userData/.test(src) && /\banim\b/.test(src), `${a}.js never installs an anim on group.userData`);
+  assert(/setRunning/.test(src), `${a}.js anim missing setRunning`);
+  assert(/getProgress/.test(src), `${a}.js anim missing getProgress`);
+  if (!SPECIMEN.has(a)) assert(/update/.test(src), `${a}.js anim missing update`);
+}
 const ph = read("apparatus/placeholder.js");
 assert(/export\s+function\s+buildPlaceholder/.test(ph), "placeholder.js missing buildPlaceholder export");
+
+// All 13 stages (Stage 0 + 11 pipeline + capstone) must be in the registry.
+const stageBlock = main.match(/const\s+STAGES\s*=\s*\[([\s\S]*?)\]/);
+assert(!!stageBlock, "could not parse STAGES registry");
+if (stageBlock) {
+  const names = stageBlock[1].split(",").map((s) => s.trim()).filter(Boolean);
+  assert(names.length === 13, `expected 13 stages in registry, found ${names.length}`);
+}
 
 // 6. scene.js sets up the photoreal pillars (PBR env + ACES + bloom).
 const scene = read("scene.js");

@@ -6,29 +6,28 @@
 
 import * as THREE from 'three';
 import { createLab } from './scene.js';
-import { meta as millerUrey } from './apparatus/miller_urey.js';
 import { buildPlaceholder } from './apparatus/placeholder.js';
+import { meta as millerUrey } from './apparatus/miller_urey.js';
+import { meta as grayscott } from './apparatus/grayscott_dish.js';
+import { meta as raf } from './apparatus/raf_flask.js';
+import { meta as vesicles } from './apparatus/vesicle_microscope.js';
+import { meta as vent } from './apparatus/vent_reactor.js';
+import { meta as minerals } from './apparatus/mineral_flask.js';
+import { meta as chirality } from './apparatus/chirality_polarimeter.js';
+import { meta as rna } from './apparatus/rna_thermocycler.js';
+import { meta as code } from './apparatus/code_bench.js';
+import { meta as coacervate } from './apparatus/coacervate_microscope.js';
+import { meta as selection } from './apparatus/microfluidic_chip.js';
+import { meta as luca } from './apparatus/luca_console.js';
+import { meta as stromatolite } from './apparatus/stromatolite.js';
 
-// ── Stage registry (order = the 12-stage pipeline + capstone) ───────────────
+// ── Stage registry (order = Stage 0 → the 12-stage pipeline → capstone) ─────
 const STAGES = [
-  millerUrey,
-  ph('stage1-grayscott', 'Stage 1 — Reaction–diffusion', 'Belousov–Zhabotinsky Petri dish'),
-  ph('stage2-raf', 'Stage 2 — Autocatalytic sets', 'Reaction flask + stir plate'),
-  ph('stage3-vesicles', 'Stage 3 — Vesicles', 'Inverted microscope + slide'),
-  ph('stage4-vent', 'Stage 4 — Hydrothermal vent', 'Bench-top vent reactor'),
-  ph('stage5-minerals', 'Stage 5 — Mineral catalysis', 'Montmorillonite clay flask'),
-  ph('stage6-chirality', 'Stage 6 — Homochirality', 'Soai flask + polarimeter'),
-  ph('stage7-rna', 'Stage 7 — RNA world', 'Ribozyme replication assay'),
-  ph('stage8-code', 'Stage 8 — Genetic code', 'In-vitro translation bench'),
-  ph('stage9-coacervate', 'Stage 9 — Coacervates', 'Oparin droplets, microscope'),
-  ph('stage10-selection', 'Stage 10 — Protocell selection', 'Microfluidic culture chip'),
-  ph('stage11-luca', 'Stage 11 — LUCA', 'Genomics / tree-of-life console'),
-  ph('capstone-stromatolite', 'Capstone — Stromatolite', 'Fossil hand specimen (~3.5 Ga)'),
+  millerUrey, grayscott, raf, vesicles, vent, minerals, chirality,
+  rna, code, coacervate, selection, luca, stromatolite,
 ];
-function ph(id, label, title) {
-  return { id, label, title, placeholder: true,
-    blurb: 'Photoreal apparatus pending — will be baked from a reference image via the touch-app / Tripo pipeline.' };
-}
+// buildPlaceholder remains the fallback for any meta missing a build() (e.g.
+// a future stage stubbed before its apparatus exists).
 
 const lab = createLab(document.getElementById('viewport'));
 let current = null;
@@ -45,7 +44,8 @@ function loadStage(m) {
   document.getElementById('apTitle').textContent = m.title;
   document.getElementById('apLabel').textContent = m.label;
   document.getElementById('apBlurb').textContent = m.blurb;
-  document.getElementById('runBtn').style.display = m.placeholder ? 'none' : '';
+  const isSpecimen = m.id?.startsWith('capstone');
+  document.getElementById('runBtn').style.display = (m.placeholder || isSpecimen) ? 'none' : '';
   document.getElementById('explodeRow').style.display = m.placeholder ? 'none' : '';
   setRunning(true);
   // active nav button
@@ -124,6 +124,15 @@ for (const m of STAGES) {
   nav.appendChild(b);
 }
 
+// Per-stage readout label (defaults to "experiment progress").
+const READOUT_LABEL = {
+  'stage0-miller-urey': 'organics collected',
+  'stage4-vent': 'reaction extent',
+  'stage7-rna': 'replication cycles',
+  'stage10-selection': 'mean fitness',
+  'stage11-luca': 'core distilled',
+};
+
 // ── Render loop ─────────────────────────────────────────────────────────────
 const clock = new THREE.Clock();
 function tick() {
@@ -134,8 +143,10 @@ function tick() {
   // live readout
   const p = current?.userData?.anim?.getProgress?.() ?? 0;
   const ro = document.getElementById('readout');
-  if (ro && !currentMeta?.placeholder) {
-    ro.textContent = `organics collected: ${(p * 100).toFixed(0)}%`;
+  const isSpecimen = currentMeta?.id?.startsWith('capstone');
+  if (ro && !currentMeta?.placeholder && !isSpecimen) {
+    const label = READOUT_LABEL[currentMeta?.id] || 'experiment progress';
+    ro.textContent = `${label}: ${(p * 100).toFixed(0)}%`;
   } else if (ro) { ro.textContent = ''; }
   requestAnimationFrame(tick);
 }
