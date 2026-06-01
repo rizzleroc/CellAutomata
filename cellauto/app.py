@@ -2329,7 +2329,12 @@ class App(tk.Frame):
             active_state = getattr(state, "inner_state", None)
             active_state = active_state if active_state is not None else state
             if hasattr(active_rule, "render_sem"):
-                self._renderer.render(active_rule.render_sem(active_state, CANVAS_SIZE, CANVAS_SIZE))
+                # step_count drives the membrane wobble / cilia beat / gut churn
+                # so the SEM feed is visibly alive frame-to-frame.
+                frame = active_rule.render_sem(
+                    active_state, CANVAS_SIZE, CANVAS_SIZE, phase=float(self.engine.step_count)
+                )
+                self._renderer.render(frame)
             else:
                 self._renderer.render(rule.render_rgb(state))
         elif isinstance(self._renderer, DiscreteRenderer):

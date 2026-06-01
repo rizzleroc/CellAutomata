@@ -481,6 +481,7 @@ class AbiogenesisStageLife:
         height: int = 600,
         max_org: int = 22,
         seed: int = 0,
+        phase: float = 0.0,
     ) -> np.ndarray:
         """The Brachionus-style "LIVE SEM FEED · 400×" microscopy plate — the
         headline Phase 5.1 visual. Renders a modest sample of organisms LARGE
@@ -497,7 +498,6 @@ class AbiogenesisStageLife:
 
         gh, gw = state.substrate.shape
         npr = np.random.RandomState(seed & 0x7FFFFFFF)
-        rng = random.Random(seed)
         bg = self._sem_substrate(width, height, state.substrate, npr).convert("RGBA")
 
         orgs = sorted(state.organisms.values(), key=lambda o: -o.energy)[:max_org]
@@ -513,7 +513,7 @@ class AbiogenesisStageLife:
             cy = (margin + (1 - 2 * margin) * (o.y / max(1, gh - 1))) * height
             ef = min(o.energy / max(self.e_div, 1e-6), 1.6)
             r = base_r * (0.78 + 0.5 * ef)
-            self._sem_organism(bg, cx, cy, r, o, rng, dividing=(o.oid == div_oid and ef > 0.5))
+            self._sem_organism(bg, cx, cy, r, o, phase, dividing=(o.oid == div_oid and ef > 0.5))
 
         out = self._sem_overlay(bg.convert("RGB"))
         return np.asarray(out, dtype=np.uint8)
@@ -548,92 +548,130 @@ class AbiogenesisStageLife:
         arr = np.clip(img, 0, 255).astype(np.uint8)
         return Image.fromarray(arr, "RGB").filter(ImageFilter.GaussianBlur(0.5))
 
-    def _sem_organism(self, base, cx: float, cy: float, r: float, org: Organism, rng, dividing: bool) -> None:
-        """One translucent, depth-shaded organism drawn on its own RGBA layer
+    def _organic_outline(
+        self, org: Organism, ox: float, oy: float, rx: float, ry: float, phase: float, n: int = 60
+    ) -> list[tuple[float, float]]:
+        """A unique, irregular amoeboid outline per organism — never an ellipse.
+
+        The radius is modulated by a handful of sine harmonics whose amplitudes
+        and phases are *stable per organism* (seeded by its ``oid``) so each
+        cell keeps its own body shape, while a ``phase``-driven term makes the
+        membrane slowly wobble and the whole body creep its orientation — the
+        cell reads as ALIVE rather than a frozen stamp. The genome biases a
+        low-frequency lobe so the form reflects the program it carries.
+        """
+        orng = random.Random((org.oid * 2654435761) & 0xFFFFFFFF)
+        harm = []
+        for k in (2, 3, 5, 7):
+            amp = orng.uniform(0.06, 0.22) / (1 + (k - 2) * 0.35)
+            hph = orng.uniform(0, 2 * math.pi)
+            spd = orng.uniform(0.4, 1.1) * (1 if orng.random() < 0.5 else -1)
+            harm.append((k, amp, hph, spd))
+        g = org.genome
+        lobe = 0.12 * ((g[0] % 5) / 5.0) if g else 0.0
+        ang = (org.facing / 8.0) * 2 * math.pi + phase * 0.012  # slow creep of orientation
+        ca, sa = math.cos(ang), math.sin(ang)
+        pts: list[tuple[float, float]] = []
+        for i in range(n):
+            th = 2 * math.pi * i / n
+            rr = 1.0 + lobe * math.sin(2 * th + phase * 0.05)
+            for k, amp, hph, spd in harm:
+                rr += amp * math.sin(k * th + hph + phase * 0.13 * spd)
+            bx, by = math.cos(th) * rx * rr, math.sin(th) * ry * rr
+            pts.append((ox + bx * ca - by * sa, oy + bx * sa + by * ca))
+        return pts
+
+    def _sem_organism(
+        self, base, cx: float, cy: float, r: float, org: Organism, phase: float, dividing: bool
+    ) -> None:
+        """One translucent, depth-shaded organism with an organic (non-uniform)
+        body, beating cilia, and a drifting gut — drawn on its own RGBA layer
         then alpha-composited onto the substrate."""
         from PIL import Image, ImageDraw, ImageFilter
 
-        pad = int(r * 2.2) + 8
+        pad = int(r * 2.4) + 8
         L = Image.new("RGBA", (pad * 2, pad * 2), (0, 0, 0, 0))
-        ox, oy = pad, pad
-        rx, ry = r, r * 0.72
+        ox, oy = float(pad), float(pad)
+        rx, ry = r, r * 0.74
+        pts = self._organic_outline(org, ox, oy, rx, ry, phase)
+        closed = pts + [pts[0]]
 
-        # Soft drop shadow (depth).
+        # Soft drop shadow — the organic silhouette, offset and blurred.
         sh = Image.new("RGBA", L.size, (0, 0, 0, 0))
-        ImageDraw.Draw(sh).ellipse(
-            [ox - rx + r * 0.18, oy - ry + r * 0.28, ox + rx + r * 0.18, oy + ry + r * 0.28],
-            fill=(0, 0, 0, 120),
-        )
+        ImageDraw.Draw(sh).polygon([(px + r * 0.16, py + r * 0.26) for px, py in pts], fill=(0, 0, 0, 120))
         L = Image.alpha_composite(L, sh.filter(ImageFilter.GaussianBlur(r * 0.22)))
-        d = ImageDraw.Draw(L)
 
-        # Cilia / flagella hairs around the rim.
-        n_hair = 26
-        for i in range(n_hair):
-            a = 2 * math.pi * i / n_hair
-            x1, y1 = ox + math.cos(a) * rx, oy + math.sin(a) * ry
-            hl = r * (0.18 + 0.12 * rng.random())
+        # Beating cilia/flagella along the membrane — length pulses with phase.
+        d = ImageDraw.Draw(L)
+        for i in range(0, len(pts), 2):
+            px, py = pts[i]
+            ux, uy = px - ox, py - oy
+            ln = math.hypot(ux, uy) or 1.0
+            ux, uy = ux / ln, uy / ln
+            beat = 0.14 + 0.13 * math.sin(i * 0.5 + phase * 0.45 + org.oid)
+            hl = r * beat
             d.line(
-                [x1, y1, x1 + math.cos(a) * hl, y1 + math.sin(a) * hl],
-                fill=(180, 160, 120, 90),
-                width=max(1, int(r * 0.05)),
+                [px, py, px + ux * hl, py + uy * hl], fill=(182, 162, 122, 95), width=max(1, int(r * 0.05))
             )
 
-        # Soft translucent halo (the SEM out-of-focus glow).
+        # Soft translucent halo (SEM out-of-focus glow).
         halo = Image.new("RGBA", L.size, (0, 0, 0, 0))
-        ImageDraw.Draw(halo).ellipse(
-            [ox - rx * 1.12, oy - ry * 1.12, ox + rx * 1.12, oy + ry * 1.12], fill=(150, 134, 100, 60)
+        ImageDraw.Draw(halo).polygon(
+            [(ox + (px - ox) * 1.12, oy + (py - oy) * 1.12) for px, py in pts], fill=(150, 134, 100, 60)
         )
         L = Image.alpha_composite(L, halo.filter(ImageFilter.GaussianBlur(r * 0.18)))
-        d = ImageDraw.Draw(L)
 
-        # Translucent body with a radial depth gradient.
-        grad = Image.new("L", L.size, 0)
-        gd = ImageDraw.Draw(grad)
-        steps = 14
-        for s in range(steps, 0, -1):
-            f = s / steps
-            gd.ellipse([ox - rx * f, oy - ry * f, ox + rx * f, oy + ry * f], fill=int(60 + 120 * (1 - f)))
+        # Translucent body: organic polygon mask × radial depth gradient, with a
+        # faint cytoplasmic shimmer tied to phase + identity.
+        mask = Image.new("L", L.size, 0)
+        ImageDraw.Draw(mask).polygon(pts, fill=255)
+        yy, xx = np.mgrid[0 : L.size[1], 0 : L.size[0]].astype(np.float32)
+        dist = np.sqrt(((xx - ox) / (rx * 1.18)) ** 2 + ((yy - oy) / (ry * 1.18)) ** 2)
+        radial = np.clip(1.0 - dist, 0.0, 1.0)
+        m = np.asarray(mask, np.float32) / 255.0
+        shim = 1.0 + 0.06 * math.sin(phase * 0.3 + org.oid)
         body_arr = np.zeros((L.size[1], L.size[0], 4), np.uint8)
-        g = np.asarray(grad, np.float32) / 255
-        body_arr[..., 0], body_arr[..., 1], body_arr[..., 2] = 150, 132, 96
-        body_arr[..., 3] = np.clip(g * 175, 0, 175).astype(np.uint8)
+        body_arr[..., 0] = min(255, int(150 * shim))
+        body_arr[..., 1] = min(255, int(132 * shim))
+        body_arr[..., 2] = min(255, int(96 * shim))
+        body_arr[..., 3] = np.clip(m * (0.30 + 0.70 * radial) * 182, 0, 188).astype(np.uint8)
         L = Image.alpha_composite(L, Image.fromarray(body_arr, "RGBA"))
         d = ImageDraw.Draw(L)
 
-        # Bright rim highlight (the SEM wall) and the offset nucleus.
-        d.ellipse(
-            [ox - rx, oy - ry, ox + rx, oy + ry], outline=(225, 208, 168, 220), width=max(1, int(r * 0.07))
-        )
-        nx, ny = ox - rx * 0.32, oy - ry * 0.26
+        # Bright organic rim highlight (the SEM wall) + offset nucleus.
+        d.line(closed, fill=(225, 208, 168, 225), width=max(1, int(r * 0.07)), joint="curve")
+        nx, ny = ox - rx * 0.30, oy - ry * 0.26
         d.ellipse([nx - r * 0.22, ny - r * 0.22, nx + r * 0.22, ny + r * 0.22], fill=(120, 104, 78, 150))
 
-        # Dense granular gut (the "stomach contents").
-        gx, gy = ox + rx * 0.10, oy + ry * 0.12
+        # Dense granular gut that slowly churns (drift tied to phase).
+        grng = random.Random((org.oid * 40503) & 0xFFFFFFFF)
+        gx, gy = ox + rx * 0.08, oy + ry * 0.12
         n_gran = 46 + (org.regs[0] % 18)
-        for _k in range(n_gran):
-            a = rng.random() * 2 * math.pi
-            rad_f = rng.random() ** 0.5
-            px = gx + math.cos(a) * rx * 0.62 * rad_f
-            py = gy + math.sin(a) * ry * 0.62 * rad_f
-            gr = r * (0.05 + 0.07 * rng.random())
-            shade = 40 + int(35 * rng.random())
+        for k in range(n_gran):
+            a0 = grng.uniform(0, 2 * math.pi)
+            rad_f = grng.random() ** 0.5
+            a = a0 + phase * 0.02 * (0.5 + (k % 3))
+            px = gx + math.cos(a) * rx * 0.60 * rad_f
+            py = gy + math.sin(a) * ry * 0.60 * rad_f
+            gr = r * (0.05 + 0.07 * grng.random())
+            shade = 40 + int(35 * grng.random())
             d.ellipse([px - gr, py - gr, px + gr, py + gr], fill=(shade + 16, shade, shade - 8, 220))
 
-        # Genome instruction bead-arc along the lower rim; current opcode = teal.
+        # Genome instruction bead-arc hugging the lower membrane; current = teal.
         if org.genome:
             n_show = min(16, len(org.genome))
             ip0 = org.ip % len(org.genome)
             for i in range(n_show):
-                a = math.pi * (0.16 + 0.68 * i / max(1, n_show - 1))
-                px, py = ox + math.cos(a) * rx * 0.80, oy + math.sin(a) * ry * 0.80
+                idx = int((0.10 + 0.80 * i / max(1, n_show - 1)) * (len(pts) // 2)) % len(pts)
+                px, py = pts[idx]
+                bx, by = ox + (px - ox) * 0.82, oy + (py - oy) * 0.82
                 dot = max(2, int(r * 0.075))
                 if i == 0:
                     col = (80, 235, 210, 255)
                 else:
                     base_c = 235 if org.genome[(ip0 + i) % len(org.genome)] / 19 > 0.5 else 205
                     col = (base_c, base_c - 18, base_c - 70, 245)
-                d.ellipse([px - dot, py - dot, px + dot, py + dot], fill=col, outline=(40, 30, 20, 160))
+                d.ellipse([bx - dot, by - dot, bx + dot, by + dot], fill=col, outline=(40, 30, 20, 160))
 
         if dividing:
             glow = Image.new("RGBA", L.size, (0, 0, 0, 0))
