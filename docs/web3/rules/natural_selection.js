@@ -67,6 +67,19 @@
         amoebaLifespan: "How many steps an amoeba survives before dying. Shorter: fast turnover, sparse population. Longer: amoebas accumulate into dense 'cities' that crowd out the unbound soup.",
       },
 
+      // P1-D2: named selection regimes, set by how long an amoeba survives.
+      presets: [
+        { label: "fast turnover", reseed: true,
+          hint: "Short lifespan — amoebas die quickly, so the population stays sparse and churns rapidly. Strong selection pressure.",
+          values: { amoebaLifespan: 30 } },
+        { label: "balanced", reseed: true,
+          hint: "The default lifespan — a steady balance between birth and death, with stable mid-density colonies.",
+          values: { amoebaLifespan: 100 } },
+        { label: "long-lived cities", reseed: true,
+          hint: "Long lifespan — amoebas accumulate into dense 'cities' that crowd out the unbound soup. Weak selection pressure.",
+          values: { amoebaLifespan: 180 } },
+      ],
+
       randomize() { seed(); },
       clear()     { color.fill(0); flags.fill(0); age.fill(0); generation = 0; },
       reset()     { seed(); },

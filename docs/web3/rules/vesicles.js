@@ -99,6 +99,20 @@
         noise:     "Thermal kicks. Without noise the system gets stuck in any random initial state. A real membrane fluctuates — without κ pulling it back, it would tear.",
       },
 
+      // P1-D2: named regimes along the membrane-bending axis. κ is Helfrich's
+      // bending rigidity — the knob that decides how round the vesicles get.
+      presets: [
+        { label: "floppy membranes", reseed: true,
+          hint: "Low bending rigidity with a soft double-well — limp, jagged bilayers that deform into many small, irregular vesicles.",
+          values: { diffusion: 0.18, gamma: 1.00, kappa: 0.03, noise: 0.004 } },
+        { label: "balanced", reseed: true,
+          hint: "The default — moderate stiffness and well depth give a spread of rounded vesicles that slowly relax and coarsen.",
+          values: { diffusion: 0.18, gamma: 1.60, kappa: 0.10, noise: 0.004 } },
+        { label: "stiff spheres", reseed: true,
+          hint: "High bending rigidity and a sharp double-well — the membrane resists curvature, so a few smooth, round spheres dominate.",
+          values: { diffusion: 0.18, gamma: 3.00, kappa: 0.26, noise: 0.004 } },
+      ],
+
       randomize() { seed(); },
       clear()    { phi.fill(0); generation = 0; lastSpriteScan = -1; },
       reset()    { seed(); },
