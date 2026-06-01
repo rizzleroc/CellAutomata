@@ -1,7 +1,23 @@
 # PRD — LIFE: Digital Organisms (v5.0)
 
 **Status:** Draft · proposed for v5.0 cycle
-**Last updated:** 2026-05-31
+**Last updated:** 2026-06-01
+
+![v5 LIFE UI mockup — Stage XIII Digital Life](generated/v5_life_ui_mockup.png)
+
+*v5 UI mockup, generated via the whipgen MCP (ChatGPT image, 1792×1024) on
+2026-06-01. Three-column desktop layout: left "wall label" with stage title,
+citations, ABOUT paragraph, CONFIGURATION + READOUT; centre canvas as a live
+400× SEM feed of digital organisms with translucent body walls, visible gut
+compartments, genome instruction tapes, ingestion/excretion particles, and
+one teal-glowing protocell caught mid-division (the only chromatic accent in
+the composition); right column with parameters / stage / export tabs and
+sliders for mutation ε / energy threshold / ingest rate / death rate /
+substrate refresh; bottom bar with PLAY/STOP/STEP/RESET/RECORD GIF + FPS
+slider + scrub track + marginalia ticker. This is the v5.1 target — V10
+internal anatomy + V8 inspector + the Brachionus-style microscopy look — not
+the v5.0.0 first ship (which renders organisms as filled energy-coloured
+discs under v3.6 viridis until the v4.0 SEM cycle lands).*
 
 ---
 
