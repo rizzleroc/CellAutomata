@@ -72,8 +72,8 @@ OPCODES: tuple[str, ...] = (
     "EXCRETE",  # 13 — release waste into this cell             (metabolism out)
     "MOVE",  # 14 — step to the faced neighbour if empty (costs extra energy)
     "TURN",  # 15 — facing = (facing + 1 + reg[head]) mod 8
-    "DIVIDE",  # 16 — reproduce if energy ≥ E_div (genome copied with ε mutation)
-    "COPY",  # 17 — advance the self-read copy head (replication progress)
+    "DIVIDE",  # 16 — reproduce ONLY if a full self-copy is ready AND energy ≥ E_div
+    "COPY",  # 17 — copy one own-instruction into the daughter tape (Avida h-copy)
     "RAND",  # 18 — reg[head] = rng byte 0..255
     "LOOP",  # 19 — reset ip to 0 (soft restart of the program)
 )
@@ -90,26 +90,34 @@ GENOME_CAP: int = 512  # PRD §4 F1: private memory ≤ 512 instructions
 # The canonical viable ancestor (Tierra's "ancestor 0080" analogue).
 # ---------------------------------------------------------------------------
 #
-# A hand-written genome that actually *lives*: it senses its surroundings,
-# eats whenever there is substrate, periodically excretes, occasionally
-# turns and moves to find fresh food, and divides once it is energy-rich.
-# Every founding organism starts from this tape; mutation explores the
-# neighbourhood around it. Keeping the ancestor viable is what lets the
-# default population sustain itself for ≥ 10k steps (PRD §7 acceptance #2).
+# A hand-written genome that actually *lives* AND *self-replicates*. The
+# critical property — the one that makes this the Tierra/Avida lineage rather
+# than a metabolism toy — is that reproduction is **self-encoded**: the
+# organism must execute its own copy loop (the COPY opcodes) to build a
+# full-length daughter tape before DIVIDE can fire. Strip the COPY opcodes
+# and the genome can still eat and move, but it leaves no offspring and its
+# lineage dies. This is verified directly in the tests
+# (``test_replication_is_self_encoded`` / ``test_copy_stripped_lineage_dies``).
+#
+# The program loop is: sense food → eat → copy a chunk of self → eat → copy →
+# wander to fresh substrate → copy → attempt to divide → restart. Across a
+# few LOOP passes the COPY opcodes fill the daughter buffer to full genome
+# length while INGEST accumulates the energy DIVIDE needs; DIVIDE then succeeds
+# and the buffer resets, so every reproduction requires a fresh full self-copy.
+# Keeping the ancestor viable is what lets the default population sustain
+# itself for ≥ 10k steps (PRD §7 acceptance #2; verified empirically).
 ANCESTOR_GENOME: tuple[int, ...] = (
     OP["SENSE"],  # read how much food is under me
     OP["INGEST"],  # eat it → energy
-    OP["INGEST"],  # eat again (cheap; gated by remaining substrate)
-    OP["CMP"],  # compare registers (sets the flag)
-    OP["NOP"],
-    OP["EXCRETE"],  # dump some waste
+    OP["INGEST"],  # eat again (gated by remaining substrate at this cell)
+    OP["COPY"],  # copy one instruction of myself into the daughter tape
+    OP["INGEST"],  # keep eating (replication is work — it costs cycles)
+    OP["COPY"],  # …copy another
+    OP["MOVE"],  # wander toward fresh substrate (the cell I sit on depletes)
+    OP["COPY"],  # …and another (≈3 COPY per LOOP pass → buffer fills in ~4 passes)
     OP["INGEST"],
-    OP["DIVIDE"],  # split when rich enough
-    OP["TURN"],  # reorient
-    OP["MOVE"],  # wander toward fresh substrate
-    OP["INGEST"],
-    OP["DIVIDE"],
-    OP["LOOP"],  # start the program over
+    OP["DIVIDE"],  # fires only when the daughter tape is FULL and energy ≥ E_div
+    OP["LOOP"],  # start the program over (re-enter: eat + copy + try to divide)
 )
 
 
@@ -163,7 +171,8 @@ class Organism:
     head: int = 0  # selects which register INC/DEC/etc. act on
     flag: int = 0  # comparison flag ∈ {-1, 0, +1}
     facing: int = 0  # 0..7, a Moore-neighbourhood direction
-    copy_head: int = 0  # self-read progress (replication idiom)
+    copy_head: int = 0  # read-head into own genome for the self-copy loop
+    daughter: list[int] = field(default_factory=list)  # daughter tape under construction
     # --- bookkeeping ---
     age: int = 0
     parent: int | None = None
@@ -239,6 +248,7 @@ class VMConfig:
     move_cost: float = 2.0  # MOVE costs extra on top of instruction_cost
     excrete_cost: float = 0.5
     e_div: float = 120.0  # energy threshold for DIVIDE (PRD §4 F2)
+    copy_mutation: float = 0.02  # ε — per-instruction copy error applied at COPY time (Eigen)
 
 
 def execute_one(org: Organism, world: World, cfg: VMConfig) -> None:
@@ -308,10 +318,28 @@ def execute_one(org: Organism, world: World, cfg: VMConfig) -> None:
     elif op == OP["TURN"]:
         org.facing = (org.facing + 1 + org.regs[org.head]) % 8
     elif op == OP["DIVIDE"]:
-        if org.energy >= cfg.e_div:
+        # Reproduction is SELF-ENCODED: it requires both enough energy AND a
+        # complete self-copy — the daughter tape that COPY has been building
+        # must be at least a full genome long. An organism whose program never
+        # runs COPY (or whose copy loop is broken by mutation) builds no tape
+        # and leaves no offspring. This is the defining Tierra/Avida property:
+        # self-replication is an evolvable, breakable part of the genome, not
+        # an engine-granted primitive.
+        if org.energy >= cfg.e_div and len(org.daughter) >= n:
             world.request_division(org)
     elif op == OP["COPY"]:
-        org.copy_head = (org.copy_head + 1) % n
+        # Avida h-copy idiom: copy ONE instruction of our own genome into the
+        # daughter tape, advancing the read head. Eigen's per-digit copy error
+        # is applied HERE, at the moment of copying — so a copy error can
+        # corrupt the daughter's OWN replication machinery, which is exactly
+        # what makes the error catastrophe an emergent phenomenon rather than
+        # an asserted one. We stop once a full-length tape exists.
+        if len(org.daughter) < n:
+            src = org.genome[org.copy_head % n]
+            if _world_rng(world).random() < cfg.copy_mutation:
+                src = _world_rng(world).randrange(N_OPCODES)
+            org.daughter.append(src)
+            org.copy_head = (org.copy_head + 1) % n
     elif op == OP["RAND"]:
         # rng access goes through the world's organism so determinism is owned
         # by the stage; fall back to the standard module rng only if absent.

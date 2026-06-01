@@ -66,8 +66,11 @@ def test_energy_rich_population_divides_and_grows():
     rule = AbiogenesisStageLife(initial_population=20, max_population=400, rng=random.Random(2))
     state = rule.init_state(30, 30)
     n0 = len(state.organisms)
-    # Keep the founders energy-rich so DIVIDE fires when it executes.
-    for _ in range(20):
+    # Keep founders energy-rich so the ONLY gate on division is the self-copy.
+    # Reproduction is self-encoded: an organism must run its COPY loop enough
+    # times to build a full daughter tape before DIVIDE fires (~4 LOOP passes),
+    # so we run long enough for the ancestor's copy loop to complete.
+    for _ in range(60):
         for o in state.organisms.values():
             o.energy = max(o.energy, 600.0)
         state = rule.step(state)
@@ -84,11 +87,13 @@ def test_energy_rich_population_divides_and_grows():
 def test_division_respects_max_population():
     rule = AbiogenesisStageLife(initial_population=20, max_population=40, rng=random.Random(4))
     state = rule.init_state(30, 30)
-    for _ in range(30):
+    for _ in range(80):
         for o in state.organisms.values():
             o.energy = max(o.energy, 600.0)
         state = rule.step(state)
-    assert len(state.organisms) <= rule.max_population
+    # The cap actually binds here (the population reaches it), so this also
+    # exercises the max_population guard rather than passing vacuously.
+    assert len(state.organisms) == rule.max_population
 
 
 # --------------------------------------------------------------------------- #
@@ -125,21 +130,75 @@ def test_error_catastrophe_melts_master_sequence():
 
 
 # --------------------------------------------------------------------------- #
-# 6. Honest emergence (F8)                                                    #
+# 6. Self-encoded replication + real selection (replaces the old vacuous F8)   #
 # --------------------------------------------------------------------------- #
-def test_f8_distinct_lineage_variant_emerges():
-    # F8 honest-emergence guard: at default params and a fixed seed, after a
-    # few thousand instruction-ticks at least one organism's genome differs
-    # from the founding ancestor (a real variant arose, not a frozen clone
-    # army). We use a 50x50 grid and ~1500 steps to stay under a few seconds;
-    # the PRD's full guarantee is "within 10k steps at the default seed".
+def test_replication_is_self_encoded_copy_stripped_lineage_leaves_no_offspring():
+    """The defining Tierra/Avida property, pinned directly.
+
+    Reproduction must be *encoded in the genome*: an organism has to run its
+    own COPY loop to build a daughter tape before DIVIDE can fire. So a genome
+    that is identical to the viable ancestor EXCEPT that its COPY opcodes are
+    replaced by NOP — it can still sense, eat, move, and *wants* to divide
+    (DIVIDE is intact) — must leave **zero** offspring, while the intact
+    ancestor reproduces freely. The old test only checked
+    ``founder_divergence > 0`` (guaranteed by any mutation) and proved nothing
+    about emergence; this proves the mechanism.
+    """
+    rule = AbiogenesisStageLife(initial_population=60, mutation_rate=0.0, rng=random.Random(11))
+    state = rule.init_state(40, 40)
+    orgs = list(state.organisms.values())
+    nocopy = [OP["NOP"] if g == OP["COPY"] else g for g in ANCESTOR_GENOME]
+    assert OP["DIVIDE"] in nocopy and OP["INGEST"] in nocopy  # still wants to divide; can eat
+    assert OP["COPY"] not in nocopy
+    crippled_lineage = -999
+    for o in orgs[:30]:
+        o.genome = list(nocopy)
+        o.lineage = crippled_lineage
+    for _ in range(3000):
+        state = rule.step(state)
+    # Every surviving crippled organism is a FOUNDER (was never born): the
+    # lineage produced no descendants because it cannot self-copy.
+    crippled = [o for o in state.organisms.values() if o.lineage == crippled_lineage]
+    assert all(o.parent is None for o in crippled), (
+        "a COPY-less genome reproduced — replication is not self-encoded"
+    )
+    born_crippled = sum(1 for o in crippled if o.parent is not None)
+    assert born_crippled == 0
+    # The intact ancestor lineage, by contrast, produced many descendants.
+    born_ancestor = sum(
+        1 for o in state.organisms.values() if o.lineage != crippled_lineage and o.parent is not None
+    )
+    assert born_ancestor > 100, f"the self-replicating ancestor barely reproduced ({born_ancestor})"
+
+
+def test_selection_enriches_functional_opcodes_over_baseline():
+    """Selection is real and measurable: after a few thousand steps the
+    surviving population is strongly enriched for the opcodes that build a
+    working organism — COPY (replication), INGEST (metabolism), DIVIDE — far
+    above the 1/20 = 5 % frequency a neutral (drift-only) model would give,
+    and neutral opcodes (RAND, ADD) are depleted well below 5 %.
+    """
     rule = AbiogenesisStageLife(rng=random.Random(7))
     state = rule.init_state(50, 50)
-    for _ in range(1500):
+    for _ in range(3000):
         state = rule.step(state)
-    assert rule.founder_divergence(state) > 0.0
-    # Concretely: at least one live organism is not the ancestor genome.
-    assert any(o.genome != list(ANCESTOR_GENOME) for o in state.organisms.values())
+    counts: dict[int, int] = {}
+    total = 0
+    for o in state.organisms.values():
+        for op in o.genome:
+            counts[op] = counts.get(op, 0) + 1
+            total += 1
+    assert total > 0
+
+    def freq(name: str) -> float:
+        return counts.get(OP[name], 0) / total
+
+    baseline = 1.0 / 20  # uniform-random opcode frequency
+    # Functional opcodes enriched well above neutral.
+    assert freq("COPY") > 2 * baseline, f"COPY not enriched: {freq('COPY'):.3f}"
+    assert freq("INGEST") > 2 * baseline, f"INGEST not enriched: {freq('INGEST'):.3f}"
+    # Pure-neutral opcodes depleted below neutral (they cost a cycle, do nothing).
+    assert freq("RAND") < baseline, f"RAND not depleted: {freq('RAND'):.3f}"
 
 
 # --------------------------------------------------------------------------- #
@@ -167,8 +226,10 @@ def test_no_substrate_regen_leads_to_extinction():
 def test_ancestry_chain_ends_at_a_founder():
     rule = AbiogenesisStageLife(initial_population=10, max_population=300, rng=random.Random(2))
     state = rule.init_state(30, 30)
-    # Build a short multi-generation lineage by keeping organisms rich.
-    for _ in range(20):
+    # Build a multi-generation lineage by keeping organisms rich. Self-encoded
+    # replication means each division needs a full COPY pass first, so run long
+    # enough for several generations to accumulate.
+    for _ in range(80):
         for o in state.organisms.values():
             o.energy = max(o.energy, 600.0)
         state = rule.step(state)
@@ -269,9 +330,11 @@ def test_render_plate_shape_and_nontrivial():
     assert int(plate.max()) > 150
 
 
-def test_ancestor_genome_contains_metabolic_program():
-    # Sanity guard the integration tests lean on: the ancestor really does
-    # sense, ingest, and divide (so seeded founders can actually live).
+def test_ancestor_genome_is_a_viable_self_replicator():
+    # Sanity guard the integration tests lean on: the ancestor senses, ingests,
+    # and divides (so seeded founders can live) AND contains a COPY loop (so it
+    # can actually self-replicate — without COPY it would leave no offspring).
     assert OP["SENSE"] in ANCESTOR_GENOME
     assert OP["INGEST"] in ANCESTOR_GENOME
     assert OP["DIVIDE"] in ANCESTOR_GENOME
+    assert OP["COPY"] in ANCESTOR_GENOME, "ancestor must encode its own replication"

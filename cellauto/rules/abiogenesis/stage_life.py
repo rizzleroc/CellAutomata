@@ -13,13 +13,19 @@ The metabolism loop (PRD §4 F2):
   * ``EXCRETE`` adds waste, which is mildly toxic to its neighbourhood;
   * energy = 0 ⇒ death (the body decays back into substrate over a few
     steps, so dead matter is broken down — PRD §8);
-  * energy ≥ E_div ⇒ division into the least-occupied empty Moore neighbour,
-    the daughter genome copied with per-instruction mutation ε.
+  * reproduction is **self-encoded**: an organism must run its own ``COPY``
+    loop to build a full-length daughter tape, and only then — with energy
+    ≥ E_div — does ``DIVIDE`` spawn it into an empty Moore neighbour. The
+    daughter genome IS the copied tape (mutated per-instruction at copy time),
+    not an engine copy of the parent; strip the ``COPY`` opcodes and the
+    lineage leaves no offspring (the Tierra/Avida property — verified in
+    ``test_replication_is_self_encoded…``).
 
-Selection is implicit: genomes that ingest efficiently and divide before
-they starve leave more descendants. Mutation at copy time supplies the
-heritable variation, so distinct lineages diverge from the founder ancestor
-within a few thousand steps (the F8 honest-emergence guard).
+Selection is implicit but measurable: genomes that ingest efficiently, copy
+themselves, and divide before they starve leave more descendants — the
+surviving population is enriched several-fold for the functional opcodes over
+the neutral baseline (``test_selection_enriches_functional_opcodes``). Copy
+errors supply the heritable variation under Eigen's error threshold.
 
 Rendering (PRD §4 F5, §5):
 
@@ -53,7 +59,6 @@ from cellauto.rules.abiogenesis.life_vm import (
     error_threshold,
     execute_one,
     genome_distance,
-    mutate_genome,
 )
 
 # Moore-neighbourhood unit directions, indexed by an organism's ``facing``
@@ -139,6 +144,7 @@ class AbiogenesisStageLife:
             move_cost=self.move_cost,
             excrete_cost=self.excrete_cost,
             e_div=self.e_div,
+            copy_mutation=self.mutation_rate,  # ε applied per copied instruction (COPY)
         )
 
     @property
@@ -288,11 +294,23 @@ class AbiogenesisStageLife:
         return state
 
     def _divide(self, state: LifeState, parent: Organism) -> None:
+        # Self-encoded replication: the daughter genome is the tape the parent
+        # actually COPYied into its daughter buffer (already mutated
+        # per-instruction at copy time via VMConfig.copy_mutation), NOT a free
+        # engine copy of the parent. If the buffer isn't a full self-copy the
+        # request is stale — bail (DIVIDE shouldn't have fired).
+        n = len(parent.genome)
+        if len(parent.daughter) < n:
+            return
         site = self._division_site(state, parent)
         if site is None:
             return
         nx, ny = site
-        daughter_genome = mutate_genome(parent.genome, self.mutation_rate, self.rng)
+        daughter_genome = list(parent.daughter[:n])
+        # The parent must build a fresh full self-copy before it can divide
+        # again — reproduction is not free.
+        parent.daughter = []
+        parent.copy_head = 0
         if len(daughter_genome) > GENOME_CAP:
             daughter_genome = daughter_genome[:GENOME_CAP]
         oid = state.next_oid
@@ -560,6 +578,7 @@ class AbiogenesisStageLife:
             "flag": o.flag,
             "facing": o.facing,
             "copy_head": o.copy_head,
+            "daughter": list(o.daughter),
             "age": o.age,
             "parent": o.parent,
             "lineage": o.lineage,
@@ -586,6 +605,7 @@ class AbiogenesisStageLife:
                 flag=d["flag"],
                 facing=d["facing"],
                 copy_head=d["copy_head"],
+                daughter=list(d.get("daughter", [])),
                 age=d["age"],
                 parent=d["parent"],
                 lineage=d["lineage"],

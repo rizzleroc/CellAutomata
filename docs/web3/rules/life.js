@@ -45,8 +45,8 @@
     "EXCRETE",// 13 — release waste into this cell
     "MOVE",   // 14 — step to the faced neighbour if empty (extra energy)
     "TURN",   // 15 — facing = (facing + 1 + reg[head]) mod 8
-    "DIVIDE", // 16 — reproduce if energy ≥ e_div
-    "COPY",   // 17 — advance the self-read copy head
+    "DIVIDE", // 16 — reproduce ONLY if a full self-copy is ready AND energy ≥ e_div
+    "COPY",   // 17 — copy one own-instruction into the daughter tape (Avida h-copy)
     "RAND",   // 18 — reg[head] = rng byte 0..255
     "LOOP",   // 19 — reset ip to 0
   ];
@@ -56,13 +56,15 @@
   const N_REGISTERS = 4;
   const GENOME_CAP = 512;
 
-  // The canonical viable ancestor (Tierra's "ancestor 0080" analogue) — a
-  // hand-written genome that actually lives: senses, eats, periodically
-  // excretes, turns + moves to find fresh food, and divides when rich.
+  // The canonical viable ancestor — a hand-written genome that lives AND
+  // self-replicates. Reproduction is SELF-ENCODED: the organism must run its
+  // own COPY loop to build a full-length daughter tape before DIVIDE can fire.
+  // Strip the COPY opcodes and the genome can still eat and move, but it leaves
+  // no offspring and its lineage dies. Mirrors cellauto/rules/abiogenesis/
+  // life_vm.py:ANCESTOR_GENOME exactly so the two runtimes tell one story.
   const ANCESTOR_GENOME = [
-    OP["SENSE"], OP["INGEST"], OP["INGEST"], OP["CMP"], OP["NOP"],
-    OP["EXCRETE"], OP["INGEST"], OP["DIVIDE"], OP["TURN"], OP["MOVE"],
-    OP["INGEST"], OP["DIVIDE"], OP["LOOP"],
+    OP["SENSE"], OP["INGEST"], OP["INGEST"], OP["COPY"], OP["INGEST"],
+    OP["COPY"], OP["MOVE"], OP["COPY"], OP["INGEST"], OP["DIVIDE"], OP["LOOP"],
   ];
 
   // Moore-neighbourhood unit directions, indexed by facing (0..7), clockwise
@@ -126,6 +128,7 @@
           flag: 0,
           facing: (Math.random() * 8) | 0,
           copyHead: 0,
+          daughter: [],        // daughter tape under construction (self-copy)
           age: 0,
           parent: null,
           lineage: oid,        // founders each start their own lineage
@@ -207,20 +210,25 @@
         case 13: excrete(org, cfg.wasteExcretion); org.energy -= cfg.excreteCost; break; // EXCRETE
         case 14: if (move(org)) org.energy -= cfg.moveCost; break; // MOVE
         case 15: org.facing = (org.facing + 1 + r[org.head]) % 8; break; // TURN
-        case 16: if (org.energy >= cfg.eDiv) divRequests.push(org.oid); break; // DIVIDE
-        case 17: org.copyHead = (org.copyHead + 1) % n; break;  // COPY
+        case 16: // DIVIDE — needs energy AND a complete self-copy (self-encoded)
+          if (org.energy >= cfg.eDiv && org.daughter.length >= n) divRequests.push(org.oid);
+          break;
+        case 17: // COPY — Avida h-copy: append one own-instruction (ε mutation at copy time)
+          if (org.daughter.length < n) {
+            let src = org.genome[org.copyHead % n];
+            if (Math.random() < cfg.mutationRate) src = (Math.random() * N_OPCODES) | 0;
+            org.daughter.push(src);
+            org.copyHead = (org.copyHead + 1) % n;
+          }
+          break;
         case 18: r[org.head] = (Math.random() * 256) | 0; break; // RAND
         case 19: org.ip = 0; break;                             // LOOP
       }
     }
 
-    function mutateGenome(genome, epsilon) {
-      const out = new Array(genome.length);
-      for (let i = 0; i < genome.length; i++) {
-        out[i] = (Math.random() < epsilon) ? ((Math.random() * N_OPCODES) | 0) : genome[i];
-      }
-      return out;
-    }
+    // NB: there is no free "mutate the parent's genome" path — mutation happens
+    // per-instruction inside COPY (see case 17), so the daughter tape is what
+    // the organism actually built. This is what makes replication self-encoded.
 
     function divisionSite(parent) {
       const empties = [];
@@ -235,10 +243,18 @@
     }
 
     function divide(parent, cfg) {
+      // Self-encoded replication: the daughter genome is the tape the parent
+      // actually COPYied (already mutated per-instruction at copy time), NOT a
+      // free engine copy. Bail if the self-copy isn't complete (stale request).
+      const n = parent.genome.length;
+      if (parent.daughter.length < n) return;
       const site = divisionSite(parent);
       if (!site) return;
       const [nx, ny] = site;
-      let daughterGenome = mutateGenome(parent.genome, cfg.mutationRate);
+      let daughterGenome = parent.daughter.slice(0, n);
+      // Parent must build a fresh self-copy before it can divide again.
+      parent.daughter = [];
+      parent.copyHead = 0;
       if (daughterGenome.length > GENOME_CAP) daughterGenome = daughterGenome.slice(0, GENOME_CAP);
       const oid = nextOid++;
       parent.energy *= 0.5;
@@ -254,6 +270,7 @@
         flag: 0,
         facing: (Math.random() * 8) | 0,
         copyHead: 0,
+        daughter: [],
         age: 0,
         parent: parent.oid,
         lineage: parent.lineage,
@@ -332,17 +349,20 @@
       formula: "Each organism = a 20-opcode genome run by a virtual CPU; metabolism + ε-mutation + selection.",
       shortCaption: "STAGE XIII · DIGITAL LIFE",
       whatThisIs: "Life itself, as executing code. Each organism carries a genome — a tape of CPU " +
-                  "instructions — and the genome IS the phenotype: it senses, eats substrate, " +
-                  "excretes waste, moves, and divides with copying errors. Selection is implicit; " +
-                  "efficient lineages out-reproduce the rest and diverge from the founder ancestor.",
+                  "instructions — and the genome IS the phenotype: it senses, eats substrate, moves, " +
+                  "and must run its own COPY loop to build a daughter before it can DIVIDE. Strip the " +
+                  "COPY opcodes and it leaves no offspring — replication is self-encoded, not free. " +
+                  "Selection is implicit; efficient self-replicators out-reproduce the rest.",
       aboutStage: "The building block here is the open-ended evolving lineage. Following Tierra " +
                   "(Ray, 1991) and Avida (Ofria & Wilke, 2004), every organism is a tiny program on " +
-                  "an instruction tape competing for shared substrate; each executed instruction costs " +
-                  "energy, INGEST repays it, and DIVIDE copies the genome with per-instruction error ε " +
-                  "(Eigen's 1971 quasispecies model). Raise ε past the error threshold ≈ 1/L and the " +
-                  "master sequence melts — the error catastrophe. This is where the engine stops " +
-                  "modelling the precursors of life and starts running life as an algorithm " +
-                  "(Channon, 2003).",
+                  "its own instruction tape; each executed instruction costs energy and INGEST repays " +
+                  "it. Reproduction is self-encoded: the organism runs a COPY loop that writes its own " +
+                  "genome into a daughter tape — one instruction at a time, each copied correctly with " +
+                  "probability 1−ε (Eigen's 1971 per-digit error). Only a full self-copy plus enough " +
+                  "energy lets DIVIDE fire. Raise ε past the error threshold ≈ 1/L and copy errors wreck " +
+                  "the replication machinery itself — the master sequence melts (the error catastrophe). " +
+                  "This is where the engine stops modelling the precursors of life and starts running " +
+                  "life as an algorithm (Channon, 2003).",
       paletteBg: [10, 14, 22],
       paletteFg: [230, 224, 208],
       width: W,
@@ -530,7 +550,7 @@
                   oid, genome: founderGenome.slice(), x, y,
                   energy: this.params.initialEnergy.value,
                   ip: 0, regs: [0, 0, 0, 0], head: 0, flag: 0,
-                  facing: (Math.random() * 8) | 0, copyHead: 0, age: 0,
+                  facing: (Math.random() * 8) | 0, copyHead: 0, daughter: [], age: 0,
                   parent: null, lineage: oid, nDivisions: 0, lastOp: 0,
                 });
                 occupant[i] = oid;

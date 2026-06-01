@@ -570,11 +570,28 @@ six world-facing opcodes `SENSE`, `INGEST`, `EXCRETE`, `MOVE`, `TURN`,
 `DIVIDE`, plus `COPY` and `RAND`). The CPU has four byte registers, an
 instruction pointer, a register-selecting head, a comparison flag, and a
 Moore-neighbourhood facing direction. Each founder starts from a hand-written
-viable **ancestor genome** that senses, eats, occasionally excretes, wanders,
-and divides when energy-rich; mutation then explores the neighbourhood around
-it. This is the **Tierra** lineage (Ray 1991): self-replicating
-assembly-language programs competing in a soup, with the copy-loop idiom we
-borrow as `COPY`/`DIVIDE`.
+viable **ancestor genome** that senses, eats, wanders, **copies itself**, and
+divides; mutation then explores the neighbourhood around it.
+
+**Replication is self-encoded — the defining Tierra/Avida property.** This is
+the point that makes the stage that lineage (Ray 1991; Ofria & Wilke 2004)
+rather than a metabolism toy: an organism reproduces only by *running its own
+copy loop*. `COPY` reads one instruction of the organism's own genome and
+appends it to a daughter tape it is building (Avida's `h-copy`); `DIVIDE`
+succeeds **only when that tape is a full-length self-copy** *and* energy
+≥ `E_div`. An organism whose program never executes `COPY` — or whose copy
+loop is broken by mutation — builds no tape and leaves **no offspring**.
+Self-replication is therefore an evolvable, breakable part of the genome, not
+an engine-granted primitive. This is verified directly:
+`test_replication_is_self_encoded…` strips the `COPY` opcodes out of an
+otherwise-viable genome (it can still sense, eat, move, and *attempts* to
+divide) and confirms that lineage produces **zero** descendants while the
+intact ancestor reproduces freely; `test_selection_enriches_functional_opcodes`
+confirms the surviving population is enriched ~5–7× over the 5 % neutral
+baseline for `COPY`/`INGEST` and depleted of inert opcodes. (We do **not**
+implement Tierra's *shared*-memory address space, so the cross-organism
+parasites that hijack a neighbour's copy loop are out of scope — see "What it
+cuts" below; private-memory Avida-style replication is what we model.)
 
 **Avida-style private memory + energy metabolism.** Unlike Tierra's single
 shared address space, each organism here has its **own private** genome and CPU
@@ -584,15 +601,31 @@ every executed instruction costs energy (`instruction_cost = 1`); `INGEST`
 converts grid substrate into energy (`ingest_gain = 28` per unit); `EXCRETE`
 adds toxic waste with a small surcharge; `MOVE` costs extra. Energy = 0 ⇒
 death, and the body decays back into substrate over a few steps. Selection is
-implicit: genomes that ingest efficiently and divide before they starve leave
-more descendants.
+implicit: genomes that ingest efficiently, copy themselves, and divide before
+they starve leave more descendants — and it is *measurable*, not asserted (the
+enrichment test above).
 
-**Division, mutation, and the error threshold.** When an organism's energy
-reaches `E_div = 120` it divides into an empty Moore neighbour; the daughter
-genome is copied with **per-instruction** substitution probability ε (default
-`mutation_rate = 0.02`), Eigen's per-digit error model. Eigen's quasispecies
-**error threshold** therefore governs this stage exactly as it does the RNA
-world:
+**Honest scope note — what is and isn't anchored.** These energy constants
+(`ingest_gain = 28`, `E_div = 120`, the per-instruction cost) are **tuned for
+a viable, legible simulation, not derived from any biophysical measurement**.
+Unlike the earlier abiogenesis stages — whose constants trace to real data
+(the Wood–Ljungdahl ΔG° = −95 kJ/mol, measured fatty-acid CMCs, the
+Miyazawa–Jernigan contact-energy scale) — Stage XIII is an *abstract
+digital-evolution model* in the Tierra/Avida tradition; its quantities are
+software CPU cycles and arbitrary energy units, exactly as in the source
+literature (Avida's task bonuses are likewise chosen, not measured). It models
+the *logic* of variation-plus-selection on self-replicators, not a specific
+organism's biochemistry.
+
+**Division, mutation, and the error threshold.** When an organism has both
+enough energy (≥ `E_div = 120`) **and** a completed self-copy, it divides into
+an empty Moore neighbour. Mutation is applied **per instruction at copy time**
+— each `COPY` reproduces its source opcode correctly with probability `1 − ε`
+and otherwise substitutes a random opcode (default `mutation_rate = 0.02`).
+This is Eigen's per-digit error model placed where it physically belongs: in
+the act of copying, so a copy error can corrupt the daughter's *own*
+replication machinery. Eigen's quasispecies **error threshold** therefore
+governs this stage as it does the RNA world:
 
 ```
 ε_c  =  ln(σ) / L
@@ -613,6 +646,17 @@ is the **open-ended-evolution** framing of Channon (2003): novelty generated
 endogenously by the system rather than scripted. Genomes start from the
 ancestor with a 512-instruction cap on private memory.
 
+**Honest scope note — the LUCA → LIFE coupling is positional only.** The
+pipeline hand-off seeds organism *positions* at the brightest cells of Stage
+XII's LUCA signal and starts the substrate a little richer there. It does
+**not** derive the virtual-CPU ancestor genome from Stage XII's recovered gene
+set or Stage VIII's codon table — every founder gets the same hand-written
+ancestor tape. So the chemistry-to-life arc is *spatially* continuous at this
+seam but the genome is a fresh, designed starting point, not an evolved
+continuation of the upstream chemistry. Deriving the ancestor genome from
+upstream state is a deferred item; we state the limitation rather than imply a
+continuity that isn't there.
+
 **Rendering.** The live grid colours organisms as filled discs by energy on a
 viridis substrate field, darkened where waste pools (V7); an SEM mode draws
 translucent hairline body walls (V9). A high-resolution `render_plate`
@@ -624,16 +668,22 @@ follows the organism's execution state. Every anatomical element maps to real
 organism state rather than decorative motion; a preview is at
 `docs/generated/stage13_life.png`.
 
-**What this captures:** a genome that literally executes as the phenotype,
-the Avida private-memory energy metabolism, implicit selection on
-ingest/divide efficiency, per-instruction mutation under Eigen's error
-threshold, lineage tracking, and open-ended divergence from a common ancestor.
-**What it cuts:** this is **single-celled only** — there are no neural
-controllers (the PolyWorld lineage, Yaeger 1994) and no multicellularity.
-Memory is **private, not shared**, so Tierra's shared-memory parasites — one
-organism hijacking a neighbour's copy loop — are *not* modelled; that variant
-is a deferred v5.x item. There is no real biochemistry, spatial chemistry, or
-ecology beyond the substrate/waste economy.
+**What this captures:** a genome that literally executes as the phenotype;
+the Avida private-memory energy metabolism; **self-encoded replication** (an
+organism must run its own copy loop to reproduce — strip `COPY` and it leaves
+no offspring, verified); selection on ingest/copy/divide efficiency that is
+*measured*, not assumed (the enrichment test); per-instruction copy mutation
+under Eigen's error threshold; lineage tracking; and divergence from a common
+ancestor. **What it cuts (stated plainly):** this is **single-celled only** —
+no neural controllers (the PolyWorld lineage, Yaeger 1994) and no
+multicellularity. Memory is **private, not shared**, so Tierra's shared-memory
+parasites — one organism hijacking a neighbour's copy loop — are *not* modelled
+(that variant is a deferred v5.x item). The energy constants are tuned, not
+biophysically derived (see the scope note above), and the LUCA → LIFE coupling
+is positional only (the ancestor genome is not derived from upstream chemistry).
+There is no real biochemistry, spatial chemistry, or ecology beyond the
+substrate/waste economy. The "SEM" / "400×" rendering is a stylised
+depth-shaded visualisation, not data from an electron microscope.
 
 **Citations**
 - Ray, T. S. (1991). An approach to the synthesis of life. *Artificial Life

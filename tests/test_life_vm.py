@@ -241,34 +241,100 @@ def test_move_charges_only_on_success():
 # --------------------------------------------------------------------------- #
 # 4. DIVIDE threshold                                                          #
 # --------------------------------------------------------------------------- #
-def test_divide_only_when_energy_at_or_above_threshold():
-    # NOTE: instruction_cost is charged *before* the DIVIDE dispatch in
-    # execute_one, so the comparison is against the post-charge energy.
+def test_divide_requires_energy_AND_a_complete_self_copy():
+    # Self-encoded replication: DIVIDE fires only when BOTH (a) energy is at or
+    # above the threshold after the instruction charge, AND (b) the daughter
+    # tape COPY has been building is at least a full genome long. Energy alone
+    # is not enough — a genome that never copies itself leaves no offspring.
     cfg = VMConfig(instruction_cost=1.0, e_div=120.0)
+    n = 1  # single-instruction genome [DIVIDE]; a full self-copy is length 1.
 
-    # Below threshold (after the 1.0 charge -> 99): no request.
-    org = _org([OP["DIVIDE"]], energy=100.0)
+    # (a) Energy high but daughter buffer EMPTY → no request (no self-copy).
+    org = _org([OP["DIVIDE"]], energy=500.0)
+    assert len(org.daughter) < n
     world = MockWorld()
     _run_one(org, world, cfg)
-    assert world.division_requests == []
+    assert world.division_requests == [], "DIVIDE fired without a self-copy"
 
-    # Just under after charge (121 - 1 == 120 >= 120): request fires.
-    org = _org([OP["DIVIDE"]], energy=121.0)
-    world = MockWorld()
-    _run_one(org, world, cfg)
-    assert world.division_requests == [org.oid]
-
-    # Comfortably above: request fires and carries the oid.
+    # (b) Energy high AND a full-length daughter tape → request fires.
     org = _org([OP["DIVIDE"]], energy=500.0, oid=7)
+    org.daughter = [OP["NOP"]]  # a complete (length-n) self-copy is ready
     world = MockWorld()
     _run_one(org, world, cfg)
     assert world.division_requests == [7]
 
-    # Boundary just below (120 - 1 == 119 < 120): no request.
+    # (c) Full self-copy but energy below threshold (121-1 == 120 ok; 120-1 < 120 no).
     org = _org([OP["DIVIDE"]], energy=120.0)
+    org.daughter = [OP["NOP"]]
     world = MockWorld()
     _run_one(org, world, cfg)
+    assert world.division_requests == [], "DIVIDE fired below the energy threshold"
+
+    org = _org([OP["DIVIDE"]], energy=121.0)
+    org.daughter = [OP["NOP"]]
+    world = MockWorld()
+    _run_one(org, world, cfg)
+    assert world.division_requests == [org.oid]
+
+
+# --------------------------------------------------------------------------- #
+# 4b. COPY — the self-replication loop (Avida h-copy idiom)                    #
+# --------------------------------------------------------------------------- #
+def test_copy_builds_the_daughter_tape_from_own_genome():
+    # With ε = 0, executing COPY n times copies the genome verbatim into the
+    # daughter buffer; further COPYs are no-ops once the tape is full.
+    cfg = VMConfig(copy_mutation=0.0)
+    world = MockWorld()
+    # A single-instruction genome: COPY caps the daughter tape at length 1.
+    copy_org = _org([OP["COPY"]], energy=100.0)
+    for _ in range(3):
+        _run_one(copy_org, world, cfg)
+    assert copy_org.daughter == [OP["COPY"]]
+
+    # A length-3 genome: 3 COPYs build the full 3-instruction tape.
+    org3 = _org([OP["COPY"], OP["INGEST"], OP["DIVIDE"]], energy=100.0)
+    # Manually step COPY at ip 0 three times by resetting ip to 0 each time.
+    for _ in range(3):
+        org3.ip = 0
+        _run_one(org3, world, cfg)
+    assert org3.daughter == [OP["COPY"], OP["INGEST"], OP["DIVIDE"]]
+    # A 4th COPY is a no-op — the tape is already a full self-copy.
+    org3.ip = 0
+    _run_one(org3, world, cfg)
+    assert len(org3.daughter) == 3
+
+
+def test_copy_applies_epsilon_mutation_at_copy_time():
+    # ε = 1.0 → every copied instruction is resampled, so the daughter tape
+    # diverges from the genome (Eigen's per-digit copy error, applied during
+    # the act of copying — not as a free post-hoc engine mutation).
+    cfg = VMConfig(copy_mutation=1.0)
+    # A pure-COPY genome: every tick copies one instruction (the source is
+    # always COPY), so with ε=1 the daughter tape should end up almost entirely
+    # *not* COPY — proof the error is applied at copy time.
+    org = _org([OP["COPY"]] * 60, energy=10_000.0)
+    world = MockWorld(seed=1)
+    for _ in range(60):
+        _run_one(org, world, cfg)
+    assert len(org.daughter) == 60
+    # Most positions should have been mutated away from the source COPY opcode.
+    mutated = sum(1 for v in org.daughter if v != OP["COPY"])
+    assert mutated > 45, f"ε=1 should randomize most copied instructions, got {mutated}/60"
+
+
+def test_divide_needs_the_copy_loop_to_run_first():
+    # End-to-end at the VM level: a [COPY, DIVIDE] genome must run COPY enough
+    # times to fill the 2-instruction tape before DIVIDE will request. Energy
+    # is kept huge so the ONLY gate under test is the self-copy.
+    cfg = VMConfig(copy_mutation=0.0, e_div=10.0)
+    org = _org([OP["COPY"], OP["DIVIDE"]], energy=10_000.0)
+    world = MockWorld()
+    _run_one(org, world, cfg)  # ip0: COPY  → daughter=[COPY]
+    _run_one(org, world, cfg)  # ip1: DIVIDE → tape len 1 < 2 → NO request
     assert world.division_requests == []
+    _run_one(org, world, cfg)  # ip0: COPY  → daughter=[COPY, DIVIDE] (full)
+    _run_one(org, world, cfg)  # ip1: DIVIDE → tape full → request
+    assert world.division_requests == [org.oid]
 
 
 # --------------------------------------------------------------------------- #

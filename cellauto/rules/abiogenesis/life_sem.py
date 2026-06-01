@@ -66,7 +66,9 @@ def _fbm(width: int, height: int, rng: np.random.RandomState, octaves: int = 6) 
         cell = max(2, int(110 / (2**o)))
         gh, gw = height // cell + 2, width // cell + 2
         g = (rng.random_sample((gh, gw)) * 255).astype(np.uint8)
-        up = np.asarray(Image.fromarray(g).resize((width, height), Image.BICUBIC), np.float32) / 255
+        up = (
+            np.asarray(Image.fromarray(g).resize((width, height), Image.Resampling.BICUBIC), np.float32) / 255
+        )
         acc += up * amp
         tot += amp
         amp *= 0.5
@@ -251,7 +253,7 @@ def _division_tile(r: float, org: Any, phase: float, rng: np.random.RandomState)
     rgb += ((ndh**80) * 200)[..., None] * np.array([0.85, 1.0, 1.0])
     bridge = np.clip(1 - ((xx - ox) / (rx * 0.16)) ** 2 - ((yy - oy) / (ry * 0.45)) ** 2, 0, 1)
     rgb += _blur(bridge * 255, r * 0.10)[..., None] / 255 * np.array([90, 235, 215]) * 1.1
-    rgb = np.clip(rgb, 0, 255)
+    rgb = np.clip(rgb, 0, 255)  # type: ignore[assignment]
     halo = _blur(mask * 255, r * 0.30) / 255
     alpha = np.clip(mask + halo * 0.35, 0, 1)
     rgb += (np.clip(halo - mask, 0, 1) * 40)[..., None] * np.array([0.3, 1.0, 0.9])
@@ -326,12 +328,12 @@ def render(
         canvas.alpha_composite(timg, (int(cx - pad), int(cy - pad)))
     out = np.asarray(canvas.convert("RGB"), np.float32)
     bright = np.clip(out - 205, 0, 255)
-    out = out + 0.30 * _blur(bright, 6)
+    out = out + 0.30 * _blur(bright, 6)  # type: ignore[assignment]
     ln = _aces(out / 255.0 * 0.92) ** 1.06
     ln[..., 0] *= 1.07
     ln[..., 1] *= 0.99
     ln[..., 2] *= 0.80
-    out = np.clip(ln, 0, 1) * 255
+    out = np.clip(ln, 0, 1) * 255  # type: ignore[assignment]
     if hero is not None:
         o, cx, cy, r = hero
         tile, pad, size = _division_tile(r, o, phase, rng)
