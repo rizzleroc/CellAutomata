@@ -13,6 +13,7 @@
   const RULE_ORDER = [
     "conway", "wolfram1d", "grayscott", "soup",
     "natural-selection", "chirality", "coacervate", "vents", "vesicles",
+    "raf", "rna", "code", "luca",
     "life",
   ];
 
@@ -26,9 +27,13 @@
     "vents",
     "vesicles",
     "grayscott",
+    "raf",
     "natural-selection",
     "chirality",
+    "rna",
     "coacervate",
+    "code",
+    "luca",
     "life",
   ];
   const TOUR_INTERVAL_MS = 30000;
@@ -110,6 +115,34 @@
       "Why a sphere? A flat membrane has tensile edges that cost energy. Closing into a sphere eliminates the edges. The system finds this state spontaneously.",
       "Raise κ and the membranes turn into perfect circles; lower it and they crumple. Inject a lipid patch with the brush to seed a new vesicle.",
     ],
+    raf: [
+      "BUILDING-BLOCK CLAIM. This shows autocatalysis as self-control — a closed loop of reactions that each catalyse the next, fed only by simple food, holding its own chemistry together with no genes. The building block: a metabolism that sustains itself. (Kauffman 1971; Hordijk & Steel 2004.)",
+      "Kauffman, S. A. (1971). \"Cellular homeostasis, epigenesis and replication in randomly aggregated macromolecular systems.\" J. Cybernetics 1:71 — the origin of the autocatalytic-set idea.",
+      "Hordijk, W. & Steel, M. (2004). \"Detecting autocatalytic, self-sustaining sets in chemical reaction systems.\" J. Theor. Biol. 227:451 — the formal RAF definition this graph is hand-wired to satisfy.",
+      "Reflexively autocatalytic: every core reaction is catalysed by a molecule the core itself makes. Food-generated: the reactants trace back to clamped food. Both must hold for a genuine RAF.",
+      "The base rate is kept tiny on purpose — at catalysis 0 the food feeders can't out-pump decay and the set goes dark. Removing catalysis breaks the set, the defining property of a RAF.",
+    ],
+    rna: [
+      "BUILDING-BLOCK CLAIM. This shows information control — a self-copying RNA holds heredity only while its copying error μ stays below a threshold μc. Cross it and the master sequence dissolves into noise. The building block: a limit on how much information error-prone replication can carry. (Eigen 1971.)",
+      "Eigen, M. (1971). \"Selforganization of matter and the evolution of biological macromolecules.\" Naturwissenschaften 58:465 — the quasispecies model and the error catastrophe.",
+      "Eigen, M. & Schuster, P. (1977). \"The hypercycle.\" Naturwissenschaften 64:541 — coupling of self-replicating informational molecules.",
+      "Master plus its graded mutant halo IS the quasispecies. Below μc the master localises; above μc every lineage drifts up in Hamming distance and the dish relaxes to the random-sequence floor.",
+      "Three axes move the threshold: μ sweeps across it, fitness advantage σ raises it, sequence length L lowers it (~1/L) — which is why early life needed short, high-fidelity genomes.",
+    ],
+    code: [
+      "BUILDING-BLOCK CLAIM. This shows the controller itself coming into being — the codon→amino-acid map self-organising so single mutations land on chemically similar amino acids. The building block: an error-minimising genetic code, not a frozen accident. (Vetsigian, Woese & Goldenfeld 2006.)",
+      "Vetsigian, K., Woese, C. & Goldenfeld, N. (2006). \"Collective evolution and the genetic code.\" PNAS 103:10696 — the code as an evolved, community-shared optimum.",
+      "Low energy ⇔ a point mutation lands on a chemically similar class ⇔ the code is mutation-buffered. Selection β rewards exactly that, crystallising a scrambled map into smooth chemically-graded blocks.",
+      "Horizontal gene transfer is the universaliser: without it, vertical selection freezes into several mismatched rival domains; with it, fitter sub-codes broadcast across the dish and merge into one shared code.",
+      "Raise μ (reassignment rate) too far and reassignments outpace selection — no stable code can freeze in. The same error catastrophe that limits the RNA world, now acting on the controller.",
+    ],
+    luca: [
+      "BUILDING-BLOCK CLAIM. This shows descent control — a per-locus majority consensus across the whole population IS the reconstructed last universal common ancestor, a genome no single cell ever held. The building block: a shareable ancestor distilled from a population. (Woese 1998; Weiss et al. 2016.)",
+      "Woese, C. (1998). \"The universal ancestor.\" PNAS 95:6854 — LUCA as a diffuse, communal entity rather than a single organism.",
+      "Weiss, M. C. et al. (2016). \"The physiology and habitat of the last universal common ancestor.\" Nat. Microbiol. 1:16116 — 355 gene families inferred for LUCA.",
+      "Three descent controls fight: divergence (mutation) scatters lineages, selection pulls them toward a fixed environmental optimum, and horizontal transfer pools winning alleles across lineage boundaries.",
+      "Transfer is the LUCA-maker — it spreads the conserved core fast so a sharp consensus emerges. Push divergence past selection and transfer and no gene stays universal: the core shatters, no ancestor to reconstruct.",
+    ],
     life: [
       "BUILDING-BLOCK CLAIM. This shows life itself as executing code — organisms whose genome IS the phenotype. Each is a tiny program that senses, eats, excretes, moves, and divides with copying errors. The building block: the open-ended evolving lineage.",
       "Ray, T. S. (1991). \"An approach to the synthesis of life.\" Artificial Life II — Tierra: self-replicating assembly programs competing for CPU time, the origin of the instruction-tape genome used here.",
@@ -133,6 +166,10 @@
     coacervate:           "5 μm",
     vents:                "10 μm",
     vesicles:             "200 nm",
+    raf:                  "16 species",
+    rna:                  "1 nm",
+    code:                 "8 codons",
+    luca:                 "1 genome",
     life:                 "20 μm",
   };
 
@@ -810,6 +847,9 @@
       case "Digit7": if (RULE_ORDER[6]) setRule(RULE_ORDER[6]); break;
       case "Digit8": if (RULE_ORDER[7]) setRule(RULE_ORDER[7]); break;
       case "Digit9": if (RULE_ORDER[8]) setRule(RULE_ORDER[8]); break;
+      // Digit0 → the 10th rule (raf). Rules 11-13 (rna, code, luca) have no
+      // digit hotkey — reachable via the dropdown or the tour only.
+      case "Digit0": if (RULE_ORDER[9]) setRule(RULE_ORDER[9]); break;
       case "KeyM":
         if (semCheckbox) {
           semCheckbox.checked = !semCheckbox.checked;

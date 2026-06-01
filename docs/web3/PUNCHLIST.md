@@ -38,12 +38,22 @@ What is shipped on `main` — web3 is the live canonical client
 | `chirality` | Homochirality — symmetry-breaking of L vs D | α, β, D, noise | Frank citation. ⚠ ee% in readout but no "why this matters" copy |
 | `coacervate` | Membrane-less proto-cells (Oparin / LLPS) | M, κ, substeps | Cahn-Hilliard formula. ⚠ no link to "this is a proto-cell" |
 | `vents` | Energy source + porous compartment (Russell-Lane) | D, drift, decay, src | PDE formula. ⚠ no "this is where chemistry meets thermodynamics" |
+| `vesicles` | True bilayer compartment (Helfrich curvature) | D, κ, γ, substeps + regimes | aboutStage + marginalia claim + regime row. ✔ |
+| `raf` | Autocatalysis as self-control (Kauffman RAF) | catalysis, food, decay, substeps + regimes | aboutStage + claim + regime row. ✔ |
+| `rna` | Information control (Eigen quasispecies / error catastrophe) | μ, σ, L, substeps + regimes | aboutStage + claim + live μc readout + regime row. ✔ |
+| `code` | The controller — self-organising genetic code (VWG) | β, HGT, mutation, K, sweeps + regimes | aboutStage + claim + regime row. ✔ |
+| `luca` | Descent control — consensus last universal ancestor (Woese) | μ, selection, transfer, core thr., substeps + regimes | aboutStage + claim + regime row. ✔ |
 | `conway` | *Reference automaton* — not a building block of life | density, wrap | Honest citation. ✔ correctly framed as canonical CA |
 | `wolfram1d` | *Reference automaton* — not a building block of life | rule number, seed | Honest citation. ✔ correctly framed as canonical CA |
 
+**Thirteen rules ship today** (eleven on-arc building blocks + two off-arc
+reference automata).
+
 **Building blocks represented today:** prebiotic chemistry · pattern
-formation · compartmentalisation (amoeba + coacervate) · homochirality ·
-hydrothermal-vent energy capture.
+formation · compartmentalisation (amoeba + coacervate) · true bilayer
+vesicles · homochirality · hydrothermal-vent energy capture · autocatalysis
+(RAF) · information control (RNA world) · the genetic code · descent /
+LUCA. The full chemistry-to-life arc now runs live in the browser.
 
 **Control surfaces today:** every rule has parameter sliders, but the
 labels are physics symbols (F, k, α, β, κ, M) — the page does not yet
@@ -74,20 +84,27 @@ coacervates matter for the origin of life.
   `aboutStage` strings are the vetted web2 prose. Closes §3-A — the
   explanation layer is complete on web3.
 
-### B · Missing building blocks
+### B · Missing building blocks — CLOSED 2026-06-01
 
-The four Python-only stages cover four building blocks the web client
-cannot yet demonstrate live. The previous PR's commit message said
-"vesicles + LUCA are the next-easiest"; the punchlist captures all four:
+The four formerly-Python-only stages covered four building blocks the web
+client could not demonstrate live. All four now ship as JS rules (see the
+web3 Building-Blocks Round in §4), so this section is complete — every
+building block in the canonical arc now runs in-browser:
 
-- [ ] **P1-B1** `raf` — Reflexively-autocatalytic-and-food-generated sets
-  (Kauffman 1971). Graph-on-canvas: nodes = molecules, edges = catalysed
-  reactions, glow if part of an active RAF. Demonstrates **autocatalysis
-  as self-control**.
-- [ ] **P1-B2** `rna-world` — Eigen quasispecies on a 1-D sequence
-  lattice. Demonstrates **information control** (replication fidelity →
-  error catastrophe at ε_c = ln(σ)/L). Hardest of the four; needs a
-  careful simplification.
+- [x] **P1-B1** `raf` — Reflexively-autocatalytic-and-food-generated sets
+  (Kauffman 1971; Hordijk & Steel 2004). Shipped 2026-06-01 in the web3
+  Building-Blocks round. Graph-on-canvas: 16 species on a fixed reaction
+  graph, edges = catalysed reactions, the core ring glows mint when the
+  set ignites. A near-zero base rate makes catalysis genuinely
+  load-bearing — at catalysis 0 the food feeders can't out-pump decay and
+  the set goes dark. Demonstrates **autocatalysis as self-control**.
+- [x] **P1-B2** `rna` — Eigen quasispecies on a 128² distance lattice
+  (Eigen 1971; Eigen & Schuster 1977). Shipped 2026-06-01 in the web3
+  Building-Blocks round. Distance-only reduction (Hamming distance to a
+  master sequence) keeps it NaN-proof; below μc a bright master domain +
+  mutant halo, above μc the dish collapses to the random-sequence floor.
+  Demonstrates **information control** — the error catastrophe at
+  μc = 1 − σ^(−1/2L) for this spatial lattice.
 - [x] **P1-B3** `vesicles` — Helfrich-curvature lipid bilayer. Shipped
   2026-05-31 in web3 / v4.1. Implements
   ∂φ/∂t = D ∇²φ − γ φ(1−φ)(½−φ) − κ (∇²)²φ + noise, with
@@ -95,12 +112,20 @@ cannot yet demonstrate live. The previous PR's commit message said
   threshold. The biharmonic (∇²)²φ term is the Helfrich bending energy
   that closes the membrane into a sphere — the distinguishing property
   of a real vesicle vs coacervate's liquid-liquid droplet.
-- [ ] **P2-B4** `genetic-code` — 4×4 codon → amino-acid table with
-  selection feedback (Vetsigian-Woese-Goldenfeld). Demonstrates **the
-  controller** (the literal genetic code) coming into being.
-- [ ] **P2-B5** `luca` — Pathway-graph parsimony over the lineage tree.
-  Demonstrates **descent control** — the last universal common ancestor
-  as a control surface for everything downstream.
+- [x] **P2-B4** `code` — 8×8 codon → amino-acid-class lattice with a
+  β-weighted Glauber relaxation + horizontal-gene-transfer of fitter
+  sub-codes (Vetsigian-Woese-Goldenfeld 2006). Shipped 2026-06-01 in the
+  web3 Building-Blocks round. A scrambled confetti map crystallises into
+  smooth chemically-graded blocks; HGT merges rival domains into one
+  shared universal code. Demonstrates **the controller** (the literal
+  genetic code) coming into being.
+- [x] **P2-B5** `luca` — 120² lattice of 16-bit genomes under divergence
+  (mutation), selection toward a fixed environmental optimum, and
+  horizontal transfer (Woese 1998; Weiss et al. 2016). Shipped 2026-06-01
+  in the web3 Building-Blocks round. A per-locus majority consensus IS the
+  reconstructed last universal common ancestor — a genome no single cell
+  holds. Demonstrates **descent control** — push divergence past selection
+  and transfer and the core shatters (no LUCA).
 
 ### C · Narrative arc
 
@@ -141,9 +166,12 @@ end-to-end.
   cards now lead with "Off-arc reference automaton — not a building
   block of life." Closed organically as part of the "Goal-Legibility
   Pass" 2026-05-30 (the A1 / A3 work both surfaced this honestly).
-- [x] **P1-E2** Footer carries an honesty paragraph listing the five
-  Python-only stages (RAF, RNA world, vesicles, genetic code, LUCA)
-  with the install command. Shipped 2026-05-30 in "The Arc Round."
+- [x] **P1-E2** Footer carries an honesty paragraph on port status.
+  Shipped 2026-05-30 in "The Arc Round" listing the five then-Python-only
+  stages. Updated 2026-06-01 in the web3 Building-Blocks round: all
+  thirteen building blocks now run live in JS, so the paragraph (and the
+  welcome-modal footer) was reworded to drop the Python-only claim — the
+  full chemistry-to-life arc now runs in-browser.
 
 ### G · Goal framing (added 2026-05-28 by single-judge pass; see §7)
 
@@ -183,6 +211,28 @@ capture, all directly demanded by the goal statement.
 ---
 
 ## 4 · Done so far (history)
+
+- [x] **web3 Building-Blocks Round — all 13 stages live** (2026-06-01) —
+  closes the four remaining missing building blocks (**P1-B1** RAF,
+  **P1-B2** RNA world, **P2-B4** genetic code, **P2-B5** LUCA) by
+  integrating `rules/raf.js`, `rules/rna.js`, `rules/code.js`, and
+  `rules/luca.js` into the web3 client. Each is a faithful, NaN-hardened
+  JS simplification of its desktop stage that passes the smoke harness.
+  Wiring: four `<script>` tags in `index.html` (after vesicles, before
+  main.js); four ids appended to `RULE_ORDER` (raf, rna, code, luca) and
+  threaded into `TOUR_ORDER` at arc points (raf after grayscott, rna
+  after chirality, code + luca last); a 5-card MARGINALIA block per rule
+  (first card = BUILDING-BLOCK CLAIM with citation); a SCALE_BAR_UNITS
+  entry per rule; the welcome legend gains four stage rows; lede rule
+  count "Nine → Thirteen"; keymap "1–9 → 1–0". **Hotkeys:** `Digit0` now
+  maps to the 10th rule (raf); `Digit1`–`Digit9` keep the first nine
+  rules; rules 11–13 (rna, code, luca) have NO digit hotkey — reachable
+  via the dropdown or the tour only, and don't crash. The footer +
+  welcome-modal honesty paragraphs were reworded: nothing is Python-only
+  anymore — the full chemistry-to-life arc, from primordial soup to LUCA,
+  now runs in-browser. `tests/smoke.mjs` RULE_FILES gains raf/rna/code/luca.
+  web3 smoke 368 → 631 checks / 0 failures across 13 rules; web2 smoke
+  unchanged at 359 / 0 (web2 untouched).
 
 - [x] **web3 Control Round — P1-D2 parity** (2026-06-01) — closes the
   parity gap flagged in the production round: web3 forked before web2's

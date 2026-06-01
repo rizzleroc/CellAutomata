@@ -3,9 +3,11 @@
 The next step on top of `docs/web2/` — implements the **v4.1 PRD**:
 a bioform **sprite layer** composited over the depth-shaded SEM
 substrate, so each rule reads as a microscope view of the chemistry
-rather than a colour-mapped scalar field. Plus the first of the
-remaining building blocks: **lipid vesicles** (Stage 3, Helfrich
-bilayer).
+rather than a colour-mapped scalar field. Now carries the full
+**fourteen-rule** arc: the formerly-Python-only building blocks —
+**RAF** autocatalytic sets, the **RNA world**, the **genetic code**,
+**LUCA**, and **digital life** — run live in the browser alongside lipid
+vesicles (Stage 3, Helfrich bilayer).
 
 No build step. No Python. Vanilla JS, opens straight from `file://`.
 
@@ -89,7 +91,11 @@ membrane). Sprites are concentric bilayer rings at local maxima of
 | Chirality | symmetry-breaking | chirality-glyph (L/D) | Frank kinetics |
 | Coacervate | membrane-less compartment | coacervate-droplet | Cahn-Hilliard LLPS |
 | Vents | place + power | mineral-cell honeycomb | Alkaline-vent chimney |
-| **Vesicles** *(new)* | true bilayer compartment | vesicle-bilayer | Helfrich-curvature lipid sphere |
+| Vesicles | true bilayer compartment | vesicle-bilayer | Helfrich-curvature lipid sphere |
+| **RAF** *(new)* | autocatalysis as self-control | — (graph) | Reflexively-autocatalytic food-generated set (Kauffman) |
+| **RNA world** *(new)* | information control | — | Eigen quasispecies + error catastrophe |
+| **Genetic code** *(new)* | the controller | — | Self-organising codon→amino-acid map (Vetsigian-Woese-Goldenfeld) |
+| **LUCA** *(new)* | descent control | — | Lineage convergence to a consensus ancestor (Woese; Weiss et al.) |
 | **Digital life** *(new)* | open-ended evolving lineage | digital-organism | Stage XIII Tierra/Avida virtual-CPU organisms |
 
 ## Files
@@ -102,7 +108,8 @@ docs/web3/
 ├── styles.css            unchanged from v2
 ├── main.js               v3.0 controller — sprite compose pass, sprite-mode
 │                         toggle persisted in URL hash, "x" hotkey,
-│                         "1-9" rule keys (vesicles is rule 9)
+│                         "1-0" rule keys (raf is rule 10 / digit 0; rna,
+│                         code, luca are dropdown/tour-only)
 ├── sem.js                v4.0 SEM rendering pipeline (unchanged)
 ├── sprites.js            NEW — bioform sprite library (7 sprite kinds)
 ├── viridis.js            32-entry viridis LUT (legacy mode only)
@@ -115,7 +122,11 @@ docs/web3/
     ├── chirality.js          sprites: chirality-glyph L/D @ |L−R| maxima
     ├── coacervate.js         sprites: coacervate-droplet ring @ φ maxima
     ├── vents.js              sprites: mineral-cell honeycomb on chimney walls
-    ├── vesicles.js           NEW — Helfrich PDE + vesicle-bilayer ring sprites
+    ├── vesicles.js           Helfrich PDE + vesicle-bilayer ring sprites
+    ├── raf.js                NEW — Kauffman RAF reaction graph (16 species)
+    ├── rna.js                NEW — Eigen quasispecies / error catastrophe
+    ├── code.js               NEW — self-organising genetic code (Glauber + HGT)
+    ├── luca.js               NEW — lineage convergence to a consensus ancestor
     └── life.js               NEW — Stage XIII digital-life virtual CPU + organisms
 ```
 
@@ -129,10 +140,15 @@ method that the renderer composites over the SEM substrate. See
 descriptor shapes; adding a new kind is one painter function +
 one registry entry.
 
-## What's still Python-only
+## The full arc now runs in-browser
 
-Four building blocks remain unported — autocatalytic sets (Kauffman),
-the RNA world (Eigen quasispecies), the genetic code
-(Vetsigian–Woese–Goldenfeld), and LUCA. Each is several hundred
-lines of NumPy / SciPy and needs careful per-stage simplification.
-`pip install -e .` then `cellauto gui` for those.
+The building blocks that were previously Python-only — autocatalytic
+sets (Kauffman), the RNA world (Eigen quasispecies), the genetic code
+(Vetsigian–Woese–Goldenfeld), LUCA, and digital life — now ship as JS rules
+(`rules/raf.js`, `rules/rna.js`, `rules/code.js`, `rules/luca.js`,
+`rules/life.js`). Each
+is a faithful, NaN-hardened simplification of the desktop stage that runs
+live at interactive frame rates. The whole chemistry-to-life arc — from
+primordial soup to the last universal common ancestor — now plays out
+in the browser with no install. The Python desktop build remains the
+reference implementation for the full-resolution stages.

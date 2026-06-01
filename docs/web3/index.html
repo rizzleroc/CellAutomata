@@ -4,7 +4,7 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>cellauto · web 3.0 — sprite-overlay SEM sandbox</title>
-  <meta name="description" content="A live in-browser multi-rule cellular automata sandbox: Conway's Life, Wolfram 1D, Gray–Scott, primordial soup, natural selection, homochirality, coacervates, alkaline vents, and lipid vesicles. SEM-grade depth-shaded rendering with bioform sprite overlays per v4.1 PRD." />
+  <meta name="description" content="A live in-browser origin-of-life sandbox — the full fourteen-rule chemistry-to-life arc: Conway's Life, Wolfram 1D, Gray–Scott, primordial soup, natural selection, homochirality, coacervates, alkaline vents, lipid vesicles, RAF autocatalytic sets, the RNA world, the genetic code, LUCA, and digital life. SEM-grade depth-shaded rendering with bioform sprite overlays per v4.1 PRD." />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;1,400&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet" />
@@ -151,7 +151,7 @@
         <span class="kbd">r</span> reset &nbsp;
         <span class="kbd">c</span> clear &nbsp;
         <span class="kbd">n</span> randomize &nbsp;
-        <span class="kbd">1–9</span> rule &nbsp;
+        <span class="kbd">1–0</span> rule &nbsp;
         <span class="kbd">m</span> SEM &nbsp;
         <span class="kbd">p</span> palette &nbsp;
         <span class="kbd">x</span> sprites &nbsp;
@@ -177,12 +177,13 @@
       · v2 at <a href="../web2/">/docs/web2/</a> · v1 at <a href="../web/">/docs/web/</a>
     </p>
     <p class="footer-text footer-honesty">
-      Four further building blocks — autocatalytic sets (Kauffman),
-      the RNA world (Eigen quasispecies), the genetic code
-      (Vetsigian–Woese–Goldenfeld), and LUCA — run only in the Python
-      desktop build. Each is several hundred lines of NumPy / SciPy and
-      resists a faithful JS port. <code>pip install -e .</code> then
-      <code>cellauto gui</code>.
+      The full chemistry-to-life arc now runs in the browser: the last
+      five building blocks — autocatalytic sets (Kauffman), the RNA world
+      (Eigen quasispecies), the genetic code (Vetsigian–Woese–Goldenfeld),
+      LUCA, and digital life — ship here as live JS rules, faithful
+      NaN-hardened simplifications of the desktop stages. The Python build
+      (<code>pip install -e .</code> then <code>cellauto gui</code>)
+      remains the full-resolution reference implementation.
     </p>
   </footer>
 
@@ -198,16 +199,17 @@
       <p class="eyebrow">W E L C O M E</p>
       <h2 class="welcome-title" id="welcome-title">cellauto — the building blocks of life</h2>
       <p class="welcome-lede">
-        Nine live simulations, in canonical chemistry-to-life order. Each
-        one is a separate <em>building block</em> — a different way the
-        universe organises itself into something life-like. Each one is
-        <em>controlled</em> by sliders the right-hand panel labels in
+        Fourteen live simulations, in canonical chemistry-to-life order.
+        Each one is a separate <em>building block</em> — a different way
+        the universe organises itself into something life-like. Each one
+        is <em>controlled</em> by sliders the right-hand panel labels in
         plain English. New in v3.0 (per PRD v4.1): every rule renders as
         a depth-shaded SEM substrate with a <em>bioform sprite layer</em>
         composited on top, so what you see reads as a microscope image of
         the chemistry, not a heat-map. Press
-        <span class="kbd">space</span> to pause, <span class="kbd">1</span>–<span class="kbd">9</span>
-        to jump rules, <span class="kbd">t</span> to start a guided tour.
+        <span class="kbd">space</span> to pause, <span class="kbd">1</span>–<span class="kbd">0</span>
+        to jump the first ten rules, <span class="kbd">t</span> to start
+        a guided tour.
       </p>
       <p class="welcome-legend-label">B U I L D I N G   B L O C K S   ·   C O N T R O L   T Y P E</p>
       <table class="welcome-legend">
@@ -217,14 +219,20 @@
           <tr><td>Stage 1 · reaction–diffusion</td>        <td>pattern self-organisation</td></tr>
           <tr><td>Stage 2 · alkaline vents</td>            <td>geological compartment + energy</td></tr>
           <tr><td>Stage 3 · lipid vesicles</td>            <td>true bilayer compartmentalisation</td></tr>
+          <tr><td>Stage 4 · RAF autocatalytic set</td>     <td>autocatalysis as self-control</td></tr>
           <tr><td>Stage 6 · homochirality</td>             <td>symmetry-breaking</td></tr>
+          <tr><td>Stage 8 · RNA world</td>                 <td>information control (error catastrophe)</td></tr>
           <tr><td>Stage 9 · coacervate</td>                <td>membrane-less proto-cell</td></tr>
+          <tr><td>Stage 12 · genetic code</td>             <td>the controller self-organising</td></tr>
+          <tr><td>Stage 13 · LUCA</td>                     <td>descent control (consensus ancestor)</td></tr>
+          <tr><td>Stage 13 · digital life</td>            <td>open-ended evolving lineage</td></tr>
           <tr><td class="aside">Stage ∞ · Conway / Wolfram</td><td class="aside">off-arc reference automata</td></tr>
         </tbody>
       </table>
       <p class="welcome-footer">
-        Four more stages — autocatalytic sets, the RNA world, the genetic
-        code, and LUCA — still run in the Python build only.
+        New in this build: the last five stages — autocatalytic sets, the
+        RNA world, the genetic code, LUCA, and digital life — now run live
+        in the browser too, so the whole chemistry-to-life arc is here.
       </p>
       <button class="btn primary welcome-cta" id="welcome-cta">START EXPLORING</button>
     </div>
@@ -242,6 +250,10 @@
   <script src="rules/coacervate.js"></script>
   <script src="rules/vents.js"></script>
   <script src="rules/vesicles.js"></script>
+  <script src="rules/raf.js"></script>
+  <script src="rules/rna.js"></script>
+  <script src="rules/code.js"></script>
+  <script src="rules/luca.js"></script>
   <script src="rules/life.js"></script>
   <script src="main.js"></script>
 </body>
