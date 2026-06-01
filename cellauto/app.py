@@ -2318,9 +2318,20 @@ class App(tk.Frame):
 
     def _render(self) -> None:
         rule = self.engine.rule
+        state = self.engine.state
         kind = getattr(rule, "renderer_kind", "discrete")
         if kind == "field" and isinstance(self._renderer, FieldRenderer):
-            self._renderer.render(rule.render_rgb(self.engine.state))
+            # Stage XIII renders as the "LIVE SEM FEED · 400×" microscopy plate
+            # at canvas resolution. Resolve the pipeline's inner rule/state so
+            # this fires both for the standalone life rule and the pipeline at
+            # its final stage. The FieldRenderer auto-scales the full-res frame.
+            active_rule = getattr(state, "inner_rule", None) or rule
+            active_state = getattr(state, "inner_state", None)
+            active_state = active_state if active_state is not None else state
+            if hasattr(active_rule, "render_sem"):
+                self._renderer.render(active_rule.render_sem(active_state, CANVAS_SIZE, CANVAS_SIZE))
+            else:
+                self._renderer.render(rule.render_rgb(state))
         elif isinstance(self._renderer, DiscreteRenderer):
             self._renderer.render(lambda x, y: rule.render_cell(self.engine.state, x, y))
         else:
