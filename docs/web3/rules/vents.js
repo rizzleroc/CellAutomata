@@ -90,6 +90,20 @@
         source:    "How fast new acetate is injected at the duct base. Raise it: a thicker plume that fills the chimney. Lower it: a thin trickle that quickly dilutes.",
       },
 
+      // P1-D2: named regimes for the hydrothermal-vent plume, from a weak
+      // trickle to a vigorous chimney-filling column.
+      presets: [
+        { label: "weak seep",
+          hint: "A thin trickle of acetate with little updraft and quick decay — a narrow, short plume hugging the duct.",
+          values: { diffusion: 0.10, drift: 0.06, decay: 0.012, source: 0.02 } },
+        { label: "steady plume",
+          hint: "The default vent — a balanced source, buoyant updraft, and slow decay build a steady acetate column.",
+          values: { diffusion: 0.20, drift: 0.18, decay: 0.004, source: 0.05 } },
+        { label: "vigorous chimney",
+          hint: "A thick source with strong updraft, broad diffusion, and long-lived chemistry — acetate fills the whole chimney.",
+          values: { diffusion: 0.34, drift: 0.40, decay: 0.002, source: 0.15 } },
+      ],
+
       randomize() { seed(); },
       clear()    { A.fill(0); generation = 0; },
       reset()    { seed(); },

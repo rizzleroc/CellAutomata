@@ -70,6 +70,20 @@
         substeps:  "How many PDE substeps per visible frame. Pure speed knob — coarser steps simulate faster but with less smooth dynamics.",
       },
 
+      // P1-D2: named regimes set by interface stiffness κ, which fixes the
+      // droplet size the field coarsens toward.
+      presets: [
+        { label: "many small droplets", reseed: true,
+          hint: "Low interface stiffness — the field tolerates sharp boundaries, so it freezes into many small, ragged coacervate droplets.",
+          values: { mobility: 0.30, kappa: 0.30, substeps: 3 } },
+        { label: "balanced", reseed: true,
+          hint: "The default — a spread of droplet sizes rounding up and slowly coarsening into protocell-scale blobs.",
+          values: { mobility: 0.30, kappa: 1.00, substeps: 3 } },
+        { label: "few large droplets", reseed: true,
+          hint: "High interface stiffness — the field punishes boundaries, so a few big, smooth droplets dominate the dish.",
+          values: { mobility: 0.30, kappa: 1.80, substeps: 3 } },
+      ],
+
       randomize() { seed(); },
       clear()    { phi.fill(0); generation = 0; },
       reset()    { seed(); },

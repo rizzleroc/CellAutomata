@@ -1,11 +1,12 @@
-# cellauto · web 2.0 — goal punchlist
+# cellauto · web 3.0 — goal punchlist
 
 **Goal.** *"Explain the building blocks of life and show how they are
 controlled."*
 
-This file tracks the gap between the current `docs/web2/` sandbox and
+This file tracks the gap between the canonical `docs/web3/` client and
 that goal. It is updated every time we ship a change touching the web
-client — each round, items move between sections.
+client — each round, items move between sections. (web2 / web1 are
+preserved as historical bundles; web3 is the live root redirect.)
 
 Status legend:
   `[ ]` TODO &nbsp; · &nbsp; `[~]` IN-PROGRESS &nbsp; · &nbsp; `[x]` DONE
@@ -26,8 +27,8 @@ Status legend:
 
 ## 2 · Current state inventory
 
-What is shipped on `claude/zealous-meitner-SrX1L` (PR #6) as of this
-commit:
+What is shipped on `main` — web3 is the live canonical client
+(`https://rizzleroc.github.io/CellAutomata/web3/`) as of this commit:
 
 | Rule | Building block represented | Control surfaces today | Explanation depth today |
 |---|---|---|---|
@@ -67,9 +68,11 @@ coacervates matter for the origin of life.
   hover tooltip so it's always visible. Jury verdict 2026-05-30.
 - [x] **P0-A3** Marginalia ticker's first card per rule is the
   building-block claim. Shipped 2026-05-30 in "Goal-Legibility Pass."
-- [ ] **P1-A4** A persistent "About this stage" expandable panel under
-  the readout — 50-word paragraph per rule, written from the
-  origin-of-life perspective.
+- [x] **P1-A4** A persistent "About this stage" expandable panel under
+  the readout — a ~50-word origin-of-life paragraph per rule, collapsed
+  by default. Shipped 2026-05-31 in the web3 production round; the nine
+  `aboutStage` strings are the vetted web2 prose. Closes §3-A — the
+  explanation layer is complete on web3.
 
 ### B · Missing building blocks
 
@@ -119,10 +122,14 @@ end-to-end.
 - [x] **P0-D1** Every parameter label across all 8 rules carries the
   physical name (`feed rate F`, `mobility M`, `interface stiffness κ`,
   `acetate decay`, …). Shipped 2026-05-30 in "Goal-Legibility Pass."
-- [ ] **P1-D2** Add a "default / typical / extreme" three-button
-  preset row for every continuous-parameter rule (currently only
-  grayscott has presets). This *shows control* by showing the response
-  to known parameter changes.
+- [x] **P1-D2** Preset-regime row for every continuous-parameter arc
+  rule (soup, natural-selection, chirality, coacervate, vents,
+  vesicles) — a one-click row of named biological regimes that snaps the
+  sliders, reseeds the PDE-field rules, and lights the active regime;
+  moving a slider de-highlights it. grayscott keeps its Pearson
+  dropdown; conway/wolfram1d (off-arc) get none. Shipped 2026-06-01 in
+  the web3 Control Round, porting web2's mechanism. *Shows control* by
+  demonstrating the response to known parameter changes.
 - [ ] **P2-D3** Cross-rule param coupling badge: when a rule's params
   cross a published threshold (Pearson F=k boundary, Frank ee critical
   point, Eigen error catastrophe), surface a small "regime: X"
@@ -176,6 +183,39 @@ capture, all directly demanded by the goal statement.
 ---
 
 ## 4 · Done so far (history)
+
+- [x] **web3 Control Round — P1-D2 parity** (2026-06-01) — closes the
+  parity gap flagged in the production round: web3 forked before web2's
+  Control Round, so it lacked preset-regime rows. Ported web2's
+  preset-row mechanism (`buildPresetRow` / `applyPreset` / active-
+  highlight) into web3 `main.js` + `styles.css`, and authored three
+  named biological regimes per arc rule (soup, natural-selection,
+  chirality, coacervate, vents, vesicles), each validated against web3's
+  actual params — web3's vesicles is a Helfrich PDE (κ/γ params), so its
+  regimes were designed fresh, distinct from web2's. web3 smoke 188 →
+  368 checks / 0 failures (new preset-range + apply-then-render
+  assertions). Verified live: the regime row renders, clicking snaps
+  params, the active button highlights exclusively, no console errors.
+  Also folds in a CI-hygiene commit bumping the Pages workflow actions to
+  Node-24 majors (checkout@v6, setup-node@v6, upload-pages-artifact@v5,
+  deploy-pages@v5; tags verified to exist).
+
+- [x] **web3 production round** (2026-05-31) — web3 promoted to the live
+  canonical client: PR #9 merged to `main`, root `docs/index.html` now
+  redirects to `/web3/`, Pages deploy green. Three production-readiness
+  items shipped together: (1) **P1-A4** About-this-stage panel ported
+  from web2 — an `aboutStage` field on all nine rules (the vetted web2
+  prose), a collapsed-by-default accessible panel under the readout,
+  reduced-motion respected; (2) new `docs/web3/tests/smoke.mjs` (adapted
+  from web2's harness) — 188 checks / 0 failures across 9 rules; (3) the
+  Pages CI `test` job now gates BOTH `docs/web2` and `docs/web3` smoke
+  before build/deploy, so a broken canonical client can't ship. Verified
+  live: page loads with no console errors, all 9 rules register + render,
+  the About panel toggles, every web3 asset serves HTTP 200. NOTE — a
+  real open gap surfaced: web3 forked before web2's "Control Round", so
+  it lacks the **P1-D2** preset-regime rows web2 has (web3 rules carry no
+  `presets`); tracked open in §3-D. (Closed 2026-06-01 — see the web3
+  Control Round entry above.)
 
 - [x] **web3 / v4.1 PRD round** (2026-05-31) — new `docs/web3/` bundle
   alongside web2; root `docs/index.html` redirect promoted to web3.

@@ -66,6 +66,20 @@
         noise:     "The random kick that lets the system fall off the racemic ridge. With zero noise it's metastable forever; a real noise floor is essential.",
       },
 
+      // P1-D2: named regimes along the racemic→homochiral axis. β is the
+      // mutual-inhibition term that actually breaks the L/R symmetry.
+      presets: [
+        { label: "near-racemic", reseed: true,
+          hint: "Weak mutual inhibition and slow growth — L and R coexist near 50/50, the symmetric prebiotic mix that never picks a hand.",
+          values: { alpha: 0.04, beta: 0.10, diffusion: 0.05, noise: 0.002 } },
+        { label: "symmetry-breaking", reseed: true,
+          hint: "Strong inhibition with a real noise floor — the system falls off the racemic ridge into rival L and R domains.",
+          values: { alpha: 0.12, beta: 0.60, diffusion: 0.10, noise: 0.005 } },
+        { label: "homochiral sweep", reseed: true,
+          hint: "Fast growth, fierce inhibition, high diffusion — one enantiomer wins globally and sweeps the whole field, as life did.",
+          values: { alpha: 0.25, beta: 1.20, diffusion: 0.25, noise: 0.010 } },
+      ],
+
       randomize() { seed(); },
       clear() { L.fill(0); R.fill(0); generation = 0; },
       reset() { seed(); },
