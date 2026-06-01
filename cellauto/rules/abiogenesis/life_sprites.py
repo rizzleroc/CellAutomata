@@ -28,7 +28,7 @@ from pathlib import Path
 from typing import Any
 
 import numpy as np
-from PIL import Image, ImageFilter
+from PIL import Image, ImageDraw, ImageFilter
 
 from cellauto.rules.abiogenesis import life_sem as _ls
 
@@ -62,6 +62,86 @@ def load_atlas() -> tuple[list[list[Image.Image]], list[Image.Image]]:
     return cells, div
 
 
+def _bubbly_substrate(width: int, height: int, rng: np.random.RandomState) -> Image.Image:
+    """Lit granular floor + scattered vesicle bubbles (bright-rimmed circles) —
+    the bubbly DIC substrate from the reference plate."""
+    img = _ls._substrate(width, height, rng)
+    base = Image.fromarray(np.clip(img, 0, 255).astype(np.uint8), "RGB")
+    dr = ImageDraw.Draw(base, "RGBA")
+    for _ in range(int(width * height / 950)):
+        r = 2 + rng.random_sample() ** 2 * 9
+        x, y = rng.randint(0, width), rng.randint(0, height)
+        dr.ellipse([x - r, y - r, x + r, y + r], outline=(225, 208, 170, 70), width=1)
+        dr.ellipse([x - r * 0.5, y - r * 0.5, x + r * 0.5, y + r * 0.5], fill=(150, 130, 96, 40))
+    return base.convert("RGBA")
+
+
+def _contour(alpha: np.ndarray, n: int = 56) -> list[tuple[int, int, float, float]]:
+    """Radial-sample a sprite's silhouette from its centre → membrane points."""
+    h, w = alpha.shape
+    cx, cy = w / 2, h / 2
+    maxr = math.hypot(w, h)
+    pts = []
+    for i in range(n):
+        a = 2 * math.pi * i / n
+        ca, sa = math.cos(a), math.sin(a)
+        rr = maxr
+        while rr > 2:
+            x, y = int(cx + ca * rr), int(cy + sa * rr)
+            if 0 <= x < w and 0 <= y < h and alpha[y, x] > 110:
+                pts.append((x, y, ca, sa))
+                break
+            rr -= 2
+    return pts
+
+
+def _rim_cilia(canvas: Image.Image, sprite: Image.Image, ox: int, oy: int, r: float) -> None:
+    """Draw a beaded membrane rim + a cilia fringe along the sprite silhouette."""
+    alpha = np.asarray(sprite.split()[3], np.uint8)
+    d = ImageDraw.Draw(canvas, "RGBA")
+    dot = max(1, int(r * 0.07))
+    for i, (x, y, ca, sa) in enumerate(_contour(alpha, 56)):
+        gx, gy = ox + x, oy + y
+        hl = r * (0.13 + 0.07 * ((i * 7) % 5) / 5)
+        d.line([gx, gy, gx + ca * hl, gy + sa * hl], fill=(214, 196, 154, 115), width=max(1, dot // 2))
+        bx, by = gx - ca * dot * 1.2, gy - sa * dot * 1.2
+        d.ellipse([bx - dot, by - dot, bx + dot, by + dot], fill=(238, 222, 182, 225))
+
+
+def _paste_cell(canvas, spr, cx, cy, r, depth, ang, furniture):
+    target = max(8, int(r * 3.0))
+    s = spr.resize((target, target), Image.LANCZOS)
+    if abs(ang) > 0.1:
+        s = s.rotate(ang, resample=Image.BICUBIC, expand=True)
+    blur = max(0.0, 1.0 - depth) ** 1.5 * r * 0.30
+    if blur > 0.4:
+        s = s.filter(ImageFilter.GaussianBlur(blur))
+    ox, oy = int(cx - s.width / 2), int(cy - s.height / 2)
+    sh = s.split()[3].filter(ImageFilter.GaussianBlur(r * 0.25))
+    shadow = Image.new("RGBA", s.size, (0, 0, 0, 0))
+    shadow.putalpha(sh.point(lambda v: int(v * 0.40)))
+    canvas.alpha_composite(shadow, (ox + int(r * 0.1), oy + int(r * 0.16)))
+    canvas.alpha_composite(s, (ox, oy))
+    if furniture and blur < 1.6:
+        _rim_cilia(canvas, s, ox, oy, r)
+
+
+def _grade(canvas: Image.Image, rng: np.random.RandomState) -> np.ndarray:
+    width, height = canvas.size
+    out = np.asarray(canvas.convert("RGB"), np.float32)
+    bright = np.clip(out - 205, 0, 255)
+    out = out + 0.26 * _ls._blur(bright, 6)
+    ln = _ls._aces(out / 255.0 * 0.92) ** 1.02
+    ln[..., 0] *= 1.05
+    ln[..., 2] *= 0.84
+    out = np.clip(ln, 0, 1) * 255
+    yy, xx = np.mgrid[0:height, 0:width].astype(np.float32)
+    vig = 1 - 0.32 * (((xx / width - 0.5) ** 2 + (yy / height - 0.5) ** 2) * 2.0)
+    out *= np.clip(vig, 0.6, 1)[..., None]
+    out += rng.normal(0, 2.3, (height, width, 1)).astype(np.float32)
+    return np.clip(out, 0, 255).astype(np.uint8)
+
+
 def render(
     state: Any,
     rule: Any,
@@ -77,8 +157,7 @@ def render(
     cells, div = load_atlas()
     n_frames = len(div)
     rng = np.random.RandomState(seed & 0x7FFFFFFF)
-    sub = _ls._substrate(width, height, rng)
-    canvas = Image.fromarray(np.clip(sub, 0, 255).astype(np.uint8), "RGB").convert("RGBA")
+    canvas = _bubbly_substrate(width, height, rng)
     gh, gw = state.substrate.shape
     base_r = min(width, height) * 0.085
     orgs = sorted(state.organisms.values(), key=lambda o: -o.energy)[:max_org]
@@ -103,30 +182,42 @@ def render(
         else:
             spr = cells[o.oid % len(cells)][frame]
             ang = o.facing * 45 + 5.0 * math.sin(phase * 0.25 + o.oid)
-        pulse = 1.0 + 0.03 * math.sin(phase * 0.3 + o.oid * 1.7)
-        target = max(8, int(r * 3.0 * pulse))
-        s = spr.resize((target, target), Image.LANCZOS)
-        if abs(ang) > 0.1:
-            s = s.rotate(ang, resample=Image.BICUBIC, expand=True)
-        blur = (1.0 - depth) ** 1.5 * r * 0.30
-        if blur > 0.4:
-            s = s.filter(ImageFilter.GaussianBlur(blur))
-        ox, oy = int(cx - s.width / 2), int(cy - s.height / 2)
-        sh = s.split()[3].filter(ImageFilter.GaussianBlur(r * 0.25))
-        shadow = Image.new("RGBA", s.size, (0, 0, 0, 0))
-        shadow.putalpha(sh.point(lambda v: int(v * 0.40)))
-        canvas.alpha_composite(shadow, (ox + int(r * 0.1), oy + int(r * 0.16)))
-        canvas.alpha_composite(s, (ox, oy))
-    out = np.asarray(canvas.convert("RGB"), np.float32)
-    bright = np.clip(out - 205, 0, 255)
-    out = out + 0.28 * _ls._blur(bright, 6)
-    ln = _ls._aces(out / 255.0 * 0.95) ** 1.05
-    ln[..., 0] *= 1.06
-    ln[..., 2] *= 0.83
-    out = np.clip(ln, 0, 1) * 255
-    yy, xx = np.mgrid[0:height, 0:width].astype(np.float32)
-    vig = 1 - 0.42 * (((xx / width - 0.5) ** 2 + (yy / height - 0.5) ** 2) * 2.0)
-    out *= np.clip(vig, 0.5, 1)[..., None]
-    out += rng.normal(0, 2.6, (height, width, 1)).astype(np.float32)
-    result = Image.fromarray(np.clip(out, 0, 255).astype(np.uint8), "RGB")
-    return np.asarray(_ls._overlay(result), dtype=np.uint8)
+        _paste_cell(canvas, spr, cx, cy, r, depth, ang, furniture=True)
+    return np.asarray(_ls._overlay(Image.fromarray(_grade(canvas, rng), "RGB")), dtype=np.uint8)
+
+
+def render_hero(width: int = 1100, height: int = 720, seed: int = 7) -> np.ndarray:  # pragma: no cover
+    """A LOCKED, reference-matched hero plate: the baked photoreal cells laid
+    out in loose rows (foreground larger) on the bubbly substrate, with beaded
+    rims + cilia + one teal divider + the even sepia DIC grade. Deterministic
+    for a given seed — used to mint ``docs/generated/stage13_life.png``. This is
+    a fixed composition (not the live sim), so it can be tuned to mirror the
+    reference plate directly."""
+    cells, div = load_atlas()
+    n_frames = len(div)
+    rng = np.random.RandomState(seed & 0x7FFFFFFF)
+    canvas = _bubbly_substrate(width, height, rng)
+    rows = 5
+    placed = []
+    idx = 0
+    for rrow in range(rows):
+        depth = rrow / (rows - 1)
+        n_in_row = 7 + rrow
+        rsize = 0.6 + 0.9 * depth
+        for c in range(n_in_row):
+            depthj = min(1.0, max(0.0, depth + (rng.random_sample() - 0.5) * 0.10))
+            cx = (0.05 + 0.90 * (c + 0.5 + (rng.random_sample() - 0.5) * 0.55) / n_in_row) * width
+            cy = (0.12 + 0.76 * depth + (rng.random_sample() - 0.5) * 0.05) * height
+            r = min(width, height) * 0.082 * rsize * (0.85 + 0.3 * rng.random_sample())
+            placed.append((depthj, idx, cx, cy, r))
+            idx += 1
+    placed.sort(key=lambda t: t[0])
+    div_slot = len(placed) * 6 // 10
+    for k, (depth, i, cx, cy, r) in enumerate(placed):
+        frame = (i * 3 + k) % n_frames
+        if k == div_slot:
+            spr, rr = div[frame], r * 1.25
+        else:
+            spr, rr = cells[i % len(cells)][frame], r
+        _paste_cell(canvas, spr, cx, cy, rr, depth, (i * 53) % 360, furniture=True)
+    return np.asarray(_ls._overlay(Image.fromarray(_grade(canvas, rng), "RGB")), dtype=np.uint8)
