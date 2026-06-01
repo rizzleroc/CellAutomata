@@ -2032,12 +2032,23 @@ class App(tk.Frame):
         Works for both the direct stage rule and the pipeline at stage 4."""
         state = self.engine.state
         sel = getattr(state, "inner_state", None) or state
-        cells = getattr(sel, "cells", None)
-        if not cells:
-            return
         w, h = self._state_dims()
         gx = event.x / max(1.0, CANVAS_SIZE / w)
         gy = event.y / max(1.0, CANVAS_SIZE / h)
+
+        # Stage XIII — digital life: resolve the live rule + state across both
+        # the direct-rule case and the extended-pipeline case (inner_rule /
+        # inner_state), mirroring how _open_network_view discovers its inner.
+        rule = getattr(state, "inner_rule", None) or self.engine.rule
+        if hasattr(rule, "organism_at"):
+            org = rule.organism_at(sel, int(gx), int(gy))
+            if org is not None:
+                self._show_organism_inspector(rule, sel, org)
+                return
+
+        cells = getattr(sel, "cells", None)
+        if not cells:
+            return
         for i, c in enumerate(cells):
             if not getattr(c, "alive", True):
                 continue
@@ -2086,6 +2097,86 @@ class App(tk.Frame):
                 "Fitness is the hypercycle-flavoured cyclic coupling "
                 "Σ g[i]·g[(i+1) mod n] — zero if any species is missing, "
                 "maximal at equal concentrations."
+            ),
+        ).pack(anchor="w", pady=(10, 0))
+
+    def _show_organism_inspector(self, rule: Any, state: Any, org: Any) -> None:
+        """Toplevel detail panel for one Stage XIII digital organism — surfaces
+        its genome (as a strip of virtual-CPU opcodes with the executing token
+        marked), energy, instruction pointer, and surviving ancestry, so a
+        learner can watch an evolved program run and see where it came from."""
+        from cellauto.rules.abiogenesis.life_vm import OPCODES
+
+        dlg = tk.Toplevel(self.master_window)
+        dlg.title(f"Organism #{org.oid}")
+        dlg.configure(background=BG)
+        dlg.transient(self.master_window)
+        body = ttk.Frame(dlg, padding=(22, 18))
+        body.pack(fill="both", expand=True)
+        ttk.Label(body, text=f"DIGITAL ORGANISM  ·  #{org.oid}", style="Eyebrow.TLabel").pack(anchor="w")
+
+        def row(label: str, value: str) -> None:
+            r = ttk.Frame(body)
+            r.pack(fill="x", pady=(6, 0))
+            ttk.Label(r, text=label, style="Apparatus.TLabel", width=14).pack(side="left")
+            ttk.Label(r, text=value, style="Value.TLabel").pack(side="left")
+
+        glen = max(1, len(org.genome))
+        ip_idx = org.ip % glen
+        cur_op = OPCODES[org.current_instruction()]
+        row("position", f"({org.x}, {org.y})")
+        row("energy", f"{float(org.energy):.1f}")
+        row("age", f"{org.age} steps")
+        row("lineage", f"#{org.lineage}")
+        row("divisions", f"{org.n_divisions}")
+        row("instr. pointer", f"{ip_idx}")
+        row("current instr.", cur_op)
+
+        ttk.Label(body, text="genome", style="Apparatus.TLabel").pack(anchor="w", pady=(8, 0))
+        ttk.Label(
+            body,
+            text=f"▶ now: {cur_op} (ip {ip_idx}/{glen})",
+            style="Value.TLabel",
+        ).pack(anchor="w")
+        tokens = []
+        for i, g in enumerate(org.genome):
+            name = OPCODES[int(g) % len(OPCODES)]
+            tokens.append(f"[{name}]" if i == ip_idx else name)
+        ttk.Label(
+            body,
+            text="  ".join(tokens),
+            style="Value.TLabel",
+            wraplength=440,
+            justify="left",
+        ).pack(anchor="w")
+
+        ttk.Label(body, text="ancestry", style="Apparatus.TLabel").pack(anchor="w", pady=(8, 0))
+        chain = rule.ancestry(state, org)
+        ancestry_txt = "  ←  ".join(f"#{oid}" for oid in chain)
+        tail = state.organisms.get(chain[-1]) if chain else None
+        if tail is not None and getattr(tail, "parent", None) is None:
+            ancestry_txt += "  (founder)"
+        ttk.Label(
+            body,
+            text=ancestry_txt or f"#{org.oid}  (founder)",
+            style="Value.TLabel",
+            wraplength=440,
+            justify="left",
+        ).pack(anchor="w")
+
+        ttk.Label(
+            body,
+            style="Caption.TLabel",
+            wraplength=440,
+            justify="left",
+            text=(
+                "Each token is one virtual-CPU instruction; the organism "
+                "executes one instruction per step, advancing the pointer. "
+                "Energy is spent per instruction and gained by INGEST; at the "
+                "energy threshold the organism divides, copying its genome with "
+                "per-instruction mutation. Lineage is the id of its founding "
+                "ancestor — the ancestry chain follows surviving parents back "
+                "toward that founder."
             ),
         ).pack(anchor="w", pady=(10, 0))
 

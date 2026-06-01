@@ -30,6 +30,7 @@ from cellauto.rules.abiogenesis.stage4_selection import AbiogenesisStage4Selecti
 from cellauto.rules.abiogenesis.stage_chirality import AbiogenesisStageHomochirality
 from cellauto.rules.abiogenesis.stage_coacervate import AbiogenesisStageCoacervate
 from cellauto.rules.abiogenesis.stage_code import AbiogenesisStageGeneticCode
+from cellauto.rules.abiogenesis.stage_life import AbiogenesisStageLife
 from cellauto.rules.abiogenesis.stage_luca import AbiogenesisStageLUCA
 from cellauto.rules.abiogenesis.stage_minerals import AbiogenesisStageMinerals
 from cellauto.rules.abiogenesis.stage_rna import AbiogenesisStageRNAWorld
@@ -366,6 +367,22 @@ _STAGE_LUCA_INFO = StageInfo(
     citation="Koonin 2003 · Theobald 2010 · Weiss et al. 2016",
     legend="viridis = fitness; luca_size stat = inferred ancestral core genome.",
 )
+_STAGE_LIFE_INFO = StageInfo(
+    index=12,
+    title="DIGITAL LIFE",
+    principle="Virtual-CPU genomes that execute, ingest, excrete, divide, and mutate under selection.",
+    detail=(
+        "After LUCA, the lineages that lived. Each organism is a tape of "
+        "opcodes run by a tiny virtual CPU (Tierra 1991; Avida 2004). Every "
+        "instruction costs energy; INGEST converts substrate to energy; "
+        "EXCRETE adds toxic waste; energy = 0 ⇒ death; energy ≥ E_div ⇒ "
+        "division with per-instruction copy error ε. Distinct lineages "
+        "diverge from the founding ancestor — open-ended evolution in a "
+        "digital substrate (Channon 2003)."
+    ),
+    citation="Ray 1991 · Adami 1994 · Ofria & Wilke 2004 · Eigen 1971 · Channon 2003",
+    legend="disc colour = organism energy; white ring = membrane; substrate = viridis field; dark = waste.",
+)
 _STAGE_COACERVATE_INFO = StageInfo(
     index=8,
     title="COACERVATES",
@@ -396,6 +413,7 @@ EXTENDED_STAGE_CLASSES = (
     AbiogenesisStage3Vesicles,
     AbiogenesisStage4Selection,
     AbiogenesisStageLUCA,
+    AbiogenesisStageLife,
 )
 EXTENDED_STAGE_INFO: tuple[StageInfo, ...] = (
     STAGE_INFO[0],
@@ -410,14 +428,16 @@ EXTENDED_STAGE_INFO: tuple[StageInfo, ...] = (
     STAGE_INFO[3],
     STAGE_INFO[4],
     _STAGE_LUCA_INFO,
+    _STAGE_LIFE_INFO,
 )
 
 
 @dataclass
 class AbiogenesisExtendedPipelineRule(AbiogenesisPipelineRule):
     """Auto-promoting pipeline that walks every shipped origin-of-life process
-    (10 stages, scientific order). Drop-in replacement for the canonical
-    `AbiogenesisPipelineRule` — same protocol, just a longer narrative."""
+    and on into digital life (13 stages, scientific order, soup → … → LUCA →
+    LIFE). Drop-in replacement for the canonical `AbiogenesisPipelineRule` —
+    same protocol, just a longer narrative."""
 
     name: str = "abiogenesis-pipeline-extended"
     stage_classes: tuple = EXTENDED_STAGE_CLASSES

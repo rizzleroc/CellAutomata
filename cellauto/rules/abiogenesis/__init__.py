@@ -31,12 +31,14 @@ from cellauto.rules.abiogenesis.stage4_selection import AbiogenesisStage4Selecti
 from cellauto.rules.abiogenesis.stage_chirality import AbiogenesisStageHomochirality
 from cellauto.rules.abiogenesis.stage_coacervate import AbiogenesisStageCoacervate
 from cellauto.rules.abiogenesis.stage_code import AbiogenesisStageGeneticCode
+from cellauto.rules.abiogenesis.stage_life import AbiogenesisStageLife
 from cellauto.rules.abiogenesis.stage_luca import AbiogenesisStageLUCA
 from cellauto.rules.abiogenesis.stage_minerals import AbiogenesisStageMinerals
 from cellauto.rules.abiogenesis.stage_rna import AbiogenesisStageRNAWorld
 from cellauto.rules.abiogenesis.stage_vents import AbiogenesisStageVents
 
 __all__ = [
+    "AbiogenesisStageLife",
     "AbiogenesisExtendedPipelineRule",
     "AbiogenesisPipelineRule",
     "AbiogenesisStage0Soup",
