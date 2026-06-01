@@ -1,0 +1,106 @@
+{
+  "champions": [
+    {
+      "gi": 11,
+      "name": "F0.026k0.058",
+      "kw": {
+        "F": 0.0264,
+        "k": 0.0579
+      },
+      "seed": 7,
+      "scatter": true,
+      "n1": 10,
+      "n2": 6,
+      "octs": 2,
+      "complexity": 0.0514,
+      "activity": 0.00431,
+      "motion": 0.479,
+      "combined": 0.0353
+    },
+    {
+      "gi": 12,
+      "name": "F0.019k0.050",
+      "kw": {
+        "F": 0.0186,
+        "k": 0.0502
+      },
+      "seed": 1,
+      "scatter": false,
+      "n1": 6,
+      "n2": 5,
+      "octs": 2,
+      "complexity": 0.0285,
+      "activity": 0.0121,
+      "motion": 1.345,
+      "combined": 0.0343
+    },
+    {
+      "gi": 2,
+      "name": "F0.018k0.050",
+      "kw": {
+        "F": 0.018,
+        "k": 0.05
+      },
+      "seed": 1,
+      "scatter": false,
+      "n1": 12,
+      "n2": 6,
+      "octs": 2,
+      "complexity": 0.0251,
+      "activity": 0.01139,
+      "motion": 1.266,
+      "combined": 0.0291
+    },
+    {
+      "gi": 15,
+      "name": "F0.034k0.062",
+      "kw": {
+        "F": 0.034,
+        "k": 0.0618
+      },
+      "seed": 7,
+      "scatter": true,
+      "n1": 10,
+      "n2": 6,
+      "octs": 2,
+      "complexity": 0.0561,
+      "activity": 0.00019,
+      "motion": 0.021,
+      "combined": 0.0232
+    },
+    {
+      "gi": 31,
+      "name": "F0.016k0.045",
+      "kw": {
+        "F": 0.016,
+        "k": 0.0448
+      },
+      "seed": 7,
+      "scatter": true,
+      "n1": 8,
+      "n2": 3,
+      "octs": 2,
+      "complexity": 0.0163,
+      "activity": 0.01563,
+      "motion": 1.5,
+      "combined": 0.0212
+    },
+    {
+      "gi": 21,
+      "name": "F0.045k0.063",
+      "kw": {
+        "F": 0.045,
+        "k": 0.063
+      },
+      "seed": 7,
+      "scatter": true,
+      "n1": 6,
+      "n2": 5,
+      "octs": 2,
+      "complexity": 0.0468,
+      "activity": 0.00034,
+      "motion": 0.038,
+      "combined": 0.0198
+    }
+  ]
+}
