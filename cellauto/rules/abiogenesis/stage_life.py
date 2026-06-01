@@ -499,7 +499,7 @@ class AbiogenesisStageLife:
             return life_sprites.render(
                 state, self, width=width, height=height, max_org=max_org, seed=seed, phase=phase
             )
-        except (FileNotFoundError, OSError):
+        except (FileNotFoundError, OSError, KeyError, ValueError):
             return life_sem.render(
                 state, self, width=width, height=height, max_org=max_org, seed=seed, phase=phase
             )

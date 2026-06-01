@@ -36,23 +36,30 @@ _ASSETS = Path(__file__).resolve().parents[2] / "assets" / "life"
 
 
 @lru_cache(maxsize=1)
-def load_atlas() -> tuple[list[Image.Image], Image.Image]:
-    """Load and slice the committed sprite atlas (cached). Returns the list of
-    cell sprites and the teal division sprite. Raises ``FileNotFoundError`` if
-    the bake hasn't been run."""
+def load_atlas() -> tuple[list[list[Image.Image]], list[Image.Image]]:
+    """Load and slice the committed FLIPBOOK atlas (cached). Returns
+    ``cells[variant][frame]`` and the teal division flipbook ``div[frame]``.
+    Raises ``FileNotFoundError`` if the bake hasn't been run."""
     sheet_path = _ASSETS / "cells.png"
     meta_path = _ASSETS / "atlas.json"
     div_path = _ASSETS / "cell_div.png"
     if not (sheet_path.exists() and meta_path.exists() and div_path.exists()):
         raise FileNotFoundError(f"Stage XIII sprite atlas not found in {_ASSETS}")
     meta = json.loads(meta_path.read_text())
-    cols, tile, count = meta["cols"], meta["tile"], meta["count"]
+    if not all(k in meta for k in ("variants", "frames", "tile")):
+        raise FileNotFoundError(f"Stage XIII atlas manifest {meta_path} is stale/incompatible")
+    variants, frames, tile = meta["variants"], meta["frames"], meta["tile"]
     sheet = Image.open(sheet_path).convert("RGBA")
     cells = []
-    for i in range(count):
-        x, y = (i % cols) * tile, (i // cols) * tile
-        cells.append(sheet.crop((x, y, x + tile, y + tile)))
-    return cells, Image.open(div_path).convert("RGBA")
+    for v in range(variants):
+        row = []
+        for f in range(frames):
+            x, y = f * tile, v * tile
+            row.append(sheet.crop((x, y, x + tile, y + tile)))
+        cells.append(row)
+    div_sheet = Image.open(div_path).convert("RGBA")
+    div = [div_sheet.crop((f * tile, 0, f * tile + tile, tile)) for f in range(frames)]
+    return cells, div
 
 
 def render(
@@ -67,7 +74,8 @@ def render(
     """Composite the live population from the baked photoreal sprite atlas.
     Returns an ``(height, width, 3)`` uint8 array. Raises ``FileNotFoundError``
     (via :func:`load_atlas`) if the atlas is absent so the caller can fall back."""
-    cells, div_sprite = load_atlas()
+    cells, div = load_atlas()
+    n_frames = len(div)
     rng = np.random.RandomState(seed & 0x7FFFFFFF)
     sub = _ls._substrate(width, height, rng)
     canvas = Image.fromarray(np.clip(sub, 0, 255).astype(np.uint8), "RGB").convert("RGBA")
@@ -86,11 +94,14 @@ def render(
         placed.append((depth, o, cx, cy, r))
     placed.sort(key=lambda t: t[0])  # far -> near
     for depth, o, cx, cy, r in placed:
+        # flipbook frame: advance with phase, offset per cell so the colony's
+        # interiors churn out of sync (mobile insides).
+        frame = int(phase * 0.5 + o.oid * 3) % n_frames
         if o.oid == div_oid:
-            spr = div_sprite
+            spr = div[frame]
             ang = 4.0 * math.sin(phase * 0.2 + o.oid)
         else:
-            spr = cells[o.oid % len(cells)]
+            spr = cells[o.oid % len(cells)][frame]
             ang = o.facing * 45 + 5.0 * math.sin(phase * 0.25 + o.oid)
         pulse = 1.0 + 0.03 * math.sin(phase * 0.3 + o.oid * 1.7)
         target = max(8, int(r * 3.0 * pulse))
