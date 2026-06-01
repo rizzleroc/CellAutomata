@@ -10,6 +10,11 @@ name: Pages
 on:
   push:
     branches: [main]
+  # Run the JS smoke gate on PRs too (not just post-merge), so a broken web
+  # rule can't reach main. The build/deploy jobs below are guarded to
+  # push events, so PRs run the `test` job only.
+  pull_request:
+    paths: ["docs/**"]
   workflow_dispatch:
 
 concurrency:
@@ -36,6 +41,9 @@ jobs:
 
   build:
     needs: test
+    # Only build/deploy the site on a real push to main (or manual dispatch);
+    # PRs stop after the `test` gate.
+    if: github.event_name != 'pull_request'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -47,6 +55,7 @@ jobs:
 
   deploy:
     needs: build
+    if: github.event_name != 'pull_request'
     runs-on: ubuntu-latest
     environment:
       name: github-pages

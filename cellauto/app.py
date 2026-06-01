@@ -1732,12 +1732,31 @@ class App(tk.Frame):
                 writer.writerow(row)
         log.info("exported %d stat samples to %s", len(self._stats_history), path)
 
+    def _onscreen_field_rgb(self):
+        """The exact RGB array the live canvas is showing for a field rule —
+        the SEM 'live feed' plate when the active (inner) rule exposes
+        ``render_sem`` (Stage XIII), else ``render_rgb``. Used by PNG/GIF/
+        snapshot export so exports are WYSIWYG, not a different viridis render.
+        Returns None for non-field rules."""
+        rule = self.engine.rule
+        state = self.engine.state
+        if getattr(rule, "renderer_kind", "discrete") != "field":
+            return None
+        active_rule = getattr(state, "inner_rule", None) or rule
+        active_state = getattr(state, "inner_state", None)
+        active_state = active_state if active_state is not None else state
+        if hasattr(active_rule, "render_sem"):
+            return active_rule.render_sem(
+                active_state, CANVAS_SIZE, CANVAS_SIZE, phase=float(self.engine.step_count)
+            )
+        return rule.render_rgb(state)
+
     def _export_png(self) -> None:
         """Export the current frame as a PNG at the canvas resolution.
 
-        Field rules render through ``render_rgb`` already; for discrete rules we
-        rasterise via ``render_cell`` per grid cell (oval cells are drawn as
-        filled circles inscribed in their cell)."""
+        WYSIWYG: a field rule exports the exact frame on screen (the SEM plate
+        for Stage XIII, else ``render_rgb``); discrete rules rasterise via
+        ``render_cell`` per grid cell (oval cells drawn as inscribed circles)."""
         path = filedialog.asksaveasfilename(
             defaultextension=".png", filetypes=[("PNG", "*.png")], title="Export frame as PNG"
         )
@@ -1748,8 +1767,10 @@ class App(tk.Frame):
         rule = self.engine.rule
         kind = getattr(rule, "renderer_kind", "discrete")
         if kind == "field":
-            arr = rule.render_rgb(self.engine.state)
-            img = Image.fromarray(arr, "RGB").resize((CANVAS_SIZE, CANVAS_SIZE), Image.Resampling.NEAREST)
+            arr = self._onscreen_field_rgb()
+            img = Image.fromarray(arr, "RGB")
+            if img.size != (CANVAS_SIZE, CANVAS_SIZE):
+                img = img.resize((CANVAS_SIZE, CANVAS_SIZE), Image.Resampling.NEAREST)
         else:
             w, h = self._state_dims()
             cw, ch = CANVAS_SIZE / w, CANVAS_SIZE / h
@@ -1851,9 +1872,11 @@ class App(tk.Frame):
         rule = self.engine.rule
         kind = getattr(rule, "renderer_kind", "discrete")
         if kind == "field":
+            # WYSIWYG: capture the on-screen frame (SEM plate for Stage XIII),
+            # so a recorded GIF matches what the user is watching.
             return {
                 "kind": "field",
-                "rgb": rule.render_rgb(self.engine.state).tolist(),
+                "rgb": self._onscreen_field_rgb().tolist(),
                 "canvas_size": CANVAS_SIZE,
             }
         w, h = self._state_dims()

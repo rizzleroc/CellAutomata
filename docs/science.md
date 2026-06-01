@@ -218,13 +218,19 @@ in a way isolated self-replicators are not — they sidestep Eigen's "error
 catastrophe" by distributing information across multiple replicating
 species.
 
-This stage's implementation is deliberately a TOY. Each protocell carries
-a vector "genome" representing its internal species mix; its fitness is the
-Shannon entropy × total concentration; size grows with fitness; division at
-a radius threshold creates a mutated daughter; old/small protocells die.
-Real protocell evolution involves internal RAF dynamics and stochastic
-mutation rates that determine the error threshold (see Adamala & Szostak's
-2013 experimental work).
+**Implementation (updated — the old "TOY" description below was stale).**
+As of the v3.5 G2 fix this stage runs the genuine **Eigen-Schuster replicator
+ODE**, not a Shannon-entropy proxy. Each protocell carries a length-`n`
+concentration vector that evolves by `dx_i/dt = x_i (k_i · x_{i-1} − Φ)` with
+Φ the constant-organisation dilution flux that conserves Σx_i — a real
+hypercycle. Cycle health (the limiting species concentration, `min(x)·n`)
+gates growth/division; an incomplete cycle collapses to the trivial fixed
+point while a complete one converges to equal concentrations, exactly as
+Eigen & Schuster predict (pinned in `tests/test_hypercycle.py`). The legacy
+scalar `proxy` mode (cyclic coupling sum) is retained behind
+`dynamics="proxy"` for A/B comparison only. Real protocell evolution also
+involves internal RAF dynamics and membrane mechanics (Adamala & Szostak
+2013) which remain out of scope.
 
 We include this stage to make explicit where the project's *original* claim
 of "natural selection" actually lives: not in the soup, but in the
@@ -308,7 +314,12 @@ all life, and how did it arise? Three classic answers:
 This stage models the **coevolution** account. Each cell on the grid carries
 both an RNA-like strand of codons *and* its own private codon→amino-acid
 table. Each cell decodes its own strand through its own code to produce a
-peptide; fitness is how well that peptide matches a fixed target catalyst.
+peptide; fitness is, by default, that peptide's Miyazawa-Jernigan-style
+folding score (`fitness_mode="mj_landscape"`, sequence-composition-dependent),
+with a legacy fixed-target-match mode retained for comparison. Convergence is
+driven by **vertical selection** (fitness-weighted colonisation + mutation),
+NOT by the Vetsigian-Woese-Goldenfeld innovation-sharing/HGT mechanism, which
+this stage does not implement (see the rule docstring's scope note).
 Empty cells are colonised by fitness-weighted occupied neighbours, copying
 both the strand (with per-base mutation) and the code (with rare swaps). Any
 code that happens to make a more useful peptide spreads. The
@@ -529,8 +540,9 @@ deleterious (cost), and every gene has a maintenance cost. Selection +
 mutation drive the population; the headline `luca_size` stat is the number
 of genes present in ≥ 70% of surviving lineages — exactly the kind of
 prevalence threshold real LUCA reconstruction uses. From random initial
-genomes, `luca_size` climbs and locks at roughly the essential-gene count
-(6 by default). That intersection IS the simulated LUCA, the genome every
+genomes, `luca_size` climbs toward the pathway-essential gene set (12 genes
+across the 5 default pathways), recovering a substantial fraction of it under
+selection. That recovered core IS the simulated LUCA, the genome every
 lineage inherited.
 
 **What this captures:** comparative-genomics distillation of a core ancestral
@@ -723,9 +735,10 @@ This is a sandbox for thinking about abiogenesis, not a quantitative model.
   energies of reaction are not modelled.
 - **No real reaction kinetics.** Rates are mass-action with phenomenological
   constants, not Arrhenius / transition-state theory.
-- **Toy membrane physics.** Stage 3 uses threshold detection rather than
-  fluid simulation of lipid bilayers.
-- **Toy fitness function.** Stage 4 uses Shannon entropy × concentration as
-  a placeholder; real protocell fitness depends on internal RAF dynamics.
+- **Toy membrane physics.** Stage 3 uses a CMC threshold plus a Helfrich
+  biharmonic bending term, not a full fluid simulation of lipid bilayers.
+- **Idealised protocell fitness.** Stage 4 runs the Eigen-Schuster hypercycle
+  replicator ODE (not the old Shannon-entropy placeholder), but still abstracts
+  away internal RAF dynamics and membrane mechanics.
 
 For each, the reference list above points at the rigorous treatment.

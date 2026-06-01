@@ -1,9 +1,15 @@
-// Lipid vesicles — Stage 3 of the abiogenesis pipeline.  Simplified port
-// of cellauto/rules/abiogenesis/stage3_vesicles.py — the Helfrich-curvature
-// lipid bilayer that forms TRUE membrane compartments (as opposed to
-// coacervate's liquid-liquid one).
+// Lipid vesicles — Stage 3 of the abiogenesis pipeline.
 //
-// Physics (drastically reduced for the web client):
+// NOT a line-for-line port of cellauto/rules/abiogenesis/stage3_vesicles.py.
+// The Python stage drives a two-species Gray-Scott reaction-diffusion lipid
+// field and adds a small Helfrich biharmonic SMOOTHING pass once per frame.
+// This browser version instead runs a single-field Allen-Cahn phase model
+// with an explicit Helfrich (∇²)² bending term — a *different* PDE that
+// reaches the same qualitative endpoint (smooth closed bilayer loops that
+// read as vesicle cross-sections). It is "inspired by", not "a port of",
+// the Python stage; both share the Helfrich-curvature idea, not the equation.
+//
+// Physics (Allen-Cahn phase field + Helfrich bending):
 //   φ = lipid concentration field, [0, 1].
 //   ∂φ/∂t = D ∇²φ − γ φ (1 − φ)(½ − φ) − κ (∇²)²φ + noise
 //

@@ -171,34 +171,50 @@ def test_replication_is_self_encoded_copy_stripped_lineage_leaves_no_offspring()
     assert born_ancestor > 100, f"the self-replicating ancestor barely reproduced ({born_ancestor})"
 
 
-def test_selection_enriches_functional_opcodes_over_baseline():
-    """Selection is real and measurable: after a few thousand steps the
-    surviving population is strongly enriched for the opcodes that build a
-    working organism — COPY (replication), INGEST (metabolism), DIVIDE — far
-    above the 1/20 = 5 % frequency a neutral (drift-only) model would give,
-    and neutral opcodes (RAND, ADD) are depleted well below 5 %.
+def test_selection_favours_self_replicators_over_random_genomes():
+    """Selection is real and measurable — via a COMPETITION, not a comparison
+    to a null the population never sampled.
+
+    The earlier version compared survivors' opcode frequencies to a uniform
+    1/20 baseline; the audit correctly noted that's misleading, because most
+    survivors are byte-identical copies of the hand-written ancestor whose
+    composition IS those frequencies by construction (no selection needed to
+    explain it). Instead we run a head-to-head: seed HALF the founders with the
+    viable self-replicating ancestor and HALF with uniformly-random genomes
+    (random_genome()). After a few thousand steps the population must be
+    dominated by ancestor-descended lineages — random genomes, which rarely
+    contain a working COPY-loop-then-DIVIDE program, are out-competed. That is
+    a genuine selection differential, not a definitional artefact.
     """
-    rule = AbiogenesisStageLife(rng=random.Random(7))
+    from cellauto.rules.abiogenesis.life_vm import random_genome
+
+    rule = AbiogenesisStageLife(initial_population=80, mutation_rate=0.02, rng=random.Random(7))
     state = rule.init_state(50, 50)
+    founders = list(state.organisms.values())
+    half = len(founders) // 2
+    # Tag the two cohorts via lineage so we can follow descent.
+    ANCESTOR_TAG, RANDOM_TAG = 1, 2
+    rng = random.Random(123)
+    for i, o in enumerate(founders):
+        if i < half:
+            o.lineage = ANCESTOR_TAG  # keeps the viable ancestor genome
+        else:
+            o.genome = random_genome(rng, length=len(ANCESTOR_GENOME))
+            o.lineage = RANDOM_TAG
+    n_random_founders = len(founders) - half
+
     for _ in range(3000):
         state = rule.step(state)
-    counts: dict[int, int] = {}
-    total = 0
-    for o in state.organisms.values():
-        for op in o.genome:
-            counts[op] = counts.get(op, 0) + 1
-            total += 1
-    assert total > 0
 
-    def freq(name: str) -> float:
-        return counts.get(OP[name], 0) / total
-
-    baseline = 1.0 / 20  # uniform-random opcode frequency
-    # Functional opcodes enriched well above neutral.
-    assert freq("COPY") > 2 * baseline, f"COPY not enriched: {freq('COPY'):.3f}"
-    assert freq("INGEST") > 2 * baseline, f"INGEST not enriched: {freq('INGEST'):.3f}"
-    # Pure-neutral opcodes depleted below neutral (they cost a cycle, do nothing).
-    assert freq("RAND") < baseline, f"RAND not depleted: {freq('RAND'):.3f}"
+    pop = list(state.organisms.values())
+    assert pop, "population went extinct"
+    anc = sum(1 for o in pop if o.lineage == ANCESTOR_TAG)
+    rnd = sum(1 for o in pop if o.lineage == RANDOM_TAG)
+    born_anc = sum(1 for o in pop if o.lineage == ANCESTOR_TAG and o.parent is not None)
+    # The ancestor cohort must dominate AND have actually reproduced; the
+    # random cohort cannot keep pace (most random tapes can't self-replicate).
+    assert anc > rnd * 5, f"ancestor cohort did not out-compete random: anc={anc}, rnd={rnd}"
+    assert born_anc > n_random_founders, "ancestor cohort barely reproduced — no selection differential"
 
 
 # --------------------------------------------------------------------------- #
@@ -286,16 +302,57 @@ def test_serialization_round_trip():
     assert restored.next_oid == state.next_oid
     for oid, org in state.organisms.items():
         r = restored.organisms[oid]
+        # EXACT round-trip of every CPU/bookkeeping field — no tolerances.
         assert r.genome == org.genome
         assert (r.oid, r.x, r.y) == (org.oid, org.x, org.y)
-        assert abs(r.energy - round(org.energy, 4)) < 1e-3
+        assert r.energy == org.energy  # bit-exact (full-precision serialize)
         assert r.ip == org.ip
+        assert r.regs == org.regs
+        assert r.head == org.head
+        assert r.flag == org.flag
+        assert r.facing == org.facing
+        assert r.copy_head == org.copy_head
+        assert r.daughter == org.daughter  # the self-copy buffer must survive
+        assert r.age == org.age
+        assert r.n_divisions == org.n_divisions
+        assert r.last_op == org.last_op
         assert r.lineage == org.lineage
         assert r.parent == org.parent
         # The occupant index is rebuilt to point back at the organism.
         assert int(restored.occupant[r.y, r.x]) == oid
-    assert np.allclose(restored.substrate, np.round(state.substrate, 4), atol=1e-3)
-    assert np.allclose(restored.waste, np.round(state.waste, 4), atol=1e-3)
+    # Fields round-trip bit-exactly (the lossy np.round(…,4) is gone).
+    assert np.array_equal(restored.substrate, state.substrate)
+    assert np.array_equal(restored.waste, state.waste)
+
+
+def test_seeded_run_is_bit_reproducible_across_save_load():
+    """The headline determinism guarantee (ROADMAP §1, engine.py): a run
+    resumed from a snapshot must match a continuous run bit-for-bit. This
+    failed for Stage XIII while serialize used np.round(…, 4); pin it so it
+    can't silently regress again.
+    """
+    import json
+
+    from cellauto.engine import Engine
+
+    def run(save_at: int | None, then: int) -> tuple[float, float]:
+        rule = AbiogenesisStageLife(initial_population=15, rng=random.Random(42))
+        eng = Engine(width=20, height=20, rule=rule, seed=42)
+        for _ in range(save_at if save_at is not None else then):
+            eng.step()
+        if save_at is not None:
+            # Round-trip the inner state through JSON (as a snapshot would).
+            blob = json.loads(json.dumps(rule.serialize_state(eng.state)))
+            eng.state = rule.deserialize_state(blob)
+            for _ in range(then - save_at):
+                eng.step()
+        tot_e = sum(o.energy for o in eng.state.organisms.values())
+        return tot_e, float(eng.state.substrate.sum())
+
+    continuous = run(None, 20)
+    resumed = run(12, 20)
+    assert resumed[0] == continuous[0], f"energy diverged: {resumed[0]} vs {continuous[0]}"
+    assert resumed[1] == continuous[1], f"substrate diverged: {resumed[1]} vs {continuous[1]}"
 
 
 # --------------------------------------------------------------------------- #

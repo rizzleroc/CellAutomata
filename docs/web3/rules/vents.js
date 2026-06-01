@@ -56,18 +56,21 @@
 
     return {
       id: "vents",
-      label: "Alkaline vents · acetate plume",
-      formula: "∂A/∂t = D ∇²A + drift·∂A/∂y + S(mask) − decay·A",
+      label: "Alkaline vents · acetate plume (geometry only)",
+      formula: "∂A/∂t = D ∇²A + drift·∂A/∂y + S(mask) − decay·A   (advection–diffusion; NO proton field)",
       shortCaption: "STAGE 2 · ALKALINE VENTS",
-      whatThisIs: "Energy + compartments, supplied by geology. Alkaline hydrothermal vents combine " +
-                  "porous mineral walls (free compartments) with a pH gradient (free energy). " +
-                  "Russell, Martin and Lane argue this is where the chemistry of life most plausibly " +
-                  "began — the proton gradient cells still use today, fossilised in the rock.",
-      aboutStage: "The building block here is a place plus a power source. Alkaline hydrothermal vents " +
-                  "give geology-supplied compartments — porous mineral honeycomb — alongside free energy " +
-                  "in a natural pH gradient. Russell and Lane argue this is where life's chemistry most " +
-                  "plausibly began, the proton gradient cells still run on. The source and updraft sliders " +
-                  "set how strongly the acetate plume feeds and rises.",
+      whatThisIs: "The GEOMETRY of an alkaline hydrothermal vent: a porous mineral chimney and a buoyant " +
+                  "acetate plume rising up it. HONEST NOTE: this browser model is advection-diffusion " +
+                  "only — it does NOT simulate the proton gradient, the H₂/CO₂ feedstocks, or the " +
+                  "Wood-Ljungdahl chemistry. The full Lane-Martin chemiosmotic model (a pH field whose " +
+                  "steepness drives carbon fixation, with live PMF/ΔG readouts) runs in the Python desktop " +
+                  "build; here you see only the plume's shape.",
+      aboutStage: "The building block is a place plus a power source — porous mineral honeycomb plus, in " +
+                  "the real vent, a natural pH gradient (Russell, Martin & Lane). This browser version " +
+                  "shows ONLY the compartment geometry and a diffusing acetate plume; the proton-gradient " +
+                  "free-energy mechanism itself is not simulated in JS (it is in the Python build). The " +
+                  "source and updraft sliders set how strongly the plume feeds and rises — they do not " +
+                  "represent a thermodynamic driving force.",
       paletteBg: [10, 14, 22],
       paletteFg: [230, 224, 208],
       width: W,

@@ -287,11 +287,15 @@ draws:
     existing `sprites.js` painter library as new procedural painters.
     Internal anatomy (V10) and Brachionus-style rendering (the
     headline visual goal) requires sprite mode ON.
-  - The web client cannot share Python's virtual-CPU code, so we
-    write the interpreter twice — once in Python, once in JS. A
-    `tests/test_life_vm_parity.py` pin asserts that the same genome
-    on the same substrate runs identically on both interpreters for
-    100 steps.
+  - The web client cannot share Python's virtual-CPU code, so the
+    interpreter is written twice — once in Python, once in JS
+    (`docs/web3/rules/life.js`), and both were updated together to the
+    self-encoded-replication mechanism. STATUS: a strict bit-for-bit
+    cross-runtime parity check is **deferred** — `tests/test_life_vm_parity.py`
+    is currently a visible `@pytest.mark.skip` placeholder, NOT an assertion.
+    (The two VMs would in fact diverge today on division-order details, set vs
+    array, which the parity work must reconcile.) Do not read the skip as a
+    passing guarantee.
 
 ### F7 — Performance budget
   - Default 60 × 60 grid, 400 organisms, virtual CPU at 1 instruction
@@ -389,11 +393,16 @@ saved) shows the visual target:
   tape becomes "garbage" to overwrite. Avida: cell empties. We pick:
   **body decays into substrate over 10 steps**, matching the
   Brachionus visual of dead matter being broken down.
-- **Coupling with the v4.0 SEM cycle.** v5.0 must work under both
-  v3.6 viridis and v4.0 SEM rendering. The Brachionus visual is
-  achievable only under SEM mode. Likely answer: **v5.0.0 ships
-  under viridis; v5.1 internal anatomy requires SEM mode (v4.0.1+)
-  to be installed**.
+- **Coupling with the v4.0 SEM cycle — RESOLVED.** The Stage XIII
+  Brachionus-style render is provided by its OWN standalone module,
+  `cellauto/rules/abiogenesis/life_sem.py` (`render_sem`/`render_plate`),
+  which is independent of the general cross-stage v4.0 `SemRenderer`
+  (`renderer_sem.py` + a `View ▸ SEM mode` toggle) — that general renderer
+  remains **unbuilt** (ROADMAP §6 S1–S12 are all open). So Stage XIII has a
+  stylised hero render today; the other 12 stages still render viridis on the
+  desktop. v5.0's LIFE engine works under both. There is no "requires SEM
+  mode v4.0.1+" precondition — that was a contradiction (the v4.0 toggle
+  doesn't exist); life_sem is self-contained.
 
 ---
 

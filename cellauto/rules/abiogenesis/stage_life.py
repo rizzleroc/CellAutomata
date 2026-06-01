@@ -556,9 +556,14 @@ class AbiogenesisStageLife:
     #  Serialisation (round-trips through Engine snapshots)               #
     # ------------------------------------------------------------------ #
     def serialize_state(self, state: LifeState) -> dict:
+        # Full precision — NO np.round / round(). A float32 widens to a Python
+        # double losslessly and JSON round-trips a double exactly in CPython,
+        # so save → load is bit-exact and a resumed run matches a continuous
+        # one (the determinism guarantee in ROADMAP §1 / engine.py). Rounding
+        # to 4 dp here silently broke that for Stage XIII.
         return {
-            "substrate": np.round(state.substrate, 4).tolist(),
-            "waste": np.round(state.waste, 4).tolist(),
+            "substrate": state.substrate.tolist(),
+            "waste": state.waste.tolist(),
             "next_oid": state.next_oid,
             "corpses": [list(c) for c in state.corpses],
             "organisms": [self._serialize_org(o) for o in state.organisms.values()],
@@ -571,7 +576,7 @@ class AbiogenesisStageLife:
             "genome": list(o.genome),
             "x": o.x,
             "y": o.y,
-            "energy": round(o.energy, 4),
+            "energy": o.energy,  # full precision (see serialize_state)
             "ip": o.ip,
             "regs": list(o.regs),
             "head": o.head,

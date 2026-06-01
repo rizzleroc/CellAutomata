@@ -259,9 +259,15 @@ class AbiogenesisPipelineRule:
         return {"stage": state.current_stage, **inner_pop}
 
     def serialize_state(self, state: PipelineState) -> dict:
+        # Persist the inner rule's tuned config too — otherwise a snapshot taken
+        # with non-default stage parameters reloads with defaults (the inner
+        # rule was being rebuilt via the bare default constructor). ``to_config``
+        # is optional on a rule, so guard for it.
+        inner_cfg = state.inner_rule.to_config() if hasattr(state.inner_rule, "to_config") else {}
         return {
             "current_stage": state.current_stage,
             "inner_state": state.inner_rule.serialize_state(state.inner_state),
+            "inner_config": inner_cfg,
             "width": state.width,
             "height": state.height,
             "step_in_stage": self._step_count,
@@ -269,6 +275,14 @@ class AbiogenesisPipelineRule:
 
     def deserialize_state(self, data: dict) -> PipelineState:
         inner_rule = self._make_stage(data["current_stage"])
+        # Reapply the persisted inner-stage config so a tuned stage reloads with
+        # its tuned parameters, not the dataclass defaults.
+        for key, val in (data.get("inner_config") or {}).items():
+            if hasattr(inner_rule, key):
+                try:
+                    setattr(inner_rule, key, val)
+                except (AttributeError, TypeError):
+                    pass
         self.renderer_kind = inner_rule.renderer_kind
         self._step_count = data.get("step_in_stage", 0)
         return PipelineState(
