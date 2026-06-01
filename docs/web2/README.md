@@ -50,6 +50,8 @@ hotkeys `1`–`9` follow this order:
   on touch.
 - **Speed control.** Steps-per-second slider; the RAF loop catches up.
 - **Live readout bar.** Rule, generation, population, FPS.
+- **About this stage.** A collapsed-by-default panel under the readout
+  expands to a ~50-word, origin-of-life explainer for the current rule.
 - **URL hash state.** Every parameter (rule, SEM mode, palette, per-rule
   sliders) is mirrored into the URL hash. "COPY LINK" copies the full
   URL — paste it into another browser, get the same rule at the same

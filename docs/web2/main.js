@@ -160,6 +160,8 @@
   const marginaliaEl  = document.getElementById("marginalia");
   const whatThisIsEl  = document.getElementById("what-this-is");
   const controlHintEl = document.getElementById("control-hint");
+  const aboutToggle   = document.getElementById("about-toggle");
+  const aboutBody     = document.getElementById("about-body");
   const bodyEl        = document.body;
 
   // ── State ───────────────────────────────────────────────────────────────
@@ -232,6 +234,12 @@
     rdRule.textContent    = id;
     if (whatThisIsEl) {
       whatThisIsEl.textContent = currentRule.whatThisIs || "";
+    }
+    // P1-A4 — refresh the "About this stage" paragraph for the new rule.
+    // Falls back to whatThisIs so the panel never goes blank if a rule is
+    // missing aboutStage.
+    if (aboutBody) {
+      aboutBody.textContent = currentRule.aboutStage || currentRule.whatThisIs || "";
     }
     showFirstControlHint();
     if (badgeTextEl) {
@@ -641,6 +649,17 @@
       canvas.requestFullscreen().catch(() => toast("fullscreen denied"));
     }
   });
+
+  // ── About-this-stage panel (P1-A4) ─────────────────────────────────────
+  // Collapsed by default to conserve vertical space; expands on click and
+  // toggles the body's [hidden] + the caret rotation (CSS) + aria-expanded.
+  if (aboutToggle && aboutBody) {
+    aboutToggle.addEventListener("click", () => {
+      const open = aboutToggle.getAttribute("aria-expanded") === "true";
+      aboutToggle.setAttribute("aria-expanded", open ? "false" : "true");
+      aboutBody.hidden = open;
+    });
+  }
 
   // ── Welcome modal (P0-G3 + P0-G4) ──────────────────────────────────────
   function openWelcome() {
