@@ -48,6 +48,11 @@
                   "from a dilute background into droplets — no lipid membrane required. " +
                   "Modern cells still use this exact mechanism for organelles. Plausibly the first " +
                   "compartment in the origin-of-life arc.",
+      aboutStage: "The building block here is confinement without a membrane. Concentrated chemistry " +
+                  "phase-separates from a dilute background into droplets — Oparin's (1924) coacervates, " +
+                  "the same Cahn–Hilliard physics modern cells use to build membrane-less organelles. " +
+                  "It matters as plausibly the first compartment, gathering reagents together before any " +
+                  "lipid wall exists. Raise interface stiffness κ for fewer, larger, smoother droplets.",
       paletteBg: [10, 14, 22],
       paletteFg: [230, 224, 208],
       width: W,

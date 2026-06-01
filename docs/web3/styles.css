@@ -248,6 +248,56 @@ section { margin: 0; }
   display: none;
 }
 
+/* P1-A4 — collapsed-by-default "About this stage" panel under the readout.
+   Vertical space is precious, so the resting state is just a small toggle. */
+.about-stage {
+  margin: 6px auto 0;
+  max-width: 580px;
+  text-align: left;
+}
+
+.about-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: none;
+  border: none;
+  padding: 2px 0;
+  cursor: pointer;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--text-dim);
+  transition: color 0.18s ease;
+}
+
+.about-toggle:hover,
+.about-toggle:focus-visible {
+  color: var(--hairline-hi);
+  outline: none;
+}
+
+.about-caret {
+  display: inline-block;
+  font-size: 9px;
+  transition: transform 0.2s ease;
+}
+
+.about-toggle[aria-expanded="true"] .about-caret {
+  transform: rotate(90deg);
+}
+
+.about-body {
+  font-family: var(--font-display);
+  font-size: 14px;
+  line-height: 1.5;
+  color: var(--text);
+  margin: 6px 0 0;
+}
+
+.about-body[hidden] { display: none; }
+
 /* ── Controls ───────────────────────────────────────────────────────────── */
 
 .control-row {
@@ -567,6 +617,8 @@ footer a:hover { color: var(--hairline-hi); border-color: var(--hairline-hi); }
   .toast            { transition: none; }
   .btn              { transition: none; }
   .canvas-frame     { transition: none; }
+  .about-toggle     { transition: none; }
+  .about-caret      { transition: none; }
 }
 
 /* ── P0-G3 first-visit lede + P0-G4 control-mechanism legend ─────────── */

@@ -60,6 +60,11 @@
       whatThisIs: "Chemistry, before any organisation. Particles random-walk through a substrate, " +
                   "laying down a fading occupancy trail. Oparin & Haldane's \"soup\" — the starting " +
                   "condition for everything downstream in the origin-of-life arc.",
+      aboutStage: "The building block here is raw matter, undirected. This is the Oparin–Haldane " +
+                  "primordial soup: simple molecules drifting at random through water, with no " +
+                  "compartments, no information, no order. It matters as the blank starting page from " +
+                  "which every later stage must organise itself. Tune diffusion and drift to set how " +
+                  "vigorously it mixes; raise evaporation to fade its chemical memory.",
       paletteBg: [10, 14, 22],
       paletteFg: [230, 224, 208],
       width: W,

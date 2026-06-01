@@ -49,6 +49,11 @@
                   "same-species pairs combine into longer-lived 'amoebas' — local pockets of identity. " +
                   "It matters because compartments are the precondition for everything else: " +
                   "without a boundary, there's no individual to be selected.",
+      aboutStage: "The building block here is identity. In a soup of sixteen species — weighted by " +
+                  "Miller–Urey (1953) yields — same-species pairs clump into longer-lived 'amoebas', " +
+                  "the first faint pockets of inside-versus-outside. This matters because selection " +
+                  "needs individuals: without a boundary there is nothing to compete or be favoured. " +
+                  "The lifespan slider sets how long these proto-identities persist before dissolving.",
       paletteBg: [10, 14, 22],
       paletteFg: [230, 224, 208],
       width: W,
