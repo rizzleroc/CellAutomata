@@ -36,6 +36,10 @@ const RULE_FILES = [
   "coacervate.js",
   "vents.js",
   "vesicles.js",
+  "raf.js",
+  "rna.js",
+  "code.js",
+  "luca.js",
 ];
 
 let failures = 0;
