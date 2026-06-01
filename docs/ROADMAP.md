@@ -19,13 +19,25 @@ Last updated: 2026-05-25.
 > items closed; L2 (tabbed panels) + L10 (background grain) deferred
 > with rationale in §5.
 >
+> **Web track status:** the canonical user-facing client is now
+> **`docs/web3/`** (on branch `origin/claude/zealous-meitner-SrX1L`,
+> not yet merged to `main`). Web3 implements the v4.0 SEM PRD + the
+> v4.1 §F3 bioform sprite-overlay layer + Stage 3 (Helfrich vesicles,
+> B3 from the punchlist). Web3's authoritative punchlist lives at
+> [`docs/web3/PUNCHLIST.md`](web3/PUNCHLIST.md). Root `docs/index.html`
+> redirects `/` → `/web3/`. The earlier `docs/web2/` (Control Round /
+> The Arc Round / production deploy 2026-05-31) is preserved at
+> `/web2/`; the original Gray-Scott-only museum plate at `/web/`.
+>
 > **v4.0 status (PROPOSED):** SEM-grade live rendering. See §6 below and
 > the full PRD at [PRD_SEM_VISUALIZATION.md](PRD_SEM_VISUALIZATION.md).
 > Twelve S items (S1–S12) span four phases — CPU rasteriser → sprite
 > library → full stage catalogue → optional GPU shader → opt-in AI
 > refinement. The goal is photographic instrument-grade rendering of
 > every frame the engine produces, without changing the underlying
-> simulation.
+> simulation. **Web side already half-shipped on web3** — the SEM
+> substrate (sem.js) + sprite overlay (sprites.js) are live; what
+> remains for the desktop side is the Python `SemRenderer` port.
 >
 > **v5.0 status (PROPOSED):** LIFE — virtual-CPU digital organisms
 > after LUCA. See §7 and the full PRD at
