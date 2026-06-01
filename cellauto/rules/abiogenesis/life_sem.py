@@ -279,6 +279,91 @@ def _overlay(img: Image.Image, scale_um: int = 50) -> Image.Image:
     return img
 
 
+def photographic_finish(rgb: np.ndarray, seed: int = 0) -> np.ndarray:
+    """Apply a real-DIC-micrograph photographic finish to an RGB uint8 plate
+    (harvested from a 16-way look-dev search). In order: DIC directional shear
+    relief, micrograph colour science (desat + filmic curve + sepia split-tone),
+    diffraction-limited softening, veiling-glare bloom, lateral chromatic
+    aberration, cos^4 lens vignette, and fine photon-statistics grain. Returns
+    RGB uint8 the same size. This is what turns a clean render into something
+    that reads as a captured photograph rather than CG."""
+    rng = np.random.default_rng(seed & 0x7FFFFFFF)
+    work = rgb.astype(np.float32) / 255.0
+    h, w = work.shape[:2]
+
+    def lum(a: np.ndarray) -> np.ndarray:
+        return a[..., 0] * 0.299 + a[..., 1] * 0.587 + a[..., 2] * 0.114
+
+    # 1. DIC directional shear relief (45deg luminance derivative, soft-light ~40%)
+    ls = _blur(lum(work) * 255, 0.9) / 255
+    gx = np.zeros_like(ls)
+    gy = np.zeros_like(ls)
+    gx[:, 1:-1] = (ls[:, 2:] - ls[:, :-2]) * 0.5
+    gy[1:-1, :] = (ls[2:, :] - ls[:-2, :]) * 0.5
+    relief = np.clip((gx + gy) * 0.7071 * 6.0, -1.0, 1.0)
+    rl = (0.5 + 0.5 * relief)[..., None]
+    sl = np.where(
+        rl <= 0.5,
+        work - (1 - 2 * rl) * work * (1 - work),
+        work + (2 * rl - 1) * (np.sqrt(np.clip(work, 0, 1)) - work),
+    )
+    work = np.clip(work * 0.6 + sl * 0.4, 0, 1)
+
+    # 2. Micrograph colour science: desaturate, filmic low-contrast, sepia split-tone
+    work = work * 0.86 + lum(work)[..., None] * 0.14
+    x = np.clip(work, 0, 1)
+    work = 0.03 + (x * 0.55 + (x * x * (3 - 2 * x)) * 0.45) * 0.93
+    lt = lum(work)
+    hi = np.clip((lt - 0.45) / 0.55, 0, 1)[..., None]
+    sh = np.clip(1 - lt * 1.5, 0, 1)[..., None]
+    warm = np.array([1.0, 0.965, 0.87], np.float32)
+    cool = np.array([0.965, 0.985, 1.01], np.float32)
+    work = work * (1 - 0.10 * hi) + (work * warm) * (0.10 * hi)
+    work = np.clip(work * (1 - 0.05 * sh) + (work * cool) * (0.05 * sh), 0, 1)
+
+    # 3. Diffraction-limited softening (tiny Airy-ish PSF)
+    work = np.clip(0.8 * (_blur(work * 255, 0.7) / 255) + 0.2 * (_blur(work * 255, 1.8) / 255), 0, 1)
+
+    # 4. Veiling-glare bloom on highlights
+    himask = np.clip((lum(work) - 0.62) / 0.38, 0, 1)[..., None] * work
+    bloom = _blur(himask * 255, 9) / 255 + 0.5 * (_blur(himask * 255, 22) / 255)
+    work = np.clip((np.clip(work + 0.18 * bloom, 0, 1)) * 0.985 + 0.015, 0, 1)
+
+    # 5. Lateral chromatic aberration (R out, B in, growing with radius)
+    yy, xx = np.mgrid[0:h, 0:w].astype(np.float32)
+    cx, cy = (w - 1) / 2.0, (h - 1) / 2.0
+    r2 = ((xx - cx) / cx) ** 2 + ((yy - cy) / cy) ** 2
+
+    def remap(ch: np.ndarray, scale: float) -> np.ndarray:
+        sx = np.clip(cx + (xx - cx) * (1 + scale * r2), 0, w - 1)
+        sy = np.clip(cy + (yy - cy) * (1 + scale * r2), 0, h - 1)
+        x0 = np.floor(sx).astype(int)
+        y0 = np.floor(sy).astype(int)
+        x1 = np.clip(x0 + 1, 0, w - 1)
+        y1 = np.clip(y0 + 1, 0, h - 1)
+        fx, fy = sx - x0, sy - y0
+        return (ch[y0, x0] * (1 - fx) + ch[y0, x1] * fx) * (1 - fy) + (
+            ch[y1, x0] * (1 - fx) + ch[y1, x1] * fx
+        ) * fy
+
+    work = np.clip(
+        np.stack([remap(work[..., 0], 0.0016), work[..., 1], remap(work[..., 2], -0.0016)], -1), 0, 1
+    )
+
+    # 6. cos^4 lens vignette
+    maxr = math.hypot(cx, cy)
+    theta = (np.sqrt((xx - cx) ** 2 + (yy - cy) ** 2) / maxr) * 0.62
+    vig = np.cos(theta) ** 4
+    vig = 0.80 + 0.20 * (vig - vig.min()) / (1 - vig.min() + 1e-9)
+    work = np.clip(work * vig[..., None], 0, 1)
+
+    # 7. Fine photon-statistics film grain (last)
+    sig = np.clip(work, 1e-4, 1.0)
+    grain = rng.normal(0, 1, work.shape) * np.sqrt(sig / 950.0) + rng.normal(0, 1, work.shape) * 0.0035
+    grain = 0.7 * grain + 0.3 * grain.mean(-1, keepdims=True)
+    return (np.clip(work + grain, 0, 1) * 255 + 0.5).astype(np.uint8)
+
+
 def render(
     state: Any,
     rule: Any,

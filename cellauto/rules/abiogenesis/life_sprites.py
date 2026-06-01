@@ -23,12 +23,13 @@ from __future__ import annotations
 
 import json
 import math
+import random
 from functools import lru_cache
 from pathlib import Path
 from typing import Any
 
 import numpy as np
-from PIL import Image, ImageDraw, ImageFilter
+from PIL import Image, ImageDraw, ImageEnhance, ImageFilter
 
 from cellauto.rules.abiogenesis import life_sem as _ls
 
@@ -108,9 +109,22 @@ def _rim_cilia(canvas: Image.Image, sprite: Image.Image, ox: int, oy: int, r: fl
         d.ellipse([bx - dot, by - dot, bx + dot, by + dot], fill=(238, 222, 182, 225))
 
 
-def _paste_cell(canvas, spr, cx, cy, r, depth, ang, furniture):
+def _paste_cell(canvas, spr, cx, cy, r, depth, ang, furniture, jitter_key=None):
     target = max(8, int(r * 3.0))
-    s = spr.resize((target, target), Image.LANCZOS)
+    if jitter_key is not None:
+        # stable per-cell jitter (seeded by identity, NOT per frame) so cells
+        # vary in shape/tone — breaking the clone-like uniformity — without
+        # flickering across animation frames.
+        jr = random.Random(jitter_key)
+        aspect = 0.80 + 0.36 * jr.random()
+        s = spr.resize((target, max(8, int(target * aspect))), Image.LANCZOS)
+        rr, gg, bb, aa = s.split()
+        body = Image.merge("RGB", (rr, gg, bb))
+        body = ImageEnhance.Brightness(body).enhance(0.84 + 0.32 * jr.random())
+        body = ImageEnhance.Contrast(body).enhance(0.88 + 0.34 * jr.random())
+        s = Image.merge("RGBA", (*body.split(), aa))
+    else:
+        s = spr.resize((target, target), Image.LANCZOS)
     if abs(ang) > 0.1:
         s = s.rotate(ang, resample=Image.BICUBIC, expand=True)
     blur = max(0.0, 1.0 - depth) ** 1.5 * r * 0.30
@@ -182,8 +196,9 @@ def render(
         else:
             spr = cells[o.oid % len(cells)][frame]
             ang = o.facing * 45 + 5.0 * math.sin(phase * 0.25 + o.oid)
-        _paste_cell(canvas, spr, cx, cy, r, depth, ang, furniture=True)
-    return np.asarray(_ls._overlay(Image.fromarray(_grade(canvas, rng), "RGB")), dtype=np.uint8)
+        _paste_cell(canvas, spr, cx, cy, r, depth, ang, furniture=True, jitter_key=o.oid)
+    finished = _ls.photographic_finish(_grade(canvas, rng), seed=seed)
+    return np.asarray(_ls._overlay(Image.fromarray(finished, "RGB")), dtype=np.uint8)
 
 
 def render_hero(width: int = 1100, height: int = 720, seed: int = 7) -> np.ndarray:  # pragma: no cover
@@ -219,5 +234,6 @@ def render_hero(width: int = 1100, height: int = 720, seed: int = 7) -> np.ndarr
             spr, rr = div[frame], r * 1.25
         else:
             spr, rr = cells[i % len(cells)][frame], r
-        _paste_cell(canvas, spr, cx, cy, rr, depth, (i * 53) % 360, furniture=True)
-    return np.asarray(_ls._overlay(Image.fromarray(_grade(canvas, rng), "RGB")), dtype=np.uint8)
+        _paste_cell(canvas, spr, cx, cy, rr, depth, (i * 53) % 360, furniture=True, jitter_key=1000 + i)
+    finished = _ls.photographic_finish(_grade(canvas, rng), seed=seed)
+    return np.asarray(_ls._overlay(Image.fromarray(finished, "RGB")), dtype=np.uint8)
