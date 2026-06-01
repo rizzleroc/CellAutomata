@@ -321,8 +321,10 @@ def photographic_finish(rgb: np.ndarray, seed: int = 0) -> np.ndarray:
     work = work * (1 - 0.10 * hi) + (work * warm) * (0.10 * hi)
     work = np.clip(work * (1 - 0.05 * sh) + (work * cool) * (0.05 * sh), 0, 1)
 
-    # 3. Diffraction-limited softening (tiny Airy-ish PSF)
-    work = np.clip(0.8 * (_blur(work * 255, 0.7) / 255) + 0.2 * (_blur(work * 255, 1.8) / 255), 0, 1)
+    # 3. Crisp capture: a hair of optical micro-softening, then an unsharp mask
+    #    so detail stays sharp (a real well-focused micrograph is crisp).
+    soft = _blur(work * 255, 1.1) / 255
+    work = np.clip(work + 0.55 * (work - soft), 0.0, 1.0)
 
     # 4. Veiling-glare bloom on highlights
     himask = np.clip((lum(work) - 0.62) / 0.38, 0, 1)[..., None] * work

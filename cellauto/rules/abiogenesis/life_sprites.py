@@ -127,8 +127,8 @@ def _paste_cell(canvas, spr, cx, cy, r, depth, ang, furniture, jitter_key=None):
         s = spr.resize((target, target), Image.LANCZOS)
     if abs(ang) > 0.1:
         s = s.rotate(ang, resample=Image.BICUBIC, expand=True)
-    blur = max(0.0, 1.0 - depth) ** 1.5 * r * 0.30
-    if blur > 0.4:
+    blur = max(0.0, 1.0 - depth) ** 1.8 * r * 0.16
+    if blur > 0.5:
         s = s.filter(ImageFilter.GaussianBlur(blur))
     ox, oy = int(cx - s.width / 2), int(cy - s.height / 2)
     sh = s.split()[3].filter(ImageFilter.GaussianBlur(r * 0.25))
