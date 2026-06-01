@@ -21,7 +21,8 @@ const glass = () => new THREE.MeshPhysicalMaterial({
   transmission: 1.0, thickness: 0.35, ior: 1.5,
   transparent: true, envMapIntensity: 1.4, clearcoat: 0.3, clearcoatRoughness: 0.1,
 });
-const steel = () => new THREE.MeshStandardMaterial({ color: 0x9a9ea6, metalness: 0.95, roughness: 0.35 });
+const steel = () => new THREE.MeshStandardMaterial({ color: 0x8c8f96, metalness: 0.95, roughness: 0.42 });
+const brass = () => new THREE.MeshStandardMaterial({ color: 0xb8893f, metalness: 1.0, roughness: 0.32 });
 const darkMetal = () => new THREE.MeshStandardMaterial({ color: 0x1b1b1f, metalness: 0.7, roughness: 0.5 });
 const copper = () => new THREE.MeshStandardMaterial({ color: 0xb5703a, metalness: 0.9, roughness: 0.35 });
 const ceramic = () => new THREE.MeshStandardMaterial({ color: 0x141414, roughness: 0.85, metalness: 0.05 });
@@ -230,12 +231,24 @@ export function buildMillerUrey() {
   for (const cy of [4.7, 2.65]) {
     const arm = new THREE.Mesh(new THREE.CylinderGeometry(0.035, 0.035, 1.7, 12), steel());
     arm.position.set(2.2, cy, -0.15); arm.rotation.z = Math.PI / 2; arm.castShadow = true; group.add(arm);
+    // brass clamp boss where the arm meets the rod (period fitting)
+    const boss = new THREE.Mesh(new THREE.CylinderGeometry(0.1, 0.1, 0.22, 16), brass());
+    boss.name = `clamp-boss-${cy}`; boss.position.set(3.0, cy, -0.3); boss.castShadow = true; group.add(boss);
+    const knurl = new THREE.Mesh(new THREE.CylinderGeometry(0.06, 0.06, 0.16, 12), brass());
+    knurl.position.set(2.85, cy, -0.05); knurl.rotation.z = Math.PI / 2; group.add(knurl);
   }
   // clamp for the boiling flask on a left rod
   const rod2 = new THREE.Mesh(new THREE.CylinderGeometry(0.045, 0.045, 4.6, 16), steel());
   rod2.position.set(-3.5, 2.3, -0.2); rod2.castShadow = true; group.add(rod2);
   const clampArm = new THREE.Mesh(new THREE.CylinderGeometry(0.03, 0.03, 1.3, 12), steel());
   clampArm.position.set(-2.95, 1.8, 0); clampArm.rotation.z = Math.PI / 2; group.add(clampArm);
+  const clampBoss = new THREE.Mesh(new THREE.CylinderGeometry(0.1, 0.1, 0.22, 16), brass());
+  clampBoss.name = 'clamp-boss-boiling'; clampBoss.position.set(-3.5, 1.8, -0.2); clampBoss.castShadow = true; group.add(clampBoss);
+  // brass knob/handle on each stopcock
+  for (const [sx, sy] of [[condC.x - 0.36, condC.y - 0.7], [1.5, 0.05]]) {
+    const knob = new THREE.Mesh(new THREE.CylinderGeometry(0.045, 0.06, 0.12, 12), brass());
+    knob.position.set(sx, sy, 0.14); knob.rotation.x = Math.PI / 2; group.add(knob);
+  }
 
   group.position.y = 0; // sits on bench
 

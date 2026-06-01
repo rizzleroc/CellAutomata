@@ -21,7 +21,7 @@ export function createLab(container) {
   renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
   renderer.setSize(container.clientWidth, container.clientHeight);
   renderer.toneMapping = THREE.ACESFilmicToneMapping;
-  renderer.toneMappingExposure = 0.95;
+  renderer.toneMappingExposure = 0.9;
   renderer.shadowMap.enabled = true;
   renderer.shadowMap.type = THREE.PCFSoftShadowMap;
   container.appendChild(renderer.domElement);
@@ -46,8 +46,8 @@ export function createLab(container) {
   controls.maxDistance = 16;
   controls.maxPolarAngle = Math.PI * 0.52;
 
-  // ── Lighting: warm tungsten key + cool rim + soft fill ──────────────────
-  const key = new THREE.DirectionalLight(0xffdca8, 2.4);
+  // ── Lighting: warm tungsten key + subtle rim + warm fill + lamp glow ────
+  const key = new THREE.DirectionalLight(0xffd29a, 2.5); // ~3000K tungsten
   key.position.set(-5, 7, 5);
   key.castShadow = true;
   key.shadow.mapSize.set(2048, 2048);
@@ -59,12 +59,18 @@ export function createLab(container) {
   key.shadow.radius = 4;
   scene.add(key);
 
-  const rim = new THREE.DirectionalLight(0x9fb4ff, 0.5);
+  // a hair of cool rim just to define the glass edges against the gloom
+  const rim = new THREE.DirectionalLight(0xb9c4e0, 0.28);
   rim.position.set(6, 4, -5);
   scene.add(rim);
 
-  const hemi = new THREE.HemisphereLight(0xffe7c4, 0x241a12, 0.35);
+  const hemi = new THREE.HemisphereLight(0xffe1b4, 0x1c130c, 0.3);
   scene.add(hemi);
+
+  // warm desk-lamp pool on the bench (as in the reference photo, lower-left)
+  const lamp = new THREE.PointLight(0xffb866, 14, 9, 2);
+  lamp.position.set(-4.2, 1.6, 2.2);
+  scene.add(lamp);
 
   // ── Bench + backdrop so the glass has a real environment to refract ─────
   const bench = new THREE.Mesh(
