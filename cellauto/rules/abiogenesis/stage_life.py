@@ -478,7 +478,7 @@ class AbiogenesisStageLife:
         state: LifeState,
         width: int = 600,
         height: int = 600,
-        max_org: int = 24,
+        max_org: int = 42,
         seed: int = 0,
         phase: float = 0.0,
     ) -> np.ndarray:

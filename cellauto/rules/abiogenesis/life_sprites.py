@@ -173,7 +173,7 @@ def render(
     rng = np.random.RandomState(seed & 0x7FFFFFFF)
     canvas = _bubbly_substrate(width, height, rng)
     gh, gw = state.substrate.shape
-    base_r = min(width, height) * 0.085
+    base_r = min(width, height) * 0.05  # smaller cells → more of them, with breathing room
     orgs = sorted(state.organisms.values(), key=lambda o: -o.energy)[:max_org]
     div_oid = max(orgs, key=lambda o: (o.n_divisions, o.energy)).oid if orgs else None
     margin = 0.09
@@ -212,18 +212,18 @@ def render_hero(width: int = 1100, height: int = 720, seed: int = 7) -> np.ndarr
     n_frames = len(div)
     rng = np.random.RandomState(seed & 0x7FFFFFFF)
     canvas = _bubbly_substrate(width, height, rng)
-    rows = 5
+    rows = 7
     placed = []
     idx = 0
     for rrow in range(rows):
         depth = rrow / (rows - 1)
-        n_in_row = 7 + rrow
-        rsize = 0.6 + 0.9 * depth
+        n_in_row = 10 + 2 * rrow
+        rsize = 0.55 + 0.75 * depth
         for c in range(n_in_row):
-            depthj = min(1.0, max(0.0, depth + (rng.random_sample() - 0.5) * 0.10))
-            cx = (0.05 + 0.90 * (c + 0.5 + (rng.random_sample() - 0.5) * 0.55) / n_in_row) * width
-            cy = (0.12 + 0.76 * depth + (rng.random_sample() - 0.5) * 0.05) * height
-            r = min(width, height) * 0.082 * rsize * (0.85 + 0.3 * rng.random_sample())
+            depthj = min(1.0, max(0.0, depth + (rng.random_sample() - 0.5) * 0.09))
+            cx = (0.03 + 0.94 * (c + 0.5 + (rng.random_sample() - 0.5) * 0.6) / n_in_row) * width
+            cy = (0.10 + 0.82 * depth + (rng.random_sample() - 0.5) * 0.05) * height
+            r = min(width, height) * 0.046 * rsize * (0.82 + 0.34 * rng.random_sample())
             placed.append((depthj, idx, cx, cy, r))
             idx += 1
     placed.sort(key=lambda t: t[0])
