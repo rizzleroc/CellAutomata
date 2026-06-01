@@ -69,6 +69,11 @@
                   "unlike the membrane-less coacervate droplet. The closed membrane defines a " +
                   "persistent inside vs outside, the precursor to the protocell. Curvature-penalized " +
                   "area-preserving flow, a caricature of Helfrich (1973) bilayer bending energy.",
+      aboutStage: "The building block here is the protocell boundary itself. Unlike the membrane-less " +
+                  "coacervate, this is a real closed lipid bilayer enclosing a lumen — a persistent " +
+                  "inside versus outside. It matters as the true compartment a cell needs to hold its " +
+                  "chemistry together and meter what crosses. The flow follows Helfrich (1973) bending " +
+                  "energy; raise the bending modulus κ_b for fewer, larger, rounder vesicles.",
       paletteBg: [10, 14, 22],
       paletteFg: [230, 224, 208],
       width: W,

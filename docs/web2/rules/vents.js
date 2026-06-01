@@ -63,6 +63,11 @@
                   "porous mineral walls (free compartments) with a pH gradient (free energy). " +
                   "Russell, Martin and Lane argue this is where the chemistry of life most plausibly " +
                   "began — the proton gradient cells still use today, fossilised in the rock.",
+      aboutStage: "The building block here is a place plus a power source. Alkaline hydrothermal vents " +
+                  "give geology-supplied compartments — porous mineral honeycomb — alongside free energy " +
+                  "in a natural pH gradient. Russell and Lane argue this is where life's chemistry most " +
+                  "plausibly began, the proton gradient cells still run on. The source and updraft sliders " +
+                  "set how strongly the acetate plume feeds and rises.",
       paletteBg: [10, 14, 22],
       paletteFg: [230, 224, 208],
       width: W,

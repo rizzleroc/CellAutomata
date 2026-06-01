@@ -42,6 +42,11 @@
       whatThisIs: "Symmetry-breaking as a building block. A racemic 50/50 mix of left- and " +
                   "right-handed molecules spontaneously collapses to one handedness. Real biology " +
                   "uses only L-amino-acids and D-sugars — this is the mathematical answer to why.",
+      aboutStage: "The building block here is symmetry-breaking. A racemic 50/50 mix of left- and " +
+                  "right-handed molecules collapses to a single handedness, as Frank (1953) predicted " +
+                  "from autocatalysis plus mutual inhibition. It matters because all life is homochiral " +
+                  "— only L-amino-acids, only D-sugars — and this is the chemical answer to why. Tune β, " +
+                  "the inhibition that breaks the tie, and the noise that triggers it.",
       paletteBg: [10, 14, 22],
       paletteFg: [230, 224, 208],
       width: W,

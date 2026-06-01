@@ -68,9 +68,10 @@ coacervates matter for the origin of life.
   hover tooltip so it's always visible. Jury verdict 2026-05-30.
 - [x] **P0-A3** Marginalia ticker's first card per rule is the
   building-block claim. Shipped 2026-05-30 in "Goal-Legibility Pass."
-- [ ] **P1-A4** A persistent "About this stage" expandable panel under
-  the readout — 50-word paragraph per rule, written from the
-  origin-of-life perspective.
+- [x] **P1-A4** A persistent "About this stage" expandable panel under
+  the readout — a ~50-word origin-of-life paragraph per rule, collapsed
+  by default to conserve vertical space. Shipped 2026-05-31 in "The About
+  Round." Closes §3-A — the explanation layer is now complete.
 
 ### B · Missing building blocks
 
@@ -178,6 +179,18 @@ capture, all directly demanded by the goal statement.
 
 ## 4 · Done so far (history)
 
+- [x] **The About Round — P1-A4** (2026-05-31) — every rule gains a
+  collapsed-by-default "About this stage" panel under the readout: a
+  ~50-word, plain-English, origin-of-life-framed paragraph (what building
+  block it is, why it matters, what the controls do), populated from a new
+  `aboutStage` field on each rule object and refreshed in `setRule()`.
+  Conway / Wolfram 1D are honestly framed as off-arc reference automata.
+  Accessible toggle (`aria-expanded` + `[hidden]` body), respects
+  `prefers-reduced-motion`. smoke.mjs gains an `aboutStage` contract check
+  (string > 40 chars) — now 359 checks / 0 failures across 9 rules. Closes
+  §3-A: with the legibility, arc, and control rounds, the explanation
+  layer is structurally complete; remaining work is the four Python-only
+  building blocks (B1/B2/B4/B5) and P2 polish.
 - [x] **The Membrane Round — vesicle rule** (2026-05-31) — P1-B3 shipped,
   the first additive building block after the legibility + arc rounds.
   `docs/web2/rules/vesicles.js`: an area-preserving, curvature-penalized

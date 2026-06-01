@@ -82,6 +82,8 @@ function exercise(id, rule) {
   assert(id, typeof rule.label === "string", "missing label");
   assert(id, typeof rule.whatThisIs === "string" && rule.whatThisIs.length > 20,
     "whatThisIs (P0-A1) missing or too short");
+  assert(id, typeof rule.aboutStage === "string" && rule.aboutStage.length > 40,
+    "aboutStage (P1-A4) missing or too short");
   assert(id, Number.isInteger(rule.width) && rule.width > 0, "bad width");
   assert(id, Number.isInteger(rule.height) && rule.height > 0, "bad height");
 

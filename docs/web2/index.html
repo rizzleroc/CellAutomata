@@ -62,6 +62,19 @@
         <div class="readout-cell"><span class="rk">fps</span><span class="rv" id="rd-fps">—</span></div>
       </div>
 
+      <!-- P1-A4 — persistent, collapsed-by-default "About this stage" panel.
+           A ~50-word, origin-of-life-framed paragraph about the current rule;
+           the body text is populated from currentRule.aboutStage in setRule(). -->
+      <div class="about-stage">
+        <button id="about-toggle" class="about-toggle" type="button"
+                aria-expanded="false" aria-controls="about-body">
+          <span class="about-caret" aria-hidden="true">&#9656;</span>
+          About this stage
+        </button>
+        <div id="about-body" class="about-body" role="region"
+             aria-label="About this stage" hidden></div>
+      </div>
+
       <p class="caption" id="stage-caption">SELECT A RULE</p>
       <p class="caption-detail" id="stage-detail">&nbsp;</p>
       <p class="what-this-is" id="what-this-is">&nbsp;</p>

@@ -23,6 +23,11 @@
                   "The smallest possible CA — three input bits, one output bit — yet rule 110 " +
                   "is already Turing-complete. Sets the lower bound for 'how little machinery do " +
                   "you need to compute anything?'",
+      aboutStage: "This sits off the origin-of-life arc: Wolfram's 1D rules are a reference " +
+                  "benchmark, not a building block of life. They matter as a baseline for " +
+                  "complexity — three input bits, one output bit, yet rule 110 is already " +
+                  "Turing-complete (Wolfram, 2002). Dial the rule number between blank, chaotic, " +
+                  "fractal, and computing universes, and see how little machinery computation needs.",
       paletteBg: [245, 241, 230],
       paletteFg: [17, 17, 17],
       width: W,

@@ -21,6 +21,11 @@
       whatThisIs: "Reference automaton, not a building block of life. " +
                   "Included so anyone can sanity-check the engine against the canonical " +
                   "cellular-automaton everyone already knows.",
+      aboutStage: "This sits off the origin-of-life arc: Conway's Life is not a building " +
+                  "block of life, just the most famous cellular automaton ever written " +
+                  "(Gardner, 1970). It earns its place as a benchmark — if the engine renders " +
+                  "gliders correctly on a rule you already know, you can trust the chemistry " +
+                  "stages too. The density slider sets how crowded the starting lattice is.",
       paletteBg: [10, 14, 22],
       paletteFg: [230, 224, 208],
       width: W,
