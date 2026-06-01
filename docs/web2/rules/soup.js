@@ -60,6 +60,11 @@
       whatThisIs: "Chemistry, before any organisation. Particles random-walk through a substrate, " +
                   "laying down a fading occupancy trail. Oparin & Haldane's \"soup\" — the starting " +
                   "condition for everything downstream in the origin-of-life arc.",
+      aboutStage: "The building block here is raw matter, undirected. This is the Oparin–Haldane " +
+                  "primordial soup: simple molecules drifting at random through water, with no " +
+                  "compartments, no information, no order. It matters as the blank starting page from " +
+                  "which every later stage must organise itself. Tune diffusion and drift to set how " +
+                  "vigorously it mixes; raise evaporation to fade its chemical memory.",
       paletteBg: [10, 14, 22],
       paletteFg: [230, 224, 208],
       width: W,
@@ -78,6 +83,19 @@
         evaporation: "How fast the trail field fades. Raise it: only the recent past shows. Lower it: long-lived history builds up — closer to a real geological record.",
         drift:       "Net current pushing every particle one way. Zero: pure diffusion. Non-zero: a flowing soup, like a real ocean current.",
       },
+
+      // P1-D2: one-click regimes — snap the soup to a known condition.
+      presets: [
+        { label: "dilute pool",
+          hint: "A thin, calm soup — few molecules, slow random walk. Tracks stay distinct, like a still pond.",
+          values: { count: 200, diffusion: 0.30, evaporation: 0.02, drift: 0.0 } },
+        { label: "well-mixed",
+          hint: "A dense, well-mixed soup — many molecules colliding. The Oparin–Haldane baseline.",
+          values: { count: 600, diffusion: 0.60, evaporation: 0.04, drift: 0.0 } },
+        { label: "tidal current",
+          hint: "A flowing soup pushed by a current — molecules sweep one way, like an ocean tide carrying chemistry downstream.",
+          values: { count: 600, diffusion: 1.20, evaporation: 0.06, drift: 0.30 } },
+      ],
 
       onParamChange(name) {
         if (name === "count") {

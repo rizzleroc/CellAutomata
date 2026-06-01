@@ -63,6 +63,11 @@
                   "porous mineral walls (free compartments) with a pH gradient (free energy). " +
                   "Russell, Martin and Lane argue this is where the chemistry of life most plausibly " +
                   "began — the proton gradient cells still use today, fossilised in the rock.",
+      aboutStage: "The building block here is a place plus a power source. Alkaline hydrothermal vents " +
+                  "give geology-supplied compartments — porous mineral honeycomb — alongside free energy " +
+                  "in a natural pH gradient. Russell and Lane argue this is where life's chemistry most " +
+                  "plausibly began, the proton gradient cells still run on. The source and updraft sliders " +
+                  "set how strongly the acetate plume feeds and rises.",
       paletteBg: [10, 14, 22],
       paletteFg: [230, 224, 208],
       width: W,
@@ -81,6 +86,19 @@
         decay:     "How fast acetate is consumed (or chemically lost) per step. Raise it: short plume — molecules don't get far. Lower it: long-lived chemistry that builds up.",
         source:    "How fast new acetate is injected at the duct base. Raise it: a thicker plume that fills the chimney. Lower it: a thin trickle that quickly dilutes.",
       },
+
+      // P1-D2: vent-strength regimes — the plume reshapes live.
+      presets: [
+        { label: "trickle vent",
+          hint: "A weak vent — a thin acetate plume that decays before it climbs far up the chimney.",
+          values: { diffusion: 0.20, drift: 0.10, decay: 0.010, source: 0.02 } },
+        { label: "steady plume",
+          hint: "The baseline Russell–Lane vent — a steady plume rising against the mineral wall.",
+          values: { diffusion: 0.20, drift: 0.18, decay: 0.004, source: 0.05 } },
+        { label: "roaring vent",
+          hint: "A vigorous vent — a thick, fast updraft that fills the whole chimney with long-lived chemistry.",
+          values: { diffusion: 0.30, drift: 0.45, decay: 0.002, source: 0.15 } },
+      ],
 
       randomize() { seed(); },
       clear()    { A.fill(0); generation = 0; },

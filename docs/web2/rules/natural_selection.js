@@ -49,6 +49,11 @@
                   "same-species pairs combine into longer-lived 'amoebas' — local pockets of identity. " +
                   "It matters because compartments are the precondition for everything else: " +
                   "without a boundary, there's no individual to be selected.",
+      aboutStage: "The building block here is identity. In a soup of sixteen species — weighted by " +
+                  "Miller–Urey (1953) yields — same-species pairs clump into longer-lived 'amoebas', " +
+                  "the first faint pockets of inside-versus-outside. This matters because selection " +
+                  "needs individuals: without a boundary there is nothing to compete or be favoured. " +
+                  "The lifespan slider sets how long these proto-identities persist before dissolving.",
       paletteBg: [10, 14, 22],
       paletteFg: [230, 224, 208],
       width: W,
@@ -61,6 +66,19 @@
       controlConsequence: {
         amoebaLifespan: "How many steps an amoeba survives before dying. Shorter: fast turnover, sparse population. Longer: amoebas accumulate into dense 'cities' that crowd out the unbound soup.",
       },
+
+      // P1-D2: lifespan regimes — applies live as amoebas age out.
+      presets: [
+        { label: "fast turnover",
+          hint: "Amoebas die young — sparse, flickering pockets that never crowd the soup.",
+          values: { amoebaLifespan: 20 } },
+        { label: "balanced",
+          hint: "The default lifespan — amoebas persist long enough to matter while the soup stays mixed.",
+          values: { amoebaLifespan: 60 } },
+        { label: "amoeba cities",
+          hint: "Long-lived amoebas accumulate into dense colonies that crowd out the free soup — compartments winning.",
+          values: { amoebaLifespan: 160 } },
+      ],
 
       randomize() { seed(); },
       clear()     { color.fill(0); flags.fill(0); age.fill(0); generation = 0; },

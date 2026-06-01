@@ -26,8 +26,7 @@ Status legend:
 
 ## 2 · Current state inventory
 
-What is shipped on `claude/zealous-meitner-SrX1L` (PR #6) as of this
-commit:
+What is shipped on `main` (live at `/web2/`) as of this commit:
 
 | Rule | Building block represented | Control surfaces today | Explanation depth today |
 |---|---|---|---|
@@ -37,12 +36,14 @@ commit:
 | `chirality` | Homochirality — symmetry-breaking of L vs D | α, β, D, noise | Frank citation. ⚠ ee% in readout but no "why this matters" copy |
 | `coacervate` | Membrane-less proto-cells (Oparin / LLPS) | M, κ, substeps | Cahn-Hilliard formula. ⚠ no link to "this is a proto-cell" |
 | `vents` | Energy source + porous compartment (Russell-Lane) | D, drift, decay, src | PDE formula. ⚠ no "this is where chemistry meets thermodynamics" |
+| `vesicles` | True compartmentalisation — closed lipid bilayer (Helfrich curvature) | κ_b, mobility M, substeps | Formula + "what this is" + marginalia claim. ✔ framed as *true* membrane compartment vs. coacervate |
 | `conway` | *Reference automaton* — not a building block of life | density, wrap | Honest citation. ✔ correctly framed as canonical CA |
 | `wolfram1d` | *Reference automaton* — not a building block of life | rule number, seed | Honest citation. ✔ correctly framed as canonical CA |
 
 **Building blocks represented today:** prebiotic chemistry · pattern
-formation · compartmentalisation (amoeba + coacervate) · homochirality ·
-hydrothermal-vent energy capture.
+formation · compartmentalisation — membrane-less (amoeba + coacervate)
+and membrane-bound (vesicle) · homochirality · hydrothermal-vent energy
+capture.
 
 **Control surfaces today:** every rule has parameter sliders, but the
 labels are physics symbols (F, k, α, β, κ, M) — the page does not yet
@@ -67,15 +68,16 @@ coacervates matter for the origin of life.
   hover tooltip so it's always visible. Jury verdict 2026-05-30.
 - [x] **P0-A3** Marginalia ticker's first card per rule is the
   building-block claim. Shipped 2026-05-30 in "Goal-Legibility Pass."
-- [ ] **P1-A4** A persistent "About this stage" expandable panel under
-  the readout — 50-word paragraph per rule, written from the
-  origin-of-life perspective.
+- [x] **P1-A4** A persistent "About this stage" expandable panel under
+  the readout — a ~50-word origin-of-life paragraph per rule, collapsed
+  by default to conserve vertical space. Shipped 2026-05-31 in "The About
+  Round." Closes §3-A — the explanation layer is now complete.
 
 ### B · Missing building blocks
 
-The four Python-only stages cover four building blocks the web client
-cannot yet demonstrate live. The previous PR's commit message said
-"vesicles + LUCA are the next-easiest"; the punchlist captures all four:
+With the vesicle rule shipped (P1-B3 — migrated to §4), four Python-only
+stages remain: building blocks the web client cannot yet demonstrate
+live.
 
 - [ ] **P1-B1** `raf` — Reflexively-autocatalytic-and-food-generated sets
   (Kauffman 1971). Graph-on-canvas: nodes = molecules, edges = catalysed
@@ -85,9 +87,6 @@ cannot yet demonstrate live. The previous PR's commit message said
   lattice. Demonstrates **information control** (replication fidelity →
   error catastrophe at ε_c = ln(σ)/L). Hardest of the four; needs a
   careful simplification.
-- [ ] **P1-B3** `vesicles` — Lipid-bilayer membrane sphere under
-  Helfrich curvature. Demonstrates **true compartmentalisation** (as
-  opposed to coacervate's liquid-liquid one). Easier than RAF.
 - [ ] **P2-B4** `genetic-code` — 4×4 codon → amino-acid table with
   selection feedback (Vetsigian-Woese-Goldenfeld). Demonstrates **the
   controller** (the literal genetic code) coming into being.
@@ -97,7 +96,7 @@ cannot yet demonstrate live. The previous PR's commit message said
 
 ### C · Narrative arc
 
-The 8 rules sit side-by-side in a dropdown; there's no story connecting
+The 9 rules sit side-by-side in a dropdown; there's no story connecting
 them. The Python build has a `pipeline` rule that runs the whole arc
 end-to-end.
 
@@ -115,10 +114,16 @@ end-to-end.
 - [x] **P0-D1** Every parameter label across all 8 rules carries the
   physical name (`feed rate F`, `mobility M`, `interface stiffness κ`,
   `acetate decay`, …). Shipped 2026-05-30 in "Goal-Legibility Pass."
-- [ ] **P1-D2** Add a "default / typical / extreme" three-button
-  preset row for every continuous-parameter rule (currently only
-  grayscott has presets). This *shows control* by showing the response
-  to known parameter changes.
+- [x] **P1-D2** Preset *regime* row added to every continuous-parameter
+  arc rule (soup, natural-selection, chirality, coacervate, vents) — a
+  one-click row of named regimes that snaps the sliders and lights the
+  active one. Named biologically (e.g. coacervate's *many small / balanced
+  / few large droplets*; chirality's *near-racemic / symmetry-breaking /
+  homochiral sweep*) rather than the generic "default/typical/extreme"
+  the gap originally proposed, because a named regime *shows* the control
+  more legibly. grayscott keeps its richer Pearson dropdown; conway and
+  wolfram1d are off-arc and discrete, so neither gets a row. Shipped
+  2026-05-30 in "The Control Round."
 - [ ] **P2-D3** Cross-rule param coupling badge: when a rule's params
   cross a published threshold (Pearson F=k boundary, Frank ee critical
   point, Eigen error catastrophe), surface a small "regime: X"
@@ -130,9 +135,10 @@ end-to-end.
   cards now lead with "Off-arc reference automaton — not a building
   block of life." Closed organically as part of the "Goal-Legibility
   Pass" 2026-05-30 (the A1 / A3 work both surfaced this honestly).
-- [x] **P1-E2** Footer carries an honesty paragraph listing the five
-  Python-only stages (RAF, RNA world, vesicles, genetic code, LUCA)
-  with the install command. Shipped 2026-05-30 in "The Arc Round."
+- [x] **P1-E2** Footer carries an honesty paragraph listing the
+  Python-only stages with the install command. Shipped 2026-05-30 in
+  "The Arc Round"; trimmed from five to four (RAF, RNA world, genetic
+  code, LUCA) when the vesicle rule graduated to JS on 2026-05-31.
 
 ### G · Goal framing (added 2026-05-28 by single-judge pass; see §7)
 
@@ -173,6 +179,62 @@ capture, all directly demanded by the goal statement.
 
 ## 4 · Done so far (history)
 
+- [x] **The About Round — P1-A4** (2026-05-31) — every rule gains a
+  collapsed-by-default "About this stage" panel under the readout: a
+  ~50-word, plain-English, origin-of-life-framed paragraph (what building
+  block it is, why it matters, what the controls do), populated from a new
+  `aboutStage` field on each rule object and refreshed in `setRule()`.
+  Conway / Wolfram 1D are honestly framed as off-arc reference automata.
+  Accessible toggle (`aria-expanded` + `[hidden]` body), respects
+  `prefers-reduced-motion`. smoke.mjs gains an `aboutStage` contract check
+  (string > 40 chars) — now 359 checks / 0 failures across 9 rules. Closes
+  §3-A: with the legibility, arc, and control rounds, the explanation
+  layer is structurally complete; remaining work is the four Python-only
+  building blocks (B1/B2/B4/B5) and P2 polish.
+- [x] **The Membrane Round — vesicle rule** (2026-05-31) — P1-B3 shipped,
+  the first additive building block after the legibility + arc rounds.
+  `docs/web2/rules/vesicles.js`: an area-preserving, curvature-penalized
+  phase-field membrane flow (∂φ/∂t = −M(W'(φ) − κ_b∇²φ − ⟨·⟩)), a stable
+  caricature of Helfrich (1973) bilayer bending. A closed lipid bilayer
+  encloses a lumen — *true* compartmentalisation, distinct from
+  coacervate's membrane-less droplet. The φ=0.5 level-set render lights
+  the membrane ring across the whole bending range; SEM height = φ raises
+  the lumen as rounded domes. Adaptive dt = min(0.20, 0.24/(M·κ_b)) keeps
+  the field stable from floppy to stiff membranes. Three reseeding
+  regimes (many small / balanced / few large vesicles). Ninth rule on
+  digit `9`, appended to RULE_ORDER + TOUR_ORDER, with marginalia,
+  scale-bar unit (1 μm), and legend row. smoke.mjs now exercises 9 rules
+  (350 checks / 0 failures / 0 warnings); CI test→build→deploy green,
+  live at `/web2/`.
+- [x] **Production deploy — site live** (2026-05-31) — the web2 sandbox
+  is reachable at `https://rizzleroc.github.io/CellAutomata/web2/`.
+  Root cause of the earlier dark site: every Pages run failed at the
+  `deploy` step with a 404 because the repo was private on a plan with
+  no private-Pages support — `test` and `build` always passed. Fixed by
+  making the repo public and enabling Pages (`build_type: workflow`).
+  Full pipeline (test gate → build → deploy) now green; index, `main.js`,
+  and rule modules all serve HTTP 200.
+- [x] **Rule smoke tests** (2026-05-30) — `docs/web2/tests/smoke.mjs`, a
+  zero-dependency node harness that loads every rule module against a
+  `window` stub and exercises seed → step → render → renderHeight →
+  paint, asserting no-throw and finite output (NaN-preserving buffers),
+  plus contract checks: controlConsequence keys must name real params,
+  preset values must sit inside their slider ranges. 302 checks across
+  8 rules. Wired into the Pages workflow as a `test` job that gates
+  `build`, so a broken rule can no longer deploy. Closes the web half of
+  PRD §3.4 "Tests (any kind)".
+- [x] **The Control Round** (2026-05-30) — P1-D2 preset-regime row.
+  Every continuous-parameter arc rule (soup, natural-selection,
+  chirality, coacervate, vents) gains a one-click row of named
+  parameter regimes above its sliders; clicking snaps the params and
+  lights the active regime, moving a slider de-highlights it, and
+  PDE-driven regimes (chirality, coacervate) reseed so the difference
+  reads from a fresh field. This closes the *show how they're
+  controlled* half of the goal for the eight shipped rules — with the
+  Goal-Legibility + Arc rounds, the goal is now structurally satisfied
+  and the remaining work is purely additive (new rules: B1–B5). Pure
+  DOM + JS + CSS; a generic `presets` array per rule, rendered by
+  main.js. No new simulation code.
 - [x] **The Arc Round** (2026-05-30) — four items shipped as one batch,
   giving the eight rules a narrative spine. Items: P0-G3 first-visit
   welcome modal with arc-summary lede, P0-G4 control-mechanism legend

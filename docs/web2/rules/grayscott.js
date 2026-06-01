@@ -95,6 +95,11 @@
       whatThisIs: "Pattern as a building block. Two reacting chemicals on a featureless lattice " +
                   "spontaneously form spots that grow, divide, and replicate — no genes, no membranes, " +
                   "no cells. Turing (1952) proposed exactly this as the chemical basis of biology.",
+      aboutStage: "The building block here is pattern. Two chemicals diffusing and reacting on a " +
+                  "blank lattice spontaneously grow spots that divide and replicate — no genes, " +
+                  "membranes, or cells anywhere in the equations. Turing (1952) and Pearson (1993) " +
+                  "showed plain chemistry can self-organise, the first step toward life-like form. " +
+                  "Feed rate F and kill rate k tune it between spots, stripes, and self-replicating mitosis.",
       paletteBg: [10, 14, 22],
       paletteFg: [230, 224, 208],
       width: W,

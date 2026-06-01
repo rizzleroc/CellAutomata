@@ -48,6 +48,11 @@
                   "from a dilute background into droplets — no lipid membrane required. " +
                   "Modern cells still use this exact mechanism for organelles. Plausibly the first " +
                   "compartment in the origin-of-life arc.",
+      aboutStage: "The building block here is confinement without a membrane. Concentrated chemistry " +
+                  "phase-separates from a dilute background into droplets — Oparin's (1924) coacervates, " +
+                  "the same Cahn–Hilliard physics modern cells use to build membrane-less organelles. " +
+                  "It matters as plausibly the first compartment, gathering reagents together before any " +
+                  "lipid wall exists. Raise interface stiffness κ for fewer, larger, smoother droplets.",
       paletteBg: [10, 14, 22],
       paletteFg: [230, 224, 208],
       width: W,
@@ -64,6 +69,19 @@
         kappa:     "Interface stiffness — how much the field 'dislikes' sharp boundaries. Raise it: fewer, larger, smoother droplets. Lower it: many small ragged ones.",
         substeps:  "How many PDE substeps per visible frame. Pure speed knob — coarser steps simulate faster but with less smooth dynamics.",
       },
+
+      // P1-D2: κ regimes that reseed so coarsening reads from scratch.
+      presets: [
+        { label: "many small droplets", reseed: true,
+          hint: "Low interface stiffness — the field shatters into many small, ragged droplets.",
+          values: { mobility: 0.30, kappa: 0.25, substeps: 3 } },
+        { label: "balanced", reseed: true,
+          hint: "The default coarsening — a spread of droplet sizes slowly merging.",
+          values: { mobility: 0.30, kappa: 1.00, substeps: 3 } },
+        { label: "few large droplets", reseed: true,
+          hint: "High stiffness — the field dislikes sharp boundaries, so a few big round droplets dominate.",
+          values: { mobility: 0.45, kappa: 1.80, substeps: 4 } },
+      ],
 
       randomize() { seed(); },
       clear()    { phi.fill(0); generation = 0; },

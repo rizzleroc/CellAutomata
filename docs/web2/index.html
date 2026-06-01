@@ -62,6 +62,19 @@
         <div class="readout-cell"><span class="rk">fps</span><span class="rv" id="rd-fps">—</span></div>
       </div>
 
+      <!-- P1-A4 — persistent, collapsed-by-default "About this stage" panel.
+           A ~50-word, origin-of-life-framed paragraph about the current rule;
+           the body text is populated from currentRule.aboutStage in setRule(). -->
+      <div class="about-stage">
+        <button id="about-toggle" class="about-toggle" type="button"
+                aria-expanded="false" aria-controls="about-body">
+          <span class="about-caret" aria-hidden="true">&#9656;</span>
+          About this stage
+        </button>
+        <div id="about-body" class="about-body" role="region"
+             aria-label="About this stage" hidden></div>
+      </div>
+
       <p class="caption" id="stage-caption">SELECT A RULE</p>
       <p class="caption-detail" id="stage-detail">&nbsp;</p>
       <p class="what-this-is" id="what-this-is">&nbsp;</p>
@@ -156,11 +169,11 @@
       · v1 (Stage 1 only) at <a href="../web/">/docs/web/</a>
     </p>
     <p class="footer-text footer-honesty">
-      Five further building blocks — autocatalytic sets (Kauffman),
-      the RNA world (Eigen quasispecies), lipid vesicles (Helfrich
-      curvature), the genetic code (Vetsigian–Woese–Goldenfeld), and
-      LUCA — run only in the Python desktop build. Each is several
-      hundred lines of NumPy / SciPy and resists a faithful JS port.
+      Four further building blocks — autocatalytic sets (Kauffman),
+      the RNA world (Eigen quasispecies), the genetic code
+      (Vetsigian–Woese–Goldenfeld), and LUCA — run only in the Python
+      desktop build. Each is several hundred lines of NumPy / SciPy and
+      resists a faithful JS port.
       <code>pip install -e .</code> then <code>cellauto gui</code>.
     </p>
   </footer>
@@ -177,12 +190,12 @@
       <p class="eyebrow">W E L C O M E</p>
       <h2 class="welcome-title" id="welcome-title">cellauto — the building blocks of life</h2>
       <p class="welcome-lede">
-        Eight live simulations, in canonical chemistry-to-life order. Each
+        Nine live simulations, in canonical chemistry-to-life order. Each
         one is a separate <em>building block</em> — a different way the
         universe organises itself into something life-like. Each one is
         <em>controlled</em> by sliders that the right-hand panel says — in
         plain English — what each knob does to the biology. Press
-        <span class="kbd">space</span> to pause, <span class="kbd">1</span>–<span class="kbd">8</span>
+        <span class="kbd">space</span> to pause, <span class="kbd">1</span>–<span class="kbd">9</span>
         to jump rules, <span class="kbd">t</span> to start a guided tour.
       </p>
       <p class="welcome-legend-label">B U I L D I N G   B L O C K S   ·   C O N T R O L   T Y P E</p>
@@ -194,13 +207,14 @@
           <tr><td>Stage 2 · alkaline vents</td>            <td>geological compartment + energy</td></tr>
           <tr><td>Stage 6 · homochirality</td>             <td>symmetry-breaking</td></tr>
           <tr><td>Stage 9 · coacervate</td>                <td>membrane-less proto-cell</td></tr>
+          <tr><td>Stage 11 · vesicle</td>                  <td>lipid-bilayer compartment</td></tr>
           <tr><td class="aside">Stage ∞ · Conway / Wolfram</td><td class="aside">off-arc reference automata</td></tr>
         </tbody>
       </table>
       <p class="welcome-footer">
-        Five more stages — autocatalytic sets, the RNA world, lipid
-        vesicles, the genetic code, and LUCA — run in the Python build
-        only; see the footer link.
+        Four more stages — autocatalytic sets, the RNA world, the
+        genetic code, and LUCA — run in the Python build only; see the
+        footer link.
       </p>
       <button class="btn primary welcome-cta" id="welcome-cta">START EXPLORING</button>
     </div>
@@ -216,6 +230,7 @@
   <script src="rules/chirality.js"></script>
   <script src="rules/coacervate.js"></script>
   <script src="rules/vents.js"></script>
+  <script src="rules/vesicles.js"></script>
   <script src="main.js"></script>
 </body>
 </html>

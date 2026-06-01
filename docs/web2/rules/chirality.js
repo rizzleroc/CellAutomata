@@ -42,6 +42,11 @@
       whatThisIs: "Symmetry-breaking as a building block. A racemic 50/50 mix of left- and " +
                   "right-handed molecules spontaneously collapses to one handedness. Real biology " +
                   "uses only L-amino-acids and D-sugars — this is the mathematical answer to why.",
+      aboutStage: "The building block here is symmetry-breaking. A racemic 50/50 mix of left- and " +
+                  "right-handed molecules collapses to a single handedness, as Frank (1953) predicted " +
+                  "from autocatalysis plus mutual inhibition. It matters because all life is homochiral " +
+                  "— only L-amino-acids, only D-sugars — and this is the chemical answer to why. Tune β, " +
+                  "the inhibition that breaks the tie, and the noise that triggers it.",
       paletteBg: [10, 14, 22],
       paletteFg: [230, 224, 208],
       width: W,
@@ -60,6 +65,20 @@
         diffusion: "Smooths out local imbalances. Raise it: one enantiomer eventually wins globally. Lower it: rival domains persist in stable patches.",
         noise:     "The random kick that lets the system fall off the racemic ridge. With zero noise it's metastable forever; a real noise floor is essential.",
       },
+
+      // P1-D2: regimes that reseed (symmetry only re-reads from a fresh,
+      // near-racemic field).
+      presets: [
+        { label: "near-racemic", reseed: true,
+          hint: "Almost no mutual inhibition (β at its floor) — the 50/50 mix barely breaks. ee hovers near zero, the way a symmetric soup stays symmetric.",
+          values: { alpha: 0.12, beta: 0.05, diffusion: 0.10, noise: 0.005 } },
+        { label: "symmetry-breaking", reseed: true,
+          hint: "The textbook Frank regime — rival L/R domains compete and one handedness slowly wins each patch.",
+          values: { alpha: 0.12, beta: 0.50, diffusion: 0.10, noise: 0.005 } },
+        { label: "homochiral sweep", reseed: true,
+          hint: "Strong autocatalysis, inhibition and diffusion together — one enantiomer rapidly takes the whole field. Life's single-handedness, fast.",
+          values: { alpha: 0.25, beta: 1.20, diffusion: 0.25, noise: 0.010 } },
+      ],
 
       randomize() { seed(); },
       clear() { L.fill(0); R.fill(0); generation = 0; },

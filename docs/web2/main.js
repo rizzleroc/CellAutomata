@@ -13,6 +13,7 @@
   const RULE_ORDER = [
     "conway", "wolfram1d", "grayscott", "soup",
     "natural-selection", "chirality", "coacervate", "vents",
+    "vesicles",
   ];
 
   // P1-C1 — canonical chemistry-to-life tour order, skipping the two
@@ -25,6 +26,7 @@
     "natural-selection",
     "chirality",
     "coacervate",
+    "vesicles",
   ];
   const TOUR_INTERVAL_MS = 30000;
 
@@ -97,6 +99,13 @@
       "Acetate is the canonical product of the abiotic acetyl-CoA pathway — the first carbon-fixation cycle the engine simulates here.",
       "The plume rises by drift and diffuses laterally; the mineral wall both confines it and seeds further reactions.",
     ],
+    vesicles: [
+      "BUILDING-BLOCK CLAIM. This shows true membrane compartmentalisation — a lipid bilayer enclosing a lumen, a persistent inside vs outside. The building block: the protocell boundary itself, no longer membrane-less.",
+      "Helfrich, W. (1973). \"Elastic properties of lipid bilayers: theory and possible experiments.\" Z. Naturforsch. C 28:693 — the curvature-energy theory of membranes.",
+      "Unlike the coacervate (membrane-less liquid–liquid phase separation), this is a real bilayer: the interface is a closed membrane, not a fuzzy concentration gradient.",
+      "Bending energy + the area constraint make vesicles round up and coarsen — stiffer membranes (high κ_b) resist tight curves and favour fewer, larger spheres.",
+      "Paint to inject a vesicle (fill a disk with lumen); the curvature flow then rounds it and lets it merge with its neighbours. Right-click erases.",
+    ],
   };
 
   const MARGINALIA_INTERVAL_MS = 6500;
@@ -112,6 +121,7 @@
     chirality:            "1 μm",
     coacervate:           "5 μm",
     vents:                "10 μm",
+    vesicles:             "1 μm",
   };
 
   // ── DOM refs ────────────────────────────────────────────────────────────
@@ -150,6 +160,8 @@
   const marginaliaEl  = document.getElementById("marginalia");
   const whatThisIsEl  = document.getElementById("what-this-is");
   const controlHintEl = document.getElementById("control-hint");
+  const aboutToggle   = document.getElementById("about-toggle");
+  const aboutBody     = document.getElementById("about-body");
   const bodyEl        = document.body;
 
   // ── State ───────────────────────────────────────────────────────────────
@@ -223,6 +235,12 @@
     if (whatThisIsEl) {
       whatThisIsEl.textContent = currentRule.whatThisIs || "";
     }
+    // P1-A4 — refresh the "About this stage" paragraph for the new rule.
+    // Falls back to whatThisIs so the panel never goes blank if a rule is
+    // missing aboutStage.
+    if (aboutBody) {
+      aboutBody.textContent = currentRule.aboutStage || currentRule.whatThisIs || "";
+    }
     showFirstControlHint();
     if (badgeTextEl) {
       badgeTextEl.textContent = "LIVE SEM FEED · " + currentRule.shortCaption;
@@ -254,6 +272,10 @@
   function rebuildRuleControls() {
     ruleControls.innerHTML = "";
     if (!currentRule.params) return;
+    // P1-D2: a one-click row of named parameter regimes, rendered above
+    // the individual sliders so the viewer can jump to a regime first,
+    // then fine-tune.
+    buildPresetRow();
     for (const [name, slot] of Object.entries(currentRule.params)) {
       const row = document.createElement("div");
       row.className = "control-row";
@@ -332,6 +354,84 @@
       row.dataset.param = name;
       ruleControls.appendChild(row);
     }
+    updatePresetActiveState();
+  }
+
+  // P1-D2: render a row of named-regime buttons for rules that declare a
+  // `presets` array. Each preset snaps one or more params to a known
+  // regime so the viewer can SEE the response to a controlled change.
+  function buildPresetRow() {
+    const presets = currentRule.presets;
+    if (!Array.isArray(presets) || presets.length === 0) return;
+    const row = document.createElement("div");
+    row.className = "control-row preset-row";
+
+    const label = document.createElement("label");
+    label.className = "ctl-label";
+    label.textContent = "regime";
+    row.appendChild(label);
+
+    const wrap = document.createElement("div");
+    wrap.className = "preset-btns";
+    presets.forEach((preset, idx) => {
+      const btn = document.createElement("button");
+      btn.type = "button";
+      btn.className = "preset-btn";
+      btn.textContent = preset.label;
+      btn.dataset.presetIdx = String(idx);
+      if (preset.hint) btn.title = preset.hint;
+      btn.addEventListener("click", () => applyPreset(preset));
+      // Hovering a regime previews its consequence in the control-hint line.
+      btn.addEventListener("mouseenter", () => {
+        if (controlHintEl && preset.hint) controlHintEl.textContent = preset.hint;
+      });
+      wrap.appendChild(btn);
+    });
+    row.appendChild(wrap);
+    ruleControls.appendChild(row);
+  }
+
+  function applyPreset(preset) {
+    if (!currentRule || !preset) return;
+    const values = preset.values || {};
+    for (const [k, v] of Object.entries(values)) {
+      const slot = currentRule.params && currentRule.params[k];
+      if (!slot) continue;
+      slot.value = v;
+      if (currentRule.onParamChange) currentRule.onParamChange(k);
+    }
+    syncRuleControlsToParams();
+    // Some regimes (symmetry-breaking, droplet coarsening) only read
+    // cleanly from a fresh field; those presets carry reseed:true.
+    if (preset.reseed && typeof currentRule.reset === "function") {
+      currentRule.reset();
+    }
+    if (controlHintEl && preset.hint) controlHintEl.textContent = preset.hint;
+    render();
+    refreshReadouts();
+    writeUrlState();
+  }
+
+  function presetMatches(preset) {
+    const values = preset.values || {};
+    for (const [k, v] of Object.entries(values)) {
+      const slot = currentRule.params && currentRule.params[k];
+      if (!slot) return false;
+      const tol = slot.step ? Number(slot.step) / 2 + 1e-9 : 1e-6;
+      if (Math.abs(Number(slot.value) - Number(v)) > tol) return false;
+    }
+    return true;
+  }
+
+  // Light the regime button whose param set matches the live params.
+  function updatePresetActiveState() {
+    if (!currentRule || !Array.isArray(currentRule.presets)) return;
+    const btns = ruleControls.querySelectorAll(".preset-btn");
+    btns.forEach((btn) => {
+      const idx = parseInt(btn.dataset.presetIdx, 10);
+      const preset = currentRule.presets[idx];
+      btn.classList.toggle("active", !!(preset && presetMatches(preset)));
+    });
   }
 
   // Reflect param changes (made by onParamChange) back into DOM widgets.
@@ -356,6 +456,7 @@
         }
       }
     }
+    updatePresetActiveState();
   }
 
   function formatNum(v, step) {
@@ -549,6 +650,17 @@
     }
   });
 
+  // ── About-this-stage panel (P1-A4) ─────────────────────────────────────
+  // Collapsed by default to conserve vertical space; expands on click and
+  // toggles the body's [hidden] + the caret rotation (CSS) + aria-expanded.
+  if (aboutToggle && aboutBody) {
+    aboutToggle.addEventListener("click", () => {
+      const open = aboutToggle.getAttribute("aria-expanded") === "true";
+      aboutToggle.setAttribute("aria-expanded", open ? "false" : "true");
+      aboutBody.hidden = open;
+    });
+  }
+
   // ── Welcome modal (P0-G3 + P0-G4) ──────────────────────────────────────
   function openWelcome() {
     if (!welcomeEl) return;
@@ -660,6 +772,7 @@
       case "Digit6": if (RULE_ORDER[5]) setRule(RULE_ORDER[5]); break;
       case "Digit7": if (RULE_ORDER[6]) setRule(RULE_ORDER[6]); break;
       case "Digit8": if (RULE_ORDER[7]) setRule(RULE_ORDER[7]); break;
+      case "Digit9": if (RULE_ORDER[8]) setRule(RULE_ORDER[8]); break;
       case "KeyM":
         if (semCheckbox) {
           semCheckbox.checked = !semCheckbox.checked;
