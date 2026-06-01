@@ -5,6 +5,93 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ---
 
+## [5.0.0] — 2026-06-01
+
+**LIFE: Digital Organisms (Stage XIII).** After Stage XII distils LUCA — the
+*recipe* for life — Stage XIII populates the post-LUCA world with discrete
+digital organisms whose behaviour is an *executing program*, not a probability
+table. The extended pipeline is now a **13-stage** arc (soup → … → LUCA →
+LIFE). This release ships v5.0.0 through Phase 5.1.
+
+### New rule — `abiogenesis-life` (Stage XIII, index 12)
+- **20-opcode virtual CPU.** Each organism carries a genome — a tape of
+  opcodes run by a tiny virtual CPU (`cellauto/rules/abiogenesis/life_vm.py`):
+  four byte registers, an instruction pointer, a register head, a comparison
+  flag, and a facing direction. The genome IS the phenotype (Tierra, Ray 1991).
+  Opcodes cover arithmetic, control flow (`JUMP`/`JZ`/`LOOP`), and six
+  world-facing actions (`SENSE`, `INGEST`, `EXCRETE`, `MOVE`, `TURN`,
+  `DIVIDE`) plus `COPY`/`RAND`. Private memory capped at 512 instructions.
+- **Self-encoded replication (the defining Tierra/Avida property).**
+  Reproduction is *not* an engine primitive: an organism must run its own
+  `COPY` loop (Avida's `h-copy`) to build a full-length daughter tape, and
+  only then — with energy ≥ `E_div = 120` — does `DIVIDE` spawn it. Strip the
+  `COPY` opcodes from an otherwise-viable genome and the lineage leaves **zero**
+  offspring (pinned by `test_replication_is_self_encoded…`). This replaces the
+  v5.0.0-rc behaviour where `COPY` was a dead counter and the engine copied the
+  parent genome on any `DIVIDE` — a self-replication claim the code didn't back.
+- **Energy metabolism (Avida-style private memory).** A 2-D substrate + waste
+  grid; every executed instruction costs energy (`instruction_cost = 1`),
+  `INGEST` converts substrate to energy (`ingest_gain = 28`), `EXCRETE` adds
+  toxic waste, `MOVE` costs extra. Energy = 0 ⇒ death (body decays back into
+  substrate). The energy constants are **tuned, not biophysically derived** —
+  abstract CPU-cycle/energy units in the Tierra/Avida tradition, unlike the
+  measurement-anchored constants of the abiogenesis stages (stated plainly in
+  `docs/science.md`).
+- **Per-instruction copy mutation + Eigen error threshold.** ε is applied
+  *at copy time*, inside `COPY` (`mutation_rate = 0.02`) — Eigen's per-digit
+  error placed where it physically belongs, so a copy error can corrupt the
+  daughter's own replication machinery. The rule exposes ε_c = ln(σ)/L and
+  reports `founder_divergence`, which explodes past the error catastrophe.
+- **Measured selection.** `test_selection_enriches_functional_opcodes` pins
+  that the surviving population is enriched several-fold over the 1/20 neutral
+  baseline for `COPY`/`INGEST` and depleted of inert opcodes — selection is
+  demonstrated, not asserted.
+- **Lineage tracking + per-organism ancestry.** Each organism records its
+  parent id and founder `lineage` id; surviving ancestry chains and lineage
+  counts are exposed for the inspector (the parallel Tk per-organism inspector
+  reads these).
+- **LUCA → LIFE pipeline hand-off (G1) — positional only.** `init_state`
+  accepts the upstream LUCA `seed_field`; founders seed at the brightest LUCA
+  cells and substrate starts richer where the chemistry was good. We state
+  plainly (in `docs/science.md`) that this coupling is *spatial only* — the
+  ancestor genome is **not** derived from Stage XII's gene set or Stage VIII's
+  codon table; deriving it is a deferred item. `extract_signal` exports an
+  energy-weighted population map for a hypothetical Stage XIV.
+
+### Rendering
+- **V7 viridis discs (default).** Organisms are filled discs coloured by
+  energy on a viridis substrate field, darkened where waste pools.
+- **V9 SEM mode.** Translucent hairline body walls (warm sepia membrane).
+- **V10 high-resolution internal-anatomy plate (Phase 5.1).** `render_plate`
+  renders the most energetic organisms Brachionus-style with a translucent
+  body wall, a gut compartment with drifting ingested particles, the genome
+  instruction strip (current instruction highlighted teal), a nucleus, and a
+  cytoplasmic shimmer tied to execution state — every element maps to real
+  organism state. Preview at `docs/generated/stage13_life.png`.
+
+### Other
+- New regression test suite covering the virtual CPU, self-encoded replication,
+  metabolism, copy-mutation / error threshold, measured selection, lineage
+  tracking, and rendering. The web/Python VM-parity check is a visible skip
+  (deferred to Phase 5.3).
+- Web3 `life.js` counterpart mirrors the Stage XIII rule in the browser client
+  **including self-encoded replication** — the JS `COPY`/`DIVIDE` build and gate
+  on a daughter tape exactly as the Python VM, so both runtimes tell one story
+  (no parity lie); the dead `mutateGenome` path was removed.
+- `docs/science.md` gains a LIFE / Stage XIII section with explicit scope
+  notes: replication is self-encoded; energy constants are tuned not measured;
+  the LUCA→LIFE coupling is positional only; "SEM / 400×" is a stylised
+  depth-shaded render, not electron-microscope data.
+- `docs/ROADMAP.md` v5.0 punchlist V1–V10 checked off (V11 ecology / V12 Tierra
+  shared-memory deferred).
+- **Scientific-honesty review pass.** A self-audit found `COPY` was a dead
+  counter and `DIVIDE` was engine fiat (replication not actually self-encoded),
+  and the F8 emergence test was vacuous (`founder_divergence > 0`, guaranteed by
+  any mutation). Both are closed: replication is now genuinely self-encoded and
+  the emergence test proves a COPY-less lineage leaves no offspring.
+
+---
+
 ## [3.6.0] — 2026-05-24
 
 The **local-vs-web parity** release. The project ships two clients running

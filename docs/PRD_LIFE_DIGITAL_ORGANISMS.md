@@ -1,6 +1,6 @@
 # PRD — LIFE: Digital Organisms (v5.0)
 
-**Status:** Draft · proposed for v5.0 cycle
+**Status:** Implemented — v5.0.0 through Phase 5.1 has shipped (punchlist V1–V10; V11 ecology / V12 Tierra shared-memory deferred)
 **Last updated:** 2026-06-01
 
 ![v5 LIFE UI mockup — Stage XIII Digital Life](generated/v5_life_ui_mockup.png)
@@ -287,11 +287,15 @@ draws:
     existing `sprites.js` painter library as new procedural painters.
     Internal anatomy (V10) and Brachionus-style rendering (the
     headline visual goal) requires sprite mode ON.
-  - The web client cannot share Python's virtual-CPU code, so we
-    write the interpreter twice — once in Python, once in JS. A
-    `tests/test_life_vm_parity.py` pin asserts that the same genome
-    on the same substrate runs identically on both interpreters for
-    100 steps.
+  - The web client cannot share Python's virtual-CPU code, so the
+    interpreter is written twice — once in Python, once in JS
+    (`docs/web3/rules/life.js`), and both were updated together to the
+    self-encoded-replication mechanism. STATUS: a strict bit-for-bit
+    cross-runtime parity check is **deferred** — `tests/test_life_vm_parity.py`
+    is currently a visible `@pytest.mark.skip` placeholder, NOT an assertion.
+    (The two VMs would in fact diverge today on division-order details, set vs
+    array, which the parity work must reconcile.) Do not read the skip as a
+    passing guarantee.
 
 ### F7 — Performance budget
   - Default 60 × 60 grid, 400 organisms, virtual CPU at 1 instruction
@@ -334,9 +338,9 @@ saved) shows the visual target:
 
 | Phase | Deliverable | Acceptance gate |
 |---|---|---|
-| **5.0.0 — Virtual CPU** | Stage XIII rule with VM + energy + reproduction + per-organism inspector. Renders as filled discs under v3.6 viridis path. | At least one lineage distinct from the founder within 10k steps. ε_c regression pinned. |
-| **5.0.1 — Translucent body sprite** | Each organism rendered with a translucent-ellipse body sprite (no internal anatomy yet, just the membrane). | Side-by-side comparison: organisms read as cells, not discs. |
-| **5.1 — Internal anatomy** | Gut + genome strip + nucleus compartments visible inside each organism. Cytoplasmic shimmer tied to instruction rate. | Brachionus-style preview shipped to `docs/generated/stage13_life.png`. |
+| **5.0.0 — Virtual CPU** ✅ shipped | Stage XIII rule with VM + energy + reproduction + per-organism inspector. Renders as filled discs under v3.6 viridis path. | At least one lineage distinct from the founder within 10k steps. ε_c regression pinned. |
+| **5.0.1 — Translucent body sprite** ✅ shipped | Each organism rendered with a translucent-ellipse body sprite (no internal anatomy yet, just the membrane) — delivered via SEM mode. | Side-by-side comparison: organisms read as cells, not discs. |
+| **5.1 — Internal anatomy** ✅ shipped | Gut + genome strip + nucleus compartments visible inside each organism. Cytoplasmic shimmer tied to instruction rate. | Brachionus-style preview shipped to `docs/generated/stage13_life.png`. |
 | **5.2 — Ecology mechanics** | Predation between lineages; waste-toxicity gradient; cross-cell substrate gradient. | A self-organised "predator-prey" cycle visible in the population sparkline within 20k steps. |
 | **5.3 — Web parity** | `docs/web2/rules/life.js` shipped; virtual-CPU parity test green; web smoke test extended. | Same genome runs identically on Python + JS for 100 steps. |
 | **5.4 — Shared-memory variant (Tierra mode)** | Optional `dynamics="tierra"` rule config that puts all organisms in one shared instruction tape so parasites can emerge as in Tierra 1991. | At least one Tierra-style parasite (organism with truncated genome surviving off neighbours) emerges within 10k steps. Pinned. |
@@ -389,11 +393,16 @@ saved) shows the visual target:
   tape becomes "garbage" to overwrite. Avida: cell empties. We pick:
   **body decays into substrate over 10 steps**, matching the
   Brachionus visual of dead matter being broken down.
-- **Coupling with the v4.0 SEM cycle.** v5.0 must work under both
-  v3.6 viridis and v4.0 SEM rendering. The Brachionus visual is
-  achievable only under SEM mode. Likely answer: **v5.0.0 ships
-  under viridis; v5.1 internal anatomy requires SEM mode (v4.0.1+)
-  to be installed**.
+- **Coupling with the v4.0 SEM cycle — RESOLVED.** The Stage XIII
+  Brachionus-style render is provided by its OWN standalone module,
+  `cellauto/rules/abiogenesis/life_sem.py` (`render_sem`/`render_plate`),
+  which is independent of the general cross-stage v4.0 `SemRenderer`
+  (`renderer_sem.py` + a `View ▸ SEM mode` toggle) — that general renderer
+  remains **unbuilt** (ROADMAP §6 S1–S12 are all open). So Stage XIII has a
+  stylised hero render today; the other 12 stages still render viridis on the
+  desktop. v5.0's LIFE engine works under both. There is no "requires SEM
+  mode v4.0.1+" precondition — that was a contradiction (the v4.0 toggle
+  doesn't exist); life_sem is self-contained.
 
 ---
 

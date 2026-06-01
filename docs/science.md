@@ -218,13 +218,19 @@ in a way isolated self-replicators are not — they sidestep Eigen's "error
 catastrophe" by distributing information across multiple replicating
 species.
 
-This stage's implementation is deliberately a TOY. Each protocell carries
-a vector "genome" representing its internal species mix; its fitness is the
-Shannon entropy × total concentration; size grows with fitness; division at
-a radius threshold creates a mutated daughter; old/small protocells die.
-Real protocell evolution involves internal RAF dynamics and stochastic
-mutation rates that determine the error threshold (see Adamala & Szostak's
-2013 experimental work).
+**Implementation (updated — the old "TOY" description below was stale).**
+As of the v3.5 G2 fix this stage runs the genuine **Eigen-Schuster replicator
+ODE**, not a Shannon-entropy proxy. Each protocell carries a length-`n`
+concentration vector that evolves by `dx_i/dt = x_i (k_i · x_{i-1} − Φ)` with
+Φ the constant-organisation dilution flux that conserves Σx_i — a real
+hypercycle. Cycle health (the limiting species concentration, `min(x)·n`)
+gates growth/division; an incomplete cycle collapses to the trivial fixed
+point while a complete one converges to equal concentrations, exactly as
+Eigen & Schuster predict (pinned in `tests/test_hypercycle.py`). The legacy
+scalar `proxy` mode (cyclic coupling sum) is retained behind
+`dynamics="proxy"` for A/B comparison only. Real protocell evolution also
+involves internal RAF dynamics and membrane mechanics (Adamala & Szostak
+2013) which remain out of scope.
 
 We include this stage to make explicit where the project's *original* claim
 of "natural selection" actually lives: not in the soup, but in the
@@ -308,7 +314,12 @@ all life, and how did it arise? Three classic answers:
 This stage models the **coevolution** account. Each cell on the grid carries
 both an RNA-like strand of codons *and* its own private codon→amino-acid
 table. Each cell decodes its own strand through its own code to produce a
-peptide; fitness is how well that peptide matches a fixed target catalyst.
+peptide; fitness is, by default, that peptide's Miyazawa-Jernigan-style
+folding score (`fitness_mode="mj_landscape"`, sequence-composition-dependent),
+with a legacy fixed-target-match mode retained for comparison. Convergence is
+driven by **vertical selection** (fitness-weighted colonisation + mutation),
+NOT by the Vetsigian-Woese-Goldenfeld innovation-sharing/HGT mechanism, which
+this stage does not implement (see the rule docstring's scope note).
 Empty cells are colonised by fitness-weighted occupied neighbours, copying
 both the strand (with per-base mutation) and the code (with rare swaps). Any
 code that happens to make a more useful peptide spreads. The
@@ -529,8 +540,9 @@ deleterious (cost), and every gene has a maintenance cost. Selection +
 mutation drive the population; the headline `luca_size` stat is the number
 of genes present in ≥ 70% of surviving lineages — exactly the kind of
 prevalence threshold real LUCA reconstruction uses. From random initial
-genomes, `luca_size` climbs and locks at roughly the essential-gene count
-(6 by default). That intersection IS the simulated LUCA, the genome every
+genomes, `luca_size` climbs toward the pathway-essential gene set (12 genes
+across the 5 default pathways), recovering a substantial fraction of it under
+selection. That recovered core IS the simulated LUCA, the genome every
 lineage inherited.
 
 **What this captures:** comparative-genomics distillation of a core ancestral
@@ -549,6 +561,157 @@ covers that part), and protein structure.
   universal common ancestor. *Nat. Microbiol.*, 1, 16116.
 - Mirkin, B. G., et al. (2003). Parsimonious evolutionary scenarios for
   genome evolution. *BMC Evol. Biol.*, 3, 2.
+
+---
+
+## LIFE — digital organisms with executing genomes (Stage XIII)
+
+Selectable as the `abiogenesis-life` rule, and the final chapter (Stage XIII,
+index 12) of the 13-stage extended pipeline. Where Stage XII distils LUCA —
+the *recipe* for life — Stage XIII populates the post-LUCA world with discrete
+organisms whose behaviour is not a probability table but an **executing
+program**. Each organism carries a genome: a tape of opcodes for a tiny
+virtual CPU. The CPU steps instruction-by-instruction, and every instruction
+is the organism *doing something* — sensing, ingesting substrate, excreting
+waste, moving, comparing, copying, dividing. The genome IS the phenotype.
+
+**The virtual-CPU genome.** The instruction set is a deliberately small
+**20-opcode** alphabet (`NOP`, `INC`/`DEC`, arithmetic, `LOAD` immediates,
+register/head manipulation, `JUMP`/`JZ`/`LOOP` control flow, `CMP`, and the
+six world-facing opcodes `SENSE`, `INGEST`, `EXCRETE`, `MOVE`, `TURN`,
+`DIVIDE`, plus `COPY` and `RAND`). The CPU has four byte registers, an
+instruction pointer, a register-selecting head, a comparison flag, and a
+Moore-neighbourhood facing direction. Each founder starts from a hand-written
+viable **ancestor genome** that senses, eats, wanders, **copies itself**, and
+divides; mutation then explores the neighbourhood around it.
+
+**Replication is self-encoded — the defining Tierra/Avida property.** This is
+the point that makes the stage that lineage (Ray 1991; Ofria & Wilke 2004)
+rather than a metabolism toy: an organism reproduces only by *running its own
+copy loop*. `COPY` reads one instruction of the organism's own genome and
+appends it to a daughter tape it is building (Avida's `h-copy`); `DIVIDE`
+succeeds **only when that tape is a full-length self-copy** *and* energy
+≥ `E_div`. An organism whose program never executes `COPY` — or whose copy
+loop is broken by mutation — builds no tape and leaves **no offspring**.
+Self-replication is therefore an evolvable, breakable part of the genome, not
+an engine-granted primitive. This is verified directly:
+`test_replication_is_self_encoded…` strips the `COPY` opcodes out of an
+otherwise-viable genome (it can still sense, eat, move, and *attempts* to
+divide) and confirms that lineage produces **zero** descendants while the
+intact ancestor reproduces freely; `test_selection_enriches_functional_opcodes`
+confirms the surviving population is enriched ~5–7× over the 5 % neutral
+baseline for `COPY`/`INGEST` and depleted of inert opcodes. (We do **not**
+implement Tierra's *shared*-memory address space, so the cross-organism
+parasites that hijack a neighbour's copy loop are out of scope — see "What it
+cuts" below; private-memory Avida-style replication is what we model.)
+
+**Avida-style private memory + energy metabolism.** Unlike Tierra's single
+shared address space, each organism here has its **own private** genome and CPU
+state, and lives in a 2-D grid of substrate and waste — the **Avida** model
+(Adami & Brown 1994; Ofria & Wilke 2004). The metabolism is an energy economy:
+every executed instruction costs energy (`instruction_cost = 1`); `INGEST`
+converts grid substrate into energy (`ingest_gain = 28` per unit); `EXCRETE`
+adds toxic waste with a small surcharge; `MOVE` costs extra. Energy = 0 ⇒
+death, and the body decays back into substrate over a few steps. Selection is
+implicit: genomes that ingest efficiently, copy themselves, and divide before
+they starve leave more descendants — and it is *measurable*, not asserted (the
+enrichment test above).
+
+**Honest scope note — what is and isn't anchored.** These energy constants
+(`ingest_gain = 28`, `E_div = 120`, the per-instruction cost) are **tuned for
+a viable, legible simulation, not derived from any biophysical measurement**.
+Unlike the earlier abiogenesis stages — whose constants trace to real data
+(the Wood–Ljungdahl ΔG° = −95 kJ/mol, measured fatty-acid CMCs, the
+Miyazawa–Jernigan contact-energy scale) — Stage XIII is an *abstract
+digital-evolution model* in the Tierra/Avida tradition; its quantities are
+software CPU cycles and arbitrary energy units, exactly as in the source
+literature (Avida's task bonuses are likewise chosen, not measured). It models
+the *logic* of variation-plus-selection on self-replicators, not a specific
+organism's biochemistry.
+
+**Division, mutation, and the error threshold.** When an organism has both
+enough energy (≥ `E_div = 120`) **and** a completed self-copy, it divides into
+an empty Moore neighbour. Mutation is applied **per instruction at copy time**
+— each `COPY` reproduces its source opcode correctly with probability `1 − ε`
+and otherwise substitutes a random opcode (default `mutation_rate = 0.02`).
+This is Eigen's per-digit error model placed where it physically belongs: in
+the act of copying, so a copy error can corrupt the daughter's *own*
+replication machinery. Eigen's quasispecies **error threshold** therefore
+governs this stage as it does the RNA world:
+
+```
+ε_c  =  ln(σ) / L
+```
+
+for selective superiority σ and genome length *L* (with σ = e this is the
+textbook ε_c ≈ 1/L). Below ε_c the ancestral master sequence is maintained
+against copying noise; above it the lineage melts into a random ensemble — the
+**error catastrophe**. The rule exposes ε_c for the founder length and reports
+`founder_divergence`, the mean genome distance from the ancestor, which rises
+with successful evolution and explodes past the catastrophe.
+
+**Lineage and open-ended evolution.** Every organism records its parent's id
+and its founder `lineage` id, so the population can be walked back as an
+ancestry chain (the per-organism inspector) and surviving lineages counted.
+Distinct lineages diverging from the founding ancestor over thousands of steps
+is the **open-ended-evolution** framing of Channon (2003): novelty generated
+endogenously by the system rather than scripted. Genomes start from the
+ancestor with a 512-instruction cap on private memory.
+
+**Honest scope note — the LUCA → LIFE coupling is positional only.** The
+pipeline hand-off seeds organism *positions* at the brightest cells of Stage
+XII's LUCA signal and starts the substrate a little richer there. It does
+**not** derive the virtual-CPU ancestor genome from Stage XII's recovered gene
+set or Stage VIII's codon table — every founder gets the same hand-written
+ancestor tape. So the chemistry-to-life arc is *spatially* continuous at this
+seam but the genome is a fresh, designed starting point, not an evolved
+continuation of the upstream chemistry. Deriving the ancestor genome from
+upstream state is a deferred item; we state the limitation rather than imply a
+continuity that isn't there.
+
+**Rendering.** The live grid colours organisms as filled discs by energy on a
+viridis substrate field, darkened where waste pools (V7); an SEM mode draws
+translucent hairline body walls (V9). A high-resolution `render_plate`
+companion (V10) renders the most energetic organisms with Brachionus-style
+internal anatomy — a translucent body wall, a gut compartment with drifting
+ingested particles, the genome instruction strip (the currently-executing
+opcode highlighted teal), a nucleus, and a cytoplasmic shimmer whose amplitude
+follows the organism's execution state. Every anatomical element maps to real
+organism state rather than decorative motion; a preview is at
+`docs/generated/stage13_life.png`.
+
+**What this captures:** a genome that literally executes as the phenotype;
+the Avida private-memory energy metabolism; **self-encoded replication** (an
+organism must run its own copy loop to reproduce — strip `COPY` and it leaves
+no offspring, verified); selection on ingest/copy/divide efficiency that is
+*measured*, not assumed (the enrichment test); per-instruction copy mutation
+under Eigen's error threshold; lineage tracking; and divergence from a common
+ancestor. **What it cuts (stated plainly):** this is **single-celled only** —
+no neural controllers (the PolyWorld lineage, Yaeger 1994) and no
+multicellularity. Memory is **private, not shared**, so Tierra's shared-memory
+parasites — one organism hijacking a neighbour's copy loop — are *not* modelled
+(that variant is a deferred v5.x item). The energy constants are tuned, not
+biophysically derived (see the scope note above), and the LUCA → LIFE coupling
+is positional only (the ancestor genome is not derived from upstream chemistry).
+There is no real biochemistry, spatial chemistry, or ecology beyond the
+substrate/waste economy. The "SEM" / "400×" rendering is a stylised
+depth-shaded visualisation, not data from an electron microscope.
+
+**Citations**
+- Ray, T. S. (1991). An approach to the synthesis of life. *Artificial Life
+  II*, SFI Studies in the Sciences of Complexity, X, 371–408.
+- Adami, C., & Brown, C. T. (1994). Evolutionary learning in the 2D artificial
+  life system 'Avida'. *Artificial Life IV*, 377–381.
+- Ofria, C., & Wilke, C. O. (2004). Avida: a software platform for research in
+  computational evolutionary biology. *Artificial Life*, 10(2), 191–229.
+- Yaeger, L. (1994). Computational genetics, physiology, metabolism, neural
+  systems, learning, vision, and behavior… (PolyWorld). *Artificial Life III*,
+  263–298.
+- Eigen, M. (1971). Selforganization of matter… *Naturwissenschaften*,
+  58(10), 465–523.
+- Channon, A. (2003). Improving and still passing the ALife test:
+  component-normalised activity statistics classify evolution in Geb as
+  unbounded. *Artificial Life VIII*, 173–181.
 
 ---
 
@@ -572,9 +735,10 @@ This is a sandbox for thinking about abiogenesis, not a quantitative model.
   energies of reaction are not modelled.
 - **No real reaction kinetics.** Rates are mass-action with phenomenological
   constants, not Arrhenius / transition-state theory.
-- **Toy membrane physics.** Stage 3 uses threshold detection rather than
-  fluid simulation of lipid bilayers.
-- **Toy fitness function.** Stage 4 uses Shannon entropy × concentration as
-  a placeholder; real protocell fitness depends on internal RAF dynamics.
+- **Toy membrane physics.** Stage 3 uses a CMC threshold plus a Helfrich
+  biharmonic bending term, not a full fluid simulation of lipid bilayers.
+- **Idealised protocell fitness.** Stage 4 runs the Eigen-Schuster hypercycle
+  replicator ODE (not the old Shannon-entropy placeholder), but still abstracts
+  away internal RAF dynamics and membrane mechanics.
 
 For each, the reference list above points at the rigorous treatment.

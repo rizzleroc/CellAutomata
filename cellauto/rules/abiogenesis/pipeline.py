@@ -30,6 +30,7 @@ from cellauto.rules.abiogenesis.stage4_selection import AbiogenesisStage4Selecti
 from cellauto.rules.abiogenesis.stage_chirality import AbiogenesisStageHomochirality
 from cellauto.rules.abiogenesis.stage_coacervate import AbiogenesisStageCoacervate
 from cellauto.rules.abiogenesis.stage_code import AbiogenesisStageGeneticCode
+from cellauto.rules.abiogenesis.stage_life import AbiogenesisStageLife
 from cellauto.rules.abiogenesis.stage_luca import AbiogenesisStageLUCA
 from cellauto.rules.abiogenesis.stage_minerals import AbiogenesisStageMinerals
 from cellauto.rules.abiogenesis.stage_rna import AbiogenesisStageRNAWorld
@@ -258,9 +259,15 @@ class AbiogenesisPipelineRule:
         return {"stage": state.current_stage, **inner_pop}
 
     def serialize_state(self, state: PipelineState) -> dict:
+        # Persist the inner rule's tuned config too — otherwise a snapshot taken
+        # with non-default stage parameters reloads with defaults (the inner
+        # rule was being rebuilt via the bare default constructor). ``to_config``
+        # is optional on a rule, so guard for it.
+        inner_cfg = state.inner_rule.to_config() if hasattr(state.inner_rule, "to_config") else {}
         return {
             "current_stage": state.current_stage,
             "inner_state": state.inner_rule.serialize_state(state.inner_state),
+            "inner_config": inner_cfg,
             "width": state.width,
             "height": state.height,
             "step_in_stage": self._step_count,
@@ -268,6 +275,14 @@ class AbiogenesisPipelineRule:
 
     def deserialize_state(self, data: dict) -> PipelineState:
         inner_rule = self._make_stage(data["current_stage"])
+        # Reapply the persisted inner-stage config so a tuned stage reloads with
+        # its tuned parameters, not the dataclass defaults.
+        for key, val in (data.get("inner_config") or {}).items():
+            if hasattr(inner_rule, key):
+                try:
+                    setattr(inner_rule, key, val)
+                except (AttributeError, TypeError):
+                    pass
         self.renderer_kind = inner_rule.renderer_kind
         self._step_count = data.get("step_in_stage", 0)
         return PipelineState(
@@ -366,6 +381,22 @@ _STAGE_LUCA_INFO = StageInfo(
     citation="Koonin 2003 · Theobald 2010 · Weiss et al. 2016",
     legend="viridis = fitness; luca_size stat = inferred ancestral core genome.",
 )
+_STAGE_LIFE_INFO = StageInfo(
+    index=12,
+    title="DIGITAL LIFE",
+    principle="Virtual-CPU genomes that execute, ingest, excrete, divide, and mutate under selection.",
+    detail=(
+        "After LUCA, the lineages that lived. Each organism is a tape of "
+        "opcodes run by a tiny virtual CPU (Tierra 1991; Avida 2004). Every "
+        "instruction costs energy; INGEST converts substrate to energy; "
+        "EXCRETE adds toxic waste; energy = 0 ⇒ death; energy ≥ E_div ⇒ "
+        "division with per-instruction copy error ε. Distinct lineages "
+        "diverge from the founding ancestor — open-ended evolution in a "
+        "digital substrate (Channon 2003)."
+    ),
+    citation="Ray 1991 · Adami 1994 · Ofria & Wilke 2004 · Eigen 1971 · Channon 2003",
+    legend="disc colour = organism energy; white ring = membrane; substrate = viridis field; dark = waste.",
+)
 _STAGE_COACERVATE_INFO = StageInfo(
     index=8,
     title="COACERVATES",
@@ -396,6 +427,7 @@ EXTENDED_STAGE_CLASSES = (
     AbiogenesisStage3Vesicles,
     AbiogenesisStage4Selection,
     AbiogenesisStageLUCA,
+    AbiogenesisStageLife,
 )
 EXTENDED_STAGE_INFO: tuple[StageInfo, ...] = (
     STAGE_INFO[0],
@@ -410,14 +442,16 @@ EXTENDED_STAGE_INFO: tuple[StageInfo, ...] = (
     STAGE_INFO[3],
     STAGE_INFO[4],
     _STAGE_LUCA_INFO,
+    _STAGE_LIFE_INFO,
 )
 
 
 @dataclass
 class AbiogenesisExtendedPipelineRule(AbiogenesisPipelineRule):
     """Auto-promoting pipeline that walks every shipped origin-of-life process
-    (10 stages, scientific order). Drop-in replacement for the canonical
-    `AbiogenesisPipelineRule` — same protocol, just a longer narrative."""
+    and on into digital life (13 stages, scientific order, soup → … → LUCA →
+    LIFE). Drop-in replacement for the canonical `AbiogenesisPipelineRule` —
+    same protocol, just a longer narrative."""
 
     name: str = "abiogenesis-pipeline-extended"
     stage_classes: tuple = EXTENDED_STAGE_CLASSES
