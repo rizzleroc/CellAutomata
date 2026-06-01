@@ -130,29 +130,24 @@ def contact(out="discovery/animhunt_contact.jpg"):
         print(f"  {b['name']:14} s{b['seed']} {b['n1']}x{b['n2']} o{b['octs']} cx={b['complexity']} mot={b['motion']} comb={b['combined']}")
 
 
-def render_loop(b, pal, out, K=600, OUTRES=1080, dur=9, fps=30):
+def render_loop(b, pal, out, K=640, OUTRES=1080, dur=10, fps=30):
     eng = Engine(width=GRID, height=GRID, rule=REGISTRY[RULE](**b["kw"]), seed=b["seed"])
     if b["scatter"]:
         scatter_seed(eng, GRID, b["seed"])
-    for _ in range(500):
+    for _ in range(520):                       # warm to the intricate state the search scored
         eng.step()
+    v = np.asarray(eng.state.v, np.float32); v /= (v.max() + 1e-9)   # FREEZE (avoids fill-in drift)
     kal = MX.Kal(K, GRID)
-    N = dur * fps; L = int(1.6 * fps); f0 = None
+    N = dur * fps
     wr = imageio_ffmpeg.write_frames(out, (OUTRES, OUTRES), fps=fps, codec="libx264",
         pix_fmt_in="rgb24", pix_fmt_out="yuv420p", macro_block_size=2,
         output_params=["-crf", "18", "-preset", "medium"])
     wr.send(None)
     for fi in range(N):
-        eng.step()
-        v = np.asarray(eng.state.v, np.float32); v /= (v.max() + 1e-9)
-        rot = 0.02 * fi; zoom = 1.0 + 0.04 * np.sin(2 * np.pi * fi / N)
+        rot = 2 * np.pi * fi / N               # full turn -> perfectly seamless
+        zoom = 1.0 + 0.05 * np.sin(2 * np.pi * fi / N)
         rgb = MX.colorize(compound_anim(kal, v, b["n1"], b["n2"], b["octs"], rot, zoom), pal)
         img = np.asarray(Image.fromarray(rgb.astype(np.uint8)).resize((OUTRES, OUTRES), Image.BICUBIC), np.uint8)
-        if fi == 0:
-            f0 = img.copy()
-        if fi >= N - L:
-            w = (fi - (N - L) + 1) / L
-            img = ((1 - w) * img.astype(np.float32) + w * f0.astype(np.float32)).astype(np.uint8)
         wr.send(np.ascontiguousarray(img).tobytes())
     wr.close()
     print(f"  loop -> {out}")
