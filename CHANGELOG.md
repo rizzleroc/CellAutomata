@@ -5,6 +5,61 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ---
 
+## [5.0.0] — 2026-06-01
+
+**LIFE: Digital Organisms (Stage XIII).** After Stage XII distils LUCA — the
+*recipe* for life — Stage XIII populates the post-LUCA world with discrete
+digital organisms whose behaviour is an *executing program*, not a probability
+table. The extended pipeline is now a **13-stage** arc (soup → … → LUCA →
+LIFE). This release ships v5.0.0 through Phase 5.1.
+
+### New rule — `abiogenesis-life` (Stage XIII, index 12)
+- **20-opcode virtual CPU.** Each organism carries a genome — a tape of
+  opcodes run by a tiny virtual CPU (`cellauto/rules/abiogenesis/life_vm.py`):
+  four byte registers, an instruction pointer, a register head, a comparison
+  flag, and a facing direction. The genome IS the phenotype (Tierra, Ray 1991).
+  Opcodes cover arithmetic, control flow (`JUMP`/`JZ`/`LOOP`), and six
+  world-facing actions (`SENSE`, `INGEST`, `EXCRETE`, `MOVE`, `TURN`,
+  `DIVIDE`) plus `COPY`/`RAND`. Private memory capped at 512 instructions.
+- **Energy metabolism (Avida-style private memory).** A 2-D substrate + waste
+  grid; every executed instruction costs energy (`instruction_cost = 1`),
+  `INGEST` converts substrate to energy (`ingest_gain = 28`), `EXCRETE` adds
+  toxic waste, `MOVE` costs extra. Energy = 0 ⇒ death (body decays back into
+  substrate); energy ≥ `E_div = 120` ⇒ division.
+- **Per-instruction mutation + Eigen error threshold.** Daughter genomes are
+  copied with per-instruction substitution probability ε (`mutation_rate =
+  0.02`). The rule exposes Eigen's error threshold ε_c = ln(σ)/L and reports
+  `founder_divergence`, which explodes past the error catastrophe.
+- **Lineage tracking + per-organism ancestry.** Each organism records its
+  parent id and founder `lineage` id; surviving ancestry chains and lineage
+  counts are exposed for the inspector (the parallel Tk per-organism inspector
+  reads these).
+- **LUCA → LIFE pipeline hand-off (G1).** `init_state` accepts the upstream
+  LUCA `seed_field`; founders seed at the brightest LUCA cells and substrate
+  starts richer where the chemistry was good. `extract_signal` exports an
+  energy-weighted population map for a hypothetical Stage XIV.
+
+### Rendering
+- **V7 viridis discs (default).** Organisms are filled discs coloured by
+  energy on a viridis substrate field, darkened where waste pools.
+- **V9 SEM mode.** Translucent hairline body walls (warm sepia membrane).
+- **V10 high-resolution internal-anatomy plate (Phase 5.1).** `render_plate`
+  renders the most energetic organisms Brachionus-style with a translucent
+  body wall, a gut compartment with drifting ingested particles, the genome
+  instruction strip (current instruction highlighted teal), a nucleus, and a
+  cytoplasmic shimmer tied to execution state — every element maps to real
+  organism state. Preview at `docs/generated/stage13_life.png`.
+
+### Other
+- New regression test suite covering the virtual CPU, metabolism, mutation /
+  error threshold, lineage tracking, and rendering.
+- Web3 `life.js` counterpart mirrors the Stage XIII rule in the browser client.
+- `docs/science.md` gains a LIFE / Stage XIII section; `docs/ROADMAP.md` v5.0
+  punchlist V1–V10 checked off (V11 ecology / V12 Tierra shared-memory
+  deferred).
+
+---
+
 ## [3.6.0] — 2026-05-24
 
 The **local-vs-web parity** release. The project ships two clients running

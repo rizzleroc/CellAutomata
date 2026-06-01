@@ -552,6 +552,107 @@ covers that part), and protein structure.
 
 ---
 
+## LIFE — digital organisms with executing genomes (Stage XIII)
+
+Selectable as the `abiogenesis-life` rule, and the final chapter (Stage XIII,
+index 12) of the 13-stage extended pipeline. Where Stage XII distils LUCA —
+the *recipe* for life — Stage XIII populates the post-LUCA world with discrete
+organisms whose behaviour is not a probability table but an **executing
+program**. Each organism carries a genome: a tape of opcodes for a tiny
+virtual CPU. The CPU steps instruction-by-instruction, and every instruction
+is the organism *doing something* — sensing, ingesting substrate, excreting
+waste, moving, comparing, copying, dividing. The genome IS the phenotype.
+
+**The virtual-CPU genome.** The instruction set is a deliberately small
+**20-opcode** alphabet (`NOP`, `INC`/`DEC`, arithmetic, `LOAD` immediates,
+register/head manipulation, `JUMP`/`JZ`/`LOOP` control flow, `CMP`, and the
+six world-facing opcodes `SENSE`, `INGEST`, `EXCRETE`, `MOVE`, `TURN`,
+`DIVIDE`, plus `COPY` and `RAND`). The CPU has four byte registers, an
+instruction pointer, a register-selecting head, a comparison flag, and a
+Moore-neighbourhood facing direction. Each founder starts from a hand-written
+viable **ancestor genome** that senses, eats, occasionally excretes, wanders,
+and divides when energy-rich; mutation then explores the neighbourhood around
+it. This is the **Tierra** lineage (Ray 1991): self-replicating
+assembly-language programs competing in a soup, with the copy-loop idiom we
+borrow as `COPY`/`DIVIDE`.
+
+**Avida-style private memory + energy metabolism.** Unlike Tierra's single
+shared address space, each organism here has its **own private** genome and CPU
+state, and lives in a 2-D grid of substrate and waste — the **Avida** model
+(Adami & Brown 1994; Ofria & Wilke 2004). The metabolism is an energy economy:
+every executed instruction costs energy (`instruction_cost = 1`); `INGEST`
+converts grid substrate into energy (`ingest_gain = 28` per unit); `EXCRETE`
+adds toxic waste with a small surcharge; `MOVE` costs extra. Energy = 0 ⇒
+death, and the body decays back into substrate over a few steps. Selection is
+implicit: genomes that ingest efficiently and divide before they starve leave
+more descendants.
+
+**Division, mutation, and the error threshold.** When an organism's energy
+reaches `E_div = 120` it divides into an empty Moore neighbour; the daughter
+genome is copied with **per-instruction** substitution probability ε (default
+`mutation_rate = 0.02`), Eigen's per-digit error model. Eigen's quasispecies
+**error threshold** therefore governs this stage exactly as it does the RNA
+world:
+
+```
+ε_c  =  ln(σ) / L
+```
+
+for selective superiority σ and genome length *L* (with σ = e this is the
+textbook ε_c ≈ 1/L). Below ε_c the ancestral master sequence is maintained
+against copying noise; above it the lineage melts into a random ensemble — the
+**error catastrophe**. The rule exposes ε_c for the founder length and reports
+`founder_divergence`, the mean genome distance from the ancestor, which rises
+with successful evolution and explodes past the catastrophe.
+
+**Lineage and open-ended evolution.** Every organism records its parent's id
+and its founder `lineage` id, so the population can be walked back as an
+ancestry chain (the per-organism inspector) and surviving lineages counted.
+Distinct lineages diverging from the founding ancestor over thousands of steps
+is the **open-ended-evolution** framing of Channon (2003): novelty generated
+endogenously by the system rather than scripted. Genomes start from the
+ancestor with a 512-instruction cap on private memory.
+
+**Rendering.** The live grid colours organisms as filled discs by energy on a
+viridis substrate field, darkened where waste pools (V7); an SEM mode draws
+translucent hairline body walls (V9). A high-resolution `render_plate`
+companion (V10) renders the most energetic organisms with Brachionus-style
+internal anatomy — a translucent body wall, a gut compartment with drifting
+ingested particles, the genome instruction strip (the currently-executing
+opcode highlighted teal), a nucleus, and a cytoplasmic shimmer whose amplitude
+follows the organism's execution state. Every anatomical element maps to real
+organism state rather than decorative motion; a preview is at
+`docs/generated/stage13_life.png`.
+
+**What this captures:** a genome that literally executes as the phenotype,
+the Avida private-memory energy metabolism, implicit selection on
+ingest/divide efficiency, per-instruction mutation under Eigen's error
+threshold, lineage tracking, and open-ended divergence from a common ancestor.
+**What it cuts:** this is **single-celled only** — there are no neural
+controllers (the PolyWorld lineage, Yaeger 1994) and no multicellularity.
+Memory is **private, not shared**, so Tierra's shared-memory parasites — one
+organism hijacking a neighbour's copy loop — are *not* modelled; that variant
+is a deferred v5.x item. There is no real biochemistry, spatial chemistry, or
+ecology beyond the substrate/waste economy.
+
+**Citations**
+- Ray, T. S. (1991). An approach to the synthesis of life. *Artificial Life
+  II*, SFI Studies in the Sciences of Complexity, X, 371–408.
+- Adami, C., & Brown, C. T. (1994). Evolutionary learning in the 2D artificial
+  life system 'Avida'. *Artificial Life IV*, 377–381.
+- Ofria, C., & Wilke, C. O. (2004). Avida: a software platform for research in
+  computational evolutionary biology. *Artificial Life*, 10(2), 191–229.
+- Yaeger, L. (1994). Computational genetics, physiology, metabolism, neural
+  systems, learning, vision, and behavior… (PolyWorld). *Artificial Life III*,
+  263–298.
+- Eigen, M. (1971). Selforganization of matter… *Naturwissenschaften*,
+  58(10), 465–523.
+- Channon, A. (2003). Improving and still passing the ALife test:
+  component-normalised activity statistics classify evolution in Geb as
+  unbounded. *Artificial Life VIII*, 173–181.
+
+---
+
 ## How to read the pipeline
 
 The `abiogenesis-pipeline` rule runs the five stages in sequence with

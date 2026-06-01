@@ -7,19 +7,20 @@
 [![CI](https://github.com/rizzleroc/CellAutomata/actions/workflows/ci.yml/badge.svg)](https://github.com/rizzleroc/CellAutomata/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 ![Python](https://img.shields.io/badge/python-3.10%2B-blue)
-![Version](https://img.shields.io/badge/version-3.6.0-brightgreen)
+![Version](https://img.shields.io/badge/version-5.0.0-brightgreen)
 
 A scientifically-grounded cellular sandbox exploring the **chemistry-to-life
 transition** — the abiogenesis problem — across a canonical five-stage
-pipeline *and* a **coupled 12-stage extended pipeline** that walks every
+pipeline *and* a **coupled 13-stage extended pipeline** that walks every
 major origin-of-life process (alkaline hydrothermal vents with real
 Wood-Ljungdahl chemistry, mineral catalysis, autocatalytic sets,
 homochirality, RNA world, genetic-code coevolution, coacervates, vesicles,
-protocell selection, and LUCA distillation) in scientific order.
+protocell selection, LUCA distillation, and — new in v5.0 — digital life)
+in scientific order.
 
 In v3.5 every stage transition genuinely passes its output field forward
 to the next stage's initial condition, so the pipeline is now a single
-continuous narrative — not twelve isolated demos on a timer. Stage XI
+continuous narrative — not thirteen isolated demos on a timer. Stage XI
 runs the real Eigen-Schuster replicator ODE; Stage X has Helfrich
 bending elasticity; Stage VIII scores peptides under a Miyazawa-Jernigan
 contact-energy landscape; Stage XII derives the LUCA core from a
@@ -92,10 +93,10 @@ Every constant traces to a published measurement; see
 [docs/science.md](docs/science.md) for the values and citations. The
 `abiogenesis-pipeline` rule walks all five stages end to end.
 
-Seven more origin-of-life processes ship as standalone selectable rules
-and together appear as the **12-stage `abiogenesis-pipeline-extended`** in
+Eight more origin-of-life processes ship as standalone selectable rules
+and together appear as the **13-stage `abiogenesis-pipeline-extended`** in
 scientific order — soup → vent → RD → mineral → RAF → chirality → RNA →
-genetic code → coacervate → vesicles → selection → LUCA:
+genetic code → coacervate → vesicles → selection → LUCA → LIFE:
 
 | Process | Science |
 |---|---|
@@ -106,6 +107,7 @@ genetic code → coacervate → vesicles → selection → LUCA:
 | **Genetic-code coevolution** | Code → translation product → selection feedback drives convergence (Vetsigian-Woese-Goldenfeld 2006; Ikehara GADV-protein world) |
 | **Coacervates** | Cahn-Hilliard liquid-liquid phase separation (Oparin 1924; Banani et al. 2017) |
 | **LUCA distillation** | Comparative-genomics parsimony with a 70 % prevalence threshold; surfaces the conserved gene families shared by every surviving lineage (Weiss et al. 2016) |
+| **Digital life (Stage XIII)** | Virtual-CPU genomes (20 opcodes) that execute, ingest, excrete, divide, and mutate under selection; per-instruction mutation governed by Eigen's error threshold `ε_c = ln(σ)/L`; open-ended divergence from a common ancestor (Ray 1991 Tierra; Ofria & Wilke 2004 Avida; Channon 2003) |
 
 ## Try it in your browser (no install)
 
@@ -177,7 +179,7 @@ than v1 in practice.
 | Rule name | Renderer | What it is |
 |---|---|---|
 | `abiogenesis-pipeline` | mixed | Canonical 5-stage pipeline, auto-promoting |
-| `abiogenesis-pipeline-extended` | mixed | **12-stage pipeline** walking *every* shipped origin-of-life process in scientific order |
+| `abiogenesis-pipeline-extended` | mixed | **13-stage pipeline** walking *every* shipped origin-of-life process in scientific order |
 | `abiogenesis-stage0-soup` | discrete | Primordial soup; init weighted by Miller's 1953 yields |
 | `abiogenesis-stage1-grayscott` | field | Gray-Scott reaction-diffusion |
 | `abiogenesis-stage2-raf` | field | Kauffman RAF autocatalytic chemistry |
@@ -190,6 +192,7 @@ than v1 in practice.
 | `abiogenesis-mineral-catalysis` | field | Na-montmorillonite clay mask — Ferris-style surface catalysis of activated ImpA monomers |
 | `abiogenesis-genetic-code` | field | Vetsigian-Woese-Goldenfeld code coevolution — codon→amino-acid table converges under selection |
 | `abiogenesis-luca` | field | LUCA distillation — comparative-genomics parsimony surfaces the core gene set (Weiss et al. 2016) |
+| `abiogenesis-life` | field | **Stage XIII — digital life**: virtual-CPU genomes (20 opcodes) executing, ingesting, dividing, and mutating under selection (Ray 1991 Tierra; Ofria & Wilke 2004 Avida) |
 | `conway` | discrete | Conway's Game of Life (B3/S23) |
 | `wolfram1d` | discrete | Elementary 1D automaton, rule 0–255 |
 | `natural-selection` | discrete | **Legacy alias** — same mechanics as Stage 0 |
@@ -357,8 +360,26 @@ The project's history is its own gap analysis:
     transition, WL stoichiometric cap, real code-consensus test,
     pipeline handoff) and G11–G12 (README + CHANGELOG + ROADMAP
     honesty). Test count 120 → 141; coverage 87.09 % → 88.13 %.
+- **v5.0** (2026-06-01): **LIFE — digital organisms (Stage XIII).** After
+  Stage XII distils LUCA — the *recipe* for life — Stage XIII populates the
+  post-LUCA world with discrete digital organisms whose behaviour is an
+  *executing program*, not a probability table. New **`abiogenesis-life`**
+  rule built on a 20-opcode virtual CPU (`life_vm.py`): each organism is a
+  tape of opcodes run instruction-by-instruction, with an energy metabolism
+  on a substrate/waste grid (every instruction costs energy; `INGEST`
+  converts substrate to energy; `EXCRETE` adds toxic waste; energy = 0 ⇒
+  death; energy ≥ `E_div` ⇒ division). Daughter genomes are copied with
+  per-instruction mutation ε governed by Eigen's error threshold
+  `ε_c = ln(σ)/L`; lineage + per-organism ancestry are tracked, and the
+  LUCA → LIFE pipeline hand-off seeds founders at the brightest LUCA cells.
+  This extends the extended pipeline to **13 stages** (soup → … → LUCA →
+  LIFE). Rendering: viridis energy discs (V7), SEM translucent body walls
+  (V9), and a high-resolution internal-anatomy plate (V10, Phase 5.1) with
+  gut/genome-strip/nucleus/cytoplasmic-shimmer. New regression test suite and
+  a web3 `life.js` counterpart. Ecology (V11) and Tierra shared-memory
+  parasites (V12) are deferred to later v5.x phases.
 
-**141 tests, all passing.** See [docs/science.md](docs/science.md) for the
+**See [docs/science.md](docs/science.md) for the
 math and citations, and [docs/ROADMAP.md](docs/ROADMAP.md) for the feature
 inventory, mandated UI toolset, and remaining roadmap. Full version history in
 [CHANGELOG.md](CHANGELOG.md).

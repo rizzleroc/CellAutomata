@@ -90,6 +90,7 @@ membrane). Sprites are concentric bilayer rings at local maxima of
 | Coacervate | membrane-less compartment | coacervate-droplet | Cahn-Hilliard LLPS |
 | Vents | place + power | mineral-cell honeycomb | Alkaline-vent chimney |
 | **Vesicles** *(new)* | true bilayer compartment | vesicle-bilayer | Helfrich-curvature lipid sphere |
+| **Digital life** *(new)* | open-ended evolving lineage | digital-organism | Stage XIII Tierra/Avida virtual-CPU organisms |
 
 ## Files
 
@@ -114,7 +115,8 @@ docs/web3/
     ├── chirality.js          sprites: chirality-glyph L/D @ |L−R| maxima
     ├── coacervate.js         sprites: coacervate-droplet ring @ φ maxima
     ├── vents.js              sprites: mineral-cell honeycomb on chimney walls
-    └── vesicles.js           NEW — Helfrich PDE + vesicle-bilayer ring sprites
+    ├── vesicles.js           NEW — Helfrich PDE + vesicle-bilayer ring sprites
+    └── life.js               NEW — Stage XIII digital-life virtual CPU + organisms
 ```
 
 ## Rule contract (for adding a tenth rule)

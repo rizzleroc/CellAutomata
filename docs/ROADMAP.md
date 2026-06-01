@@ -39,8 +39,13 @@ Last updated: 2026-05-25.
 > substrate (sem.js) + sprite overlay (sprites.js) are live; what
 > remains for the desktop side is the Python `SemRenderer` port.
 >
-> **v5.0 status (PROPOSED):** LIFE — virtual-CPU digital organisms
-> after LUCA. See §7 and the full PRD at
+> **v5.0 status (SHIPPED through Phase 5.1):** LIFE — virtual-CPU
+> digital organisms after LUCA. v5.0.0 through Phase 5.1 has shipped:
+> punchlist items V1–V10 are done (the `abiogenesis-life` Stage XIII
+> rule, energy metabolism, mutation + lineage tracking, viridis + SEM
+> rendering, and the internal-anatomy plate). V11 (ecology, Phase 5.2)
+> and V12 (Tierra shared-memory, Phase 5.4) remain open. See §7 and the
+> full PRD at
 > [PRD_LIFE_DIGITAL_ORGANISMS.md](PRD_LIFE_DIGITAL_ORGANISMS.md).
 > Inspired by the user's 400× Brachionus reference: post-LUCA, the
 > simulator extends into a thirteenth stage where digital organisms
@@ -535,42 +540,42 @@ decorative motion. The Brachionus reference is the visual target:
 translucent body wall + visible internal compartments + cytoplasmic
 shimmer at instruction-execution rate.
 
-### Punchlist (open until each item ships)
+### Punchlist (V1–V10 shipped through Phase 5.1; V11–V12 open)
 
-- [ ] **V1 — Virtual CPU + opcode set.** ~20 opcodes (load, store,
+- [x] **V1 — Virtual CPU + opcode set.** ~20 opcodes (load, store,
   add, jump, copy, ingest, excrete, sense, move, …); ≤ 512-instruction
   genome cap. Tierra-derived, Avida-flavoured. Per-organism private
   memory (Tierra-shared variant comes later in V11).
-- [ ] **V2 — Energy + metabolism loop.** Every instruction costs
+- [x] **V2 — Energy + metabolism loop.** Every instruction costs
   1 unit of energy; INGEST replenishes from the substrate field;
   EXCRETE adds to waste. Energy = 0 → death; energy ≥ E_div → division.
-- [ ] **V3 — Stage XIII rule (`abiogenesis-life`).** Registered in
+- [x] **V3 — Stage XIII rule (`abiogenesis-life`).** Registered in
   `cellauto/rules/`; appears as the thirteenth stage of the extended
   pipeline. Pipeline hand-off (G1) from Stage XII seeds the initial
   population at LUCA pathway-graph hot-spots.
-- [ ] **V4 — Substrate + waste grid.** 60 × 60 default grid; substrate
+- [x] **V4 — Substrate + waste grid.** 60 × 60 default grid; substrate
   replenishes linearly; waste accumulates and increases nearby
   death probability.
-- [ ] **V5 — Mutation + lineage tracking.** Per-instruction ε mutation
+- [x] **V5 — Mutation + lineage tracking.** Per-instruction ε mutation
   at copy time; per-organism parent pointer; ancestry chain
   reconstructible to the founder.
-- [ ] **V6 — Per-organism inspector.** Click-to-inspect Toplevel
+- [x] **V6 — Per-organism inspector.** Click-to-inspect Toplevel
   (Tk) / drawer (web) showing genome strip, energy, instruction
   pointer, ancestry tree.
-- [ ] **V7 — V3.6 viridis rendering.** Default render: filled
+- [x] **V7 — V3.6 viridis rendering.** Default render: filled
   energy-coloured discs on the substrate field; this is the v5.0.0
   ship target. Internal anatomy (V9) requires SEM mode and waits for
   v4.0.
-- [ ] **V8 — Twelve regression tests.** VM opcodes, energy → death,
+- [x] **V8 — Twelve regression tests.** VM opcodes, energy → death,
   energy → division, mutation gates lineage diversity, ε > ε_c →
   catastrophe, distinct lineage within 10k steps at default seed,
   substrate depletion → crash, ancestry tracked, pipeline hand-off,
   no per-step allocation, serialisation round-trip, web/Python VM
   parity (deferred).
-- [ ] **V9 — Translucent body sprite (Phase 5.1).** Each organism
+- [x] **V9 — Translucent body sprite (Phase 5.1).** Each organism
   rendered with a translucent ellipse body — no internal anatomy yet,
   just the membrane. Requires SEM mode.
-- [ ] **V10 — Internal anatomy (Phase 5.1).** Gut compartment with
+- [x] **V10 — Internal anatomy (Phase 5.1).** Gut compartment with
   drifting ingested particles + genome strip + nucleus
   visible inside each organism. Cytoplasmic shimmer at execution
   rate. Brachionus-style preview shipped to

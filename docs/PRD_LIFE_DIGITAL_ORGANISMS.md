@@ -1,6 +1,6 @@
 # PRD — LIFE: Digital Organisms (v5.0)
 
-**Status:** Draft · proposed for v5.0 cycle
+**Status:** Implemented — v5.0.0 through Phase 5.1 has shipped (punchlist V1–V10; V11 ecology / V12 Tierra shared-memory deferred)
 **Last updated:** 2026-06-01
 
 ![v5 LIFE UI mockup — Stage XIII Digital Life](generated/v5_life_ui_mockup.png)
@@ -334,9 +334,9 @@ saved) shows the visual target:
 
 | Phase | Deliverable | Acceptance gate |
 |---|---|---|
-| **5.0.0 — Virtual CPU** | Stage XIII rule with VM + energy + reproduction + per-organism inspector. Renders as filled discs under v3.6 viridis path. | At least one lineage distinct from the founder within 10k steps. ε_c regression pinned. |
-| **5.0.1 — Translucent body sprite** | Each organism rendered with a translucent-ellipse body sprite (no internal anatomy yet, just the membrane). | Side-by-side comparison: organisms read as cells, not discs. |
-| **5.1 — Internal anatomy** | Gut + genome strip + nucleus compartments visible inside each organism. Cytoplasmic shimmer tied to instruction rate. | Brachionus-style preview shipped to `docs/generated/stage13_life.png`. |
+| **5.0.0 — Virtual CPU** ✅ shipped | Stage XIII rule with VM + energy + reproduction + per-organism inspector. Renders as filled discs under v3.6 viridis path. | At least one lineage distinct from the founder within 10k steps. ε_c regression pinned. |
+| **5.0.1 — Translucent body sprite** ✅ shipped | Each organism rendered with a translucent-ellipse body sprite (no internal anatomy yet, just the membrane) — delivered via SEM mode. | Side-by-side comparison: organisms read as cells, not discs. |
+| **5.1 — Internal anatomy** ✅ shipped | Gut + genome strip + nucleus compartments visible inside each organism. Cytoplasmic shimmer tied to instruction rate. | Brachionus-style preview shipped to `docs/generated/stage13_life.png`. |
 | **5.2 — Ecology mechanics** | Predation between lineages; waste-toxicity gradient; cross-cell substrate gradient. | A self-organised "predator-prey" cycle visible in the population sparkline within 20k steps. |
 | **5.3 — Web parity** | `docs/web2/rules/life.js` shipped; virtual-CPU parity test green; web smoke test extended. | Same genome runs identically on Python + JS for 100 steps. |
 | **5.4 — Shared-memory variant (Tierra mode)** | Optional `dynamics="tierra"` rule config that puts all organisms in one shared instruction tape so parasites can emerge as in Tierra 1991. | At least one Tierra-style parasite (organism with truncated genome surviving off neighbours) emerges within 10k steps. Pinned. |

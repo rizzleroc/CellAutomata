@@ -36,6 +36,7 @@ const RULE_FILES = [
   "coacervate.js",
   "vents.js",
   "vesicles.js",
+  "life.js",
 ];
 
 let failures = 0;
