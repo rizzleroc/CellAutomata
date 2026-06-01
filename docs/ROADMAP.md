@@ -39,8 +39,13 @@ Last updated: 2026-05-25.
 > substrate (sem.js) + sprite overlay (sprites.js) are live; what
 > remains for the desktop side is the Python `SemRenderer` port.
 >
-> **v5.0 status (PROPOSED):** LIFE — virtual-CPU digital organisms
-> after LUCA. See §7 and the full PRD at
+> **v5.0 status (SHIPPED through Phase 5.1):** LIFE — virtual-CPU
+> digital organisms after LUCA. v5.0.0 through Phase 5.1 has shipped:
+> punchlist items V1–V10 are done (the `abiogenesis-life` Stage XIII
+> rule, energy metabolism, mutation + lineage tracking, viridis + SEM
+> rendering, and the internal-anatomy plate). V11 (ecology, Phase 5.2)
+> and V12 (Tierra shared-memory, Phase 5.4) remain open. See §7 and the
+> full PRD at
 > [PRD_LIFE_DIGITAL_ORGANISMS.md](PRD_LIFE_DIGITAL_ORGANISMS.md).
 > Inspired by the user's 400× Brachionus reference: post-LUCA, the
 > simulator extends into a thirteenth stage where digital organisms
@@ -48,6 +53,81 @@ Last updated: 2026-05-25.
 > substrate, excrete waste, divide with mutation, and form lineages.
 > Draws on Tierra, Avida, Polyworld. Twelve V items (V1–V12) span
 > five phases.
+
+---
+
+## 0Z. v5.0 brutal-audit punchlist (16-agent fan-out, 2026-06-01)
+
+A 16-agent parallel audit (12 dimensions) + adversarial verification of the
+v5.0 branch against the "scientifically-vetted, AAA, no-vibe-coded-shortcuts"
+bar. 84 findings; 25 severe verified → 22 confirmed, 3 knocked down. The
+verified items and their status:
+
+### Showstoppers
+- [x] **AU1 — Seeded LIFE run not bit-reproducible across save/load.** Lossy
+  `np.round(…,4)` in `stage_life.serialize_state` broke the determinism
+  guarantee. **FIXED**: full-precision serialize; pinned by
+  `test_seeded_run_is_bit_reproducible_across_save_load`.
+- [ ] **AU2 — The entire v5.0 LIFE capability is unmerged; `main` is still
+  v3.6** with no digital life. **OPEN (maintainer action)**: requires merging
+  the v5 branch chain (PR #14 + #16 + this branch) to `main` and tagging
+  v5.0.0. Cannot be closed by a feature branch alone.
+
+### High (confirmed) — FIXED on this branch
+- [x] **AU3 — Version lie** (pyproject/`__version__` 3.6.0 vs docs 5.0.0).
+  Bumped to 5.0.0 + added `tests/test_version_consistency.py` gate.
+- [x] **AU4 — Stage V (RAF) rendered dynamics fired uncatalyzed.** Rate is now
+  ∝ catalyst concentration (+ faint bootstrap); pinned by
+  `test_rendered_dynamics_are_catalysis_gated`.
+- [x] **AU5 — Extended pipeline dropped inner-stage config on save/load.**
+  `pipeline.serialize_state` now persists + reapplies `inner_rule.to_config()`.
+- [x] **AU6 — Stage XIII exports (PNG/GIF) diverged from the on-screen SEM
+  render** (WYSIWYG lie). Added `_onscreen_field_rgb`; PNG/GIF/snapshot now
+  use the same frame the canvas shows.
+- [x] **AU7 — Flagship LIFE stage had no live param sliders** (missing
+  `PARAM_SPECS["abiogenesis-life"]`). Added ε / ingest / e_div / regen /
+  toxicity / founders.
+- [x] **AU8 — `vents.js` claimed a Lane-Martin proton-gradient mechanism it
+  doesn't simulate** (it's an advection-diffusion plume). Prose rewritten to
+  state plainly it's geometry-only; the chemiosmotic model is Python-side.
+- [x] **AU9 — `vesicles.js` claimed to "port" the Python Gray-Scott+biharmonic
+  stage but runs Allen-Cahn.** Header now says "inspired by, not a port of."
+- [x] **AU10 — LUCA "topological invariant emerging from network topology"
+  overclaim.** Reworded: it's a hand-specified pathway-union (epistatic
+  AND-gate); the emergent part is the *recovered* core.
+- [x] **AU11 — Stage VIII VWG innovation-sharing/HGT in docstring, not in
+  code.** Added an honest scope note: convergence is vertical-descent
+  selection, not the VWG HGT mechanism.
+- [x] **AU12 — Selection-enrichment test compared to a null the population
+  never sampled.** Replaced with a head-to-head competition test (ancestor
+  vs random genomes); selection differential is now real.
+- [x] **AU13 — Full-arc handoff test sampled only 2 of 12 transitions.** Now
+  walks every transition and asserts each informative one carries the signal.
+- [x] **AU14 — `test_zero_cost_lets_genomes_bloat` vacuous** (`>=` at
+  non-binding costs). Replaced with binding costs (0.0 vs 0.6) + strict `>`.
+- [x] **AU15 — science.md Stage 4 stale** ("Shannon entropy TOY"); **PRD VM-
+  parity claimed "asserts"** (it's a skip); **PRD SEM phase self-contradiction**;
+  **ROADMAP §1 said 12 stages + contradicted itself on G1/G2/G3.** All
+  corrected in this pass.
+- [ ] **AU16 — Web/JS smoke gate doesn't run on `pull_request`** (only on
+  push to main). **FIXED**: added `pull_request:` to the Pages workflow.
+- [x] **AU17 — Stage XIII round-trip test too weak** to catch the determinism
+  break. Strengthened to assert every field bit-exact + Engine-level
+  save/load == continuous.
+
+### Knocked down by verification (not acted on, or downgraded)
+- **v4.0 SEM "vapor" findings → `low`.** The general cross-stage SEM renderer
+  is genuinely unbuilt, but it is an *honest open roadmap item* (§6 S1–S12 all
+  `[ ]`), not a false claim — provided the docs don't imply it shipped (the
+  PRD/ROADMAP wording contradictions that *did* imply that are fixed under
+  AU15). Building it is the open v4.0 cycle, not an audit defect.
+
+### Deferred (real, non-showstopper, scoped to future cycles)
+- Stage VIII VWG **HGT mechanism** implementation (vs the docstring honesty
+  note shipped now). · Python↔JS **VM bit-parity** test (currently a visible
+  skip). · `life_sem.py` deeper **render unit tests** (one shape test today).
+  · Web triplication **consolidation** (web/web2/web3). · LUCA→LIFE **genome
+  derivation** (coupling is positional-only, disclosed).
 
 ---
 
@@ -234,26 +314,29 @@ Every feature below is implemented and expected to keep working. A change that
 removes or breaks one of these is a regression, not a simplification.
 
 ### Simulation science
-- **Twelve abiogenesis stages**, each an independently runnable rule (verdicts
-  per §0.C — REAL = published dynamics implemented; PARTIAL = scientifically
-  suggestive demonstration):
+- **Thirteen abiogenesis stages**, each an independently runnable rule
+  (verdicts per §0.C — REAL = published dynamics implemented; PARTIAL =
+  scientifically suggestive demonstration). The v3.5 G-cycle closed the
+  former PARTIAL gaps on Stages X/XI/XII; v5.0 added Stage XIII:
   - Stage 0 — primordial soup (discrete four-rule mixing/condensation). REAL.
   - Stage I — Gray-Scott reaction-diffusion (forward-Euler, 5-pt Laplacian, CFL-stable). REAL.
   - Stage II — alkaline hydrothermal vent — pH gradient, Nernst PMF (mV), Faraday ΔG (kJ/mol), Wood-Ljungdahl carbon fixation (2 CO₂ + 4 H₂ → acetate). REAL.
   - Stage III — Gray-Scott reaction-diffusion (cont.) (legacy slot used by some pipelines).
   - Stage IV — mineral catalysis on a Na-montmorillonite mask (Ferris-style localisation). REAL.
-  - Stage V — Kauffman autocatalytic sets via the **correct Hordijk-Steel RAF closure**. REAL.
+  - Stage V — Kauffman autocatalytic sets via the **correct Hordijk-Steel RAF closure**; rendered dynamics are catalysis-gated. REAL.
   - Stage VI — Frank-model homochirality (autocatalysis + mutual antagonism). REAL.
   - Stage VII — spatial Eigen quasispecies; threshold ε_c = ln(σ)/L. REAL.
-  - Stage VIII — genetic-code coevolution (toy codon → amino → fixed-target peptide match). PARTIAL — concept only; G4 to deepen.
+  - Stage VIII — genetic-code coevolution (Miyazawa-Jernigan folding landscape; selection-driven code convergence by **vertical descent** — NOT VWG innovation-sharing/HGT). PARTIAL — honest scope in docstring; G4 closed the landscape, HGT deferred.
   - Stage IX — Cahn-Hilliard coacervates (conserved-order-parameter LLPS). REAL.
-  - Stage X — lipid vesicle self-assembly (CMC threshold + connected-component vesicle counting). PARTIAL — threshold gate, no Helfrich curvature dynamics; G3 to deepen.
-  - Stage XI — protocell selection (genome-product fitness proxy gating growth/division/death). PARTIAL — **self-confessed TOY** in docstring; G2 to deepen.
-  - Stage XII — LUCA distillation (gene-presence bitsets; 70 %-prevalence core). PARTIAL — methodology real, landscape hand-shaped; G5 to deepen.
+  - Stage X — lipid vesicle self-assembly (CMC threshold + **Helfrich biharmonic bending term**, G3 closed). REAL.
+  - Stage XI — protocell selection (**Eigen-Schuster hypercycle replicator ODE**, G2 closed — the "TOY" caveat is gone). REAL.
+  - Stage XII — LUCA distillation (epistatic pathway-coupled fitness; 70 %-prevalence core recovery, G5 closed; essential set is a hand-specified pathway union, recovery is the emergent part). REAL methodology.
+  - Stage XIII — **LIFE: digital organisms** (Tierra/Avida virtual-CPU genomes with **self-encoded replication** — an organism must run its own COPY loop to reproduce; strip COPY and the lineage leaves no offspring). REAL (artificial-life model; energy constants tuned, not biophysical — disclosed).
 - **Pipeline rules** — `abiogenesis-pipeline` (5 stages) and
-  `abiogenesis-pipeline-extended` (12 stages). **NB:** until G1 is closed,
-  promotion resets the inner state — the "pipeline" is a sequence of
-  isolated runs, not a coupled narrative.
+  `abiogenesis-pipeline-extended` (**13 stages**). The G1 fix (v3.5) makes
+  promotion carry the upstream signal forward into the next stage's init, so
+  the pipeline is a coupled narrative, not isolated runs (pinned by
+  `tests/test_pipeline_handoff.py`, which now checks every transition).
 - **Reference automata**: Conway's Game of Life, Wolfram 1D (rules 0–255).
 - **Legacy alias** `natural-selection` → Stage 0 (kept for old snapshots/CLI).
 - **Real published data** backing the constants:
@@ -535,42 +618,42 @@ decorative motion. The Brachionus reference is the visual target:
 translucent body wall + visible internal compartments + cytoplasmic
 shimmer at instruction-execution rate.
 
-### Punchlist (open until each item ships)
+### Punchlist (V1–V10 shipped through Phase 5.1; V11–V12 open)
 
-- [ ] **V1 — Virtual CPU + opcode set.** ~20 opcodes (load, store,
+- [x] **V1 — Virtual CPU + opcode set.** ~20 opcodes (load, store,
   add, jump, copy, ingest, excrete, sense, move, …); ≤ 512-instruction
   genome cap. Tierra-derived, Avida-flavoured. Per-organism private
   memory (Tierra-shared variant comes later in V11).
-- [ ] **V2 — Energy + metabolism loop.** Every instruction costs
+- [x] **V2 — Energy + metabolism loop.** Every instruction costs
   1 unit of energy; INGEST replenishes from the substrate field;
   EXCRETE adds to waste. Energy = 0 → death; energy ≥ E_div → division.
-- [ ] **V3 — Stage XIII rule (`abiogenesis-life`).** Registered in
+- [x] **V3 — Stage XIII rule (`abiogenesis-life`).** Registered in
   `cellauto/rules/`; appears as the thirteenth stage of the extended
   pipeline. Pipeline hand-off (G1) from Stage XII seeds the initial
   population at LUCA pathway-graph hot-spots.
-- [ ] **V4 — Substrate + waste grid.** 60 × 60 default grid; substrate
+- [x] **V4 — Substrate + waste grid.** 60 × 60 default grid; substrate
   replenishes linearly; waste accumulates and increases nearby
   death probability.
-- [ ] **V5 — Mutation + lineage tracking.** Per-instruction ε mutation
+- [x] **V5 — Mutation + lineage tracking.** Per-instruction ε mutation
   at copy time; per-organism parent pointer; ancestry chain
   reconstructible to the founder.
-- [ ] **V6 — Per-organism inspector.** Click-to-inspect Toplevel
+- [x] **V6 — Per-organism inspector.** Click-to-inspect Toplevel
   (Tk) / drawer (web) showing genome strip, energy, instruction
   pointer, ancestry tree.
-- [ ] **V7 — V3.6 viridis rendering.** Default render: filled
+- [x] **V7 — V3.6 viridis rendering.** Default render: filled
   energy-coloured discs on the substrate field; this is the v5.0.0
   ship target. Internal anatomy (V9) requires SEM mode and waits for
   v4.0.
-- [ ] **V8 — Twelve regression tests.** VM opcodes, energy → death,
+- [x] **V8 — Twelve regression tests.** VM opcodes, energy → death,
   energy → division, mutation gates lineage diversity, ε > ε_c →
   catastrophe, distinct lineage within 10k steps at default seed,
   substrate depletion → crash, ancestry tracked, pipeline hand-off,
   no per-step allocation, serialisation round-trip, web/Python VM
   parity (deferred).
-- [ ] **V9 — Translucent body sprite (Phase 5.1).** Each organism
+- [x] **V9 — Translucent body sprite (Phase 5.1).** Each organism
   rendered with a translucent ellipse body — no internal anatomy yet,
   just the membrane. Requires SEM mode.
-- [ ] **V10 — Internal anatomy (Phase 5.1).** Gut compartment with
+- [x] **V10 — Internal anatomy (Phase 5.1).** Gut compartment with
   drifting ingested particles + genome strip + nucleus
   visible inside each organism. Cytoplasmic shimmer at execution
   rate. Brachionus-style preview shipped to

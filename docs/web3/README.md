@@ -4,10 +4,10 @@ The next step on top of `docs/web2/` — implements the **v4.1 PRD**:
 a bioform **sprite layer** composited over the depth-shaded SEM
 substrate, so each rule reads as a microscope view of the chemistry
 rather than a colour-mapped scalar field. Now carries the full
-**thirteen-rule** arc: all four formerly-Python-only building blocks —
+**fourteen-rule** arc: the formerly-Python-only building blocks —
 **RAF** autocatalytic sets, the **RNA world**, the **genetic code**,
-and **LUCA** — run live in the browser alongside lipid vesicles
-(Stage 3, Helfrich bilayer).
+**LUCA**, and **digital life** — run live in the browser alongside lipid
+vesicles (Stage 3, Helfrich bilayer).
 
 No build step. No Python. Vanilla JS, opens straight from `file://`.
 
@@ -96,6 +96,7 @@ membrane). Sprites are concentric bilayer rings at local maxima of
 | **RNA world** *(new)* | information control | — | Eigen quasispecies + error catastrophe |
 | **Genetic code** *(new)* | the controller | — | Self-organising codon→amino-acid map (Vetsigian-Woese-Goldenfeld) |
 | **LUCA** *(new)* | descent control | — | Lineage convergence to a consensus ancestor (Woese; Weiss et al.) |
+| **Digital life** *(new)* | open-ended evolving lineage | digital-organism | Stage XIII Tierra/Avida virtual-CPU organisms |
 
 ## Files
 
@@ -125,7 +126,8 @@ docs/web3/
     ├── raf.js                NEW — Kauffman RAF reaction graph (16 species)
     ├── rna.js                NEW — Eigen quasispecies / error catastrophe
     ├── code.js               NEW — self-organising genetic code (Glauber + HGT)
-    └── luca.js               NEW — lineage convergence to a consensus ancestor
+    ├── luca.js               NEW — lineage convergence to a consensus ancestor
+    └── life.js               NEW — Stage XIII digital-life virtual CPU + organisms
 ```
 
 ## Rule contract (for adding a tenth rule)
@@ -140,10 +142,11 @@ one registry entry.
 
 ## The full arc now runs in-browser
 
-The four building blocks that were previously Python-only — autocatalytic
+The building blocks that were previously Python-only — autocatalytic
 sets (Kauffman), the RNA world (Eigen quasispecies), the genetic code
-(Vetsigian–Woese–Goldenfeld), and LUCA — now ship as JS rules
-(`rules/raf.js`, `rules/rna.js`, `rules/code.js`, `rules/luca.js`). Each
+(Vetsigian–Woese–Goldenfeld), LUCA, and digital life — now ship as JS rules
+(`rules/raf.js`, `rules/rna.js`, `rules/code.js`, `rules/luca.js`,
+`rules/life.js`). Each
 is a faithful, NaN-hardened simplification of the desktop stage that runs
 live at interactive frame rates. The whole chemistry-to-life arc — from
 primordial soup to the last universal common ancestor — now plays out

@@ -4,7 +4,7 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>cellauto · web 3.0 — sprite-overlay SEM sandbox</title>
-  <meta name="description" content="A live in-browser origin-of-life sandbox — the full thirteen-rule chemistry-to-life arc: Conway's Life, Wolfram 1D, Gray–Scott, primordial soup, natural selection, homochirality, coacervates, alkaline vents, lipid vesicles, RAF autocatalytic sets, the RNA world, the genetic code, and LUCA. SEM-grade depth-shaded rendering with bioform sprite overlays per v4.1 PRD." />
+  <meta name="description" content="A live in-browser origin-of-life sandbox — the full fourteen-rule chemistry-to-life arc: Conway's Life, Wolfram 1D, Gray–Scott, primordial soup, natural selection, homochirality, coacervates, alkaline vents, lipid vesicles, RAF autocatalytic sets, the RNA world, the genetic code, LUCA, and digital life. SEM-grade depth-shaded rendering with bioform sprite overlays per v4.1 PRD." />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;1,400&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet" />
@@ -178,10 +178,10 @@
     </p>
     <p class="footer-text footer-honesty">
       The full chemistry-to-life arc now runs in the browser: the last
-      four building blocks — autocatalytic sets (Kauffman), the RNA world
+      five building blocks — autocatalytic sets (Kauffman), the RNA world
       (Eigen quasispecies), the genetic code (Vetsigian–Woese–Goldenfeld),
-      and LUCA — ship here as live JS rules, faithful NaN-hardened
-      simplifications of the desktop stages. The Python build
+      LUCA, and digital life — ship here as live JS rules, faithful
+      NaN-hardened simplifications of the desktop stages. The Python build
       (<code>pip install -e .</code> then <code>cellauto gui</code>)
       remains the full-resolution reference implementation.
     </p>
@@ -199,7 +199,7 @@
       <p class="eyebrow">W E L C O M E</p>
       <h2 class="welcome-title" id="welcome-title">cellauto — the building blocks of life</h2>
       <p class="welcome-lede">
-        Thirteen live simulations, in canonical chemistry-to-life order.
+        Fourteen live simulations, in canonical chemistry-to-life order.
         Each one is a separate <em>building block</em> — a different way
         the universe organises itself into something life-like. Each one
         is <em>controlled</em> by sliders the right-hand panel labels in
@@ -225,13 +225,14 @@
           <tr><td>Stage 9 · coacervate</td>                <td>membrane-less proto-cell</td></tr>
           <tr><td>Stage 12 · genetic code</td>             <td>the controller self-organising</td></tr>
           <tr><td>Stage 13 · LUCA</td>                     <td>descent control (consensus ancestor)</td></tr>
+          <tr><td>Stage 13 · digital life</td>            <td>open-ended evolving lineage</td></tr>
           <tr><td class="aside">Stage ∞ · Conway / Wolfram</td><td class="aside">off-arc reference automata</td></tr>
         </tbody>
       </table>
       <p class="welcome-footer">
-        New in this build: the last four stages — autocatalytic sets, the
-        RNA world, the genetic code, and LUCA — now run live in the
-        browser too, so the whole chemistry-to-life arc is here.
+        New in this build: the last five stages — autocatalytic sets, the
+        RNA world, the genetic code, LUCA, and digital life — now run live
+        in the browser too, so the whole chemistry-to-life arc is here.
       </p>
       <button class="btn primary welcome-cta" id="welcome-cta">START EXPLORING</button>
     </div>
@@ -253,6 +254,7 @@
   <script src="rules/rna.js"></script>
   <script src="rules/code.js"></script>
   <script src="rules/luca.js"></script>
+  <script src="rules/life.js"></script>
   <script src="main.js"></script>
 </body>
 </html>

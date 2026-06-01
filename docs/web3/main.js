@@ -14,6 +14,7 @@
     "conway", "wolfram1d", "grayscott", "soup",
     "natural-selection", "chirality", "coacervate", "vents", "vesicles",
     "raf", "rna", "code", "luca",
+    "life",
   ];
 
   // P1-C1 — canonical chemistry-to-life tour order, skipping the two
@@ -33,6 +34,7 @@
     "coacervate",
     "code",
     "luca",
+    "life",
   ];
   const TOUR_INTERVAL_MS = 30000;
 
@@ -141,6 +143,13 @@
       "Three descent controls fight: divergence (mutation) scatters lineages, selection pulls them toward a fixed environmental optimum, and horizontal transfer pools winning alleles across lineage boundaries.",
       "Transfer is the LUCA-maker — it spreads the conserved core fast so a sharp consensus emerges. Push divergence past selection and transfer and no gene stays universal: the core shatters, no ancestor to reconstruct.",
     ],
+    life: [
+      "BUILDING-BLOCK CLAIM. This shows life itself as executing code — organisms whose genome IS the phenotype. Each is a tiny program that senses, eats, excretes, moves, and divides with copying errors. The building block: the open-ended evolving lineage.",
+      "Ray, T. S. (1991). \"An approach to the synthesis of life.\" Artificial Life II — Tierra: self-replicating assembly programs competing for CPU time, the origin of the instruction-tape genome used here.",
+      "Ofria, C. & Wilke, C. O. (2004). \"Avida: a software platform for research in computational evolutionary biology.\" Artificial Life 10:191 — grid organisms with private memory and an energy-rewarding metabolism.",
+      "Eigen, M. (1971). \"Selforganization of matter…\" Naturwissenschaften 58:465 — the quasispecies error threshold ε_c ≈ 1/L. Push the mutation slider past it and the master sequence melts: the error catastrophe.",
+      "Channon, A. (2003) on open-ended evolution — distinct lineages diverge from the founder ancestor as selection favours whoever ingests efficiently and divides before starving. Paint to drop fresh founders.",
+    ],
   };
 
   const MARGINALIA_INTERVAL_MS = 6500;
@@ -161,6 +170,7 @@
     rna:                  "1 nm",
     code:                 "8 codons",
     luca:                 "1 genome",
+    life:                 "20 μm",
   };
 
   // ── DOM refs ────────────────────────────────────────────────────────────

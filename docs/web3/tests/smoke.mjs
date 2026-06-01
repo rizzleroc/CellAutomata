@@ -40,6 +40,7 @@ const RULE_FILES = [
   "rna.js",
   "code.js",
   "luca.js",
+  "life.js",
 ];
 
 let failures = 0;

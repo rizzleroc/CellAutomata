@@ -20,12 +20,14 @@ def test_canonical_pipeline_still_has_five_stages():
     assert tuple(rule.stage_classes) == STAGE_CLASSES
 
 
-def test_extended_pipeline_has_twelve_stages():
+def test_extended_pipeline_has_thirteen_stages():
+    # v5.0 extends the arc with Stage XIII (DIGITAL LIFE) after LUCA.
     rule = AbiogenesisExtendedPipelineRule()
-    assert len(rule.stage_classes) == 12
-    assert len(rule.stage_infos) == 12
+    assert len(rule.stage_classes) == 13
+    assert len(rule.stage_infos) == 13
     assert tuple(rule.stage_classes) == EXTENDED_STAGE_CLASSES
     assert tuple(rule.stage_infos) == EXTENDED_STAGE_INFO
+    assert rule.stage_info_for(12).title == "DIGITAL LIFE"
 
 
 def test_extended_pipeline_auto_promotes_all_stages():

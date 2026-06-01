@@ -1732,12 +1732,31 @@ class App(tk.Frame):
                 writer.writerow(row)
         log.info("exported %d stat samples to %s", len(self._stats_history), path)
 
+    def _onscreen_field_rgb(self):
+        """The exact RGB array the live canvas is showing for a field rule —
+        the SEM 'live feed' plate when the active (inner) rule exposes
+        ``render_sem`` (Stage XIII), else ``render_rgb``. Used by PNG/GIF/
+        snapshot export so exports are WYSIWYG, not a different viridis render.
+        Returns None for non-field rules."""
+        rule = self.engine.rule
+        state = self.engine.state
+        if getattr(rule, "renderer_kind", "discrete") != "field":
+            return None
+        active_rule = getattr(state, "inner_rule", None) or rule
+        active_state = getattr(state, "inner_state", None)
+        active_state = active_state if active_state is not None else state
+        if hasattr(active_rule, "render_sem"):
+            return active_rule.render_sem(
+                active_state, CANVAS_SIZE, CANVAS_SIZE, phase=float(self.engine.step_count)
+            )
+        return rule.render_rgb(state)
+
     def _export_png(self) -> None:
         """Export the current frame as a PNG at the canvas resolution.
 
-        Field rules render through ``render_rgb`` already; for discrete rules we
-        rasterise via ``render_cell`` per grid cell (oval cells are drawn as
-        filled circles inscribed in their cell)."""
+        WYSIWYG: a field rule exports the exact frame on screen (the SEM plate
+        for Stage XIII, else ``render_rgb``); discrete rules rasterise via
+        ``render_cell`` per grid cell (oval cells drawn as inscribed circles)."""
         path = filedialog.asksaveasfilename(
             defaultextension=".png", filetypes=[("PNG", "*.png")], title="Export frame as PNG"
         )
@@ -1748,8 +1767,10 @@ class App(tk.Frame):
         rule = self.engine.rule
         kind = getattr(rule, "renderer_kind", "discrete")
         if kind == "field":
-            arr = rule.render_rgb(self.engine.state)
-            img = Image.fromarray(arr, "RGB").resize((CANVAS_SIZE, CANVAS_SIZE), Image.Resampling.NEAREST)
+            arr = self._onscreen_field_rgb()
+            img = Image.fromarray(arr, "RGB")
+            if img.size != (CANVAS_SIZE, CANVAS_SIZE):
+                img = img.resize((CANVAS_SIZE, CANVAS_SIZE), Image.Resampling.NEAREST)
         else:
             w, h = self._state_dims()
             cw, ch = CANVAS_SIZE / w, CANVAS_SIZE / h
@@ -1851,9 +1872,11 @@ class App(tk.Frame):
         rule = self.engine.rule
         kind = getattr(rule, "renderer_kind", "discrete")
         if kind == "field":
+            # WYSIWYG: capture the on-screen frame (SEM plate for Stage XIII),
+            # so a recorded GIF matches what the user is watching.
             return {
                 "kind": "field",
-                "rgb": rule.render_rgb(self.engine.state).tolist(),
+                "rgb": self._onscreen_field_rgb().tolist(),
                 "canvas_size": CANVAS_SIZE,
             }
         w, h = self._state_dims()
@@ -2032,12 +2055,23 @@ class App(tk.Frame):
         Works for both the direct stage rule and the pipeline at stage 4."""
         state = self.engine.state
         sel = getattr(state, "inner_state", None) or state
-        cells = getattr(sel, "cells", None)
-        if not cells:
-            return
         w, h = self._state_dims()
         gx = event.x / max(1.0, CANVAS_SIZE / w)
         gy = event.y / max(1.0, CANVAS_SIZE / h)
+
+        # Stage XIII — digital life: resolve the live rule + state across both
+        # the direct-rule case and the extended-pipeline case (inner_rule /
+        # inner_state), mirroring how _open_network_view discovers its inner.
+        rule = getattr(state, "inner_rule", None) or self.engine.rule
+        if hasattr(rule, "organism_at"):
+            org = rule.organism_at(sel, int(gx), int(gy))
+            if org is not None:
+                self._show_organism_inspector(rule, sel, org)
+                return
+
+        cells = getattr(sel, "cells", None)
+        if not cells:
+            return
         for i, c in enumerate(cells):
             if not getattr(c, "alive", True):
                 continue
@@ -2086,6 +2120,86 @@ class App(tk.Frame):
                 "Fitness is the hypercycle-flavoured cyclic coupling "
                 "Σ g[i]·g[(i+1) mod n] — zero if any species is missing, "
                 "maximal at equal concentrations."
+            ),
+        ).pack(anchor="w", pady=(10, 0))
+
+    def _show_organism_inspector(self, rule: Any, state: Any, org: Any) -> None:
+        """Toplevel detail panel for one Stage XIII digital organism — surfaces
+        its genome (as a strip of virtual-CPU opcodes with the executing token
+        marked), energy, instruction pointer, and surviving ancestry, so a
+        learner can watch an evolved program run and see where it came from."""
+        from cellauto.rules.abiogenesis.life_vm import OPCODES
+
+        dlg = tk.Toplevel(self.master_window)
+        dlg.title(f"Organism #{org.oid}")
+        dlg.configure(background=BG)
+        dlg.transient(self.master_window)
+        body = ttk.Frame(dlg, padding=(22, 18))
+        body.pack(fill="both", expand=True)
+        ttk.Label(body, text=f"DIGITAL ORGANISM  ·  #{org.oid}", style="Eyebrow.TLabel").pack(anchor="w")
+
+        def row(label: str, value: str) -> None:
+            r = ttk.Frame(body)
+            r.pack(fill="x", pady=(6, 0))
+            ttk.Label(r, text=label, style="Apparatus.TLabel", width=14).pack(side="left")
+            ttk.Label(r, text=value, style="Value.TLabel").pack(side="left")
+
+        glen = max(1, len(org.genome))
+        ip_idx = org.ip % glen
+        cur_op = OPCODES[org.current_instruction()]
+        row("position", f"({org.x}, {org.y})")
+        row("energy", f"{float(org.energy):.1f}")
+        row("age", f"{org.age} steps")
+        row("lineage", f"#{org.lineage}")
+        row("divisions", f"{org.n_divisions}")
+        row("instr. pointer", f"{ip_idx}")
+        row("current instr.", cur_op)
+
+        ttk.Label(body, text="genome", style="Apparatus.TLabel").pack(anchor="w", pady=(8, 0))
+        ttk.Label(
+            body,
+            text=f"▶ now: {cur_op} (ip {ip_idx}/{glen})",
+            style="Value.TLabel",
+        ).pack(anchor="w")
+        tokens = []
+        for i, g in enumerate(org.genome):
+            name = OPCODES[int(g) % len(OPCODES)]
+            tokens.append(f"[{name}]" if i == ip_idx else name)
+        ttk.Label(
+            body,
+            text="  ".join(tokens),
+            style="Value.TLabel",
+            wraplength=440,
+            justify="left",
+        ).pack(anchor="w")
+
+        ttk.Label(body, text="ancestry", style="Apparatus.TLabel").pack(anchor="w", pady=(8, 0))
+        chain = rule.ancestry(state, org)
+        ancestry_txt = "  ←  ".join(f"#{oid}" for oid in chain)
+        tail = state.organisms.get(chain[-1]) if chain else None
+        if tail is not None and getattr(tail, "parent", None) is None:
+            ancestry_txt += "  (founder)"
+        ttk.Label(
+            body,
+            text=ancestry_txt or f"#{org.oid}  (founder)",
+            style="Value.TLabel",
+            wraplength=440,
+            justify="left",
+        ).pack(anchor="w")
+
+        ttk.Label(
+            body,
+            style="Caption.TLabel",
+            wraplength=440,
+            justify="left",
+            text=(
+                "Each token is one virtual-CPU instruction; the organism "
+                "executes one instruction per step, advancing the pointer. "
+                "Energy is spent per instruction and gained by INGEST; at the "
+                "energy threshold the organism divides, copying its genome with "
+                "per-instruction mutation. Lineage is the id of its founding "
+                "ancestor — the ancestry chain follows surviving parents back "
+                "toward that founder."
             ),
         ).pack(anchor="w", pady=(10, 0))
 
@@ -2227,9 +2341,25 @@ class App(tk.Frame):
 
     def _render(self) -> None:
         rule = self.engine.rule
+        state = self.engine.state
         kind = getattr(rule, "renderer_kind", "discrete")
         if kind == "field" and isinstance(self._renderer, FieldRenderer):
-            self._renderer.render(rule.render_rgb(self.engine.state))
+            # Stage XIII renders as the "LIVE SEM FEED · 400×" microscopy plate
+            # at canvas resolution. Resolve the pipeline's inner rule/state so
+            # this fires both for the standalone life rule and the pipeline at
+            # its final stage. The FieldRenderer auto-scales the full-res frame.
+            active_rule = getattr(state, "inner_rule", None) or rule
+            active_state = getattr(state, "inner_state", None)
+            active_state = active_state if active_state is not None else state
+            if hasattr(active_rule, "render_sem"):
+                # step_count drives the membrane wobble / cilia beat / gut churn
+                # so the SEM feed is visibly alive frame-to-frame.
+                frame = active_rule.render_sem(
+                    active_state, CANVAS_SIZE, CANVAS_SIZE, phase=float(self.engine.step_count)
+                )
+                self._renderer.render(frame)
+            else:
+                self._renderer.render(rule.render_rgb(state))
         elif isinstance(self._renderer, DiscreteRenderer):
             self._renderer.render(lambda x, y: rule.render_cell(self.engine.state, x, y))
         else:

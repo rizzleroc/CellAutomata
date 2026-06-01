@@ -92,16 +92,20 @@ class AbiogenesisStageLUCA:
     name: str = "abiogenesis-luca"
     renderer_kind: str = "field"
     n_genes: int = 16
-    # G5 — pathway graph (NETWORK-DERIVED essentiality).
+    # G5 — pathway-coupled (epistatic) gene fitness.
     #
     # The v3.4 version used a hand-shaped 16-vector ``gene_values`` declaring
-    # gene 0 worth +2.5 etc. The audit flagged that as a tuned parameter, not
-    # a discovered invariant. Under G5, fitness is instead derived from a
-    # small static co-occurrence pathway graph: a pathway is a set of gene
-    # indices that ALL must be present to confer their joint benefit
-    # (missing any one nullifies the benefit). The "essential" genes are
-    # then the genes that participate in at least one pathway — they emerge
-    # from the network topology rather than being assigned.
+    # gene 0 worth +2.5 etc. — additive, per-gene, no interactions. This
+    # replaces that with an *epistatic* model: fitness comes from a small set
+    # of hand-specified pathways, where a pathway confers its joint benefit
+    # only if ALL its member genes are present (an all-or-nothing AND-gate;
+    # a partial pathway scores zero, not a fraction). The "essential" gene set
+    # is simply the union of genes named in those pathways. HONEST NOTE: this
+    # is a hand-authored vertex list, NOT a discovered topological invariant —
+    # ``essential_count`` is ``len()`` of the union the author typed, and it is
+    # benefit-independent. What is genuinely emergent is the *recovered* LUCA
+    # core: which of those essential genes selection actually drives to ≥70%
+    # prevalence (``_luca_core``), which is the real Weiss-et-al-style result.
     #
     # The 5 toy pathways below cover 10 of the 16 genes; the remaining 6
     # are accessory (small individual bonus, no pathway requirement).
@@ -133,15 +137,15 @@ class AbiogenesisStageLUCA:
 
     @property
     def pathway_genes(self) -> frozenset[int]:
-        """The set of gene indices that participate in at least one pathway.
-        These are the network-essential genes; the recovered LUCA core
-        should be a subset of this set."""
+        """The union of gene indices named in the hand-specified pathways —
+        the genes the model treats as essential. (A declared vertex list, not
+        a discovered invariant; the recovered LUCA core is a subset of this.)"""
         return frozenset(g for path, _ in self.pathways for g in path)
 
     @property
     def essential_count(self) -> int:
-        """Number of network-essential genes (members of at least one
-        pathway). The recovered LUCA core size should converge toward this."""
+        """How many genes are members of at least one pathway. The recovered
+        LUCA core size converges toward this under selection."""
         return len(self.pathway_genes)
 
     @property
