@@ -45,7 +45,7 @@ include = ["cellauto*"]
 exclude = ["tests*", "exports*", "snapshots*"]
 
 [tool.setuptools.package-data]
-cellauto = ["assets/*.png", "assets/*.ico", "assets/fonts/*.ttf"]
+cellauto = ["assets/*.png", "assets/*.ico", "assets/fonts/*.ttf", "assets/life/*.png", "assets/life/*.json"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

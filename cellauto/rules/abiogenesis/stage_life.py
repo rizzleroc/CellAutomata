@@ -482,20 +482,27 @@ class AbiogenesisStageLife:
         seed: int = 0,
         phase: float = 0.0,
     ) -> np.ndarray:
-        """The "LIVE SEM FEED · 400×" plate — Stage XIII rendered as a 3D
-        scanning-electron-microscope view (see :mod:`life_sem`): each organism
-        is a normal-mapped, lit 3D body (an organic dome + internal organelle
-        relief + surface micro-texture, with SEM edge-brightening, a wet
-        specular and ambient occlusion) on a lit granular sepia substrate, with
-        contact shadows, depth-of-field, bloom and a filmic warm grade. One
-        dividing cell is the single teal accent. ``phase`` (the engine step)
-        animates membranes, cilia and the gut so the feed is alive. Returns an
-        ``(height, width, 3)`` uint8 array."""
+        """The "LIVE SEM FEED · 400×" plate for Stage XIII. Prefers the
+        photoreal SPRITE compositor (:mod:`life_sprites`), which blits a
+        committed atlas of path-traced translucent cells (baked offline by
+        ``tools/bake_life_sprites.py``) — genuine subsurface scattering at zero
+        runtime render cost. If the baked atlas is absent it falls back to the
+        procedural 3D renderer (:mod:`life_sem`): normal-mapped lit bodies with
+        SEM edge-brightening, AO and a filmic grade. Either way one dividing
+        cell is the single teal accent and ``phase`` (the engine step) animates
+        the feed. Returns an ``(height, width, 3)`` uint8 array."""
         from cellauto.rules.abiogenesis import life_sem
 
-        return life_sem.render(
-            state, self, width=width, height=height, max_org=max_org, seed=seed, phase=phase
-        )
+        try:
+            from cellauto.rules.abiogenesis import life_sprites
+
+            return life_sprites.render(
+                state, self, width=width, height=height, max_org=max_org, seed=seed, phase=phase
+            )
+        except (FileNotFoundError, OSError):
+            return life_sem.render(
+                state, self, width=width, height=height, max_org=max_org, seed=seed, phase=phase
+            )
 
     def render_plate(self, state: LifeState, scale: int = 12, max_organisms: int = 60) -> np.ndarray:
         """High-resolution SEM plate sized to ``grid × scale`` — the saved
