@@ -23,14 +23,14 @@ within a few thousand steps (the F8 honest-emergence guard).
 
 Rendering (PRD §4 F5, §5):
 
-  * **viridis mode** (default, the v5.0.0 ship): organisms are filled discs
-    coloured by energy on the substrate field (V7).
-  * **SEM mode**: translucent hairline body walls — the V9 membrane sprite.
-  * **internal anatomy** (V10, Phase 5.1): :meth:`render_plate` renders the
-    population at high resolution with the Brachionus-style anatomy — a
-    translucent body wall, a gut compartment with drifting ingested
-    particles, the genome instruction strip (current instruction highlighted
-    teal), a nucleus, and a cytoplasmic shimmer tied to execution rate.
+  * **viridis mode** (the v5.0.0 ship): :meth:`render_rgb` draws filled discs
+    coloured by energy on the substrate field (V7) — fast, grid-resolution.
+  * **SEM mode** (V9/V10, Phase 5.1): :meth:`render_sem` (and :meth:`render_plate`)
+    delegate to :mod:`life_sem`, a 3D scanning-electron-microscope render —
+    each organism is a normal-mapped lit body (organic dome + organelle relief
+    + edge-brightening + wet specular) on a granular sepia substrate, with
+    depth-of-field, a filmic grade, and one teal dividing cell. This is the
+    Brachionus-style headline visual and the live desktop canvas for Stage XIII.
 
 References: see ``life_vm`` and ``docs/science.md`` (Ray 1991 Tierra; Ofria &
 Wilke 2004 Avida; Eigen 1971 quasispecies; Channon 2003 open-ended evolution).
@@ -38,7 +38,6 @@ Wilke 2004 Avida; Eigen 1971 quasispecies; Channon 2003 open-ended evolution).
 
 from __future__ import annotations
 
-import math
 import random
 from collections.abc import Mapping
 from dataclasses import dataclass, field
@@ -479,44 +478,24 @@ class AbiogenesisStageLife:
         state: LifeState,
         width: int = 600,
         height: int = 600,
-        max_org: int = 22,
+        max_org: int = 24,
         seed: int = 0,
         phase: float = 0.0,
     ) -> np.ndarray:
-        """The Brachionus-style "LIVE SEM FEED · 400×" microscopy plate — the
-        headline Phase 5.1 visual. Renders a modest sample of organisms LARGE
-        (cell size is decoupled from grid density, matching the 400× reference)
-        on a granular sepia substrate, each as a translucent depth-shaded body
-        with cilia, a dense granular gut, a nucleus, and the genome instruction
-        bead-arc (the currently-executing opcode glows teal). One dividing cell
-        carries the single teal division bridge. Every element maps to real
-        organism state — no decorative motion.
+        """The "LIVE SEM FEED · 400×" plate — Stage XIII rendered as a 3D
+        scanning-electron-microscope view (see :mod:`life_sem`): each organism
+        is a normal-mapped, lit 3D body (an organic dome + internal organelle
+        relief + surface micro-texture, with SEM edge-brightening, a wet
+        specular and ambient occlusion) on a lit granular sepia substrate, with
+        contact shadows, depth-of-field, bloom and a filmic warm grade. One
+        dividing cell is the single teal accent. ``phase`` (the engine step)
+        animates membranes, cilia and the gut so the feed is alive. Returns an
+        ``(height, width, 3)`` uint8 array."""
+        from cellauto.rules.abiogenesis import life_sem
 
-        Returns an ``(height, width, 3)`` uint8 array, ready for the canvas or
-        a saved preview. Built with Pillow for clean alpha compositing.
-        """
-
-        gh, gw = state.substrate.shape
-        npr = np.random.RandomState(seed & 0x7FFFFFFF)
-        bg = self._sem_substrate(width, height, state.substrate, npr).convert("RGBA")
-
-        orgs = sorted(state.organisms.values(), key=lambda o: -o.energy)[:max_org]
-        orgs = sorted(orgs, key=lambda o: o.y)  # back-to-front for depth
-        margin, base_r = 0.10, min(width, height) * 0.085
-        div_oid = (
-            max(state.organisms.values(), key=lambda o: (o.n_divisions, o.energy)).oid
-            if state.organisms
-            else None
+        return life_sem.render(
+            state, self, width=width, height=height, max_org=max_org, seed=seed, phase=phase
         )
-        for o in orgs:
-            cx = (margin + (1 - 2 * margin) * (o.x / max(1, gw - 1))) * width
-            cy = (margin + (1 - 2 * margin) * (o.y / max(1, gh - 1))) * height
-            ef = min(o.energy / max(self.e_div, 1e-6), 1.6)
-            r = base_r * (0.78 + 0.5 * ef)
-            self._sem_organism(bg, cx, cy, r, o, phase, dividing=(o.oid == div_oid and ef > 0.5))
-
-        out = self._sem_overlay(bg.convert("RGB"))
-        return np.asarray(out, dtype=np.uint8)
 
     def render_plate(self, state: LifeState, scale: int = 12, max_organisms: int = 60) -> np.ndarray:
         """High-resolution SEM plate sized to ``grid × scale`` — the saved
@@ -524,193 +503,6 @@ class AbiogenesisStageLife:
         :meth:`render_sem`."""
         h, w = state.substrate.shape
         return self.render_sem(state, width=w * scale, height=h * scale, max_org=max_organisms)
-
-    def _sem_substrate(self, width: int, height: int, substrate: np.ndarray, npr: np.random.RandomState):
-        """Particulate SEM field: multi-octave value noise, sepia-graded and
-        shaded by the substrate concentration so food-rich regions read brighter."""
-        from PIL import Image, ImageFilter
-
-        base = np.zeros((height, width), np.float32)
-        for octave, cell in enumerate((6, 14, 32, 70)):
-            gh, gw = height // cell + 2, width // cell + 2
-            grid = (npr.random_sample((gh, gw)) * 255).astype(np.uint8)
-            up = np.asarray(Image.fromarray(grid).resize((width, height), Image.BILINEAR), np.float32) / 255
-            base += up * (0.55**octave)
-        base /= max(float(base.max()), 1e-6)
-        base = 0.82 * base + 0.18 * npr.random_sample((height, width)).astype(np.float32)
-        sub_u8 = (np.clip(substrate, 0, 1) * 255).astype(np.uint8)
-        sub_up = np.asarray(Image.fromarray(sub_u8).resize((width, height), Image.BILINEAR), np.float32) / 255
-        val = base * (0.45 + 0.55 * sub_up)
-        img = np.empty((height, width, 3), np.float32)
-        img[..., 0] = 30 + 150 * val
-        img[..., 1] = 24 + 120 * val
-        img[..., 2] = 16 + 78 * val
-        arr = np.clip(img, 0, 255).astype(np.uint8)
-        return Image.fromarray(arr, "RGB").filter(ImageFilter.GaussianBlur(0.5))
-
-    def _organic_outline(
-        self, org: Organism, ox: float, oy: float, rx: float, ry: float, phase: float, n: int = 60
-    ) -> list[tuple[float, float]]:
-        """A unique, irregular amoeboid outline per organism — never an ellipse.
-
-        The radius is modulated by a handful of sine harmonics whose amplitudes
-        and phases are *stable per organism* (seeded by its ``oid``) so each
-        cell keeps its own body shape, while a ``phase``-driven term makes the
-        membrane slowly wobble and the whole body creep its orientation — the
-        cell reads as ALIVE rather than a frozen stamp. The genome biases a
-        low-frequency lobe so the form reflects the program it carries.
-        """
-        orng = random.Random((org.oid * 2654435761) & 0xFFFFFFFF)
-        harm = []
-        for k in (2, 3, 5, 7):
-            amp = orng.uniform(0.06, 0.22) / (1 + (k - 2) * 0.35)
-            hph = orng.uniform(0, 2 * math.pi)
-            spd = orng.uniform(0.4, 1.1) * (1 if orng.random() < 0.5 else -1)
-            harm.append((k, amp, hph, spd))
-        g = org.genome
-        lobe = 0.12 * ((g[0] % 5) / 5.0) if g else 0.0
-        ang = (org.facing / 8.0) * 2 * math.pi + phase * 0.012  # slow creep of orientation
-        ca, sa = math.cos(ang), math.sin(ang)
-        pts: list[tuple[float, float]] = []
-        for i in range(n):
-            th = 2 * math.pi * i / n
-            rr = 1.0 + lobe * math.sin(2 * th + phase * 0.05)
-            for k, amp, hph, spd in harm:
-                rr += amp * math.sin(k * th + hph + phase * 0.13 * spd)
-            bx, by = math.cos(th) * rx * rr, math.sin(th) * ry * rr
-            pts.append((ox + bx * ca - by * sa, oy + bx * sa + by * ca))
-        return pts
-
-    def _sem_organism(
-        self, base, cx: float, cy: float, r: float, org: Organism, phase: float, dividing: bool
-    ) -> None:
-        """One translucent, depth-shaded organism with an organic (non-uniform)
-        body, beating cilia, and a drifting gut — drawn on its own RGBA layer
-        then alpha-composited onto the substrate."""
-        from PIL import Image, ImageDraw, ImageFilter
-
-        pad = int(r * 2.4) + 8
-        L = Image.new("RGBA", (pad * 2, pad * 2), (0, 0, 0, 0))
-        ox, oy = float(pad), float(pad)
-        rx, ry = r, r * 0.74
-        pts = self._organic_outline(org, ox, oy, rx, ry, phase)
-        closed = pts + [pts[0]]
-
-        # Soft drop shadow — the organic silhouette, offset and blurred.
-        sh = Image.new("RGBA", L.size, (0, 0, 0, 0))
-        ImageDraw.Draw(sh).polygon([(px + r * 0.16, py + r * 0.26) for px, py in pts], fill=(0, 0, 0, 120))
-        L = Image.alpha_composite(L, sh.filter(ImageFilter.GaussianBlur(r * 0.22)))
-
-        # Beating cilia/flagella along the membrane — length pulses with phase.
-        d = ImageDraw.Draw(L)
-        for i in range(0, len(pts), 2):
-            px, py = pts[i]
-            ux, uy = px - ox, py - oy
-            ln = math.hypot(ux, uy) or 1.0
-            ux, uy = ux / ln, uy / ln
-            beat = 0.14 + 0.13 * math.sin(i * 0.5 + phase * 0.45 + org.oid)
-            hl = r * beat
-            d.line(
-                [px, py, px + ux * hl, py + uy * hl], fill=(182, 162, 122, 95), width=max(1, int(r * 0.05))
-            )
-
-        # Soft translucent halo (SEM out-of-focus glow).
-        halo = Image.new("RGBA", L.size, (0, 0, 0, 0))
-        ImageDraw.Draw(halo).polygon(
-            [(ox + (px - ox) * 1.12, oy + (py - oy) * 1.12) for px, py in pts], fill=(150, 134, 100, 60)
-        )
-        L = Image.alpha_composite(L, halo.filter(ImageFilter.GaussianBlur(r * 0.18)))
-
-        # Translucent body: organic polygon mask × radial depth gradient, with a
-        # faint cytoplasmic shimmer tied to phase + identity.
-        mask = Image.new("L", L.size, 0)
-        ImageDraw.Draw(mask).polygon(pts, fill=255)
-        yy, xx = np.mgrid[0 : L.size[1], 0 : L.size[0]].astype(np.float32)
-        dist = np.sqrt(((xx - ox) / (rx * 1.18)) ** 2 + ((yy - oy) / (ry * 1.18)) ** 2)
-        radial = np.clip(1.0 - dist, 0.0, 1.0)
-        m = np.asarray(mask, np.float32) / 255.0
-        shim = 1.0 + 0.06 * math.sin(phase * 0.3 + org.oid)
-        body_arr = np.zeros((L.size[1], L.size[0], 4), np.uint8)
-        body_arr[..., 0] = min(255, int(150 * shim))
-        body_arr[..., 1] = min(255, int(132 * shim))
-        body_arr[..., 2] = min(255, int(96 * shim))
-        body_arr[..., 3] = np.clip(m * (0.30 + 0.70 * radial) * 182, 0, 188).astype(np.uint8)
-        L = Image.alpha_composite(L, Image.fromarray(body_arr, "RGBA"))
-        d = ImageDraw.Draw(L)
-
-        # Bright organic rim highlight (the SEM wall) + offset nucleus.
-        d.line(closed, fill=(225, 208, 168, 225), width=max(1, int(r * 0.07)), joint="curve")
-        nx, ny = ox - rx * 0.30, oy - ry * 0.26
-        d.ellipse([nx - r * 0.22, ny - r * 0.22, nx + r * 0.22, ny + r * 0.22], fill=(120, 104, 78, 150))
-
-        # Dense granular gut that slowly churns (drift tied to phase).
-        grng = random.Random((org.oid * 40503) & 0xFFFFFFFF)
-        gx, gy = ox + rx * 0.08, oy + ry * 0.12
-        n_gran = 46 + (org.regs[0] % 18)
-        for k in range(n_gran):
-            a0 = grng.uniform(0, 2 * math.pi)
-            rad_f = grng.random() ** 0.5
-            a = a0 + phase * 0.02 * (0.5 + (k % 3))
-            px = gx + math.cos(a) * rx * 0.60 * rad_f
-            py = gy + math.sin(a) * ry * 0.60 * rad_f
-            gr = r * (0.05 + 0.07 * grng.random())
-            shade = 40 + int(35 * grng.random())
-            d.ellipse([px - gr, py - gr, px + gr, py + gr], fill=(shade + 16, shade, shade - 8, 220))
-
-        # Genome instruction bead-arc hugging the lower membrane; current = teal.
-        if org.genome:
-            n_show = min(16, len(org.genome))
-            ip0 = org.ip % len(org.genome)
-            for i in range(n_show):
-                idx = int((0.10 + 0.80 * i / max(1, n_show - 1)) * (len(pts) // 2)) % len(pts)
-                px, py = pts[idx]
-                bx, by = ox + (px - ox) * 0.82, oy + (py - oy) * 0.82
-                dot = max(2, int(r * 0.075))
-                if i == 0:
-                    col = (80, 235, 210, 255)
-                else:
-                    base_c = 235 if org.genome[(ip0 + i) % len(org.genome)] / 19 > 0.5 else 205
-                    col = (base_c, base_c - 18, base_c - 70, 245)
-                d.ellipse([bx - dot, by - dot, bx + dot, by + dot], fill=col, outline=(40, 30, 20, 160))
-
-        if dividing:
-            glow = Image.new("RGBA", L.size, (0, 0, 0, 0))
-            gd2 = ImageDraw.Draw(glow)
-            gd2.ellipse(
-                [ox + rx * 0.55, oy - ry * 0.78, ox + rx * 1.95, oy + ry * 0.78], fill=(40, 225, 205, 70)
-            )
-            gd2.line(
-                [ox + rx * 0.7, oy, ox + rx * 1.25, oy],
-                fill=(120, 245, 225, 230),
-                width=max(2, int(r * 0.12)),
-            )
-            L = Image.alpha_composite(L, glow.filter(ImageFilter.GaussianBlur(r * 0.16)))
-
-        base.alpha_composite(L, (int(cx - pad), int(cy - pad)))
-
-    def _sem_overlay(self, img, scale_um: int = 50):
-        """Instrument chrome: frame, crosshair, the 400× SEM badge, and the
-        50 µm scale bar — the museum-microscopy furniture from the reference."""
-        from PIL import ImageDraw
-
-        width, height = img.size
-        d = ImageDraw.Draw(img, "RGBA")
-        d.rectangle([6, 6, width - 7, height - 7], outline=(150, 132, 96, 180), width=2)
-        cx, cy = width // 2, height // 2
-        d.line([cx - 26, cy, cx + 26, cy], fill=(200, 185, 150, 120), width=1)
-        d.line([cx, cy - 26, cx, cy + 26], fill=(200, 185, 150, 120), width=1)
-        bw, bh = 250, 26
-        d.rectangle(
-            [width - bw - 16, 16, width - 16, 16 + bh], fill=(20, 15, 10, 170), outline=(150, 132, 96, 180)
-        )
-        d.text((width - bw - 6, 22), "LIVE SEM FEED  ·  STAGE XIII  ·  400×", fill=(220, 205, 165, 255))
-        sb = 150
-        sx, sy = cx - sb // 2, height - 34
-        d.line([sx, sy, sx + sb, sy], fill=(225, 208, 168, 230), width=2)
-        d.line([sx, sy - 5, sx, sy + 5], fill=(225, 208, 168, 230), width=2)
-        d.line([sx + sb, sy - 5, sx + sb, sy + 5], fill=(225, 208, 168, 230), width=2)
-        d.text((cx - 22, sy - 20), f"{scale_um} um", fill=(220, 205, 165, 255))
-        return img
 
     # discrete fallback (kept for the protocol; field path is the real one).
     def render_cell(self, state: LifeState, x: int, y: int) -> tuple[str, str]:
