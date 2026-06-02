@@ -44,7 +44,31 @@ const expCtx     = expCanvas.getContext('2d');
 const expCaption = document.getElementById('expCaption');
 const expEmpty   = document.getElementById('expEmpty');
 let expRule = null, expImageData = null, expHeightBuf = null;
+let expScale = 1, expW2 = 0, expH2 = 0, expHeightHi = null;
 let expRunning = false, expRaf = 0, expLastStep = 0;
+
+// Bilinear upscale of a Float32 height field (w×h) → dst (W2×H2). Used so the
+// SEM shader runs at a high backing resolution from a smoothly-interpolated
+// field — crisp normals instead of a blocky grid-resolution blit.
+function _upscaleHeight(src, w, h, dst, W2, H2) {
+  const sx = (w - 1) / Math.max(1, W2 - 1);
+  const sy = (h - 1) / Math.max(1, H2 - 1);
+  for (let y = 0; y < H2; y++) {
+    const fy = y * sy;
+    const y0 = fy | 0;
+    const y1 = y0 + 1 < h ? y0 + 1 : y0;
+    const ty = fy - y0;
+    for (let x = 0; x < W2; x++) {
+      const fx = x * sx;
+      const x0 = fx | 0;
+      const x1 = x0 + 1 < w ? x0 + 1 : x0;
+      const tx = fx - x0;
+      const a = src[y0 * w + x0], b = src[y0 * w + x1];
+      const c = src[y1 * w + x0], d = src[y1 * w + x1];
+      dst[y * W2 + x] = (a * (1 - tx) + b * tx) * (1 - ty) + (c * (1 - tx) + d * tx) * ty;
+    }
+  }
+}
 let apparatusRunning = false;          // single source of truth for Run/Stop
 const EXP_STEPS_PER_SEC = 30;          // == web3 default speed
 const EXP_PALETTE = 'warm-sepia';      // == web3 default + brass-lab aesthetic
@@ -77,10 +101,19 @@ function selectExperiment(m) {
   expCanvas.style.display = '';
   expRule = factory();                                 // instantiate web3 rule
   expRule.reset();
-  expCanvas.width  = expRule.width;                    // backing store = native grid (60..220)
-  expCanvas.height = expRule.height;
-  expImageData = expCtx.createImageData(expRule.width, expRule.height);
+  // Hi-res backing: SEM rules render the height field supersampled (~760px on
+  // the long edge) so every experiment reads crisp instead of a blocky upscaled
+  // grid. Non-SEM fallback rules stay at native grid (their render() writes a
+  // grid-sized RGBA buffer).
+  const hasSem = window.SEM && typeof expRule.renderHeight === 'function';
+  expScale = hasSem ? Math.max(1, Math.round(760 / Math.max(expRule.width, expRule.height))) : 1;
+  expW2 = expRule.width * expScale;
+  expH2 = expRule.height * expScale;
+  expCanvas.width  = expW2;
+  expCanvas.height = expH2;
+  expImageData = expCtx.createImageData(expW2, expH2);
   expHeightBuf = new Float32Array(expRule.width * expRule.height);
+  expHeightHi  = new Float32Array(expW2 * expH2);
   expCaption.textContent = 'LIVE SEM · ' + (m.label || ruleId);
   renderExperimentFrame();                             // paint one frame immediately (even if paused)
 }
@@ -90,8 +123,15 @@ function renderExperimentFrame() {
   if (!expRule) return;
   if (window.SEM && typeof expRule.renderHeight === 'function') {
     expRule.renderHeight(expHeightBuf);
-    SEM.render(expHeightBuf, expRule.width, expRule.height,
-               expImageData.data, { palette: EXP_PALETTE });
+    if (expScale > 1) {
+      // supersample: shade the SEM at the hi-res backing from an interpolated
+      // height field → smooth normals, crisp result.
+      _upscaleHeight(expHeightBuf, expRule.width, expRule.height, expHeightHi, expW2, expH2);
+      SEM.render(expHeightHi, expW2, expH2, expImageData.data, { palette: EXP_PALETTE });
+    } else {
+      SEM.render(expHeightBuf, expRule.width, expRule.height,
+                 expImageData.data, { palette: EXP_PALETTE });
+    }
   } else {
     expRule.render(expImageData.data);                 // defensive fallback to rule's own RGBA
   }
