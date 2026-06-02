@@ -177,6 +177,7 @@ function loadStage(m) {
   setRunning(true);      // auto-run BOTH apparatus + experiment on stage select
   // active nav button
   document.querySelectorAll('.stage-btn').forEach(b => b.classList.toggle('active', b.dataset.id === m.id));
+  closeDrawers();        // on mobile, picking a stage closes the nav drawer
 }
 
 // ── Camera framing ──────────────────────────────────────────────────────────
@@ -269,6 +270,30 @@ function setView(v) {
 }
 document.querySelectorAll('#viewToggle .vt-btn')
   .forEach(b => b.onclick = () => setView(b.dataset.view));
+
+// ── Mobile drawers (stages + parts) ──────────────────────────────────────────
+// On narrow screens (≤920px) the two side panels slide off-canvas; the launcher
+// bar (#openStages/#openParts) brings them back as overlay drawers. Pure
+// class-toggle — CSS owns the transforms. closeDrawers is also called when a
+// stage is picked so selecting one returns you to the canvas.
+const drawerBackdrop = document.getElementById('drawerBackdrop');
+const sidebarEl      = document.querySelector('.sidebar');
+const partsPanelEl   = document.querySelector('.parts-panel');
+function closeDrawers() {
+  sidebarEl.classList.remove('open');
+  partsPanelEl.classList.remove('open');
+  drawerBackdrop.hidden = true;
+}
+function openDrawer(el) {
+  closeDrawers();                  // never open both at once
+  el.classList.add('open');
+  drawerBackdrop.hidden = false;
+}
+document.getElementById('openStages').onclick = () => openDrawer(sidebarEl);
+document.getElementById('openParts').onclick  = () => openDrawer(partsPanelEl);
+drawerBackdrop.onclick = closeDrawers;
+document.querySelectorAll('.drawer-close').forEach(b => { b.onclick = closeDrawers; });
+window.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeDrawers(); });
 
 // ── Build the stage nav ─────────────────────────────────────────────────────
 const nav = document.getElementById('stageNav');

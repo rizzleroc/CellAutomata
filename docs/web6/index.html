@@ -20,6 +20,7 @@
   <!-- ── Left: stage nav ── -->
   <aside class="sidebar">
     <div class="brand">
+      <button class="drawer-close" aria-label="Close stages menu">✕</button>
       <div class="brand-title">cellauto</div>
       <div class="brand-sub">web6 · the lab</div>
     </div>
@@ -33,6 +34,12 @@
 
   <!-- ── Centre: viewport (lab apparatus) | experiment (live SEM feed) ── -->
   <main class="stage" data-view="lab">
+    <!-- Mobile launcher bar: on narrow screens both side panels collapse
+         off-canvas into drawers; these open them. Hidden ≥920px (see CSS). -->
+    <div class="mobile-bar">
+      <button id="openStages" class="mb-btn" aria-label="Open stages menu">☰&nbsp;Stages</button>
+      <button id="openParts"  class="mb-btn" aria-label="Open apparatus parts">Parts</button>
+    </div>
     <div class="stage-split">
       <div class="pane pane-lab">
         <div id="viewport" class="viewport"></div>
@@ -69,6 +76,7 @@
   <!-- ── Right: parts panel ── -->
   <aside class="parts-panel">
     <div class="parts-head">
+      <button class="drawer-close" aria-label="Close parts panel">✕</button>
       <h2>Apparatus parts</h2>
       <div id="partCount" class="muted">—</div>
     </div>
@@ -76,6 +84,8 @@
     <div class="parts-foot muted">Hover to highlight · click to hide/show</div>
   </aside>
 
+  <!-- Tap-to-dismiss scrim behind an open mobile drawer (≤920px only). -->
+  <div id="drawerBackdrop" class="drawer-backdrop" hidden></div>
 </div>
 
 <!-- ── Live SEM experiment: web3 physics + SEM pipeline, as CLASSIC scripts ──

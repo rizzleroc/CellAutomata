@@ -12,7 +12,12 @@
 html, body { margin: 0; height: 100%; background: var(--bg); color: var(--ink);
   font-family: -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif; overflow: hidden; }
 
-.app { display: grid; grid-template-columns: 248px 1fr 232px; height: 100vh; }
+.app { display: grid; grid-template-columns: 248px 1fr 232px; height: 100vh; height: 100dvh; }
+
+/* Mobile-only chrome (drawer launcher bar, scrim, per-drawer close buttons):
+   hidden on desktop. The ≤920px media query below converts the two side panels
+   into slide-in drawers and reveals these controls. */
+.mobile-bar, .drawer-backdrop, .drawer-close { display: none; }
 
 /* ── Sidebar ── */
 .sidebar { background: var(--panel); border-right: 1px solid var(--line);
@@ -111,8 +116,46 @@ html, body { margin: 0; height: 100%; background: var(--bg); color: var(--ink);
 .muted { color: var(--muted); }
 
 @media (max-width: 920px) {
+  /* Single-column app: the stage fills the screen and the two side panels lift
+     out of the grid into fixed, slide-in drawers — so their buttons stay
+     reachable. (Previously `display:none` hid the entire stage-nav AND the parts
+     list on mobile, leaving no way to switch stages or toggle parts.) */
   .app { grid-template-columns: 1fr; }
-  .sidebar, .parts-panel { display: none; }
+
+  .sidebar, .parts-panel {
+    position: fixed; top: 0; bottom: 0; z-index: 40; width: min(82vw, 320px);
+    transition: transform .22s ease; box-shadow: 0 0 40px rgba(0,0,0,.55);
+  }
+  .sidebar { left: 0; transform: translateX(-100%); }
+  .parts-panel { right: 0; transform: translateX(100%); }
+  .sidebar.open, .parts-panel.open { transform: none; }
+
+  /* Tap-scrim shown behind whichever drawer is open. */
+  .drawer-backdrop { display: block; position: fixed; inset: 0; z-index: 35;
+    background: rgba(6,4,2,.55); }
+  .drawer-backdrop[hidden] { display: none; }
+
+  /* Launcher bar, top-right so it clears the apparatus label at top-left. */
+  .mobile-bar { display: flex; gap: 8px; position: absolute; top: 12px; right: 12px; z-index: 20; }
+  .mb-btn { background: rgba(20,16,12,.9); color: var(--ink); border: 1px solid var(--accent);
+    border-radius: 8px; padding: 9px 13px; font-size: 12px; font-weight: 600; cursor: pointer; }
+
+  /* Per-drawer dismiss button (the scrim also closes). */
+  .drawer-close { display: block; position: absolute; top: 12px; right: 12px;
+    background: transparent; border: none; color: var(--muted); font-size: 18px;
+    line-height: 1; cursor: pointer; padding: 4px 8px; }
+  .drawer-close:hover { color: var(--ink); }
+
+  /* Keep the apparatus label clear of the launcher bar and smaller on phones. */
+  .top-left { max-width: calc(100% - 160px); top: 14px; left: 16px; }
+  .ap-title { font-size: 19px; }
+
+  /* Bottom controls WRAP so Run / exploded-view / the view-toggle never overflow
+     off the right edge. The old single no-wrap flex row pushed the toggle — the
+     only way to reach Split/Experiment — clean past the screen edge. */
+  .bottom-bar { flex-wrap: wrap; gap: 12px 16px; padding: 12px 16px; }
+  .readout { margin-left: 0; }
+
   /* Split stacks vertically on narrow screens (lab/exp are already single-pane). */
   .stage[data-view="split"] .stage-split { flex-direction: column; }
 }
