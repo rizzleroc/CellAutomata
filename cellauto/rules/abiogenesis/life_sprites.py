@@ -96,7 +96,9 @@ def _contour(alpha: np.ndarray, n: int = 56) -> list[tuple[int, int, float, floa
     return pts
 
 
-def _rim_cilia(canvas: Image.Image, sprite: Image.Image, ox: int, oy: int, r: float, beat: float = 0.0) -> None:
+def _rim_cilia(
+    canvas: Image.Image, sprite: Image.Image, ox: int, oy: int, r: float, beat: float = 0.0
+) -> None:
     """Beaded membrane rim + an UNDULATING cilia fringe along the silhouette.
 
     Each cilium is a short curved stroke whose length and tangential curl
@@ -113,9 +115,9 @@ def _rim_cilia(canvas: Image.Image, sprite: Image.Image, ox: int, oy: int, r: fl
         # metachronal wave: ~3 wavelengths around the rim, advancing with beat
         ph = beat - (i / n) * 2 * math.pi * 3.0
         wave = math.sin(ph)
-        hl = r * (0.15 + 0.11 * wave)          # length undulates
-        tx, ty = -sa, ca                        # membrane tangent
-        curl = r * 0.07 * math.cos(ph)          # S-curve flagellar curl
+        hl = r * (0.15 + 0.11 * wave)  # length undulates
+        tx, ty = -sa, ca  # membrane tangent
+        curl = r * 0.07 * math.cos(ph)  # S-curve flagellar curl
         mx = gx + ca * hl * 0.55 + tx * curl
         my = gy + sa * hl * 0.55 + ty * curl
         tipx = gx + ca * hl + tx * curl * 0.5
@@ -212,7 +214,9 @@ def render(
         else:
             spr = cells[o.oid % len(cells)][frame]
             ang = o.facing * 45 + 5.0 * math.sin(phase * 0.25 + o.oid)
-        _paste_cell(canvas, spr, cx, cy, r, depth, ang, furniture=True, jitter_key=o.oid, beat=phase * 0.7 + o.oid)
+        _paste_cell(
+            canvas, spr, cx, cy, r, depth, ang, furniture=True, jitter_key=o.oid, beat=phase * 0.7 + o.oid
+        )
     finished = _ls.photographic_finish(_grade(canvas, rng), seed=seed)
     return np.asarray(_ls._overlay(Image.fromarray(finished, "RGB")), dtype=np.uint8)
 
