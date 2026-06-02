@@ -77,8 +77,15 @@ function selectExperiment(m) {
   expCanvas.style.display = '';
   expRule = factory();                                 // instantiate web3 rule
   expRule.reset();
-  expCanvas.width  = expRule.width;                    // backing store = native grid (60..220)
-  expCanvas.height = expRule.height;
+  if (expRule.hiRes) {
+    // photoreal sprite feed (capstone LIFE): hi-res backing so the baked cell
+    // sprites stay crisp; the SEM/imageData path is unused for this rule.
+    expCanvas.width = 720;
+    expCanvas.height = 720;
+  } else {
+    expCanvas.width  = expRule.width;                  // backing store = native grid (60..220)
+    expCanvas.height = expRule.height;
+  }
   expImageData = expCtx.createImageData(expRule.width, expRule.height);
   expHeightBuf = new Float32Array(expRule.width * expRule.height);
   expCaption.textContent = 'LIVE SEM · ' + (m.label || ruleId);
@@ -88,6 +95,13 @@ function selectExperiment(m) {
 // EXACT web3 render() SEM branch (main.js:551-558), verbatim convention.
 function renderExperimentFrame() {
   if (!expRule) return;
+  // Photoreal sprite path (capstone LIFE): blit the baked cell atlas on the
+  // hi-res canvas. Handles the atlas-still-loading case internally.
+  if (expRule.hiRes && typeof expRule.renderPhotoreal === 'function') {
+    expRule.renderPhotoreal(expCtx, expCanvas.width, expCanvas.height,
+      function (w, h) { const c = document.createElement('canvas'); c.width = w; c.height = h; return c; });
+    return;
+  }
   if (window.SEM && typeof expRule.renderHeight === 'function') {
     expRule.renderHeight(expHeightBuf);
     SEM.render(expHeightBuf, expRule.width, expRule.height,
