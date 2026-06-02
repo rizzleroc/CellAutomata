@@ -59,10 +59,57 @@ _STAGE_PLAN: dict[str, tuple[float, float, float]] = {
 }
 _DEFAULT_PLAN: tuple[float, float, float] = (0.36, 0.30, 0.69)
 
+# Per-time-of-day grade script: time_of_day -> (wash, d_value, d_sat).
+#   wash     extra blend weight toward beat.sky (added on top of the vignette
+#            base, so corners still read stronger than the centre).
+#   d_value  multiplicative exposure nudge (noon high-key, night darker).
+#   d_sat    saturation gain so dawn/dusk read tinted, noon stays clean-bright.
+# Strengthened over the old flat 0.10→0.30 wash so the dawn-pink / noon-bright /
+# dusk-coral / night-indigo progression actually reads, while staying tasteful
+# (values stay clear of blown highlights; saturation moves are gentle).
+_DAY_GRADE: dict[str, tuple[float, float, float]] = {
+    "dawn": (0.22, 0.99, 1.12),
+    "morning": (0.16, 1.04, 1.05),
+    "noon": (0.20, 1.09, 0.96),
+    "afternoon": (0.20, 1.01, 1.12),
+    "dusk": (0.26, 0.95, 1.20),
+    "night": (0.30, 0.80, 1.06),
+}
+_DEFAULT_GRADE: tuple[float, float, float] = (0.18, 1.0, 1.0)
+
 
 def _plan_for(beat: Any) -> tuple[float, float, float]:
     """Resolve the staging plan for a beat's mood, defaulting when unknown."""
     return _STAGE_PLAN.get(str(getattr(beat, "mood", "")), _DEFAULT_PLAN)
+
+
+def _grade_for(time_of_day: Any) -> tuple[float, float, float]:
+    """Resolve the (wash, d_value, d_sat) grade script for a time-of-day key."""
+    return _DAY_GRADE.get(str(time_of_day), _DEFAULT_GRADE)
+
+
+# Per-time-of-day contact-shadow script: time_of_day ->
+#   (dx_frac, length, softness, opacity, coolness).
+#     dx_frac   lateral offset of the cast core, as a fraction of foot width
+#               (signed: + casts to the right; magnitude grows toward a low sun).
+#     length    multiplier on the wide cast ellipse width (1.0 = directly beneath).
+#     softness  multiplier on the blur radius (sharp at noon, soft at dawn/night).
+#     opacity   multiplier on the darkening strength (dark noon, faint night).
+#     coolness  -1..+1 shadow tint bias: + cools toward indigo, - warms to coral.
+_DAY_SHADOW: dict[str, tuple[float, float, float, float, float]] = {
+    "dawn": (0.18, 1.20, 1.35, 0.78, 0.10),
+    "morning": (0.30, 1.45, 1.05, 0.92, -0.10),
+    "noon": (0.04, 1.00, 0.80, 1.05, 0.00),
+    "afternoon": (-0.42, 1.95, 1.20, 0.90, -0.30),
+    "dusk": (-0.55, 2.20, 1.40, 0.80, -0.45),
+    "night": (0.10, 1.15, 1.55, 0.50, 0.55),
+}
+_DEFAULT_SHADOW: tuple[float, float, float, float, float] = (0.0, 1.0, 1.0, 1.0, 0.0)
+
+
+def _shadow_for(time_of_day: Any) -> tuple[float, float, float, float, float]:
+    """Resolve the (dx, length, softness, opacity, coolness) shadow script."""
+    return _DAY_SHADOW.get(str(time_of_day), _DEFAULT_SHADOW)
 
 
 def _scrim_h_for(height: int) -> int:
@@ -176,7 +223,7 @@ class NarrativeChannel:
         beat = self._script.beat_for(self.stage, pipeline_len=self.pipeline_len)
 
         # 1. Time-of-day grade (numpy, vignette-weighted).
-        out = self._apply_day_grade(base, beat.sky)
+        out = self._apply_day_grade(base, beat.sky, getattr(beat, "time_of_day", None))
 
         # Everything past here is best-effort PIL compositing; any failure
         # falls back to the already-graded frame.
@@ -192,18 +239,64 @@ class NarrativeChannel:
 
     # ── Composition helpers (numpy + PIL, all lazy-imported) ─────────────────
 
-    def _apply_day_grade(self, base: np.ndarray, sky: tuple[int, int, int]) -> np.ndarray:
+    def _apply_day_grade(
+        self,
+        base: np.ndarray,
+        sky: tuple[int, int, int],
+        time_of_day: Any = None,
+    ) -> np.ndarray:
         """Blend ``base`` toward ``sky`` with a vignette weight (gentle centre,
-        stronger corners). Returns a NEW (H, W, 3) uint8 array."""
+        stronger corners), then apply a per-time-of-day value+saturation shift so
+        the dawn-pink / noon-bright / dusk-coral / night-indigo arc actually reads
+        instead of being swallowed by the sepia. Stays vignette-weighted (never a
+        flat cast) and tasteful (clamped, no posterization). Returns a NEW
+        (H, W, 3) uint8 array; any failure degrades to the legacy gentle grade."""
+        try:
+            return self._graded_strong(base, sky, time_of_day)
+        except Exception:
+            # Fallback: legacy gentle vignette wash (kept verbatim).
+            h, w = base.shape[0], base.shape[1]
+            ys = np.linspace(-1.0, 1.0, h, dtype=np.float32).reshape(h, 1)
+            xs = np.linspace(-1.0, 1.0, w, dtype=np.float32).reshape(1, w)
+            radius = np.sqrt(xs * xs + ys * ys) / np.float32(np.sqrt(2.0))
+            strength = (0.10 + 0.20 * (radius**2)).astype(np.float32)[..., None]
+            sky_arr = np.array(sky, dtype=np.float32).reshape(1, 1, 3)
+            graded = base.astype(np.float32) * (1.0 - strength) + sky_arr * strength
+            return np.clip(graded, 0, 255).astype(np.uint8)
+
+    def _graded_strong(
+        self,
+        base: np.ndarray,
+        sky: tuple[int, int, int],
+        time_of_day: Any,
+    ) -> np.ndarray:
+        """Strengthened time-of-day grade (see _apply_day_grade)."""
         h, w = base.shape[0], base.shape[1]
+        wash, d_value, d_sat = _grade_for(time_of_day)
+
         ys = np.linspace(-1.0, 1.0, h, dtype=np.float32).reshape(h, 1)
         xs = np.linspace(-1.0, 1.0, w, dtype=np.float32).reshape(1, w)
         # Radial distance, normalised so a corner reads ~1.0.
         radius = np.sqrt(xs * xs + ys * ys) / np.float32(np.sqrt(2.0))
-        # ~10% centre → ~30% corners, smoothly ramped.
-        strength = (0.10 + 0.20 * (radius**2)).astype(np.float32)[..., None]
+        # Vignette weight: a modest centre floor plus a per-beat wash that ramps
+        # toward the corners, so the tint is still a "moment in a day", never flat.
+        base_w = 0.06 + np.float32(wash) * (radius * radius)
+        strength = np.clip(base_w, 0.0, 0.55).astype(np.float32)[..., None]
+
         sky_arr = np.array(sky, dtype=np.float32).reshape(1, 1, 3)
         graded = base.astype(np.float32) * (1.0 - strength) + sky_arr * strength
+
+        # Per-beat value shift (exposure), gentle and clamped well under blow-out.
+        dv = float(np.clip(d_value, 0.6, 1.18))
+        graded = graded * dv
+
+        # Per-beat saturation shift around each pixel's own luminance, so the
+        # grade reads as a colour script (cool-pink dawn, clean-bright noon, warm
+        # coral dusk, cool indigo night) without posterizing.
+        ds = float(np.clip(d_sat, 0.7, 1.35))
+        lum = (0.2126 * graded[..., 0] + 0.7152 * graded[..., 1] + 0.0722 * graded[..., 2])[..., None]
+        graded = lum + (graded - lum) * ds
+
         return np.clip(graded, 0, 255).astype(np.uint8)
 
     def _composite_character(self, canvas: Any, beat: Any, height: int, width: int) -> None:
@@ -285,18 +378,30 @@ class NarrativeChannel:
             contact_cx = paste_x + foot_cx
             contact_y = paste_y + foot_b
 
+            # Time-of-day shadow script: a low sun throws the cast long & lateral
+            # (afternoon/dusk), noon drops it short & dark straight down, night is
+            # faint & cool, dawn soft with a slight offset. Defaults to the prior
+            # behaviour for an unknown time-of-day, so this path degrades cleanly.
+            try:
+                sh_dx, sh_len, sh_soft, sh_op, sh_cool = _shadow_for(getattr(beat, "time_of_day", None))
+            except Exception:
+                sh_dx, sh_len, sh_soft, sh_op, sh_cool = _DEFAULT_SHADOW
+            cast_dx = sh_dx * foot_w
+            cast_cx = contact_cx + cast_dx
+
             # Two-part ground multiplied into the substrate so the grain shows
-            # through: wide soft cast shadow + tight dark occlusion core.
-            sh_w = int(foot_w * 1.55)
+            # through: wide soft cast shadow (stretched per the sun angle) + tight
+            # dark occlusion core anchored directly under the real footprint.
+            sh_w = max(2, int(foot_w * 1.55 * sh_len))
             occ_w = int(foot_w * 0.95)
             occ_h = max(3, int(foot_w * 0.22))
             mask = Image.new("L", (width, height), 0)
             md = ImageDraw.Draw(mask)
             md.ellipse(
                 (
-                    contact_cx - sh_w / 2,
+                    cast_cx - sh_w / 2,
                     contact_y - max(4, int(foot_w * 0.42)) * 0.35,
-                    contact_cx + sh_w / 2,
+                    cast_cx + sh_w / 2,
                     contact_y + max(4, int(foot_w * 0.42)) * 0.65,
                 ),
                 fill=70,
@@ -310,10 +415,23 @@ class NarrativeChannel:
                 ),
                 fill=150,
             )
-            mask = mask.filter(ImageFilter.GaussianBlur(max(2, int(foot_w * 0.06))))
+            blur_r = max(2, int(foot_w * 0.06 * max(0.25, sh_soft)))
+            mask = mask.filter(ImageFilter.GaussianBlur(blur_r))
             rgb = np.asarray(canvas.convert("RGB"), dtype=np.float32)
             m = np.asarray(mask, dtype=np.float32)[..., None] / 255.0
-            rgb = rgb * (1.0 - 0.85 * m)
+            # Darkening strength tracks the sun height (dark noon, faint night),
+            # capped at the original 0.85 so the multiply can never go negative.
+            dark = float(np.clip(0.85 * sh_op, 0.0, 0.92))
+            # Per-channel tint: warm shadows lean coral (lift R, drop B), cool
+            # shadows lean indigo (lift B, drop R). |coolness| stays small so the
+            # ground never tints the substrate where the mask is zero.
+            cool = float(np.clip(sh_cool, -1.0, 1.0))
+            tint = np.array(
+                [1.0 - 0.12 * cool, 1.0 - 0.04 * abs(cool), 1.0 + 0.14 * cool],
+                dtype=np.float32,
+            ).reshape(1, 1, 3)
+            shade = (1.0 - dark * m) * (1.0 - m + m * tint)
+            rgb = rgb * shade
             ground = Image.fromarray(np.clip(rgb, 0, 255).astype(np.uint8), "RGB").convert("RGBA")
             canvas.paste(ground, (0, 0))
 
@@ -423,12 +541,17 @@ class NarrativeChannel:
         canvas.alpha_composite(self._scrim_for(width, scrim_h), (0, height - scrim_h))
         draw = ImageDraw.Draw(canvas)
 
-        # Typewriter reveal — KEPT verbatim.
+        # Typewriter reveal (deterministic in self._phase). To avoid an orphan
+        # stray glyph (e.g. a lone "I") at the start of each beat, SUPPRESS the
+        # narration line until the reveal has produced a substantive fragment:
+        # at least the first whole word (>= 2 chars, so a one-letter "I" alone
+        # does not unlock) OR >= 3 characters. Sub-word reveals draw nothing.
         phase = self._phase - int(self._phase)
         reveal = min(1.0, phase * 2.2)
-        line = beat.line
-        shown = line[: max(1, int(len(line) * reveal))] if line else ""
-        wrapped = self._wrap(shown, body_font, width - 2 * pad)
+        line = beat.line or ""
+        n_chars = int(len(line) * reveal)
+        shown = self._reveal_text(line, n_chars)
+        wrapped = self._wrap(shown, body_font, width - 2 * pad) if shown else []
 
         # Bottom-up layout.
         row_h = int(height * 0.040)
@@ -459,6 +582,33 @@ class NarrativeChannel:
         for row in wrapped:
             self._ink_text(draw, (pad, y), row, body_font, BODY + (235,))
             y += row_h
+
+    @staticmethod
+    def _reveal_text(line: str, n_chars: int) -> str:
+        """Typewriter slice that suppresses orphan sub-word fragments.
+
+        Returns ``line[:n_chars]`` once the reveal is substantive — at least the
+        first whole word (>= 2 chars, so a lone "I" does not unlock the line) OR
+        >= 3 revealed characters — and an empty string for any earlier (sub-word)
+        reveal, so a stray first glyph is never drawn. Deterministic in n_chars;
+        never raises."""
+        try:
+            if not line or n_chars <= 0:
+                return ""
+            n = min(int(n_chars), len(line))
+            if n >= 3:
+                return line[:n]
+            # First whole word completed? (a delimiter at/after position n, and
+            # the word itself is >= 2 chars so single-letter words stay hidden).
+            head = line[:n]
+            first_word = head.split()[0] if head.split() else ""
+            word_done = n < len(line) and line[n].isspace()
+            if word_done and len(first_word) >= 2:
+                return head
+            return ""
+        except Exception:
+            # Defensive: fall back to the legacy slice (never raise into render).
+            return line[: max(1, int(n_chars))] if line else ""
 
     @staticmethod
     def _wrap(text: str, font: Any, max_w: int) -> list[str]:

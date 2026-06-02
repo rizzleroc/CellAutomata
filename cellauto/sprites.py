@@ -93,6 +93,9 @@ def chroma_key(
     tol_out: int = 120,
     min_keyed_fraction: float = 0.12,
     despill: float = 0.85,
+    fringe_kill: float = 0.85,
+    fringe_alpha_ceil: float = 0.7,
+    fringe_dominance: int = 24,
 ) -> Any | None:
     """Lift a flat ``key``-coloured background to transparency.
 
@@ -106,6 +109,16 @@ def chroma_key(
     ``tol_out`` (definitely subject). De-spill is *channel-aware*: only the
     spilling key channel(s) are pulled back toward the mean of the others, so
     soft cilia that legitimately carry some of the key hue are not chewed.
+
+    Fringe-kill (the final pass) attacks the residual saturated-key rim that
+    de-spill alone leaves on soft hair/cilia: for TRANSLUCENT edge pixels
+    (``0 < alpha < fringe_alpha_ceil``) whose colour is STILL dominated by the
+    key hue (key channels' mean exceeding the non-key channel mean by more than
+    ``fringe_dominance``), alpha is pulled toward 0 in proportion to that excess
+    dominance, scaled by ``fringe_kill``. Opaque subject pixels and pixels that
+    have already lost the key hue are untouched, so magenta-tinted fringe fades
+    out instead of remaining as a coloured rim. Conservative by construction;
+    set ``fringe_kill`` to 0.0 to disable.
     """
     try:
         import numpy as np
@@ -142,6 +155,33 @@ def chroma_key(
             lum = 0.2126 * rgb[..., 0] + 0.7152 * rgb[..., 1] + 0.0722 * rgb[..., 2]
             mix = ((1.0 - alpha) * float(np.clip(despill, 0.0, 1.0)))[..., None]
             rgb = rgb * (1.0 - mix) + lum[..., None] * mix
+
+        # Fringe-kill: erase the residual saturated-key rim on soft cilia. After
+        # de-spill, a magenta-tinted fringe still reads with its key channels
+        # (R&B) well above the non-key mean (G); de-spill can't fully neutralise
+        # it without chewing genuine soft hair. Here we instead fade the ALPHA of
+        # such pixels — but only in the translucent band and only where the key
+        # hue still clearly dominates, so opaque subject pixels are never eaten.
+        # TOTAL: any failure leaves ``alpha`` at its pre-fringe-kill value.
+        try:
+            fk = float(np.clip(fringe_kill, 0.0, 1.0))
+            if fk > 0.0 and spill_mask.any() and not spill_mask.all():
+                key_mean = rgb[..., spill_mask].mean(axis=-1)  # key-channel mean
+                non_mean = rgb[..., ~spill_mask].mean(axis=-1)  # neutral mean
+                dominance = key_mean - non_mean  # >0 when key hue persists
+                thr = float(max(0, fringe_dominance))
+                # Normalise excess dominance over [thr, thr+96] -> 0..1.
+                excess = np.clip((dominance - thr) / 96.0, 0.0, 1.0)
+                ceil = float(np.clip(fringe_alpha_ceil, 0.0, 1.0))
+                # Only translucent edge pixels (0 < alpha < ceil) are eligible;
+                # ramp the gate to 0 as alpha approaches the ceiling so we never
+                # step on near-opaque subject.
+                band = np.clip((ceil - alpha) / max(ceil, 1e-3), 0.0, 1.0)
+                band = band * (alpha > 0.0)
+                cut = fk * excess * band  # fraction of alpha to remove, 0..1
+                alpha = alpha * (1.0 - cut)
+        except Exception:
+            pass
 
         out = np.empty((rgb.shape[0], rgb.shape[1], 4), dtype=np.uint8)
         out[..., :3] = np.clip(rgb, 0, 255).astype(np.uint8)

@@ -427,6 +427,105 @@ def _dim_specular(face_img: Any) -> Any:
     return Image.fromarray(np.clip(arr, 0, 255).astype(np.uint8), "RGBA")
 
 
+def _clip_face_to_body(face_img: Any, body_img: Any, *, erode: int = 2) -> Any:
+    """Multiply ``face_img``'s alpha by the body silhouette so no face pixel
+    can sit outside the membrane.
+
+    The body alpha is taken straight from ``body_img`` (the layer that already
+    holds either the resized sprite or the procedural blob), binarised at a low
+    threshold, optionally eroded a few pixels so the eyes tuck just inside the
+    membrane rim, then used as a 0..1 multiplier on ``face_img``'s alpha. This
+    is the single fix for the "eyes spilling onto the background" giveaway.
+    Returns a new RGBA image; the caller falls back to the unclipped face on any
+    exception (so a body with no usable alpha can never blank the face).
+    """
+    import numpy as np
+    from PIL import Image
+
+    body = np.asarray(body_img, dtype=np.float32)
+    body_a = body[..., 3]
+    # Solid where the body is at least faintly present. The procedural blob and
+    # tinted sprites are both well above this floor inside the silhouette.
+    solid = body_a > 12.0
+    if not bool(solid.any()):
+        # No body silhouette to clip against — leave the face untouched.
+        return face_img
+
+    mask = solid.astype(np.float32)
+    if erode > 0:
+        # Erode by `erode` px via repeated 4-neighbour minimum so eyes sit just
+        # inside the rim. Pure-numpy (no scipy) to honour the PIL+numpy limit.
+        for _ in range(int(erode)):
+            shrunk = mask.copy()
+            shrunk[1:, :] = np.minimum(shrunk[1:, :], mask[:-1, :])
+            shrunk[:-1, :] = np.minimum(shrunk[:-1, :], mask[1:, :])
+            shrunk[:, 1:] = np.minimum(shrunk[:, 1:], mask[:, :-1])
+            shrunk[:, :-1] = np.minimum(shrunk[:, :-1], mask[:, 1:])
+            mask = shrunk
+
+    face = np.asarray(face_img, dtype=np.float32)
+    face[..., 3] = face[..., 3] * mask
+    return Image.fromarray(np.clip(face, 0, 255).astype(np.uint8), "RGBA")
+
+
+def _symmetrize_specular(face_img: Any, cx: float, eye_dx: float) -> Any:
+    """Make the two eyes' catch-lights identical and consistently lit.
+
+    The per-mood helpers place a sparkle at the SAME in-eye offset on both eyes
+    (one implied light direction), but ``_apply_eye_grain`` jitters each eye
+    independently so one catch-light can end up hard-bright and the other
+    dim/grey — the asymmetry the art-director flagged. This isolates the LEFT
+    eye's near-pure-white catch-light, then copies a tight bounding box around it
+    *wholesale* onto the right eye, translated (not reflected) by the inter-eye
+    spacing ``2*eye_dx``. Copying the whole box — rather than only the bright
+    pixels — guarantees the right catch-light is pixel-identical to the left (same
+    size, brightness, shape) with no stray bright specks left behind, while the
+    translation keeps both dots at the same in-eye offset so the implied light
+    stays a single direction. Returns a new RGBA image; the caller falls back to
+    the un-symmetrised face on any exception.
+    """
+    import numpy as np
+    from PIL import Image
+
+    arr = np.asarray(face_img, dtype=np.float32)
+    h, w = arr.shape[0], arr.shape[1]
+    mid = int(round(cx))
+    shift = int(round(2.0 * eye_dx))  # left-eye → right-eye horizontal spacing
+    if mid <= 0 or mid >= w or shift <= 0 or shift >= w:
+        return face_img
+
+    rgb = arr[..., :3]
+    alpha = arr[..., 3]
+    luma = 0.2126 * rgb[..., 0] + 0.7152 * rgb[..., 1] + 0.0722 * rgb[..., 2]
+    # Threshold tight enough to isolate the near-pure-white catch-light dot
+    # (drawn at 255,255,255) from the cream EYE_WHITE fill (luma ~246), so we
+    # only move the sparkle, never the whole eye-white. The grain (amp ~14) can
+    # nudge a pure-white dot down slightly, so >248 keeps the dot, drops the fill.
+    spec = (luma > 248.0) & (alpha > 150.0)
+    left_spec = spec & (np.arange(w)[None, :] < mid)
+    if not bool(left_spec.any()):
+        return face_img
+
+    rows = np.where(left_spec.any(axis=1))[0]
+    cols = np.where(left_spec.any(axis=0))[0]
+    # Pad the catch-light bbox by 1px so its soft anti-aliased rim travels too.
+    r0 = max(0, int(rows[0]) - 1)
+    r1 = min(h, int(rows[-1]) + 2)
+    c0 = max(0, int(cols[0]) - 1)
+    c1 = min(mid, int(cols[-1]) + 2)
+    # Destination box is the same rows, shifted right by `shift`; clip to width.
+    dc0, dc1 = c0 + shift, c1 + shift
+    if dc0 >= w:
+        return face_img
+    dc1 = min(w, dc1)
+    span = dc1 - dc0
+    if span <= 0:
+        return face_img
+    arr[r0:r1, dc0:dc1, :] = arr[r0:r1, c0 : c0 + span, :]
+
+    return Image.fromarray(np.clip(arr, 0, 255).astype(np.uint8), "RGBA")
+
+
 def render_character(
     size: int,
     mood: str = DEFAULT_MOOD,
@@ -501,13 +600,22 @@ def render_character(
     else:
         _draw_body(draw, cx, cy, radius, body_rgb, hi_rgb)
 
+    # Snapshot the body layer now (it holds ONLY the body — sprite or blob) so
+    # the face can be clipped to its alpha silhouette before compositing. Guarded
+    # so a copy failure never blocks the render.
+    body_layer: Any | None = None
+    try:
+        body_layer = img.copy()
+    except Exception:
+        body_layer = None
+
     # Draw the per-mood face ON TOP (of either the sprite or the drawn body).
     face = _MOOD_FACES.get(mood, _MOOD_FACES[DEFAULT_MOOD])
     face_size = int(big * body_scale)  # faces are sized in big-pixels (reborn scales)
     # Route the face onto its OWN transparent RGBA layer so we can integrate the
-    # eyes (grain + specular knock-down) before compositing. Each step is
-    # independently guarded; ANY failure falls back to drawing the face directly
-    # on ``img`` exactly as before — never raise into the render path.
+    # eyes (grain + specular knock-down + body clip) before compositing. Each
+    # step is independently guarded; ANY failure falls back to drawing the face
+    # directly on ``img`` exactly as before — never raise into the render path.
     try:
         face_img = Image.new("RGBA", (big, big), (0, 0, 0, 0))
         face_draw = ImageDraw.Draw(face_img)
@@ -517,9 +625,22 @@ def render_character(
         except Exception:
             pass  # keep the un-grained face_img
         try:
-            face_img = _dim_specular(face_img)
+            # Eye spacing mirrors _eye_geometry's dx = size * 0.16.
+            face_img = _symmetrize_specular(face_img, cx, face_size * 0.16)
         except Exception:
             pass  # keep the (possibly grained) face_img
+        try:
+            face_img = _dim_specular(face_img)
+        except Exception:
+            pass  # keep the (possibly grained/symmetrised) face_img
+        # CRITICAL: clip the face to the body silhouette so no eye/face pixel
+        # can spill onto the background. Done LAST so grain/specular tweaks can't
+        # re-introduce out-of-body pixels. Falls back to the unclipped face.
+        if body_layer is not None:
+            try:
+                face_img = _clip_face_to_body(face_img, body_layer)
+            except Exception:
+                pass  # keep the un-clipped face_img (today's behaviour)
         img.alpha_composite(face_img, (0, 0))
     except Exception:
         # Layering failed wholesale: draw the face directly on img as today.
