@@ -46,11 +46,13 @@ html, body { margin: 0; height: 100%; background: var(--bg); color: var(--ink);
    stretched into ovals — same intent as web3's .canvas-frame (aspect-ratio:1/1).*/
 .pane-exp { display: flex; align-items: center; justify-content: center; background: #0a0e16; }
 .split-divider { flex: 0 0 2px; background: var(--line); display: none; }
-/* Square, contained: cap to the smaller of the pane's width/height so the
-   micrograph stays 1:1 and letterboxes (does NOT stretch) in any view/mode. */
-.exp-canvas { aspect-ratio: 1 / 1; max-width: 100%; max-height: 100%;
-  width: auto; height: auto;
+/* Square, contained: the canvas FILLS the pane and is scaled to fit (object-fit
+   keeps the 1:1 bitmap centered + letterboxed, never stretched). Grid rules
+   (60²..220²) are scaled UP with pixelated rendering → large and crisp, not
+   tiny; the hi-res LIFE feed (720²) opts into smooth scaling via .smooth. */
+.exp-canvas { width: 100%; height: 100%; object-fit: contain;
   image-rendering: pixelated; background: #0a0e16; display: block; }
+.exp-canvas.smooth { image-rendering: auto; }
 .exp-caption { position: absolute; left: 14px; bottom: 12px; z-index: 2;
   font: 11px/1 ui-monospace, monospace; letter-spacing: 1.5px;
   text-transform: uppercase; color: var(--accent);
