@@ -67,7 +67,17 @@ function selectExperiment(m) {
   expRule = null;                                      // drop old rule (GC reclaims)
   const ruleId = STAGE_MAP[m.id];
   const factory = ruleId && window.CA && CA.RULES && CA.RULES[ruleId];
-  if (!factory || !window.SEM) {                       // unmapped / globals missing → tasteful empty state
+  if (!factory) {                                      // genuinely no rule mapped → tasteful empty state
+    expEmpty.hidden = false;
+    expCanvas.style.display = 'none';
+    expCaption.textContent = 'LIVE SEM · —';
+    return;
+  }
+  const rule = factory();                              // instantiate web3 rule
+  // The photoreal LIFE feed paints via its own renderPhotoreal and does NOT
+  // use the SEM pipeline — only grid rules need window.SEM. Gating the two
+  // separately means a missing/late SEM can never blank the capstone.
+  if (!rule.hiRes && !window.SEM) {
     expEmpty.hidden = false;
     expCanvas.style.display = 'none';
     expCaption.textContent = 'LIVE SEM · —';
@@ -75,8 +85,9 @@ function selectExperiment(m) {
   }
   expEmpty.hidden = true;
   expCanvas.style.display = '';
-  expRule = factory();                                 // instantiate web3 rule
+  expRule = rule;
   expRule.reset();
+  expCanvas.classList.toggle('smooth', !!expRule.hiRes);  // LIFE scales smooth; grids stay crisp/pixelated
   if (expRule.hiRes) {
     // photoreal sprite feed (capstone LIFE): hi-res backing so the baked cell
     // sprites stay crisp; the SEM/imageData path is unused for this rule.
