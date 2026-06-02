@@ -45,6 +45,7 @@ const expCaption = document.getElementById('expCaption');
 const expEmpty   = document.getElementById('expEmpty');
 let expRule = null, expImageData = null, expHeightBuf = null;
 let expRunning = false, expRaf = 0, expLastStep = 0;
+let expRetry = 0;                       // poll counter while the classic exp scripts wire up
 let apparatusRunning = false;          // single source of truth for Run/Stop
 const EXP_STEPS_PER_SEC = 30;          // == web3 default speed
 const EXP_PALETTE = 'warm-sepia';      // == web3 default + brass-lab aesthetic
@@ -61,28 +62,40 @@ const STAGE_MAP = {
 
 function currentView() { return document.querySelector('.stage').dataset.view; }
 
+function showExpEmpty() {                               // the tasteful "no experiment" state
+  expEmpty.hidden = false;
+  expCanvas.style.display = 'none';
+  expCaption.textContent = 'LIVE SEM · —';
+}
+
 // Swap in the rule for stage m. Called inside loadStage AFTER currentMeta=m.
 function selectExperiment(m) {
   stopExperiment();                                    // cancel any prior loop
   expRule = null;                                      // drop old rule (GC reclaims)
   const ruleId = STAGE_MAP[m.id];
-  const factory = ruleId && window.CA && CA.RULES && CA.RULES[ruleId];
-  if (!factory) {                                      // genuinely no rule mapped → tasteful empty state
-    expEmpty.hidden = false;
-    expCanvas.style.display = 'none';
-    expCaption.textContent = 'LIVE SEM · —';
+  if (!ruleId) { expRetry = 0; showExpEmpty(); return; }  // stage truly has no mapped rule
+
+  // The live experiment is driven by CLASSIC scripts (sem.js + the rule files)
+  // that wire window.SEM and window.CA.RULES. They precede this deferred module
+  // in the HTML, so they're normally ready here — but a slow or transiently
+  // failed script load can leave a global momentarily absent. Rather than latch
+  // the empty state forever (which surfaced "no live experiment" on EVERY stage
+  // whenever SEM/CA hadn't wired yet), poll briefly for readiness, then decide.
+  const factory = window.CA && CA.RULES && CA.RULES[ruleId];
+  const needsSEM = ruleId !== 'life';                  // only the photoreal LIFE feed skips the SEM pipeline
+  if (!factory || (needsSEM && !window.SEM)) {
+    if (expRetry++ < 60) {                             // ~3s of 50ms polls before giving up
+      expEmpty.hidden = true;
+      expCanvas.style.display = 'none';
+      expCaption.textContent = 'LIVE SEM · loading…';
+      setTimeout(() => { if (currentMeta === m) selectExperiment(m); }, 50);
+      return;
+    }
+    showExpEmpty();                                    // globals never arrived → honest empty state
     return;
   }
+  expRetry = 0;
   const rule = factory();                              // instantiate web3 rule
-  // The photoreal LIFE feed paints via its own renderPhotoreal and does NOT
-  // use the SEM pipeline — only grid rules need window.SEM. Gating the two
-  // separately means a missing/late SEM can never blank the capstone.
-  if (!rule.hiRes && !window.SEM) {
-    expEmpty.hidden = false;
-    expCanvas.style.display = 'none';
-    expCaption.textContent = 'LIVE SEM · —';
-    return;
-  }
   expEmpty.hidden = true;
   expCanvas.style.display = '';
   expRule = rule;
