@@ -237,9 +237,12 @@
         }
       }
     }
-    // Size the canvas + ImageData to the rule's native grid.
-    canvas.width  = currentRule.width;
-    canvas.height = currentRule.height;
+    // Size the canvas to the rule's native grid — or, for a rule that declares
+    // a hiResScale (the photoreal Stage XIII life feed), to grid×scale so the
+    // baked cell sprites stay crisp instead of a blocky upscaled pixel grid.
+    const hrs = currentRule.hiResScale | 0;
+    canvas.width  = currentRule.width  * (hrs > 0 ? hrs : 1);
+    canvas.height = currentRule.height * (hrs > 0 ? hrs : 1);
     imageData = ctx.createImageData(currentRule.width, currentRule.height);
     heightBuf = new Float32Array(currentRule.width * currentRule.height);
 
@@ -428,6 +431,13 @@
   }
 
   function render() {
+    // Photoreal hi-res path (Stage XIII life): blit baked cell sprites on a
+    // high-resolution canvas. Bypasses the grid-resolution pixel/SEM/sprite
+    // pipeline entirely; other rules are unaffected.
+    if (typeof currentRule.renderHiRes === "function" && (currentRule.hiResScale | 0) > 0) {
+      currentRule.renderHiRes(ctx, canvas.width, canvas.height);
+      return;
+    }
     if (semMode && typeof currentRule.renderHeight === "function" && window.SEM) {
       currentRule.renderHeight(heightBuf);
       SEM.render(heightBuf, currentRule.width, currentRule.height,

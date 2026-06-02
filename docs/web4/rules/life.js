@@ -84,6 +84,25 @@
     return mism + Math.abs(a.length - b.length);
   }
 
+  // --- Photoreal sprite atlas (baked offline, same PNGs the Python renderer
+  //     uses).  Loaded async; the hi-res canvas path blits these instead of
+  //     drawing pixel discs, so the browser matches the desktop look. ---
+  const ATLAS = { ready: false, sheet: null, div: null, variants: 6, frames: 10, tile: 384 };
+  (function loadAtlas() {
+    try {
+      fetch("assets/life/atlas.json")
+        .then((r) => r.json())
+        .then((m) => { ATLAS.variants = m.variants; ATLAS.frames = m.frames; ATLAS.tile = m.tile; })
+        .catch(() => {});
+      const s = new Image();
+      s.onload = () => { ATLAS.sheet = s; if (ATLAS.div) ATLAS.ready = true; };
+      s.src = "assets/life/cells.png";
+      const d = new Image();
+      d.onload = () => { ATLAS.div = d; if (ATLAS.sheet) ATLAS.ready = true; };
+      d.src = "assets/life/cell_div.png";
+    } catch (e) { /* no DOM (e.g. node smoke) — hi-res path simply stays inactive */ }
+  })();
+
   function make() {
     // Three coupled grids + the live population.
     const substrate = new Float32Array(N);   // [0,1] — food
@@ -95,6 +114,10 @@
     let generation  = 0;
     const founderGenome = ANCESTOR_GENOME.slice();
     const divRequests = [];
+    // hi-res sprite render state (lazy)
+    let hrFrame = 0;
+    let floorCanvas = null;
+    let floorImg = null;
 
     function seed() {
       // Substrate starts plentiful and uniform; waste empty.
@@ -347,6 +370,7 @@
       paletteFg: [230, 224, 208],
       width: W,
       height: H,
+      hiResScale: 12, // main.js sizes the canvas to grid×scale and calls renderHiRes
 
       params: {
         population:     { label: "founder population", min: 20,  max: 600, step: 10,   value: 200  },
@@ -456,6 +480,89 @@
             }
           }
         }
+      },
+
+      // Hi-res photoreal path: draw a smooth sepia FOOD floor, then blit the
+      // baked translucent-cell sprites (the same atlas the Python renderer
+      // uses) at each organism's position — depth-sorted, energy-scaled,
+      // flipbook-cycled, with the one teal dividing cell. This is what makes
+      // the browser match the desktop look instead of pixel discs.
+      renderHiRes(ctx, CW, CH) {
+        hrFrame++;
+        // --- sepia food floor (60×60 sepia buffer scaled up smoothly) ---
+        if (!floorCanvas) {
+          floorCanvas = document.createElement("canvas");
+          floorCanvas.width = W;
+          floorCanvas.height = H;
+          floorImg = floorCanvas.getContext("2d").createImageData(W, H);
+        }
+        const d = floorImg.data;
+        for (let i = 0; i < N; i++) {
+          const s = substrate[i];
+          const w = waste[i] < 1 ? waste[i] : 1;
+          const lit = 0.32 + 0.68 * s; // dark where food has been eaten
+          const p = i * 4;
+          d[p] = (150 * lit) | 0;
+          d[p + 1] = (120 * lit) | 0;
+          d[p + 2] = (84 * lit * (1 - 0.3 * w)) | 0;
+          d[p + 3] = 255;
+        }
+        floorCanvas.getContext("2d").putImageData(floorImg, 0, 0);
+        ctx.imageSmoothingEnabled = true;
+        ctx.imageSmoothingQuality = "high";
+        ctx.drawImage(floorCanvas, 0, 0, CW, CH);
+
+        const denom = (v) => (v > 1 ? v : 1);
+        if (ATLAS.ready) {
+          const tile = ATLAS.tile, V = ATLAS.variants, F = ATLAS.frames;
+          let divOid = -1, best = -Infinity;
+          for (const o of organisms.values()) {
+            const sc = o.nDivisions * 1e6 + o.energy;
+            if (sc > best) { best = sc; divOid = o.oid; }
+          }
+          const list = Array.from(organisms.values()).sort((a, b) => a.y - b.y);
+          for (const org of list) {
+            const frac = energyFrac(org);
+            const depth = org.y / denom(H - 1);
+            const cx = (0.05 + 0.90 * (org.x / denom(W - 1))) * CW;
+            const cy = (0.06 + 0.88 * depth) * CH;
+            const dw = CH * 0.072 * (0.7 + 0.5 * depth) * (0.82 + 0.4 * frac);
+            const fidx = (((hrFrame * 0.3 + org.oid * 3) | 0) % F + F) % F;
+            const isdiv = org.oid === divOid && frac > 0.5;
+            const img = isdiv ? ATLAS.div : ATLAS.sheet;
+            const sy = isdiv ? 0 : (org.oid % V) * tile;
+            const sx = fidx * tile;
+            const ang = ((org.facing * 45) + 4 * Math.sin(hrFrame * 0.05 + org.oid)) * Math.PI / 180;
+            ctx.save();
+            ctx.translate(cx, cy);
+            ctx.rotate(ang);
+            ctx.drawImage(img, sx, sy, tile, tile, -dw / 2, -dw / 2, dw, dw);
+            ctx.restore();
+          }
+        } else {
+          // fallback discs while the atlas PNGs load
+          for (const org of organisms.values()) {
+            const frac = energyFrac(org);
+            const cx = (org.x / denom(W - 1)) * CW;
+            const cy = (org.y / denom(H - 1)) * CH;
+            ctx.fillStyle = "rgba(222,210,178,0.92)";
+            ctx.beginPath();
+            ctx.arc(cx, cy, CH * 0.018 * (0.7 + frac), 0, 6.2832);
+            ctx.fill();
+          }
+        }
+        // instrument chrome: badge + scale bar
+        ctx.fillStyle = "rgba(20,15,10,0.5)";
+        ctx.fillRect(CW - 372, 14, 358, 30);
+        ctx.fillStyle = "rgba(228,212,172,0.96)";
+        ctx.font = ((CH * 0.022) | 0) + "px monospace";
+        ctx.fillText("LIVE SEM FEED · STAGE XIII · DIGITAL LIFE", CW - 360, 35);
+        ctx.strokeStyle = "rgba(228,212,172,0.9)";
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.moveTo(CW / 2 - 75, CH - 28);
+        ctx.lineTo(CW / 2 + 75, CH - 28);
+        ctx.stroke();
       },
 
       // SEM height: organisms stand up as energy-scaled mounds on a low
