@@ -132,8 +132,10 @@ def test_sprite_path_draws_face_on_top():
     out = render_character(128, mood="excited", sprite=sprite)
     assert out.size == (128, 128)
     assert out.mode == "RGBA"
-    # A bare resized+tinted solid sprite has no eye whites; the rendered result
-    # must contain near-white eye pixels somewhere in the upper-centre region.
+    # A bare resized+tinted solid sprite (120,90,60) has no eye whites; the
+    # rendered result must contain markedly brighter eye pixels. (The v4.2
+    # _dim_specular step tones catch-lights down from pure white, so assert
+    # "clearly brighter than the body" rather than an absolute near-white.)
     arr = np.asarray(out)[..., :3].astype(np.int16)
-    bright = (arr > 200).all(axis=-1)
+    bright = (arr > 130).all(axis=-1)
     assert bright.any(), "expected bright eye/sparkle pixels drawn over the sprite"

@@ -753,6 +753,7 @@ def _scale_bar_label(font: Any) -> str:
 
 
 _FONT_CACHE: dict[int, Any] = {}
+_SERIF_CACHE: dict[tuple[int, bool], Any] = {}
 
 
 def _load_mono_font(size: int) -> Any:
@@ -786,6 +787,38 @@ def _load_mono_font(size: int) -> Any:
         return default_font
     except Exception:
         return None
+
+
+def _load_serif_font(size: int, italic: bool = False) -> Any:
+    """Best-effort serif font load (CrimsonPro shipped with cellauto, then OS
+    fallbacks). Mirrors :func:`_load_mono_font` and reuses the same
+    ``assets/fonts`` directory.
+
+    Never returns None: if no serif resolves on this OS it falls back to the
+    mono font for ``size`` so the title/narration hierarchy still rests on the
+    size ratio. Cached by ``(size, italic)``. Never raises.
+    """
+    key = (size, italic)
+    if key in _SERIF_CACHE:
+        return _SERIF_CACHE[key]
+    from pathlib import Path
+
+    from PIL import ImageFont
+
+    base = Path(__file__).resolve().parent / "assets" / "fonts"
+    name = "CrimsonPro-Italic.ttf" if italic else "CrimsonPro-Regular.ttf"
+    candidates = [str(base / name), "Georgia.ttf", "DejaVuSerif.ttf"]
+    for c in candidates:
+        try:
+            font = ImageFont.truetype(c, size=size)
+            _SERIF_CACHE[key] = font
+            return font
+        except Exception:
+            continue
+    # Graceful fallback: the mono font keeps the size-driven hierarchy intact.
+    font = _load_mono_font(size)
+    _SERIF_CACHE[key] = font
+    return font
 
 
 def _shipped_mono_path() -> str | None:

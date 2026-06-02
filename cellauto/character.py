@@ -372,6 +372,61 @@ def _blink_openness(anim_phase: float) -> float:
     return float(0.05 + 0.95 * (1.0 - math.cos(t * math.pi)) / 2.0)
 
 
+# Deterministic seed for eye-integration grain. Position/seed only (never time)
+# so "same phase → same frame" still holds. (0x53EE, NOT the invalid 0x5EM.)
+_EYE_GRAIN_SEED = 0x53EE
+
+
+def _apply_eye_grain(face_img: Any) -> Any:
+    """Add deterministic equal-per-channel luminance jitter to the drawn face.
+
+    Adds a small luminance jitter (amp ~14, the SAME delta on R, G and B so no
+    chroma is introduced — chroma noise would look wrong on a monochrome-LUT
+    world) ONLY where the face alpha exceeds 24, breaking up the "pasted vector
+    eyes" read. The RNG is seeded by position/seed only (``0x53EE``), never by
+    time, so the same animation phase yields the same frame. Returns a new RGBA
+    image; the caller falls back to the un-grained face on any exception.
+    """
+    import numpy as np
+    from PIL import Image
+
+    arr = np.asarray(face_img, dtype=np.float32)
+    alpha = arr[..., 3]
+    mask = alpha > 24
+    rng = np.random.default_rng(_EYE_GRAIN_SEED)
+    # One jitter value per pixel, applied equally to R, G, B (luminance-only).
+    jitter = rng.normal(0.0, 14.0, size=alpha.shape).astype(np.float32)
+    jitter *= mask  # zero outside the face footprint
+    arr[..., 0] = np.clip(arr[..., 0] + jitter, 0, 255)
+    arr[..., 1] = np.clip(arr[..., 1] + jitter, 0, 255)
+    arr[..., 2] = np.clip(arr[..., 2] + jitter, 0, 255)
+    return Image.fromarray(arr.astype(np.uint8), "RGBA")
+
+
+def _dim_specular(face_img: Any) -> Any:
+    """Knock down the face's blown-out highlights so they stop reading as stickers.
+
+    Where the face is both very bright (luma > 225) and nearly opaque
+    (alpha > 200) — i.e. the EYE_WHITE fill at alpha 255 and the catch-light
+    dots at alpha 235 — pull the RGB toward 0.91× and drop the alpha toward
+    ~110 so the membrane shows through the highlight. Returns a new RGBA image;
+    the caller falls back to the un-dimmed face on any exception.
+    """
+    import numpy as np
+    from PIL import Image
+
+    arr = np.asarray(face_img, dtype=np.float32)
+    rgb = arr[..., :3]
+    alpha = arr[..., 3]
+    luma = 0.2126 * rgb[..., 0] + 0.7152 * rgb[..., 1] + 0.0722 * rgb[..., 2]
+    spec = (luma > 225) & (alpha > 200)
+    arr[..., 0] = np.where(spec, rgb[..., 0] * 0.91, rgb[..., 0])
+    arr[..., 1] = np.where(spec, rgb[..., 1] * 0.91, rgb[..., 1])
+    arr[..., 2] = np.where(spec, rgb[..., 2] * 0.91, rgb[..., 2])
+    arr[..., 3] = np.where(spec, 110.0, alpha)
+    return Image.fromarray(np.clip(arr, 0, 255).astype(np.uint8), "RGBA")
+
+
 def render_character(
     size: int,
     mood: str = DEFAULT_MOOD,
@@ -448,8 +503,27 @@ def render_character(
 
     # Draw the per-mood face ON TOP (of either the sprite or the drawn body).
     face = _MOOD_FACES.get(mood, _MOOD_FACES[DEFAULT_MOOD])
-    # Faces are sized in big-pixels; scale the face proportionally for reborn.
-    face(draw, cx, cy, int(big * body_scale), openness)
+    face_size = int(big * body_scale)  # faces are sized in big-pixels (reborn scales)
+    # Route the face onto its OWN transparent RGBA layer so we can integrate the
+    # eyes (grain + specular knock-down) before compositing. Each step is
+    # independently guarded; ANY failure falls back to drawing the face directly
+    # on ``img`` exactly as before — never raise into the render path.
+    try:
+        face_img = Image.new("RGBA", (big, big), (0, 0, 0, 0))
+        face_draw = ImageDraw.Draw(face_img)
+        face(face_draw, cx, cy, face_size, openness)
+        try:
+            face_img = _apply_eye_grain(face_img)
+        except Exception:
+            pass  # keep the un-grained face_img
+        try:
+            face_img = _dim_specular(face_img)
+        except Exception:
+            pass  # keep the (possibly grained) face_img
+        img.alpha_composite(face_img, (0, 0))
+    except Exception:
+        # Layering failed wholesale: draw the face directly on img as today.
+        face(draw, cx, cy, face_size, openness)
 
     # Soft edges: a tiny blur before downsampling smooths the polygon outline.
     img = img.filter(ImageFilter.GaussianBlur(ss * 0.4))

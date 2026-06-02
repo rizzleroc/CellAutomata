@@ -9,7 +9,8 @@ cellauto has two visual channels now:
                 * the protagonist character (``cellauto.character``),
                 * a typeset narration ribbon + day-clock (``cellauto.narrative``),
                 * a gentle time-of-day light grade,
-                * a small "STORY" tag so it never masquerades as instrument truth.
+                * a lower-third "DAY IN THE LIFE" kicker so it never masquerades
+                  as instrument truth.
 
 Channel B has its **own animation clock**, independent of the simulation step
 loop AND of the SEM badge pulse: the character breathes/blinks and the ribbon
@@ -43,6 +44,32 @@ import numpy as np
 
 from cellauto.narrative import NarrativeScript
 
+# Per-beat staging table: mood -> (scale_h, anchor_fx, baseline_fy).
+#   scale_h     sprite edge as a fraction of frame HEIGHT
+#   anchor_fx   horizontal anchor (rule-of-thirds, off the hard corner)
+#   baseline_fy vertical contact line as a fraction of frame HEIGHT
+_STAGE_PLAN: dict[str, tuple[float, float, float]] = {
+    "curious": (0.40, 0.30, 0.70),
+    "calm": (0.36, 0.30, 0.68),
+    "excited": (0.46, 0.33, 0.72),
+    "struggling": (0.42, 0.28, 0.74),
+    "triumphant": (0.46, 0.34, 0.66),
+    "weary": (0.34, 0.27, 0.74),
+    "reborn": (0.32, 0.31, 0.69),
+}
+_DEFAULT_PLAN: tuple[float, float, float] = (0.36, 0.30, 0.69)
+
+
+def _plan_for(beat: Any) -> tuple[float, float, float]:
+    """Resolve the staging plan for a beat's mood, defaulting when unknown."""
+    return _STAGE_PLAN.get(str(getattr(beat, "mood", "")), _DEFAULT_PLAN)
+
+
+def _scrim_h_for(height: int) -> int:
+    """Shared narration-scrim height (pixels). Single source of truth so the
+    ribbon scrim and the character keep-out ledge can never drift apart."""
+    return int(height * 0.34)
+
 
 @dataclass
 class NarrativeChannel:
@@ -61,6 +88,10 @@ class NarrativeChannel:
     _phase: float = 0.0
     _script: NarrativeScript = field(default_factory=NarrativeScript)
     _sprite_provider: Callable[[int], Any] | None = None
+
+    # Per-instance memo for the gradient scrim, keyed (width, scrim_h), so the
+    # ~20 Hz hot path allocates the ramp once per resolution.
+    _scrim_cache: dict[tuple[int, int], Any] = field(default_factory=dict)
 
     # ── App-facing setters ───────────────────────────────────────────────────
 
@@ -118,11 +149,12 @@ class NarrativeChannel:
              day" tint, not a flat colour cast).
           3. the protagonist character (cellauto.character.render_character),
              alpha-composited lower-left over a soft elliptical contact shadow.
-          4. a dim narration ribbon along the bottom carrying the day-clock,
-             title and a width-wrapped line, with a gentle typewriter reveal
-             driven by self._phase.
-          5. a small tracked "STORY · DAY IN THE LIFE" tag upper-left so the
-             layer is unmistakably narration, not the instrument feed.
+          4. a cinematic lower-third carrying a tracked "DAY IN THE LIFE"
+             kicker + demoted day-clock, a serif hero title and an italic
+             width-wrapped narration line over a gradient scrim, with a gentle
+             typewriter reveal driven by self._phase. The kicker doubles as the
+             provenance mark so the layer is unmistakably narration, not the
+             instrument feed.
         numpy+PIL only; never mutates base_rgb; never raises in the hot path.
         """
         if not self.enabled:
@@ -152,7 +184,6 @@ class NarrativeChannel:
             canvas = Image.fromarray(out, "RGB").convert("RGBA")
             self._composite_character(canvas, beat, height, width)
             self._draw_ribbon(canvas, beat, height, width)
-            self._draw_story_tag(canvas, height, width)
             out = np.asarray(canvas.convert("RGB"), dtype=np.uint8)
         except Exception:
             out = np.ascontiguousarray(out, dtype=np.uint8)
@@ -176,99 +207,258 @@ class NarrativeChannel:
         return np.clip(graded, 0, 255).astype(np.uint8)
 
     def _composite_character(self, canvas: Any, beat: Any, height: int, width: int) -> None:
-        """Render the protagonist + a soft contact shadow, lower-left."""
+        """Seat the protagonist IN the SEM substrate: scale per beat mood, anchor
+        on a rule-of-thirds axis off the hard corner, measure the sprite's real
+        alpha footprint so the shadow meets the body, keep clear of the SEM
+        chrome + narration scrim, and multiply a two-part ground (wide soft cast
+        + tight occlusion core) into the micrograph before compositing the body.
+
+        Any failure in the new geometry degrades to the legacy soft-ellipse
+        contact shadow (kept verbatim as the fallback). Never raises."""
         from PIL import Image, ImageDraw, ImageFilter
 
         from cellauto.character import render_character
 
-        size = max(16, int(height * 0.22))
-        sprite = self._sprite_provider(self.stage) if self._sprite_provider else None
-        char = render_character(
-            size=size,
-            mood=beat.mood,
-            anim_phase=self._phase,
-            palette=self.palette,
-            sprite=sprite,
-        )
-        # render_character may return a duck-typed stub when PIL is missing;
-        # guard for a real RGBA image with alpha_composite support.
-        if not isinstance(char, Image.Image):
-            return
+        try:
+            scale_h, anchor_fx, baseline_fy = _plan_for(beat)
+            size = max(48, min(int(height * scale_h), int(min(width, height) * 0.60)))
+            char = render_character(
+                size=size,
+                mood=beat.mood,
+                anim_phase=self._phase,
+                palette=self.palette,
+                sprite=(self._sprite_provider(self.stage) if self._sprite_provider else None),
+            )
+            if not isinstance(char, Image.Image):
+                return
+            char = char.convert("RGBA")
 
-        margin = max(4, int(height * 0.03))
-        cx = margin
-        cy = height - size - margin
-        # Contact shadow: a soft, flattened ellipse beneath the character.
-        shadow = Image.new("RGBA", (size, max(2, size // 4)), (0, 0, 0, 0))
-        sdraw = ImageDraw.Draw(shadow)
-        sw, sh = shadow.size
-        sdraw.ellipse((sw * 0.12, 0, sw * 0.88, sh), fill=(0, 0, 0, 110))
-        shadow = shadow.filter(ImageFilter.GaussianBlur(max(1, size // 24)))
-        canvas.alpha_composite(shadow, (cx, height - margin - sh))
-        canvas.alpha_composite(char.convert("RGBA"), (cx, cy))
+            axis_x = int(width * anchor_fx)
+            paste_x = axis_x - size // 2
+            base_y_target = int(height * baseline_fy)
+
+            # Real alpha footprint — the float fix: meet the body's true edge.
+            alpha = np.asarray(char)[..., 3]
+            ys, xs = np.where(alpha > 24)
+            if xs.size:
+                foot_l, foot_r = int(xs.min()), int(xs.max())
+                foot_b = int(ys.max())
+                foot_cx = (foot_l + foot_r) * 0.5
+                foot_w = max(2, foot_r - foot_l)
+            else:
+                foot_b = size
+                foot_cx = size * 0.5
+                foot_w = size
+            paste_y = base_y_target - foot_b
+
+            # Keep-outs: SEM badge (top-right), scale bar (bottom-left), and the
+            # narration scrim ledge (SAME scrim_h as _draw_ribbon — shared helper).
+            scrim_h = _scrim_h_for(height)
+            keepouts = [
+                (int(width * 0.52), 0, width, int(height * 0.11)),
+                (0, int(height * 0.92), int(width * 0.46), height),
+                (0, height - scrim_h, width, height),
+            ]
+
+            def _intersects(b: tuple[int, int, int, int], k: tuple[int, int, int, int]) -> bool:
+                return not (b[2] <= k[0] or b[0] >= k[2] or b[3] <= k[1] or b[1] >= k[3])
+
+            box = (paste_x, paste_y, paste_x + size, paste_y + size)
+            for _ in range(6):  # bounded, never infinite
+                hit = next((k for k in keepouts if _intersects(box, k)), None)
+                if hit is None:
+                    break
+                kx0, ky0, kx1, ky1 = hit
+                if ky1 >= height - 2 and paste_y + size > ky0:
+                    paste_y = ky0 - size
+                elif kx0 > width // 2 and paste_x + size > kx0:
+                    paste_x = kx0 - size
+                else:
+                    paste_y = max(paste_y, ky1)
+                if paste_y < 0 or paste_x < 0:
+                    size = max(48, int(size * 0.88))
+                    paste_x = axis_x - size // 2
+                    paste_y = base_y_target - size
+                box = (paste_x, paste_y, paste_x + size, paste_y + size)
+            paste_x = max(0, min(paste_x, width - size))
+            paste_y = max(0, min(paste_y, height - size))
+            contact_cx = paste_x + foot_cx
+            contact_y = paste_y + foot_b
+
+            # Two-part ground multiplied into the substrate so the grain shows
+            # through: wide soft cast shadow + tight dark occlusion core.
+            sh_w = int(foot_w * 1.55)
+            occ_w = int(foot_w * 0.95)
+            occ_h = max(3, int(foot_w * 0.22))
+            mask = Image.new("L", (width, height), 0)
+            md = ImageDraw.Draw(mask)
+            md.ellipse(
+                (
+                    contact_cx - sh_w / 2,
+                    contact_y - max(4, int(foot_w * 0.42)) * 0.35,
+                    contact_cx + sh_w / 2,
+                    contact_y + max(4, int(foot_w * 0.42)) * 0.65,
+                ),
+                fill=70,
+            )
+            md.ellipse(
+                (
+                    contact_cx - occ_w / 2,
+                    contact_y - occ_h * 0.5,
+                    contact_cx + occ_w / 2,
+                    contact_y + occ_h * 0.9,
+                ),
+                fill=150,
+            )
+            mask = mask.filter(ImageFilter.GaussianBlur(max(2, int(foot_w * 0.06))))
+            rgb = np.asarray(canvas.convert("RGB"), dtype=np.float32)
+            m = np.asarray(mask, dtype=np.float32)[..., None] / 255.0
+            rgb = rgb * (1.0 - 0.85 * m)
+            ground = Image.fromarray(np.clip(rgb, 0, 255).astype(np.uint8), "RGB").convert("RGBA")
+            canvas.paste(ground, (0, 0))
+
+            # Body composites LAST, on top of its own ground.
+            canvas.alpha_composite(char, (paste_x, paste_y))
+        except Exception:
+            # Fallback: legacy soft-ellipse contact shadow, lower-left.
+            size = max(16, int(height * 0.22))
+            sprite = self._sprite_provider(self.stage) if self._sprite_provider else None
+            char = render_character(
+                size=size,
+                mood=beat.mood,
+                anim_phase=self._phase,
+                palette=self.palette,
+                sprite=sprite,
+            )
+            if not isinstance(char, Image.Image):
+                return
+            margin = max(4, int(height * 0.03))
+            cx = margin
+            cy = height - size - margin
+            shadow = Image.new("RGBA", (size, max(2, size // 4)), (0, 0, 0, 0))
+            sdraw = ImageDraw.Draw(shadow)
+            sw, sh = shadow.size
+            sdraw.ellipse((sw * 0.12, 0, sw * 0.88, sh), fill=(0, 0, 0, 110))
+            shadow = shadow.filter(ImageFilter.GaussianBlur(max(1, size // 24)))
+            canvas.alpha_composite(shadow, (cx, height - margin - sh))
+            canvas.alpha_composite(char.convert("RGBA"), (cx, cy))
+
+    @staticmethod
+    def _accent_from_sky(sky: Any) -> tuple[int, int, int]:
+        """Derive the single overlay accent from ``beat.sky`` — the same source
+        that drives the day-grade, so accent and grade can never disagree.
+
+        Lifts a dark (night) sky's luminance to a visible ~0.62, then applies a
+        mild saturation lift so the rule reads as an accent, not a wash.
+        Returns an RGB tuple."""
+        c = np.array(sky, dtype=np.float32)
+        lum = (0.2126 * c[0] + 0.7152 * c[1] + 0.0722 * c[2]) / 255.0
+        c = np.clip(c * (0.62 / max(lum, 1e-3)), 0, 255)
+        m = c.mean()
+        c = np.clip(m + (c - m) * 1.25, 0, 255)
+        return (int(c[0]), int(c[1]), int(c[2]))
+
+    @staticmethod
+    def _scrim_rgba(
+        width: int, scrim_h: int, ink: tuple[int, int, int] = (7, 9, 12), a_max: int = 190
+    ) -> Any:
+        """A vertical gradient scrim RGBA image: transparent at the top edge,
+        ramping (smoothstep) to ``a_max`` alpha at the bottom — no hard edge."""
+        from PIL import Image
+
+        t = np.linspace(0.0, 1.0, max(1, scrim_h), dtype=np.float32)
+        eased = t * t * (3.0 - 2.0 * t)
+        alpha = (eased * a_max).astype(np.uint8)[:, None]
+        rgb = np.empty((scrim_h, width, 3), np.uint8)
+        rgb[:] = ink
+        a = np.broadcast_to(alpha, (scrim_h, width))[..., None]
+        return Image.fromarray(np.concatenate([rgb, a], axis=2), "RGBA")
+
+    def _scrim_for(self, width: int, scrim_h: int) -> Any:
+        """Memoized gradient scrim keyed (width, scrim_h)."""
+        key = (int(width), int(scrim_h))
+        cached = self._scrim_cache.get(key)
+        if cached is None:
+            cached = self._scrim_rgba(width, scrim_h)
+            self._scrim_cache[key] = cached
+        return cached
+
+    @staticmethod
+    def _ink_text(draw: Any, xy: tuple[int, int], s: str, font: Any, fill: Any) -> None:
+        """Draw ``s`` with a 1px ink drop-shadow first, for legibility over
+        bright (noon) skies, then the glyphs themselves."""
+        draw.text((xy[0] + 1, xy[1] + 1), s, font=font, fill=(0, 0, 0, 110))
+        draw.text(xy, s, font=font, fill=fill)
 
     def _draw_ribbon(self, canvas: Any, beat: Any, height: int, width: int) -> None:
-        """Dim bottom plate with day-clock + title + width-wrapped line."""
-        from PIL import Image, ImageDraw
+        """Cinematic lower-third: gradient scrim, tracked mono kicker + demoted
+        clock, a sky-derived accent rule, a serif hero title and an italic serif
+        narration line with a typewriter reveal. Never raises."""
+        from PIL import ImageDraw
 
-        from cellauto.renderer_sem import _load_mono_font
+        from cellauto.renderer_sem import _load_mono_font, _load_serif_font
 
-        body_font = _load_mono_font(size=max(11, int(height * 0.026)))
-        head_font = _load_mono_font(size=max(12, int(height * 0.032)))
-        if body_font is None or head_font is None:
+        # Typography — hierarchy manufactured by SCALE (title ~2.6x clock).
+        title_font = _load_serif_font(max(22, int(height * 0.052)))
+        body_font = _load_serif_font(max(13, int(height * 0.030)), italic=True)
+        label_font = _load_mono_font(max(9, int(height * 0.018)))  # kicker + clock ONLY
+        if title_font is None or body_font is None or label_font is None:
             return  # Fonts unavailable → skip text silently.
 
-        pad = max(6, int(height * 0.02))
-        line_h = max(12, int(height * 0.034))
-        text_w = width - 2 * pad
+        # Palette-aware ink vocabulary (rhymes with the SEM chrome). The scrim
+        # base ink (7, 9, 12) lives in _scrim_rgba's default.
+        warm = self.palette != "cool-mono"
+        BONE = (0xF4, 0xEC, 0xDB) if warm else (0xEC, 0xF1, 0xF5)  # noqa: N806 — hero title
+        BODY = (0xCB, 0xC2, 0xB0) if warm else (0xC2, 0xCB, 0xD4)  # noqa: N806 — narration
+        CAP = (0x9A, 0x90, 0x7E) if warm else (0x8C, 0x97, 0xA4)  # noqa: N806 — kicker + clock
+        try:
+            ACCENT = self._accent_from_sky(beat.sky)  # noqa: N806 — sky-derived accent
+        except Exception:
+            ACCENT = BONE  # noqa: N806
 
-        # Typewriter reveal: ramp over ~half the phase cycle, then hold full.
+        pad = max(10, int(width * 0.055))  # editorial side margin
+
+        # Gradient scrim (memoized), composited first.
+        scrim_h = _scrim_h_for(height)
+        canvas.alpha_composite(self._scrim_for(width, scrim_h), (0, height - scrim_h))
+        draw = ImageDraw.Draw(canvas)
+
+        # Typewriter reveal — KEPT verbatim.
         phase = self._phase - int(self._phase)
         reveal = min(1.0, phase * 2.2)
         line = beat.line
         shown = line[: max(1, int(len(line) * reveal))] if line else ""
+        wrapped = self._wrap(shown, body_font, width - 2 * pad)
 
-        wrapped = self._wrap(shown, body_font, text_w)
-        n_body = max(1, len(wrapped))
-        # Plate spans header line + body lines.
-        plate_h = pad * 2 + line_h + n_body * line_h
-        plate_top = height - plate_h
+        # Bottom-up layout.
+        row_h = int(height * 0.040)
+        body_h = len(wrapped) * row_h
+        y_body = height - max(10, int(height * 0.03)) - body_h
+        y_title = y_body - int(height * 0.062)
+        y_rule = y_title - max(2, height // 360) - int(height * 0.006)
+        y_kick = max(int(height * 0.02), y_rule - int(height * 0.024))
 
-        plate = Image.new("RGBA", (width, plate_h), (8, 10, 14, 165))
-        canvas.alpha_composite(plate, (0, plate_top))
+        # Kicker + demoted clock (mono, tracked, faint — provenance, appears once).
+        kicker = " ".join("DAY IN THE LIFE")
+        draw.text((pad, y_kick), kicker, font=label_font, fill=CAP + (150,))
+        clk = " ".join(beat.clock)
+        cw = draw.textbbox((0, 0), clk, font=label_font)[2]
+        draw.text((width - pad - cw, y_kick), clk, font=label_font, fill=CAP + (120,))
 
-        draw = ImageDraw.Draw(canvas)
-        accent = (0x39, 0xD4, 0xC8, 235)
-        bone = (0xE6, 0xDC, 0xC5, 235)
-        y = plate_top + pad
-        header = f"{beat.clock}  ·  {beat.title}"
-        draw.text((pad, y), header, font=head_font, fill=accent)
-        y += line_h
+        # Accent rule — the ONLY accent chrome; left-anchored, partial-width.
+        tw = draw.textbbox((0, 0), beat.title, font=title_font)[2]
+        rule_w = min(tw, width - 2 * pad)
+        draw.line([(pad, y_rule), (pad + rule_w, y_rule)], fill=ACCENT + (235,), width=max(2, height // 360))
+
+        # Hero serif title with a 1px ink shadow (noon legibility).
+        draw.text((pad + 1, y_title + 1), beat.title, font=title_font, fill=(0, 0, 0, 130))
+        draw.text((pad, y_title), beat.title, font=title_font, fill=BONE + (245,))
+
+        # Italic serif narration, dimmer, with the same 1px ink shadow per row.
+        y = y_body
         for row in wrapped:
-            draw.text((pad, y), row, font=body_font, fill=bone)
-            y += line_h
-
-    def _draw_story_tag(self, canvas: Any, height: int, width: int) -> None:
-        """Small tracked 'STORY · DAY IN THE LIFE' label on a tiny plate."""
-        from PIL import Image, ImageDraw
-
-        from cellauto.renderer_sem import _load_mono_font
-
-        font = _load_mono_font(size=max(9, int(height * 0.020)))
-        if font is None:
-            return
-        label = "STORY · DAY IN THE LIFE"
-        draw = ImageDraw.Draw(canvas)
-        bbox = draw.textbbox((0, 0), label, font=font)
-        tw = bbox[2] - bbox[0]
-        th = bbox[3] - bbox[1]
-        px = max(3, int(width * 0.018))
-        py = max(3, int(height * 0.018))
-        ppx = max(3, int(width * 0.008))
-        ppy = max(2, int(height * 0.006))
-        plate = Image.new("RGBA", (tw + 2 * ppx, th + 2 * ppy), (8, 10, 14, 175))
-        canvas.alpha_composite(plate, (px, py))
-        draw.text((px + ppx, py + ppy - bbox[1]), label, font=font, fill=(0xD4, 0x39, 0xA4, 235))
+            self._ink_text(draw, (pad, y), row, body_font, BODY + (235,))
+            y += row_h
 
     @staticmethod
     def _wrap(text: str, font: Any, max_w: int) -> list[str]:

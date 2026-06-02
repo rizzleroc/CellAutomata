@@ -40,8 +40,13 @@ from typing import Any
 
 from cellauto.narrative import DAY_IN_THE_LIFE
 
-# Default flat background colour the art pipeline paints behind the subject.
-CHROMA_KEY: tuple[int, int, int] = (255, 0, 255)
+# Named key colours the art pipeline can paint behind the subject. Magenta
+# stays the default for back-compat; green keys grayscale/sepia subjects far
+# more cleanly (no magenta in a gray subject's blue+red, so spill suppression
+# is gentler on soft edges).
+MAGENTA_KEY: tuple[int, int, int] = (255, 0, 255)
+GREEN_KEY: tuple[int, int, int] = (0, 255, 0)
+CHROMA_KEY: tuple[int, int, int] = MAGENTA_KEY  # legacy alias / default
 
 # Filenames tried for a stage, in priority order. ``{mood}`` is the stage's
 # narrative mood (see cellauto.narrative.DAY_IN_THE_LIFE); the bare names are
@@ -53,8 +58,8 @@ _CANDIDATES: tuple[str, ...] = (
     "cell_protagonist_idle.png",
 )
 
-# (abs_path, mtime_ns, key, tol_in, tol_out) -> RGBA image | None
-_SPRITE_CACHE: dict[tuple[str, int, tuple[int, int, int], int, int], Any] = {}
+# (abs_path, mtime_ns, matte, key, tol_in, tol_out) -> RGBA image | None
+_SPRITE_CACHE: dict[tuple[str, int, str, tuple[int, int, int] | None, int, int], Any] = {}
 
 
 def default_asset_dir() -> Path:
@@ -87,18 +92,20 @@ def chroma_key(
     tol_in: int = 48,
     tol_out: int = 120,
     min_keyed_fraction: float = 0.12,
+    despill: float = 0.85,
 ) -> Any | None:
     """Lift a flat ``key``-coloured background to transparency.
 
     Returns a NEW RGBA ``PIL.Image`` whose background pixels are fully
     transparent with a feathered, de-spilled edge, or ``None`` when the image
     doesn't actually sit on a ``key`` field (fewer than ``min_keyed_fraction``
-    of pixels within the key band) — in that case the caller should fall back
-    to the procedural body rather than composite an opaque rectangle.
+    of pixels within the key band) — the caller then falls back to the
+    procedural body rather than compositing an opaque rectangle.
 
-    The alpha ramps from 0 at colour-distance ``tol_in`` (pure key) to 1 at
-    ``tol_out`` (definitely subject); edge pixels are desaturated toward their
-    own luminance to kill magenta fringing.
+    Alpha ramps from 0 at colour-distance ``tol_in`` (pure key) to 1 at
+    ``tol_out`` (definitely subject). De-spill is *channel-aware*: only the
+    spilling key channel(s) are pulled back toward the mean of the others, so
+    soft cilia that legitimately carry some of the key hue are not chewed.
     """
     try:
         import numpy as np
@@ -116,10 +123,78 @@ def chroma_key(
             # Background isn't the key colour — don't manufacture an opaque box.
             return None
 
-        # De-spill: desaturate translucent edge pixels toward their luminance.
+        # Channel-aware de-spill. The "spill" channels are those the key drives
+        # high (e.g. R&B for magenta, G for green). For each translucent pixel
+        # we cap the spill channel at the mean of the NON-spill channels, but
+        # only by as much as the edge is translucent — interior pixels untouched.
+        keymax = float(max(key)) or 1.0
+        spill_w = np.asarray(key, dtype=np.float32) / keymax  # 0..1 per channel
+        spill_mask = spill_w > 0.5
+        if spill_mask.any() and not spill_mask.all():
+            ref = rgb[..., ~spill_mask].mean(axis=-1, keepdims=True)  # neutral ref
+            edge = ((1.0 - alpha) * float(np.clip(despill, 0.0, 1.0)))[..., None]
+            for c in np.where(spill_mask)[0]:
+                ch = rgb[..., c]
+                capped = np.minimum(ch, ref[..., 0])
+                rgb[..., c] = ch + (capped - ch) * edge[..., 0]
+        else:
+            # Degenerate key (all-channels or none) — fall back to luminance pull.
+            lum = 0.2126 * rgb[..., 0] + 0.7152 * rgb[..., 1] + 0.0722 * rgb[..., 2]
+            mix = ((1.0 - alpha) * float(np.clip(despill, 0.0, 1.0)))[..., None]
+            rgb = rgb * (1.0 - mix) + lum[..., None] * mix
+
+        out = np.empty((rgb.shape[0], rgb.shape[1], 4), dtype=np.uint8)
+        out[..., :3] = np.clip(rgb, 0, 255).astype(np.uint8)
+        out[..., 3] = np.clip(alpha * 255.0, 0, 255).astype(np.uint8)
+        return Image.fromarray(out, "RGBA")
+    except Exception:
+        return None
+
+
+def luminance_key(
+    img: Any,
+    *,
+    black_floor: int = 16,
+    black_ceil: int = 64,
+    min_keyed_fraction: float = 0.12,
+    unmix: float = 0.85,
+) -> Any | None:
+    """Matte a subject shot on a NEAR-BLACK background by its luminance.
+
+    Returns a NEW RGBA ``PIL.Image`` where dark background pixels become
+    transparent (feathered) and the subject stays opaque, or ``None`` when the
+    frame isn't actually a black-background plate (fewer than
+    ``min_keyed_fraction`` of pixels below ``black_ceil`` luminance) — so a
+    bright/flat image falls through to the procedural body.
+
+    Alpha ramps 0 -> 1 across luminance ``[black_floor, black_ceil]``. Edge
+    pixels are "un-mixed": the residual black lift is divided back out so dim
+    rim pixels read as the subject's true colour instead of a muddy grey halo.
+    """
+    try:
+        import numpy as np
+        from PIL import Image
+
+        rgb = np.asarray(img.convert("RGB"), dtype=np.float32)
         lum = 0.2126 * rgb[..., 0] + 0.7152 * rgb[..., 1] + 0.0722 * rgb[..., 2]
-        mix = ((1.0 - alpha) * 0.85)[..., None]
-        rgb = rgb * (1.0 - mix) + lum[..., None] * mix
+
+        span = float(max(1, black_ceil - black_floor))
+        alpha = np.clip((lum - float(black_floor)) / span, 0.0, 1.0)
+
+        keyed_fraction = float(np.mean(alpha < 0.5))
+        if keyed_fraction < min_keyed_fraction:
+            # Not a dark-background plate — don't matte a bright image.
+            return None
+
+        # Un-premultiply against black: colour / alpha recovers the subject's
+        # true colour at translucent rim pixels (which black-bg compositing has
+        # darkened). Blend by ``unmix`` and only where alpha is in (0,1).
+        a = alpha[..., None]
+        safe = np.maximum(a, 1e-3)
+        recovered = np.clip(rgb / safe, 0, 255)
+        k = float(np.clip(unmix, 0.0, 1.0))
+        edge = k * (1.0 - a) * (a > 0.0)  # weight: most at faint rim, 0 at core
+        rgb = rgb * (1.0 - edge) + recovered * edge
 
         out = np.empty((rgb.shape[0], rgb.shape[1], 4), dtype=np.uint8)
         out[..., :3] = np.clip(rgb, 0, 255).astype(np.uint8)
@@ -144,6 +219,125 @@ def has_real_alpha(img: Any, *, min_transparent_fraction: float = 0.04, alpha_th
         return float(np.mean(a <= alpha_thresh)) >= min_transparent_fraction
     except Exception:
         return False
+
+
+def _sniff_matte(img: Any) -> tuple[str, tuple[int, int, int] | None]:
+    """Classify which matte ``img`` wants from its corners + alpha.
+
+    Returns one of:
+      ("alpha", None)            -> already a real cutout, use as-is
+      ("chroma", GREEN_KEY)      -> saturated green corners
+      ("chroma", MAGENTA_KEY)    -> saturated magenta corners
+      ("luminance", None)        -> near-black, low-saturation corners
+      ("none", None)             -> no confident background; procedural fallback
+
+    Samples a patch in each corner (mean, robust to noise) rather than a single
+    pixel. Never raises."""
+    try:
+        import numpy as np
+
+        if has_real_alpha(img):
+            return ("alpha", None)
+
+        rgb = np.asarray(img.convert("RGB"), dtype=np.float32)
+        h, w = rgb.shape[:2]
+        ph = max(1, h // 12)
+        pw = max(1, w // 12)
+        corners = np.concatenate(
+            [
+                rgb[:ph, :pw].reshape(-1, 3),
+                rgb[:ph, -pw:].reshape(-1, 3),
+                rgb[-ph:, :pw].reshape(-1, 3),
+                rgb[-ph:, -pw:].reshape(-1, 3),
+            ],
+            axis=0,
+        )
+        mean = corners.mean(axis=0)  # (3,) average corner colour
+        r, g, b = float(mean[0]), float(mean[1]), float(mean[2])
+        mx, mn = max(r, g, b), min(r, g, b)
+        sat = mx - mn  # cheap saturation proxy 0..255
+        lum = 0.2126 * r + 0.7152 * g + 0.0722 * b
+
+        # Near-black & not strongly coloured -> luminance/black-bg plate.
+        if lum < 48.0 and sat < 48.0:
+            return ("luminance", None)
+
+        # Strongly saturated corners -> chroma. Pick the key by dominant hue.
+        if sat >= 80.0:
+            if g > r and g > b:
+                return ("chroma", GREEN_KEY)
+            if r > g and b > g:  # red & blue high, green low
+                return ("chroma", MAGENTA_KEY)
+        return ("none", None)
+    except Exception:
+        return ("none", None)
+
+
+# ---------------------------------------------------------------------------
+# Turn a sniff/override into an actual matte. ``matte`` may be "auto"
+# (default), "alpha", "chroma", "luminance", or "none"; ``key`` forces the
+# chroma colour. Filename hints win over the pixel sniff.
+# ---------------------------------------------------------------------------
+
+_NAME_HINTS: tuple[tuple[str, str], ...] = (
+    ("_green", "chroma:green"),
+    ("_chromagreen", "chroma:green"),
+    ("_magenta", "chroma:magenta"),
+    ("_chroma", "chroma:magenta"),
+    ("_black", "luminance"),
+    ("_luma", "luminance"),
+    ("_dark", "luminance"),
+    ("_alpha", "alpha"),
+    ("_cutout", "alpha"),
+)
+
+
+def matte_image(
+    img: Any,
+    *,
+    matte: str = "auto",
+    key: tuple[int, int, int] | None = None,
+    name_hint: str | None = None,
+    tol_in: int = 48,
+    tol_out: int = 120,
+) -> Any | None:
+    """Apply the appropriate matte to ``img`` and return RGBA, or ``None``.
+
+    Resolution order: explicit ``matte``/``key`` > filename hint > pixel sniff.
+    Total — never raises."""
+    try:
+        mode = (matte or "auto").lower()
+
+        # Filename hint can pin the mode when auto.
+        if mode == "auto" and name_hint:
+            low = name_hint.lower()
+            for needle, tag in _NAME_HINTS:
+                if needle in low:
+                    if tag.startswith("chroma:"):
+                        mode = "chroma"
+                        if key is None:
+                            key = GREEN_KEY if tag.endswith("green") else MAGENTA_KEY
+                    else:
+                        mode = tag
+                    break
+
+        if mode == "auto":
+            sniffed, skey = _sniff_matte(img)
+            mode = sniffed
+            if key is None:
+                key = skey
+
+        if mode == "alpha":
+            from PIL import Image  # noqa: F401  (ensure PIL present)
+
+            return img.convert("RGBA")
+        if mode == "chroma":
+            return chroma_key(img, key=key or CHROMA_KEY, tol_in=tol_in, tol_out=tol_out)
+        if mode == "luminance":
+            return luminance_key(img)
+        return None  # "none" / unknown -> procedural fallback
+    except Exception:
+        return None
 
 
 def _square_trim(img: Any, *, alpha_floor: int = 16, pad_frac: float = 0.06) -> Any | None:
@@ -176,21 +370,26 @@ def _square_trim(img: Any, *, alpha_floor: int = 16, pad_frac: float = 0.06) -> 
 def load_body_sprite(
     path: str | Path,
     *,
-    key: tuple[int, int, int] = CHROMA_KEY,
+    matte: str = "auto",
+    key: tuple[int, int, int] | None = None,
     tol_in: int = 48,
     tol_out: int = 120,
 ) -> Any | None:
-    """Load, chroma-key and square-trim a protagonist body PNG.
+    """Load, matte and square-trim a protagonist body PNG.
 
     Returns an RGBA ``PIL.Image`` ready to hand to
     ``character.render_character(sprite=...)``, or ``None`` on any failure
-    (missing file, unreadable PNG, no key background, empty subject). Results
-    are cached by ``(path, mtime, key, tol_in, tol_out)``."""
+    (missing file, unreadable PNG, wrong/absent background for the chosen
+    matte, empty subject). The matte mode is resolved by :func:`matte_image`
+    (explicit ``matte``/``key`` > filename hint > pixel sniff), so green,
+    black-background and magenta plates as well as real-alpha cutouts all drop
+    in. Results are cached by ``(path, mtime, matte, key, tol_in, tol_out)`` so
+    different matte requests for the same file never collide."""
     try:
         p = Path(path)
         if not p.is_file():
             return None
-        ckey = (str(p.resolve()), p.stat().st_mtime_ns, key, tol_in, tol_out)
+        ckey = (str(p.resolve()), p.stat().st_mtime_ns, matte, key, tol_in, tol_out)
         if ckey in _SPRITE_CACHE:
             return _SPRITE_CACHE[ckey]
 
@@ -200,11 +399,16 @@ def load_body_sprite(
             fh.load()
             raw = fh.convert("RGBA")
 
-        # A real-alpha cutout is used directly; only flat-key plates are keyed.
-        if has_real_alpha(raw):
-            keyed: Any | None = raw
-        else:
-            keyed = chroma_key(raw, key=key, tol_in=tol_in, tol_out=tol_out)
+        # matte_image runs the real-alpha-first check itself, so real cutouts
+        # still win and only flat-key / black-bg plates are matted.
+        keyed = matte_image(
+            raw,
+            matte=matte,
+            key=key,
+            name_hint=p.name,
+            tol_in=tol_in,
+            tol_out=tol_out,
+        )
         if keyed is None:
             _SPRITE_CACHE[ckey] = None
             return None

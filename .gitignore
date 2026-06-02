@@ -19,3 +19,4 @@ exports/*.png
 audit-*.png
 v32-*.png
 .mcp.json
+docs/web4/

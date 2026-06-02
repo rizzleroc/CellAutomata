@@ -57,9 +57,14 @@ def test_sky_is_valid_rgb_triple():
             assert 0 <= channel <= 255
 
 
-def test_sky_matches_time_of_day_palette():
-    for beat in DAY_IN_THE_LIFE:
-        assert beat.sky == SKY_COLORS[beat.time_of_day]
+def test_sky_is_a_distinct_per_beat_color_script():
+    # v4.2 color script: every beat carries its own deliberate sky so the
+    # dawn->night arc reads, rather than the shared per-phase SKY_COLORS value
+    # (which remains the fallback default in beat_for).
+    skies = [beat.sky for beat in DAY_IN_THE_LIFE]
+    assert len(skies) == 12
+    assert len(set(skies)) == len(skies), "each beat should have its own sky color"
+    assert all(beat.time_of_day in SKY_COLORS for beat in DAY_IN_THE_LIFE)
 
 
 def test_arc_starts_curious_and_ends_reborn():

@@ -97,7 +97,7 @@ DAY_IN_THE_LIFE: list[DayBeat] = [
             "drifting in a warm ocean. I am not yet anyone — just the soup."
         ),
         mood="curious",
-        sky=SKY_COLORS["dawn"],
+        sky=(210, 150, 165),
     ),
     DayBeat(
         stage=1,
@@ -109,7 +109,7 @@ DAY_IN_THE_LIFE: list[DayBeat] = [
             "The proton gradient is the first warmth I ever feel — free energy."
         ),
         mood="calm",
-        sky=SKY_COLORS["dawn"],
+        sky=(228, 162, 150),
     ),
     DayBeat(
         stage=2,
@@ -121,7 +121,7 @@ DAY_IN_THE_LIFE: list[DayBeat] = [
             "across me as spots and stripes — my first self-made shape."
         ),
         mood="excited",
-        sky=SKY_COLORS["morning"],
+        sky=(190, 215, 205),
     ),
     DayBeat(
         stage=3,
@@ -133,7 +133,7 @@ DAY_IN_THE_LIFE: list[DayBeat] = [
             "let me string them into my first real chains against the water."
         ),
         mood="curious",
-        sky=SKY_COLORS["morning"],
+        sky=(216, 228, 196),
     ),
     DayBeat(
         stage=4,
@@ -145,7 +145,7 @@ DAY_IN_THE_LIFE: list[DayBeat] = [
             "next. I am autocatalytic now: a fire that keeps itself lit."
         ),
         mood="excited",
-        sky=SKY_COLORS["noon"],
+        sky=(250, 248, 238),
     ),
     DayBeat(
         stage=5,
@@ -157,7 +157,7 @@ DAY_IN_THE_LIFE: list[DayBeat] = [
             "homochiral now — left-handed, certain, no longer symmetric."
         ),
         mood="triumphant",
-        sky=SKY_COLORS["noon"],
+        sky=(252, 242, 212),
     ),
     DayBeat(
         stage=6,
@@ -169,7 +169,7 @@ DAY_IN_THE_LIFE: list[DayBeat] = [
             "the threshold I hold the master sequence — I can remember myself."
         ),
         mood="struggling",
-        sky=SKY_COLORS["afternoon"],
+        sky=(238, 196, 128),
     ),
     DayBeat(
         stage=7,
@@ -181,7 +181,7 @@ DAY_IN_THE_LIFE: list[DayBeat] = [
             "agree what each triplet means. We are writing one language."
         ),
         mood="triumphant",
-        sky=SKY_COLORS["afternoon"],
+        sky=(236, 176, 108),
     ),
     DayBeat(
         stage=8,
@@ -193,7 +193,7 @@ DAY_IN_THE_LIFE: list[DayBeat] = [
             "yet, just dense and dilute. I have an inside for the first time."
         ),
         mood="calm",
-        sky=SKY_COLORS["dusk"],
+        sky=(230, 140, 96),
     ),
     DayBeat(
         stage=9,
@@ -205,7 +205,7 @@ DAY_IN_THE_LIFE: list[DayBeat] = [
             "bilayer. I am bounded now — a protocell with a within and a without."
         ),
         mood="weary",
-        sky=SKY_COLORS["dusk"],
+        sky=(200, 108, 104),
     ),
     DayBeat(
         stage=10,
@@ -217,7 +217,7 @@ DAY_IN_THE_LIFE: list[DayBeat] = [
             "small mutations. The fit endure: this is selection, and I am it."
         ),
         mood="triumphant",
-        sky=SKY_COLORS["night"],
+        sky=(44, 64, 104),
     ),
     DayBeat(
         stage=11,
@@ -229,7 +229,7 @@ DAY_IN_THE_LIFE: list[DayBeat] = [
             "inherit. I am LUCA — the last common ancestor, born again."
         ),
         mood="reborn",
-        sky=SKY_COLORS["dawn"],
+        sky=(224, 168, 178),
     ),
 ]
 
