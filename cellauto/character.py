@@ -392,11 +392,16 @@ def _apply_eye_grain(face_img: Any) -> Any:
 
     arr = np.asarray(face_img, dtype=np.float32)
     alpha = arr[..., 3]
-    mask = alpha > 24
+    luma = 0.2126 * arr[..., 0] + 0.7152 * arr[..., 1] + 0.0722 * arr[..., 2]
+    # Grain the face body but PROTECT the bright catch-lights/specular highlights
+    # (luma >= 235): position-dependent noise on the highlights is exactly what
+    # made the two eyes' catch-lights diverge (one crescent, one dot). Leaving
+    # them pristine keeps the symmetric per-eye sparkles identical by construction.
+    mask = (alpha > 24) & (luma < 235.0)
     rng = np.random.default_rng(_EYE_GRAIN_SEED)
     # One jitter value per pixel, applied equally to R, G, B (luminance-only).
     jitter = rng.normal(0.0, 14.0, size=alpha.shape).astype(np.float32)
-    jitter *= mask  # zero outside the face footprint
+    jitter *= mask  # zero outside the face footprint / over the highlights
     arr[..., 0] = np.clip(arr[..., 0] + jitter, 0, 255)
     arr[..., 1] = np.clip(arr[..., 1] + jitter, 0, 255)
     arr[..., 2] = np.clip(arr[..., 2] + jitter, 0, 255)
@@ -624,11 +629,9 @@ def render_character(
             face_img = _apply_eye_grain(face_img)
         except Exception:
             pass  # keep the un-grained face_img
-        try:
-            # Eye spacing mirrors _eye_geometry's dx = size * 0.16.
-            face_img = _symmetrize_specular(face_img, cx, face_size * 0.16)
-        except Exception:
-            pass  # keep the (possibly grained) face_img
+        # (Specular symmetry is now guaranteed upstream: _apply_eye_grain leaves
+        # the bright catch-lights untouched, so the symmetric per-eye sparkles
+        # stay identical — no fragile copy-the-left-onto-the-right pass needed.)
         try:
             face_img = _dim_specular(face_img)
         except Exception:
