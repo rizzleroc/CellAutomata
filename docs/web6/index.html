@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>cellauto · web6 — photoreal lab experiments + live digital life</title>
+<script type="importmap">
+{
+  "imports": {
+    "three": "https://cdn.jsdelivr.net/npm/three@0.162.0/build/three.module.js",
+    "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.162.0/examples/jsm/"
+  }
+}
+</script>
+<link rel="stylesheet" href="./styles.css">
+</head>
+<body>
+<div class="app">
+
+  <!-- ── Left: stage nav ── -->
+  <aside class="sidebar">
+    <div class="brand">
+      <div class="brand-title">cellauto</div>
+      <div class="brand-sub">web6 · the lab</div>
+    </div>
+    <div class="nav-hint">Each origin-of-life stage as a real, interactive experiment.</div>
+    <nav id="stageNav" class="stage-nav"></nav>
+    <div class="sidebar-foot">
+      Photoreal apparatus baked via <b>touch-app / Tripo</b>.
+      Stage 0 is hand-built glassware.
+    </div>
+  </aside>
+
+  <!-- ── Centre: viewport (lab apparatus) | experiment (live SEM feed) ── -->
+  <main class="stage" data-view="lab">
+    <div class="stage-split">
+      <div class="pane pane-lab">
+        <div id="viewport" class="viewport"></div>
+      </div>
+      <div class="split-divider" aria-hidden="true"></div>
+      <div class="pane pane-exp">
+        <canvas id="expCanvas" class="exp-canvas"></canvas>
+        <div class="exp-caption" id="expCaption">LIVE SEM · —</div>
+        <div class="exp-empty" id="expEmpty" hidden>no live experiment for this stage yet</div>
+      </div>
+    </div>
+
+    <div class="overlay top-left">
+      <div id="apLabel" class="ap-label">Stage 0 — Miller–Urey</div>
+      <div id="apTitle" class="ap-title">Spark-discharge apparatus · 1953</div>
+      <div id="apBlurb" class="ap-blurb"></div>
+    </div>
+
+    <div class="overlay bottom-bar">
+      <button id="runBtn" class="run-btn">▶ Run experiment</button>
+      <div id="explodeRow" class="explode-row">
+        <label>Exploded view</label>
+        <input id="explode" type="range" min="0" max="1" step="0.01" value="0">
+      </div>
+      <div id="readout" class="readout"></div>
+      <div class="view-toggle" id="viewToggle" role="group" aria-label="View">
+        <button data-view="lab"   class="vt-btn active" aria-pressed="true">Lab</button>
+        <button data-view="split" class="vt-btn" aria-pressed="false">Split</button>
+        <button data-view="exp"   class="vt-btn" aria-pressed="false">Experiment</button>
+      </div>
+    </div>
+  </main>
+
+  <!-- ── Right: parts panel ── -->
+  <aside class="parts-panel">
+    <div class="parts-head">
+      <h2>Apparatus parts</h2>
+      <div id="partCount" class="muted">—</div>
+    </div>
+    <div id="partsList" class="parts-list"></div>
+    <div class="parts-foot muted">Hover to highlight · click to hide/show</div>
+  </aside>
+
+</div>
+
+<!-- ── Live SEM experiment: web3 physics + SEM pipeline, as CLASSIC scripts ──
+     These execute synchronously in document order and MUST run before the
+     deferred ES module main.js, so window.CA.RULES + window.SEM (and the
+     bare script-global VIRIDIS_LUT that grayscott.js/life.js read) are all
+     populated before main.js's first line. viridis.js MUST be first. -->
+<script src="./experiment/viridis.js"></script>
+<script src="./experiment/sem.js"></script>
+<script src="./experiment/sprites.js"></script>
+<script src="./experiment/rules/soup.js"></script>
+<script src="./experiment/rules/grayscott.js"></script>
+<script src="./experiment/rules/raf.js"></script>
+<script src="./experiment/rules/vesicles.js"></script>
+<script src="./experiment/rules/vents.js"></script>
+<script src="./experiment/rules/chirality.js"></script>
+<script src="./experiment/rules/rna.js"></script>
+<script src="./experiment/rules/code.js"></script>
+<script src="./experiment/rules/coacervate.js"></script>
+<script src="./experiment/rules/natural_selection.js"></script>
+<script src="./experiment/rules/luca.js"></script>
+<script src="./experiment/rules/life.js"></script>
+<script type="module" src="./main.js"></script>
+</body>
+</html>
