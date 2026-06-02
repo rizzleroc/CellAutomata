@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>cellauto · web4 — photoreal lab experiments</title>
+<script type="importmap">
+{
+  "imports": {
+    "three": "https://cdn.jsdelivr.net/npm/three@0.162.0/build/three.module.js",
+    "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.162.0/examples/jsm/"
+  }
+}
+</script>
+<link rel="stylesheet" href="./styles.css">
+</head>
+<body>
+<div class="app">
+
+  <!-- ── Left: stage nav ── -->
+  <aside class="sidebar">
+    <div class="brand">
+      <div class="brand-title">cellauto</div>
+      <div class="brand-sub">web4 · the lab</div>
+    </div>
+    <div class="nav-hint">Each origin-of-life stage as a real, interactive experiment.</div>
+    <nav id="stageNav" class="stage-nav"></nav>
+    <div class="sidebar-foot">
+      Photoreal apparatus baked via <b>touch-app / Tripo</b>.
+      Stage 0 is hand-built glassware.
+    </div>
+  </aside>
+
+  <!-- ── Centre: viewport ── -->
+  <main class="stage">
+    <div id="viewport" class="viewport"></div>
+
+    <div class="overlay top-left">
+      <div id="apLabel" class="ap-label">Stage 0 — Miller–Urey</div>
+      <div id="apTitle" class="ap-title">Spark-discharge apparatus · 1953</div>
+      <div id="apBlurb" class="ap-blurb"></div>
+    </div>
+
+    <div class="overlay bottom-bar">
+      <button id="runBtn" class="run-btn">▶ Run experiment</button>
+      <div id="explodeRow" class="explode-row">
+        <label>Exploded view</label>
+        <input id="explode" type="range" min="0" max="1" step="0.01" value="0">
+      </div>
+      <div id="readout" class="readout"></div>
+    </div>
+  </main>
+
+  <!-- ── Right: parts panel ── -->
+  <aside class="parts-panel">
+    <div class="parts-head">
+      <h2>Apparatus parts</h2>
+      <div id="partCount" class="muted">—</div>
+    </div>
+    <div id="partsList" class="parts-list"></div>
+    <div class="parts-foot muted">Hover to highlight · click to hide/show</div>
+  </aside>
+
+</div>
+<script type="module" src="./main.js"></script>
+</body>
+</html>
