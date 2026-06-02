@@ -23,6 +23,125 @@
   "use strict";
   window.CA = window.CA || { RULES: {} };
 
+  // ── Photoreal cell sprite atlas (baked offline; same PNGs the desktop uses).
+  //    The capstone LIFE feed blits these instead of the SEM shader so the
+  //    browser matches the reference plate. Verified headless via node-canvas.
+  const LIFE_ATLAS = { ready: false, sheet: null, div: null, variants: 6, frames: 10, tile: 384 };
+  (function loadLifeAtlas() {
+    try {
+      fetch("assets/life/atlas.json").then(function (r) { return r.json(); })
+        .then(function (m) { LIFE_ATLAS.variants = m.variants; LIFE_ATLAS.frames = m.frames; LIFE_ATLAS.tile = m.tile; })
+        .catch(function () {});
+      const s = new Image();
+      s.onload = function () { LIFE_ATLAS.sheet = s; if (LIFE_ATLAS.div) LIFE_ATLAS.ready = true; };
+      s.src = "assets/life/cells.png";
+      const d = new Image();
+      d.onload = function () { LIFE_ATLAS.div = d; if (LIFE_ATLAS.sheet) LIFE_ATLAS.ready = true; };
+      d.src = "assets/life/cell_div.png";
+    } catch (e) { /* no DOM (node smoke) — photoreal path stays inactive */ }
+  })();
+
+  // Photoreal LIFE plate — translucent sprite cells + undulating cilia on a
+  // food-driven sepia floor + DIC grade + badge/scale-bar. ``newCanvas`` is
+  // document.createElement('canvas') so this is portable/headless-testable.
+  function drawLifePhotoreal(ctx, CW, CH, state, atlas, frame, newCanvas) {
+    const organisms = state.organisms, substrate = state.substrate;
+    const gw = state.gw, gh = state.gh, eDiv = state.eDiv;
+    if (!atlas.ready || !atlas.sheet) {
+      // placeholder until the atlas PNGs finish loading
+      ctx.fillStyle = "#3a2c1d";
+      ctx.fillRect(0, 0, CW, CH);
+      for (let k = 0; k < organisms.length; k++) {
+        const o = organisms[k];
+        ctx.fillStyle = "rgba(222,210,178,0.9)";
+        ctx.beginPath();
+        ctx.arc((o.x / Math.max(1, gw - 1)) * CW, (o.y / Math.max(1, gh - 1)) * CH, CH * 0.02, 0, 6.2832);
+        ctx.fill();
+      }
+      return;
+    }
+    const fc = newCanvas(gw, gh);
+    const fctx = fc.getContext("2d");
+    const im = fctx.createImageData(gw, gh);
+    const d = im.data;
+    for (let i = 0; i < gw * gh; i++) {
+      const s = Math.max(0, Math.min(1, substrate[i]));
+      const lit = 0.32 + 0.68 * s;
+      d[i * 4] = (150 * lit) | 0; d[i * 4 + 1] = (120 * lit) | 0; d[i * 4 + 2] = (84 * lit) | 0; d[i * 4 + 3] = 255;
+    }
+    fctx.putImageData(im, 0, 0);
+    ctx.imageSmoothingEnabled = true;
+    if (ctx.imageSmoothingQuality !== undefined) ctx.imageSmoothingQuality = "high";
+    ctx.drawImage(fc, 0, 0, CW, CH);
+    const tile = atlas.tile, V = atlas.variants, F = atlas.frames;
+    const baseR = Math.min(CW, CH) * 0.05;
+    // Render only the most energetic ~30 (cell size decoupled from grid density,
+    // like the 400× reference) — otherwise the capped population is a tiny mush.
+    const cap = organisms.slice().sort(function (a, b) { return b.energy - a.energy; }).slice(0, 30);
+    let divOid = -1, best = -Infinity;
+    for (let k = 0; k < cap.length; k++) {
+      const sc = (cap[k].nDivisions || 0) * 1e6 + cap[k].energy;
+      if (sc > best) { best = sc; divOid = cap[k].oid; }
+    }
+    const list = cap.slice().sort(function (a, b) { return a.y - b.y; });
+    for (let k = 0; k < list.length; k++) {
+      const o = list[k];
+      const frac = Math.max(0, Math.min(1.6, o.energy / Math.max(eDiv, 1e-6)));
+      const depth = o.y / Math.max(1, gh - 1);
+      const cx = (0.05 + 0.90 * (o.x / Math.max(1, gw - 1))) * CW;
+      const cy = (0.06 + 0.88 * depth) * CH;
+      const dw = baseR * (0.7 + 0.5 * depth) * (0.82 + 0.4 * frac) * 3.0;
+      const fidx = ((((frame * 0.3 + o.oid * 3) | 0) % F) + F) % F;
+      const isdiv = o.oid === divOid && frac > 0.5;
+      const img = isdiv ? atlas.div : atlas.sheet;
+      const sy = isdiv ? 0 : (o.oid % V) * tile;
+      const sx = fidx * tile;
+      const ang = ((o.facing * 45) + 4 * Math.sin(frame * 0.05 + o.oid)) * Math.PI / 180;
+      ctx.save();
+      ctx.translate(cx, cy);
+      ctx.rotate(ang);
+      ctx.drawImage(img, sx, sy, tile, tile, -dw / 2, -dw / 2, dw, dw);
+      const ncil = 26, erx = dw * 0.46, ery = dw * 0.42;
+      ctx.strokeStyle = "rgba(214,196,154,0.5)";
+      ctx.lineWidth = Math.max(1, dw * 0.012);
+      for (let c = 0; c < ncil; c++) {
+        const a = (c / ncil) * 6.2832;
+        const ph = frame * 0.5 - (c / ncil) * 6.2832 * 3;
+        const wl = dw * (0.07 + 0.05 * Math.sin(ph));
+        const ex = Math.cos(a), ey = Math.sin(a);
+        const bx = ex * erx, by = ey * ery, curl = dw * 0.03 * Math.cos(ph), tx = -ey, ty = ex;
+        ctx.beginPath();
+        ctx.moveTo(bx, by);
+        ctx.quadraticCurveTo(bx + ex * wl * 0.6 + tx * curl, by + ey * wl * 0.6 + ty * curl, bx + ex * wl, by + ey * wl);
+        ctx.stroke();
+      }
+      ctx.restore();
+    }
+    ctx.save();
+    ctx.globalCompositeOperation = "multiply";
+    ctx.fillStyle = "rgba(255,244,222,0.16)";
+    ctx.fillRect(0, 0, CW, CH);
+    ctx.globalCompositeOperation = "source-over";
+    const vg = ctx.createRadialGradient(CW / 2, CH / 2, Math.min(CW, CH) * 0.22, CW / 2, CH / 2, Math.max(CW, CH) * 0.62);
+    vg.addColorStop(0, "rgba(0,0,0,0)");
+    vg.addColorStop(1, "rgba(10,7,4,0.42)");
+    ctx.fillStyle = vg;
+    ctx.fillRect(0, 0, CW, CH);
+    ctx.restore();
+    ctx.fillStyle = "rgba(20,15,10,0.5)";
+    ctx.fillRect(CW - 372, 14, 358, 30);
+    ctx.fillStyle = "rgba(228,212,172,0.96)";
+    ctx.font = ((CH * 0.022) | 0) + "px monospace";
+    ctx.fillText("LIVE SEM FEED · STAGE XIII · 400×", CW - 360, 35);
+    ctx.strokeStyle = "rgba(228,212,172,0.9)";
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(CW / 2 - 75, CH - 28);
+    ctx.lineTo(CW / 2 + 75, CH - 28);
+    ctx.stroke();
+    ctx.fillText("50 um", CW / 2 - 24, CH - 36);
+  }
+
   const W = 60;
   const H = 60;
   const N = W * H;
@@ -92,6 +211,7 @@
     const waste     = new Float32Array(N);    // [0,1] — toxic excretion
     const occupant  = new Int32Array(N);      // organism oid per cell, -1 empty
     let organisms   = new Map();              // oid → org
+    let hrFrame     = 0;                       // photoreal flipbook/animation frame
     let corpses     = [];                     // [x, y, stepsLeft]
     let nextOid     = 0;
     let generation  = 0;
@@ -367,6 +487,17 @@
       paletteFg: [230, 224, 208],
       width: W,
       height: H,
+      // Photoreal sprite render (the capstone LIFE feed). main.js routes here
+      // when hiRes is set + the atlas is ready, sizing the canvas hi-res.
+      hiRes: true,
+      atlasReady: function () { return LIFE_ATLAS.ready; },
+      renderPhotoreal: function (ctx, CW, CH, newCanvas) {
+        hrFrame++;
+        const orgs = [];
+        for (const o of organisms.values()) orgs.push(o);
+        drawLifePhotoreal(ctx, CW, CH, { organisms: orgs, substrate: substrate, gw: W, gh: H, eDiv: 120.0 },
+          LIFE_ATLAS, hrFrame, newCanvas);
+      },
 
       params: {
         population:     { label: "founder population", min: 20,  max: 600, step: 10,   value: 200  },
