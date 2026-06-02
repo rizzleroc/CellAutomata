@@ -96,20 +96,36 @@ def _contour(alpha: np.ndarray, n: int = 56) -> list[tuple[int, int, float, floa
     return pts
 
 
-def _rim_cilia(canvas: Image.Image, sprite: Image.Image, ox: int, oy: int, r: float) -> None:
-    """Draw a beaded membrane rim + a cilia fringe along the sprite silhouette."""
+def _rim_cilia(canvas: Image.Image, sprite: Image.Image, ox: int, oy: int, r: float, beat: float = 0.0) -> None:
+    """Beaded membrane rim + an UNDULATING cilia fringe along the silhouette.
+
+    Each cilium is a short curved stroke whose length and tangential curl
+    oscillate; a phase offset around the perimeter makes the fringe ripple as a
+    metachronal travelling wave (the way real ciliate beat), driven by ``beat``."""
     alpha = np.asarray(sprite.split()[3], np.uint8)
+    pts = _contour(alpha, 64)
+    n = max(1, len(pts))
     d = ImageDraw.Draw(canvas, "RGBA")
     dot = max(1, int(r * 0.07))
-    for i, (x, y, ca, sa) in enumerate(_contour(alpha, 56)):
+    wcil = max(1, dot // 2)
+    for i, (x, y, ca, sa) in enumerate(pts):
         gx, gy = ox + x, oy + y
-        hl = r * (0.13 + 0.07 * ((i * 7) % 5) / 5)
-        d.line([gx, gy, gx + ca * hl, gy + sa * hl], fill=(214, 196, 154, 115), width=max(1, dot // 2))
+        # metachronal wave: ~3 wavelengths around the rim, advancing with beat
+        ph = beat - (i / n) * 2 * math.pi * 3.0
+        wave = math.sin(ph)
+        hl = r * (0.15 + 0.11 * wave)          # length undulates
+        tx, ty = -sa, ca                        # membrane tangent
+        curl = r * 0.07 * math.cos(ph)          # S-curve flagellar curl
+        mx = gx + ca * hl * 0.55 + tx * curl
+        my = gy + sa * hl * 0.55 + ty * curl
+        tipx = gx + ca * hl + tx * curl * 0.5
+        tipy = gy + sa * hl + ty * curl * 0.5
+        d.line([gx, gy, mx, my, tipx, tipy], fill=(214, 196, 154, 125), width=wcil, joint="curve")
         bx, by = gx - ca * dot * 1.2, gy - sa * dot * 1.2
         d.ellipse([bx - dot, by - dot, bx + dot, by + dot], fill=(238, 222, 182, 225))
 
 
-def _paste_cell(canvas, spr, cx, cy, r, depth, ang, furniture, jitter_key=None):
+def _paste_cell(canvas, spr, cx, cy, r, depth, ang, furniture, jitter_key=None, beat=0.0):
     target = max(8, int(r * 3.0))
     if jitter_key is not None:
         # stable per-cell jitter (seeded by identity, NOT per frame) so cells
@@ -137,7 +153,7 @@ def _paste_cell(canvas, spr, cx, cy, r, depth, ang, furniture, jitter_key=None):
     canvas.alpha_composite(shadow, (ox + int(r * 0.1), oy + int(r * 0.16)))
     canvas.alpha_composite(s, (ox, oy))
     if furniture and blur < 1.6:
-        _rim_cilia(canvas, s, ox, oy, r)
+        _rim_cilia(canvas, s, ox, oy, r, beat)
 
 
 def _grade(canvas: Image.Image, rng: np.random.RandomState) -> np.ndarray:
@@ -196,7 +212,7 @@ def render(
         else:
             spr = cells[o.oid % len(cells)][frame]
             ang = o.facing * 45 + 5.0 * math.sin(phase * 0.25 + o.oid)
-        _paste_cell(canvas, spr, cx, cy, r, depth, ang, furniture=True, jitter_key=o.oid)
+        _paste_cell(canvas, spr, cx, cy, r, depth, ang, furniture=True, jitter_key=o.oid, beat=phase * 0.7 + o.oid)
     finished = _ls.photographic_finish(_grade(canvas, rng), seed=seed)
     return np.asarray(_ls._overlay(Image.fromarray(finished, "RGB")), dtype=np.uint8)
 
