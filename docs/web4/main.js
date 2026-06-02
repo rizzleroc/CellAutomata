@@ -46,6 +46,9 @@ const expEmpty   = document.getElementById('expEmpty');
 let expRule = null, expImageData = null, expHeightBuf = null;
 let expScale = 1, expW2 = 0, expH2 = 0, expHeightHi = null;
 let expRunning = false, expRaf = 0, expLastStep = 0;
+let expLayers = {};            // SEM_LAYERS entry for the active rule (tint/sprites)
+let expColorBuf = null;        // native-res RGBA scratch for the colour-tint pass
+let expRuleId = '';            // active web3 rule id (for sprites/caption)
 
 // Bilinear upscale of a Float32 height field (w×h) → dst (W2×H2). Used so the
 // SEM shader runs at a high backing resolution from a smoothly-interpolated
@@ -83,6 +86,93 @@ const STAGE_MAP = {
   'stage11-luca': 'luca',        'capstone-stromatolite': 'life',
 };
 
+// ── ROOT CAUSE 1: composite color + sprites OVER the hi-res SEM base ─────────
+// renderExperimentFrame ONLY shaded the height field — it never injected the
+// rule's render() hue (handedness/clade/species) or its sprites() annotations.
+// SEM_LAYERS, keyed by web3 rule id, opts each stage into the extra layers:
+//   tint:    alpha-blend the rule's render() colour over the SEM pixel while
+//            preserving SEM luminance/depth (chroma carries the science).
+//   sprites: composite the rule's sprites() (cells/glyphs/droplets) on top.
+// Stages with a pure depth story (grayscott domes, rna cloud, …) stay {}.
+const SEM_LAYERS = {
+  soup: { tint: 0.50, sprites: true }, grayscott: {}, raf: {},
+  vesicles: { sprites: true }, vents: {},
+  chirality: { tint: 0.60, sprites: true }, rna: {}, code: {},
+  coacervate: { sprites: true },
+  'natural-selection': { tint: 0.55, sprites: true },
+  luca: { tint: 0.60 }, life: {},
+};
+
+// ── ROOT CAUSE 2: maturity gate ──────────────────────────────────────────────
+// Several renderHeight fields are ~flat at seed (chirality |L−R|≈0 before the
+// symmetry breaks; luca coreField=0 from a random soup; grayscott's 7px seed;
+// coacervate pre-spinodal; vesicles un-nucleated). Each stage gets warmed up
+// headless to a scientifically-legible state before the first paint — an
+// optional reseeding preset plus N silent step()s. The live RAF loop keeps
+// running afterwards; this only fast-forwards the INITIAL state.
+const MATURITY = {
+  chirality:          { preset: 'homochiral sweep',  steps: 120 },
+  luca:               { preset: 'sharp LUCA',        steps: 60  },
+  coacervate:         { preset: 'few large droplets', steps: 80 },
+  vesicles:           { preset: 'stiff spheres',     steps: 80  },
+  'natural-selection': { steps: 40 },
+  soup:               { steps: 60  },
+  vents:              { steps: 120 },
+  raf:                { steps: 30  },
+  rna:                { steps: 80  },
+  code:               { steps: 60  },
+  life:               { steps: 60  },
+  // FIX 3 — minerals (stage5) shares the grayscott rule. The 'mitosis' Pearson
+  // regime is the live spot-mitosis attractor. The lone central 7px seed divides
+  // too slowly to fill the dish, so we re-seed with randomize() (8 scattered
+  // nucleation patches) first: the spots then proliferate across the WHOLE field
+  // in the warm-up, so BOTH stage1 and stage5 show a real, dish-filling
+  // reaction–diffusion pattern (never an empty plate).
+  grayscott:          { preset: 'mitosis', seed: 'randomize', steps: 600 },
+};
+
+// Apply a named preset to a rule with NO DOM. Handles both shapes seen in the
+// web3 rules: (a) a `presets` array of {label, reseed?, values:{k:v}}, and
+// (b) an enum `params.preset` whose onParamChange derives the other params
+// (Gray–Scott's Pearson selector). Returns true if a preset was applied.
+function applyPreset(rule, label) {
+  if (!rule || !label) return false;
+  // (a) presets[] array (chirality, luca, coacervate, vesicles, …).
+  if (Array.isArray(rule.presets)) {
+    const p = rule.presets.find((pr) => pr.label === label);
+    if (p) {
+      if (p.values) {
+        for (const k in p.values) {
+          if (rule.params[k]) { rule.params[k].value = p.values[k]; rule.onParamChange?.(k); }
+        }
+      }
+      if (p.reseed) rule.reset();
+      return true;
+    }
+  }
+  // (b) enum params.preset (Gray–Scott): set it and let onParamChange derive F/k.
+  const pe = rule.params && rule.params.preset;
+  if (pe && Array.isArray(pe.options) && pe.options.includes(label)) {
+    pe.value = label;
+    rule.onParamChange?.('preset');
+    return true;
+  }
+  return false;
+}
+
+// Fast-forward a freshly-reset rule to a legible state (see MATURITY). Applies
+// any preset (sets the regime params, may reseed), then an optional explicit
+// re-seed method (e.g. grayscott.randomize() to scatter nucleation sites), then
+// runs `steps` headless step()s.
+function warmUpExperiment(rule, ruleId) {
+  const cfg = MATURITY[ruleId];
+  if (!cfg) return;
+  if (cfg.preset) applyPreset(rule, cfg.preset);
+  if (cfg.seed && typeof rule[cfg.seed] === 'function') rule[cfg.seed]();
+  const steps = cfg.steps | 0;
+  for (let s = 0; s < steps; s++) rule.step();
+}
+
 function currentView() { return document.querySelector('.stage').dataset.view; }
 
 // Swap in the rule for stage m. Called inside loadStage AFTER currentMeta=m.
@@ -99,6 +189,8 @@ function selectExperiment(m) {
   }
   expEmpty.hidden = true;
   expCanvas.style.display = '';
+  expRuleId = ruleId;
+  expLayers = SEM_LAYERS[ruleId] || {};                // which extra layers this rule opts into
   expRule = factory();                                 // instantiate web3 rule
   expRule.reset();
   // Hi-res backing: SEM rules render the height field supersampled (~760px on
@@ -114,11 +206,68 @@ function selectExperiment(m) {
   expImageData = expCtx.createImageData(expW2, expH2);
   expHeightBuf = new Float32Array(expRule.width * expRule.height);
   expHeightHi  = new Float32Array(expW2 * expH2);
+  // Native-res RGBA scratch for the colour-tint pass (FIX 1 — only the tint
+  // stages ever fill it, but allocate once per stage so the hot path is alloc-free).
+  expColorBuf  = new Uint8ClampedArray(expRule.width * expRule.height * 4);
+  // FIX 2 — fast-forward to a scientifically-legible state BEFORE the first
+  // paint (preset + headless warm-up). The live loop still runs afterwards.
+  warmUpExperiment(expRule, ruleId);
   expCaption.textContent = 'LIVE SEM · ' + (m.label || ruleId);
+  updateExpCaption(m);                                 // FIX 4 — add the live phenomenon readout
   renderExperimentFrame();                             // paint one frame immediately (even if paused)
 }
 
-// EXACT web3 render() SEM branch (main.js:551-558), verbatim convention.
+// FIX 4 — make the caption self-describing: stage label + the rule's own live
+// readout (handedness ee%, clade count, master%, …) from population(). Called
+// on select and each rendered frame so the panel narrates what it's showing.
+function updateExpCaption(m) {
+  if (!expRule) return;
+  const label = (m && m.label) || (currentMeta && currentMeta.label) || expRuleId;
+  let readout = '';
+  try { readout = expRule.population ? String(expRule.population()) : ''; } catch (e) { readout = ''; }
+  expCaption.textContent = 'LIVE SEM · ' + label + (readout ? ' · ' + readout : '');
+}
+
+// Colour-tint pass (FIX 1). The SEM base in `pix` (hi-res RGBA) is pure depth
+// shading — it preserves relief but throws away the rule's render() hue, which
+// is where stages like chirality (handedness), luca (clades), soup/selection
+// (species) actually encode their science. Sample the rule's NATIVE-res colour
+// under each hi-res pixel; keep the SEM pixel's luminance L; if the native
+// colour is essentially grey (chroma ~0 → empty substrate / bone-cream peaks)
+// leave the SEM pixel untouched; otherwise re-scale that hue to luminance L and
+// alpha-blend it over the SEM pixel by `amount`. SEM depth survives, hue rides in.
+function _tintSemWithColour(pix, w2, h2, colour, gw, scale, amount) {
+  const inv = 1 / 255;
+  for (let y = 0; y < h2; y++) {
+    const ny = (y / scale) | 0;
+    for (let x = 0; x < w2; x++) {
+      const nx = (x / scale) | 0;
+      const ci = (ny * gw + nx) * 4;
+      let cr = colour[ci], cg = colour[ci + 1], cb = colour[ci + 2];
+      // Chroma = max−min across channels. ~0 ⇒ achromatic (background / bone) → keep SEM.
+      const cmax = cr > cg ? (cr > cb ? cr : cb) : (cg > cb ? cg : cb);
+      const cmin = cr < cg ? (cr < cb ? cr : cb) : (cg < cb ? cg : cb);
+      if (cmax - cmin < 12) continue;                  // no usable hue here → pure SEM
+      const p = (y * w2 + x) * 4;
+      // SEM pixel luminance (Rec.601) — the depth/shading we want to preserve.
+      const L = 0.299 * pix[p] + 0.587 * pix[p + 1] + 0.114 * pix[p + 2];
+      // Scale the native hue to that luminance (so shading rides through the hue).
+      const cl = 0.299 * cr + 0.587 * cg + 0.114 * cb;
+      const g = cl > 1 ? L / cl : L;                   // luminance-preserving rescale
+      let tr = cr * g, tg = cg * g, tb = cb * g;
+      if (tr > 255) tr = 255; if (tg > 255) tg = 255; if (tb > 255) tb = 255;
+      // Alpha-blend the luminance-matched hue over the SEM pixel.
+      pix[p]     = (pix[p]     * (1 - amount) + tr * amount) | 0;
+      pix[p + 1] = (pix[p + 1] * (1 - amount) + tg * amount) | 0;
+      pix[p + 2] = (pix[p + 2] * (1 - amount) + tb * amount) | 0;
+    }
+  }
+  void inv;
+}
+
+// EXACT web3 render() SEM branch (main.js:551-558), now COMPOSITED: SEM depth
+// base → optional colour tint (render() hue) → putImageData → optional sprite
+// overlay (sprites() annotations), per the active rule's SEM_LAYERS entry.
 function renderExperimentFrame() {
   if (!expRule) return;
   if (window.SEM && typeof expRule.renderHeight === 'function') {
@@ -132,10 +281,30 @@ function renderExperimentFrame() {
       SEM.render(expHeightBuf, expRule.width, expRule.height,
                  expImageData.data, { palette: EXP_PALETTE });
     }
+    // FIX 1a — colour tint OVER the hi-res SEM base, BEFORE putImageData.
+    if (expLayers.tint && typeof expRule.render === 'function') {
+      expRule.render(expColorBuf);                     // native-res RGBA hue
+      _tintSemWithColour(expImageData.data, expW2, expH2, expColorBuf,
+                         expRule.width, expScale, expLayers.tint);
+    }
   } else {
     expRule.render(expImageData.data);                 // defensive fallback to rule's own RGBA
   }
   expCtx.putImageData(expImageData, 0, 0);
+  // FIX 1b — sprite overlay AFTER putImageData (putImageData wipes the canvas,
+  // so canvas-drawn sprites must come last). sprites() coords are NATIVE grid;
+  // scale the ctx so 1 grid unit == expScale canvas px, then compose, then
+  // restore the transform. SPRITES is a classic-script global; guard for it.
+  if (expLayers.sprites && window.SPRITES && typeof expRule.sprites === 'function') {
+    const sprites = expRule.sprites();
+    if (sprites && sprites.length) {
+      expCtx.save();
+      expCtx.setTransform(expScale, 0, 0, expScale, 0, 0);   // grid → hi-res canvas
+      SPRITES.compose(expCtx, sprites, expRule.width, expRule.height,
+                      SEM.PALETTES[EXP_PALETTE]);
+      expCtx.restore();
+    }
+  }
 }
 
 // Fixed-timestep loop, copied structurally from web3 tick() (safety cap so a
@@ -149,9 +318,15 @@ function expTick(now) {
   while (now - expLastStep >= interval && safety-- > 0) {
     expRule.step(); expLastStep += interval; advanced = true;
   }
-  if (advanced && currentView() !== 'lab') renderExperimentFrame();
+  if (advanced && currentView() !== 'lab') {
+    renderExperimentFrame();
+    // FIX 4 — refresh the live phenomenon readout, throttled (~2 Hz) since some
+    // population()s do real work (flood-fill, distinct-genome scans).
+    if (now - expLastCaption > 500) { updateExpCaption(currentMeta); expLastCaption = now; }
+  }
   expRaf = requestAnimationFrame(expTick);
 }
+let expLastCaption = 0;
 function startExperiment() {
   if (expRunning || !expRule) return;
   expRunning = true; expLastStep = 0; expRaf = requestAnimationFrame(expTick);
