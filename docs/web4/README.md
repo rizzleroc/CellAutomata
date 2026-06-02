@@ -3,7 +3,12 @@
 The next view layer after web3. web3 shows each origin-of-life stage as a
 **microscope plate** (SEM substrate + procedural sprites). web4 shows the
 **experiment that produced the specimen** — a photoreal, interactive 3D
-**laboratory apparatus** you can orbit, take apart, and *run*.
+**laboratory apparatus** you can orbit, take apart, and *run* — **and, beside
+it, the live SEM experiment** the apparatus produces: the matching web3
+origin-of-life simulation stepping in real time, rendered through web3's exact
+SEM depth-shading pipeline onto a 2-D canvas. A **Lab | Split | Experiment**
+toggle moves the viewer from "here is the apparatus I set up" to "here is what
+it produces under the microscope".
 
 Full design: [`docs/PRD_LAB_EXPERIMENTS.md`](../PRD_LAB_EXPERIMENTS.md).
 
@@ -62,6 +67,36 @@ parts, an exploded view, and a "Run experiment" animation.
 - **`apparatus/placeholder.js`** stays as the fallback (museum pedestal +
   label card) for any future stage stubbed before its apparatus exists.
 
+## Live SEM experiment (split-screen)
+
+Beside the apparatus, the **same web3 physics + SEM pipeline** runs the matching
+origin-of-life simulation in real time. The web3 `sem.js`, `viridis.js`, and the
+12 mapped rule files are **copied byte-identical** into `experiment/` and loaded
+as **classic `<script>` tags before the ES-module `main.js`**, so `window.SEM`,
+`window.CA.RULES`, and the bare `VIRIDIS_LUT` global all exist when `main.js`
+runs (the globals bridge the module / classic-script worlds — no build step).
+
+- **`main.js` experiment driver** — a `STAGE_MAP` maps each web4 stage id to a
+  web3 rule id. On stage load it instantiates `CA.RULES[id]()`, `reset()`s, and
+  drives a fixed-timestep 2-D loop that `step()`s, calls `renderHeight()` →
+  `SEM.render(..., { palette: 'warm-sepia' })` → `putImageData` — the **exact**
+  web3 render convention. The one **Run/Stop** button drives BOTH the apparatus
+  animation and the live sim (`apparatusRunning` is the single source of truth,
+  so they can't desync). The capstone specimen also runs its `life` SEM feed and
+  keeps the Run button so it's pausable.
+- **SEM-grade framing** — the micrograph is letterboxed at `aspect-ratio: 1/1`
+  (never anisotropically stretched), captioned `LIVE SEM · <stage>` in brass
+  monospace. A stage with no mapped rule shows a tasteful "no live experiment
+  for this stage yet" state instead of crashing.
+- **View toggle** — `data-view` on `.stage` is the single source of truth; CSS
+  does all pane show/hide (Lab = apparatus only, Experiment = SEM only, Split =
+  50/50 with a divider). `aria-pressed` reflects the active view for AT.
+
+web4 stage → web3 rule mapping (`STAGE_MAP` in `main.js`): `soup`, `grayscott`
+(×2, stages 1 & 5), `raf`, `vesicles`, `vents`, `chirality`, `rna`, `code`,
+`coacervate`, `natural-selection` (registered key is hyphenated though the file
+is `natural_selection.js`), `luca`, `life` (capstone).
+
 ## The generation pipeline (Tripo, optional upgrade)
 
 The organic / equipment-heavy apparatus are baked from real reference images
@@ -85,9 +120,9 @@ real apparatus module exporting `{ id, label, title, blurb, build }`, where
 
 ```
 docs/web4/
-├── index.html                 importmap + 3-pane lab layout
-├── styles.css                 vintage-lab / museum aesthetic
-├── main.js                    controller: registry, framing, parts, run/explode, loop
+├── index.html                 importmap + lab|experiment split + classic-script loads
+├── styles.css                 vintage-lab / museum aesthetic + letterboxed SEM pane
+├── main.js                    controller: registry, framing, parts, run/explode, SEM driver
 ├── scene.js                   renderer + IBL + ACES + bloom + bench/chalkboard
 ├── apparatus/
 │   ├── lib.js                 shared materials, geometry helpers, anim contract
@@ -95,8 +130,12 @@ docs/web4/
 │   ├── grayscott_dish.js      Stage 1 · raf_flask.js Stage 2 · …            (13 total)
 │   ├── … (one module per stage, each exporting { meta, build })
 │   └── placeholder.js         fallback pedestal + label for future stubs
+├── experiment/                live SEM feed — byte-identical copies of web3 physics
+│   ├── viridis.js             web3 LUT (loaded first; defines VIRIDIS_LUT)
+│   ├── sem.js                 web3 SEM depth-shading pipeline (window.SEM)
+│   └── rules/*.js             the 12 mapped web3 rule IIFEs (window.CA.RULES)
 ├── tests/
-│   ├── smoke.mjs              structural CI gate (zero-dependency)
+│   ├── smoke.mjs              structural CI gate (zero-dependency) + SEM integration
 │   └── runtime.mjs            runtime gate (executes every apparatus vs real three)
 └── README.md                  this file
 ```
@@ -114,7 +153,12 @@ tests:
 
 - **smoke.mjs** — structural, no GL: importmap validity, module resolution,
   `node --check` on every module, registry shape, and each apparatus's
-  `meta` + anim-contract presence.
+  `meta` + anim-contract presence. **Also gates the live SEM integration**:
+  every `STAGE_MAP` key is a real meta id and every value is a copied rule file
+  loaded as a classic script before `main.js` (with `viridis.js` before its
+  readers); and a `vm` harness loads the classic scripts the browser way and
+  drives all 13 mapped rules through the real `SEM.render` to a painted,
+  fully-opaque, non-blank RGBA buffer.
 - **runtime.mjs** — installs three and actually runs `build()` + 60 animation
   ticks for all 13 apparatus (geometry construction needs no WebGL), asserting
   named meshes, finite positions, and a finite progress value. Skips cleanly

@@ -33,6 +33,93 @@ const lab = createLab(document.getElementById('viewport'));
 let current = null;
 let currentMeta = null;
 
+// ── Live SEM experiment driver ──────────────────────────────────────────────
+// Beside the photoreal apparatus we run the MATCHING origin-of-life simulation
+// (a web3 rule) stepping in real time, rendered through web3's SEM depth-
+// shading pipeline (window.SEM, loaded as a classic script) onto a 2-D canvas.
+// Apparatus = "the experiment I set up"; this = "what it produces under the
+// microscope". The two run on independent RAF loops.
+const expCanvas  = document.getElementById('expCanvas');
+const expCtx     = expCanvas.getContext('2d');
+const expCaption = document.getElementById('expCaption');
+const expEmpty   = document.getElementById('expEmpty');
+let expRule = null, expImageData = null, expHeightBuf = null;
+let expRunning = false, expRaf = 0, expLastStep = 0;
+let apparatusRunning = false;          // single source of truth for Run/Stop
+const EXP_STEPS_PER_SEC = 30;          // == web3 default speed
+const EXP_PALETTE = 'warm-sepia';      // == web3 default + brass-lab aesthetic
+
+// web4 stage id → web3 rule id (registered key). Note 'natural-selection' uses
+// a HYPHEN (the registered key) though its file is natural_selection.js.
+const STAGE_MAP = {
+  'stage0-miller-urey': 'soup',  'stage1-grayscott': 'grayscott', 'stage2-raf': 'raf',
+  'stage3-vesicles': 'vesicles', 'stage4-vent': 'vents',          'stage5-minerals': 'grayscott',
+  'stage6-chirality': 'chirality', 'stage7-rna': 'rna',           'stage8-code': 'code',
+  'stage9-coacervate': 'coacervate', 'stage10-selection': 'natural-selection',
+  'stage11-luca': 'luca',        'capstone-stromatolite': 'life',
+};
+
+function currentView() { return document.querySelector('.stage').dataset.view; }
+
+// Swap in the rule for stage m. Called inside loadStage AFTER currentMeta=m.
+function selectExperiment(m) {
+  stopExperiment();                                    // cancel any prior loop
+  expRule = null;                                      // drop old rule (GC reclaims)
+  const ruleId = STAGE_MAP[m.id];
+  const factory = ruleId && window.CA && CA.RULES && CA.RULES[ruleId];
+  if (!factory || !window.SEM) {                       // unmapped / globals missing → tasteful empty state
+    expEmpty.hidden = false;
+    expCanvas.style.display = 'none';
+    expCaption.textContent = 'LIVE SEM · —';
+    return;
+  }
+  expEmpty.hidden = true;
+  expCanvas.style.display = '';
+  expRule = factory();                                 // instantiate web3 rule
+  expRule.reset();
+  expCanvas.width  = expRule.width;                    // backing store = native grid (60..220)
+  expCanvas.height = expRule.height;
+  expImageData = expCtx.createImageData(expRule.width, expRule.height);
+  expHeightBuf = new Float32Array(expRule.width * expRule.height);
+  expCaption.textContent = 'LIVE SEM · ' + (m.label || ruleId);
+  renderExperimentFrame();                             // paint one frame immediately (even if paused)
+}
+
+// EXACT web3 render() SEM branch (main.js:551-558), verbatim convention.
+function renderExperimentFrame() {
+  if (!expRule) return;
+  if (window.SEM && typeof expRule.renderHeight === 'function') {
+    expRule.renderHeight(expHeightBuf);
+    SEM.render(expHeightBuf, expRule.width, expRule.height,
+               expImageData.data, { palette: EXP_PALETTE });
+  } else {
+    expRule.render(expImageData.data);                 // defensive fallback to rule's own RGBA
+  }
+  expCtx.putImageData(expImageData, 0, 0);
+}
+
+// Fixed-timestep loop, copied structurally from web3 tick() (safety cap so a
+// stutter can't spiral). Steps cheaply even when hidden; only SEM+blits when
+// the exp pane is visible.
+function expTick(now) {
+  if (!expRunning || !expRule) { expRaf = 0; return; }
+  const interval = 1000 / EXP_STEPS_PER_SEC;
+  if (!expLastStep) expLastStep = now;
+  let advanced = false, safety = 4;
+  while (now - expLastStep >= interval && safety-- > 0) {
+    expRule.step(); expLastStep += interval; advanced = true;
+  }
+  if (advanced && currentView() !== 'lab') renderExperimentFrame();
+  expRaf = requestAnimationFrame(expTick);
+}
+function startExperiment() {
+  if (expRunning || !expRule) return;
+  expRunning = true; expLastStep = 0; expRaf = requestAnimationFrame(expTick);
+}
+function stopExperiment() {
+  expRunning = false; if (expRaf) cancelAnimationFrame(expRaf); expRaf = 0;
+}
+
 function loadStage(m) {
   if (current) { lab.scene.remove(current); disposeTree(current); }
   current = m.build ? m.build() : buildPlaceholder(m);
@@ -45,9 +132,15 @@ function loadStage(m) {
   document.getElementById('apLabel').textContent = m.label;
   document.getElementById('apBlurb').textContent = m.blurb;
   const isSpecimen = m.id?.startsWith('capstone');
-  document.getElementById('runBtn').style.display = (m.placeholder || isSpecimen) ? 'none' : '';
-  document.getElementById('explodeRow').style.display = m.placeholder ? 'none' : '';
-  setRunning(true);
+  selectExperiment(m);   // swap the live SEM experiment to match this stage (sets expRule)
+  // Run/Stop drives BOTH the apparatus anim AND the live SEM sim, so show it
+  // whenever there's EITHER to drive: a non-placeholder apparatus, OR a live
+  // experiment (incl. the capstone specimen, whose 'life' SEM feed is runnable).
+  const hasExperiment = !!expRule;
+  document.getElementById('runBtn').style.display =
+    (m.placeholder && !hasExperiment) || (isSpecimen && !hasExperiment) ? 'none' : '';
+  document.getElementById('explodeRow').style.display = (m.placeholder || isSpecimen) ? 'none' : '';
+  setRunning(true);      // auto-run BOTH apparatus + experiment on stage select
   // active nav button
   document.querySelectorAll('.stage-btn').forEach(b => b.classList.toggle('active', b.dataset.id === m.id));
 }
@@ -90,8 +183,13 @@ function highlight(mesh, on) {
 }
 
 // ── Run + explode controls ──────────────────────────────────────────────────
+// One button drives BOTH the photoreal apparatus animation AND the live SEM
+// experiment sim. apparatusRunning is the single source of truth so the two
+// can never desync. The exp loop only spins when its pane is visible.
 function setRunning(on) {
+  apparatusRunning = on;
   current?.userData?.anim?.setRunning(on);
+  if (on && currentView() !== 'lab') startExperiment(); else stopExperiment();
   const btn = document.getElementById('runBtn');
   btn.textContent = on ? '■ Stop experiment' : '▶ Run experiment';
   btn.classList.toggle('running', on);
@@ -112,6 +210,31 @@ document.getElementById('explode').oninput = (e) => {
     o.position.copy(home).add(dir.multiplyScalar(f * 1.5));
   });
 };
+
+// ── View toggle (Lab | Split | Experiment) ──────────────────────────────────
+// The data-view attribute on .stage is the single source of truth; CSS does
+// ALL pane show/hide. JS only sets it + handles two perf concerns: refit the
+// WebGL renderer (its container width changed without a window resize) and
+// pause the exp loop whenever its pane is hidden.
+function setView(v) {
+  const stage = document.querySelector('.stage');
+  stage.dataset.view = v;
+  document.querySelectorAll('#viewToggle .vt-btn').forEach(b => {
+    const sel = b.dataset.view === v;
+    b.classList.toggle('active', sel);
+    b.setAttribute('aria-pressed', String(sel));   // expose selected state to AT
+  });
+  // #viewport width changed without a window 'resize' → refit WebGL after reflow.
+  requestAnimationFrame(() => lab.setSize());
+  if (v === 'lab') {
+    stopExperiment();                          // exp pane hidden → stop the 2-D loop
+  } else {
+    if (apparatusRunning) startExperiment();   // resume if Run is active
+    renderExperimentFrame();                   // paint one immediate frame so it's never blank
+  }
+}
+document.querySelectorAll('#viewToggle .vt-btn')
+  .forEach(b => b.onclick = () => setView(b.dataset.view));
 
 // ── Build the stage nav ─────────────────────────────────────────────────────
 const nav = document.getElementById('stageNav');
@@ -138,8 +261,9 @@ const clock = new THREE.Clock();
 function tick() {
   const dt = Math.min(clock.getDelta(), 0.05);
   current?.userData?.anim?.update(dt, clock.elapsedTime);
-  lab.controls.update();
-  lab.composer.render();
+  lab.controls.update();   // keep damping alive even when the lab pane is hidden
+  // Skip the heavy composer pass (UnrealBloom) when the apparatus is hidden.
+  if (currentView() !== 'exp') lab.composer.render();
   // live readout
   const p = current?.userData?.anim?.getProgress?.() ?? 0;
   const ro = document.getElementById('readout');
