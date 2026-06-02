@@ -33,6 +33,8 @@ jobs:
         run: node docs/web2/tests/smoke.mjs
       - name: Web3 rule smoke tests
         run: node docs/web3/tests/smoke.mjs
+      - name: Web4 rule smoke tests
+        run: node docs/web4/tests/smoke.mjs
 
   build:
     needs: test
