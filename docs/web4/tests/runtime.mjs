@@ -12,7 +12,7 @@
 // zero-dependency checkout; CI installs three before invoking it.
 
 import path from "node:path";
-import { fileURLToPath } from "node:url";
+import { fileURLToPath, pathToFileURL } from "node:url";
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const APP = path.join(HERE, "..", "apparatus");
@@ -47,7 +47,7 @@ let fails = 0;
 console.log(`Running web4 apparatus runtime verification (${MODULES.length} apparatus)…\n`);
 for (const name of MODULES) {
   try {
-    const { meta } = await import(path.join(APP, `${name}.js`));
+    const { meta } = await import(pathToFileURL(path.join(APP, `${name}.js`)).href);
     if (!meta || typeof meta.build !== "function") throw new Error("meta.build missing");
 
     const group = meta.build();
