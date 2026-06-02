@@ -1,0 +1,116 @@
+:root {
+  --bg: #0c0a08;
+  --panel: #15120e;
+  --panel-2: #1d1812;
+  --ink: #e9e2d2;
+  --muted: #968d79;
+  --accent: #caa86a;     /* brass */
+  --spark: #c77dff;
+  --line: #2a241b;
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; height: 100%; background: var(--bg); color: var(--ink);
+  font-family: -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif; overflow: hidden; }
+
+.app { display: grid; grid-template-columns: 248px 1fr 232px; height: 100vh; }
+
+/* ── Sidebar ── */
+.sidebar { background: var(--panel); border-right: 1px solid var(--line);
+  display: flex; flex-direction: column; min-height: 0; }
+.brand { padding: 18px 18px 10px; border-bottom: 1px solid var(--line); }
+.brand-title { font-family: Georgia, serif; font-size: 22px; letter-spacing: .5px; }
+.brand-sub { color: var(--accent); font-size: 11px; text-transform: uppercase; letter-spacing: 2px; margin-top: 2px; }
+.nav-hint { padding: 12px 18px; font-size: 11px; color: var(--muted); line-height: 1.5; }
+.stage-nav { flex: 1; overflow-y: auto; padding: 4px 10px; }
+.stage-btn { display: block; width: 100%; text-align: left; background: transparent;
+  border: 1px solid transparent; border-radius: 7px; color: var(--ink); padding: 8px 10px;
+  margin-bottom: 2px; cursor: pointer; transition: background .12s, border-color .12s; }
+.stage-btn span { display: block; font-size: 12.5px; font-weight: 600; }
+.stage-btn small { display: block; font-size: 10px; color: var(--muted); margin-top: 1px; }
+.stage-btn:hover { background: var(--panel-2); }
+.stage-btn.active { background: #241c10; border-color: var(--accent); }
+.stage-btn.pending span { color: #b8ad95; }
+.stage-btn.pending::after { content: 'pending'; float: right; font-size: 8px; color: var(--muted);
+  border: 1px solid var(--line); border-radius: 4px; padding: 1px 4px; text-transform: uppercase; letter-spacing: 1px; }
+.sidebar-foot { padding: 12px 18px; font-size: 10px; color: var(--muted); border-top: 1px solid var(--line); line-height: 1.5; }
+
+/* ── Stage / viewport ── */
+.stage { position: relative; min-width: 0; }
+.viewport { position: absolute; inset: 0; }   /* unchanged, now scoped inside .pane-lab */
+
+/* ── Lab | Experiment split ──────────────────────────────────────────────── */
+.stage-split { position: absolute; inset: 0; display: flex; z-index: 0; }
+.pane { position: relative; min-width: 0; min-height: 0; height: 100%; overflow: hidden; }
+/* The experiment pane letterboxes the SEM micrograph against the instrument
+   backdrop so the SQUARE rule grid (60×60 .. 220×220) is never anisotropically
+   stretched into ovals — same intent as web3's .canvas-frame (aspect-ratio:1/1).*/
+.pane-exp { display: flex; align-items: center; justify-content: center; background: #0a0e16; }
+.split-divider { flex: 0 0 2px; background: var(--line); display: none; }
+/* Square, contained: cap to the smaller of the pane's width/height so the
+   micrograph stays 1:1 and letterboxes (does NOT stretch) in any view/mode. */
+.exp-canvas { aspect-ratio: 1 / 1; max-width: 100%; max-height: 100%;
+  width: auto; height: auto;
+  image-rendering: pixelated; background: #0a0e16; display: block; }
+.exp-caption { position: absolute; left: 14px; bottom: 12px; z-index: 2;
+  font: 11px/1 ui-monospace, monospace; letter-spacing: 1.5px;
+  text-transform: uppercase; color: var(--accent);
+  background: rgba(8,6,4,.55); padding: 4px 8px; border-radius: 5px;
+  pointer-events: none; }
+.exp-empty { position: absolute; inset: 0; display: flex; align-items: center;
+  justify-content: center; color: var(--muted); font-size: 13px;
+  text-align: center; padding: 0 24px; }
+
+/* view states — pure CSS off the .stage data-view attribute */
+.stage[data-view="lab"] .pane-lab { flex: 1 1 100%; }
+.stage[data-view="lab"] .pane-exp,
+.stage[data-view="lab"] .split-divider { display: none; }
+.stage[data-view="exp"] .pane-exp { flex: 1 1 100%; }
+.stage[data-view="exp"] .pane-lab,
+.stage[data-view="exp"] .split-divider { display: none; }
+.stage[data-view="split"] .pane-lab { flex: 1 1 50%; }
+.stage[data-view="split"] .pane-exp { flex: 1 1 50%; }
+.stage[data-view="split"] .split-divider { display: block; }
+
+/* 3-way segmented toggle, in the existing bottom-bar */
+.view-toggle { display: inline-flex; border: 1px solid var(--line);
+  border-radius: 8px; overflow: hidden; }
+.vt-btn { background: transparent; color: var(--muted); border: none;
+  padding: 7px 12px; font-size: 11px; cursor: pointer; }
+.vt-btn:not(:last-child) { border-right: 1px solid var(--line); }
+.vt-btn.active { background: #241c10; color: var(--ink); }
+.overlay { position: absolute; z-index: 5; pointer-events: none; }
+.top-left { top: 22px; left: 26px; max-width: 60%; }
+.ap-label { color: var(--accent); font-size: 11px; text-transform: uppercase; letter-spacing: 2.5px; }
+.ap-title { font-family: Georgia, serif; font-size: 26px; margin-top: 3px; text-shadow: 0 2px 12px #000; }
+.ap-blurb { font-size: 12.5px; color: #cfc6b2; margin-top: 8px; line-height: 1.55; max-width: 420px; text-shadow: 0 1px 6px #000; }
+
+.bottom-bar { left: 0; right: 0; bottom: 0; padding: 16px 26px; display: flex; align-items: center; gap: 22px;
+  background: linear-gradient(to top, rgba(8,6,4,.85), transparent); pointer-events: none; }
+.bottom-bar > * { pointer-events: auto; }
+.run-btn { background: #241c10; color: var(--ink); border: 1px solid var(--accent); border-radius: 8px;
+  padding: 10px 18px; font-size: 13px; font-weight: 600; cursor: pointer; }
+.run-btn.running { background: #3a1d12; border-color: #d2734a; color: #ffd9c4; }
+.explode-row { display: flex; align-items: center; gap: 10px; font-size: 11px; color: var(--muted); }
+.explode-row input { width: 150px; accent-color: var(--accent); }
+.readout { margin-left: auto; font-family: ui-monospace, monospace; font-size: 12px; color: var(--spark);
+  text-shadow: 0 0 10px rgba(199,125,255,.5); }
+
+/* ── Parts panel ── */
+.parts-panel { background: var(--panel); border-left: 1px solid var(--line); display: flex; flex-direction: column; min-height: 0; }
+.parts-head { padding: 16px 16px 10px; border-bottom: 1px solid var(--line); }
+.parts-head h2 { margin: 0; font-size: 13px; text-transform: uppercase; letter-spacing: 2px; color: var(--accent); }
+.parts-list { flex: 1; overflow-y: auto; padding: 8px; }
+.part-row { display: block; width: 100%; text-align: left; background: transparent; border: none;
+  color: var(--ink); font-size: 11.5px; font-family: ui-monospace, monospace; padding: 5px 8px;
+  border-radius: 5px; cursor: pointer; }
+.part-row:hover { background: var(--panel-2); }
+.part-row.hidden { color: var(--muted); text-decoration: line-through; opacity: .6; }
+.parts-foot { padding: 10px 16px; font-size: 9.5px; border-top: 1px solid var(--line); }
+.muted { color: var(--muted); }
+
+@media (max-width: 920px) {
+  .app { grid-template-columns: 1fr; }
+  .sidebar, .parts-panel { display: none; }
+  /* Split stacks vertically on narrow screens (lab/exp are already single-pane). */
+  .stage[data-view="split"] .stage-split { flex-direction: column; }
+}
