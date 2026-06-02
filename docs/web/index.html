@@ -3,8 +3,8 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>cellauto · Reaction–Diffusion — a live observation plate</title>
-  <meta name="description" content="A live in-browser Gray–Scott reaction–diffusion explorer, ported from the cellauto abiogenesis sandbox. Move the F and k sliders to traverse the Pearson parameter landscape — spots, stripes, mitosis, waves, labyrinth." />
+  <title>cellauto · from reaction–diffusion to digital life — live observation plates</title>
+  <meta name="description" content="Live in-browser plates from the cellauto abiogenesis sandbox: a Gray–Scott reaction–diffusion explorer AND the Stage XIII digital-life capstone — Tierra/Avida virtual-CPU organisms that sense, eat, move, copy and divide in real time under a simulated SEM." />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;1,400&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet" />
@@ -14,7 +14,7 @@
   <header class="plate-header">
     <p class="eyebrow">P L A T E &nbsp; I &nbsp; · &nbsp; C E L L A U T O &nbsp; · &nbsp; M M X X V I</p>
     <h1>cellauto</h1>
-    <p class="subtitle">a live observation of the coalescence of chemistry into pattern</p>
+    <p class="subtitle">a live observation of the coalescence of chemistry into pattern — and of pattern into life</p>
     <hr class="hairline" />
   </header>
 
@@ -67,6 +67,26 @@
       </div>
     </section>
 
+    <section class="observation life-plate">
+      <p class="section-label"><span class="roman">XIII</span> &nbsp; D I G I T A L &nbsp; L I F E</p>
+      <div class="canvas-frame">
+        <canvas id="life-canvas" width="720" height="720"
+                aria-label="Live Stage XIII digital-life feed — Tierra/Avida organisms under simulated SEM"></canvas>
+      </div>
+      <p class="caption" id="life-caption">STAGE XIII · DIGITAL LIFE · LIVE FEED</p>
+      <p class="caption-detail">
+        The capstone. Each organism is a 20-opcode genome run by a tiny virtual
+        CPU — it senses, eats substrate, moves, and must run its own COPY loop to
+        build a daughter tape before it can DIVIDE. The genome <em>is</em> the
+        phenotype; selection is implicit. Tierra (Ray 1991) · Avida (Ofria &amp;
+        Wilke 2004) · Eigen's error threshold ε_c ≈ 1/L.
+      </p>
+      <p class="life-stats" id="life-readout">seeding…</p>
+      <div class="control-row buttons" style="justify-content:center">
+        <button id="life-play" class="btn primary">PAUSE</button>
+      </div>
+    </section>
+
     <section class="marginalia">
       <p class="section-label"><span class="roman">III</span> &nbsp; M A R G I N A L I A</p>
       <p class="commentary" id="marginalia">
@@ -108,5 +128,6 @@
   <script src="presets.js"></script>
   <script src="viridis.js"></script>
   <script src="sim.js"></script>
+  <script src="life.js"></script>
 </body>
 </html>

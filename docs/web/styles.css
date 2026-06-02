@@ -122,6 +122,25 @@ section { margin: 40px 0; }
   image-rendering: crisp-edges;
 }
 
+/* Stage XIII photoreal feed — smooth (NOT pixelated, unlike the PDE grid). */
+#life-canvas {
+  display: block;
+  background: #1a130c;
+  width: 660px;
+  height: 660px;
+  max-width: 100%;
+  aspect-ratio: 1 / 1;
+  image-rendering: auto;
+}
+
+.life-stats {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--hairline-hi);
+  letter-spacing: 0.10em;
+  margin: 4px 0 0;
+}
+
 .caption {
   font-family: var(--font-mono);
   font-size: 11px;

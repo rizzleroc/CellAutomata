@@ -1,0 +1,65 @@
+name: Pages
+
+# Auto-deploy /docs (the static site: web/ + generated plates) to GitHub Pages
+# on every push to main. The root docs/index.html redirects to web/.
+#
+# One-time repo setup: Settings → Pages → Source → GitHub Actions.
+# After that, every merge to main republishes the site.
+
+on:
+  push:
+    branches: [main]
+  # Run the JS syntax gate on PRs too, so a broken client can't reach main.
+  # Build/deploy are guarded to push events; PRs run the `test` job only.
+  pull_request:
+    paths: ["docs/**"]
+  workflow_dispatch:
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v6
+        with:
+          node-version: "20"
+      - name: Web5 client syntax gate
+        run: |
+          for f in docs/web/*.js; do
+            echo "checking $f"
+            node --check "$f"
+          done
+
+  build:
+    needs: test
+    # Only build/deploy on a real push to main (or manual dispatch); PRs stop
+    # after the `test` gate.
+    if: github.event_name != 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - name: Upload /docs as Pages artifact
+        uses: actions/upload-pages-artifact@v5
+        with:
+          path: docs
+
+  deploy:
+    needs: build
+    if: github.event_name != 'pull_request'
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v5
