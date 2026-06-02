@@ -20,31 +20,20 @@ two things at once:
 * an RNA-like ``strand`` of codons (the message), and
 * its own ``code`` — a private mapping from codon symbol to amino-acid symbol.
 
-Every cell decodes its own strand through its own code, producing a peptide.
-Fitness is, by default, the Miyazawa-Jernigan-style folding score of that
-peptide (``fitness_mode="mj_landscape"``) — sequence-composition-dependent,
-not a fixed answer key; the legacy ``"target_match"`` mode (peptide vs a fixed
-target) is retained for comparison. Empty cells are colonised by
-fitness-weighted occupied neighbours, copying both the strand (with per-base
-mutation) and the code (with rare swaps), so any code that happens to make a
-better-folding peptide spreads and the population converges on a shared code
-through selection. That convergence is the emergence of the universal code.
+Every cell decodes its own strand through its own code, producing a peptide;
+fitness is how well that peptide matches a fixed **target catalyst** (the
+acetyl-CoA / Wood-Ljungdahl pathway, say — the chemistry the cell needs).
+Empty cells are colonised by fitness-weighted occupied neighbours, copying
+both the strand (with per-base mutation) and the code (with rare swaps).
+Crucially, a cell can only "use" a *donor* cell's strand effectively if the
+donor's code is compatible — so any code that happens to make a more useful
+peptide spreads, and the population converges on a shared code purely through
+selection. That convergence is the emergence of the universal genetic code.
 
-HONEST SCOPE NOTE: this models the *selection-driven convergence* half of the
-coevolution account via **vertical descent** (fitness-weighted colonisation +
-mutation). It does **not** implement Vetsigian-Woese-Goldenfeld's signature
-mechanism — *innovation sharing* / horizontal gene transfer gated on code
-compatibility between donor and recipient. ``step()`` has no HGT term; the
-convergence here is ordinary selection on a private code, not the
-code-compatibility-mediated horizontal sharing the 2006 paper is about. Treat
-the VWG citation as "in the lineage of the coevolution hypothesis", not "an
-implementation of the 2006 model."
-
-What this captures: coevolution of message and code, and population-level
-convergence onto a shared code through (vertical) selection.
-What it cuts: innovation-sharing/HGT (the VWG mechanism proper),
-stereochemistry, actual translation/ribosomes, and the historical
-contingencies of the canonical code.
+What this captures: the coevolutionary dynamics of message and code, and the
+population-level convergence onto a shared code through selection.
+What it cuts: actual stereochemistry, actual translation, actual ribosomes,
+and the specific historical contingencies that shaped the canonical code.
 
 References:
     Crick, F. H. C. (1968). The origin of the genetic code. J. Mol. Biol.,

@@ -5,90 +5,609 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ---
 
-## [5.0.0] — 2026-06-01
+## [4.1.1] — 2026-06-01
 
-**LIFE: Digital Organisms (Stage XIII).** After Stage XII distils LUCA — the
-*recipe* for life — Stage XIII populates the post-LUCA world with discrete
-digital organisms whose behaviour is an *executing program*, not a probability
-table. The extended pipeline is now a **13-stage** arc (soup → … → LUCA →
-LIFE). This release ships v5.0.0 through Phase 5.1.
+**Generated protagonist art lands in Channel B.** The "Day in the Life"
+protagonist is no longer only procedural: a generated scanning-electron-
+micrograph protocell body bundle now ships in `cellauto/assets/narrative/`, and
+the optional sprite bridge composites it *under* the procedural face.
 
-### New rule — `abiogenesis-life` (Stage XIII, index 12)
-- **20-opcode virtual CPU.** Each organism carries a genome — a tape of
-  opcodes run by a tiny virtual CPU (`cellauto/rules/abiogenesis/life_vm.py`):
-  four byte registers, an instruction pointer, a register head, a comparison
-  flag, and a facing direction. The genome IS the phenotype (Tierra, Ray 1991).
-  Opcodes cover arithmetic, control flow (`JUMP`/`JZ`/`LOOP`), and six
-  world-facing actions (`SENSE`, `INGEST`, `EXCRETE`, `MOVE`, `TURN`,
-  `DIVIDE`) plus `COPY`/`RAND`. Private memory capped at 512 instructions.
-- **Self-encoded replication (the defining Tierra/Avida property).**
-  Reproduction is *not* an engine primitive: an organism must run its own
-  `COPY` loop (Avida's `h-copy`) to build a full-length daughter tape, and
-  only then — with energy ≥ `E_div = 120` — does `DIVIDE` spawn it. Strip the
-  `COPY` opcodes from an otherwise-viable genome and the lineage leaves **zero**
-  offspring (pinned by `test_replication_is_self_encoded…`). This replaces the
-  v5.0.0-rc behaviour where `COPY` was a dead counter and the engine copied the
-  parent genome on any `DIVIDE` — a self-replication claim the code didn't back.
-- **Energy metabolism (Avida-style private memory).** A 2-D substrate + waste
-  grid; every executed instruction costs energy (`instruction_cost = 1`),
-  `INGEST` converts substrate to energy (`ingest_gain = 28`), `EXCRETE` adds
-  toxic waste, `MOVE` costs extra. Energy = 0 ⇒ death (body decays back into
-  substrate). The energy constants are **tuned, not biophysically derived** —
-  abstract CPU-cycle/energy units in the Tierra/Avida tradition, unlike the
-  measurement-anchored constants of the abiogenesis stages (stated plainly in
-  `docs/science.md`).
-- **Per-instruction copy mutation + Eigen error threshold.** ε is applied
-  *at copy time*, inside `COPY` (`mutation_rate = 0.02`) — Eigen's per-digit
-  error placed where it physically belongs, so a copy error can corrupt the
-  daughter's own replication machinery. The rule exposes ε_c = ln(σ)/L and
-  reports `founder_divergence`, which explodes past the error catastrophe.
-- **Measured selection.** `test_selection_enriches_functional_opcodes` pins
-  that the surviving population is enriched several-fold over the 1/20 neutral
-  baseline for `COPY`/`INGEST` and depleted of inert opcodes — selection is
-  demonstrated, not asserted.
-- **Lineage tracking + per-organism ancestry.** Each organism records its
-  parent id and founder `lineage` id; surviving ancestry chains and lineage
-  counts are exposed for the inspector (the parallel Tk per-organism inspector
-  reads these).
-- **LUCA → LIFE pipeline hand-off (G1) — positional only.** `init_state`
-  accepts the upstream LUCA `seed_field`; founders seed at the brightest LUCA
-  cells and substrate starts richer where the chemistry was good. We state
-  plainly (in `docs/science.md`) that this coupling is *spatial only* — the
-  ancestor genome is **not** derived from Stage XII's gene set or Stage VIII's
-  codon table; deriving it is a deferred item. `extract_signal` exports an
-  energy-weighted population map for a hypothetical Stage XIV.
+### Added — narrative protagonist art bundle (`cellauto/assets/narrative/`)
+Eight SEM protocell body plates — a shared `cell_protagonist_idle` plus one per
+narrative mood (`protagonist_{curious,calm,excited,triumphant,struggling,weary,
+reborn}`) — generated on a flat `#FF00FF` chroma field and trimmed to ≤768 px.
+Each beat now resolves to its mood-matched body, while
+`character.render_character` still draws the per-mood face/expression on top, so
+the generated art lifts the whole dawn → rebirth arc. With no art on disk the
+channel stays fully procedural, so the shipped behaviour degrades gracefully.
 
-### Rendering
-- **V7 viridis discs (default).** Organisms are filled discs coloured by
-  energy on a viridis substrate field, darkened where waste pools.
-- **V9 SEM mode.** Translucent hairline body walls (warm sepia membrane).
-- **V10 high-resolution internal-anatomy plate (Phase 5.1).** `render_plate`
-  renders the most energetic organisms Brachionus-style with a translucent
-  body wall, a gut compartment with drifting ingested particles, the genome
-  instruction strip (current instruction highlighted teal), a nucleus, and a
-  cytoplasmic shimmer tied to execution state — every element maps to real
-  organism state. Preview at `docs/generated/stage13_life.png`.
+### Changed — alpha-aware sprite bridge (`cellauto/sprites.py`)
+`load_body_sprite` now honours a genuine alpha channel directly (new
+`has_real_alpha`): a true-transparency cutout is used as-is, skipping the magenta
+chroma key, while flat-key plates still key (with feathered de-spill) as before.
+So both keyable magenta plates and real-alpha PNGs drop into the asset dir
+without code changes. Three regression tests added — **276 total, all green**.
 
-### Other
-- New regression test suite covering the virtual CPU, self-encoded replication,
-  metabolism, copy-mutation / error threshold, measured selection, lineage
-  tracking, and rendering. The web/Python VM-parity check is a visible skip
-  (deferred to Phase 5.3).
-- Web3 `life.js` counterpart mirrors the Stage XIII rule in the browser client
-  **including self-encoded replication** — the JS `COPY`/`DIVIDE` build and gate
-  on a daughter tape exactly as the Python VM, so both runtimes tell one story
-  (no parity lie); the dead `mutateGenome` path was removed.
-- `docs/science.md` gains a LIFE / Stage XIII section with explicit scope
-  notes: replication is self-encoded; energy constants are tuned not measured;
-  the LUCA→LIFE coupling is positional only; "SEM / 400×" is a stylised
-  depth-shaded render, not electron-microscope data.
-- `docs/ROADMAP.md` v5.0 punchlist V1–V10 checked off (V11 ecology / V12 Tierra
-  shared-memory deferred).
-- **Scientific-honesty review pass.** A self-audit found `COPY` was a dead
-  counter and `DIVIDE` was engine fiat (replication not actually self-encoded),
-  and the F8 emergence test was vacuous (`founder_divergence > 0`, guaranteed by
-  any mutation). Both are closed: replication is now genuinely self-encoded and
-  the emergence test proves a COPY-less lineage leaves no offspring.
+---
+
+## [4.1.0] — 2026-05-30
+
+**Two channels and hi-res.** cellauto's render path is now explicitly
+two-channel: Channel A is the grounded SEM micrograph (unchanged — every pixel
+still traces to a real `render_rgb(state)` value), and Channel B is a new,
+additive, *toggleable* narrative layer — the anthropomorphized "Day in the Life
+of a Cell." The renderer also decouples render resolution from display
+resolution, so the live canvas can supersample and a single frame can export at
+up to 4K.
+
+### Added — Channel B narrative layer (`cellauto/channel.py`, `narrative.py`, `character.py`)
+A new `NarrativeChannel` composites, over a finished SEM frame: a procedural
+protagonist cell (`render_character`, seven moods, with its own breathe/blink
+animation), a typeset narration ribbon carrying a day-clock + title + a
+typewriter-revealed line, a gentle vignette-weighted time-of-day grade, and a
+small "STORY · DAY IN THE LIFE" tag so the layer never masquerades as instrument
+truth. The script (`cellauto/narrative.py`) maps the twelve abiogenesis pipeline
+stages onto twelve day beats, dawn → rebirth (`beat_for` also collapses the
+canonical 5-stage pipeline onto the arc). Channel B has its **own animation
+clock**, independent of the simulation step loop and of the SEM badge pulse, so
+the protagonist keeps breathing and the ribbon keeps typing even while the sim
+is paused.
+
+It plugs in as a pure *post-compositor*: `SemRenderer.post_compositor` is invoked
+on the finished (chrome'd) frame inside `compose()`, and is the identity when
+unset — so Channel A is never altered and the layer is fully reversible.
+
+### Added — hi-res render + export (`cellauto/hires.py`)
+`SemRenderer` gained a `render_size` field: when set above the canvas size the
+live frame is composed at `factor×600` and LANCZOS-downsampled to the display,
+for crisper, anti-aliased on-screen output. `cellauto/hires.py` adds
+`supersample`, `export_frame_png`, `export_hires_png`, and `export_hires_gif`,
+all renderer-agnostic (they take a `compose_at(size)` callable). The narrative
+post-compositor runs at the compose resolution, so the story overlay exports
+crisp too.
+
+### Added — app integration (`cellauto/app.py`)
+- View ▸ **Story · Day in the Life** toggle (installs/removes Channel B; persists).
+- View ▸ **Render scale (supersample)** → 1× / 2× / 3× (persists).
+- File ▸ **Export hi-res PNG…** (composes the current frame, with the story
+  overlay if enabled, at a hi-res edge length).
+- Channel B's clock is driven from the existing ~20 Hz `_animate` tick and
+  re-blits via a new cheap `SemRenderer.reanimate_overlay()` that re-applies the
+  overlay to a cached pre-overlay frame *without* re-running the SEM shade
+  pipeline — so the character animates while paused at negligible cost.
+- Stage, palette, and reduced-motion preferences propagate to Channel B; reduced
+  motion freezes its clock. All new prefs persist alongside the SEM config.
+
+### Added — narrative art bundle (`tools/render_narrative_art.py`)
+Renders all twelve day beats (each a real headless run of the corresponding
+pipeline stage → SEM → Channel B) plus a 4×3 contact-sheet poster into
+`docs/generated/narrative/`. Doubles as an end-to-end Channel-A → Channel-B
+smoke test at hi-res.
+
+---
+
+## [4.0.9] — 2026-05-30
+
+**Closed the two remaining confirmed-deferred punchlist items — B8 (Stage 0
+SEM sprites) and E2 (control-experiment A/B view) — plus a size-robustness
+bug-class fix surfaced while building E2.** Both features were carried as
+"deferred" in the ROADMAP; this release ships them, verified visually against
+rendered output rather than by assertion alone.
+
+### Fixed — SEM sprite tint + contact shadow (B8) in `cellauto/renderer_sem.py`
+`load_sprite` previously tinted sprites so opaque shadow pixels floored at pure
+black, which read as hard cut-out holes on the warm micrograph. Sprites are now
+ramped through the palette LUT (`black=lut[110]`, `white=lut[250]`) so the
+darkest body pixel lands on a mid stop, the source alpha is pulled back to 0.9,
+and `composite_sprites` lays a blurred, down-right-offset contact shadow under
+each pasted sprite so bodies sit *on* the substrate instead of floating.
+
+### Fixed — Stage 0 SEM no longer renders a "wall of balls" (B8)
+Re-enabling Stage 0 (primordial soup) sprites naïvely (one protocell per
+`is_ameba` cell) tiled the entire frame with overlapping spheres — `is_ameba`
+is the *dominant* cell state here (~90% of the grid), not a rare body.
+`AbiogenesisStage0Soup.render_sprites` now emits a sparse, SEM-honest set: a
+handful (≤5) of distinct protocell bodies placed via a coarse lattice +
+nearest-candidate spread (so they read as separate compartments, not a grid),
+plus a light scatter (≤26) of particulate granules (freshly-reacted `is_new`
+sites first, then a strided slice of settled cells). Deterministic; `[]` for an
+empty grid. Stage 0 opts into the SEM field renderer via `sem_eligible = True`,
+gated in `app.py` so it activates only when SEM mode is on (the discrete render
+path is byte-identical when SEM is off). Stage 3 vesicles verified unregressed.
+
+### Added — control-experiment A/B view (E2) in `cellauto/diagrams.py`
+`render_control(stage_index, …, rule_name=…)` mirrors `render_apparatus`:
+`_CONTROL_RENDERERS_BY_RULE_NAME` maps all 12 abiogenesis rule names to a
+matching null-experiment panel (with index fallback for the canonical 0–4).
+Each panel strikes through the disabled driver and shows the null outcome —
+flat histogram (Miller-Urey priors off), empty dish (Gray-Scott feed → 0),
+uniform-noise melt (RNA error catastrophe), zero droplets (coacervate), etc. —
+built on a shared `_control_plate` helper in the Catalytic Silence grammar.
+The "How it works" dialog now embeds the apparatus and its control
+side-by-side (`_show_how_it_works`), captioned EXPERIMENT / CONTROL.
+
+### Fixed — apparatus/control diagrams clipped fixed-position text when shrunk
+The diagrams are authored at a 640×320 design size with non-reflowing text. The
+A/B dialog originally rendered them directly at the smaller embed width, which
+clipped right-edge labels ("self-replic[ation]", "error catastrop[he]", …).
+The dialog now renders each diagram at native 640×320 (where text fits) and
+LANCZOS-downscales the *image* into the embed box. Separately, four renderers
+(`render_rna_world`, `render_coacervate`, `render_homochirality`,
+`render_genetic_code`) raised `ValueError: x1 must be >= x0` at narrow widths
+because of hardcoded pixel coordinates; all four now scale their coordinates to
+width/height fractions with `max()` clamps, preserving the 640×320 look while
+rendering correctly at any size (covered by parametrized size-robustness tests).
+
+### Tests
+`tests/test_b8_sprites.py` (7) pins the sprite tint ramp, contact shadow, and
+Stage 0 sprite emission; `tests/test_e2_control.py` (43) pins the control
+registry, A/B divergence, determinism, and size-robustness across all 12
+renderers × 3 small sizes. Full suite: 262 passed, mypy clean, ruff clean.
+
+## [4.0.8] — 2026-05-29
+
+**Brutal full-app review — finished the half-finished "How it works" feature
+across the *whole* pipeline.** A ground-up audit asked: what is documented as
+done but only partially built? The answer was the apparatus / "How it works" /
+connected-narrative feature (E1/E3/E4, shipped in v4.0.6–v4.0.7). It was
+complete for the canonical 5-stage pipeline but silently degraded for 7 of the
+12 stages of the extended pipeline — and the apparatus dispatch had a latent
+correctness bug. All three gaps are now closed.
+
+### Fixed — apparatus-diagram dispatch was index-keyed and collided (A2)
+`app.py:_show_how_it_works` resolved the diagram with `render_apparatus(
+info.index)`. The extended pipeline's `StageInfo.index` values **collide** with
+the canonical indices: the alkaline vent has `index=1` (same as Gray-Scott) and
+mineral catalysis has `index=3` (same as vesicles). So opening "How it works"
+on the vent showed the Gray-Scott *reactor*, and minerals showed the *CMC
+bilayer* — the wrong experiment entirely. Dispatch is now keyed on each rule's
+unique `name`: `_RENDERERS_BY_RULE_NAME` maps all 12 abiogenesis rule names to
+their renderers, `render_apparatus` prefers `rule_name` over the index map, and
+`_show_how_it_works` passes the inner rule's name
+(`engine.state.inner_rule.name`). Verified: all 12 extended-pipeline stages now
+resolve to the correct diagram.
+
+### Added — 6 missing apparatus diagrams (A3) in `cellauto/diagrams.py`
+The extended pipeline's other 6 stages had no diagram at all (the dialog quietly
+skipped the section). Added procedural PIL renderers in the established
+Catalytic Silence grammar (title + sub-caption, labelled schematic, bottom
+`Control:` line), each grounded in `docs/science.md`:
+
+- **`render_mineral_clay()`** — montmorillonite clay band (hatched/stippled tan,
+  charge ticks), bulk-water monomers, teal polymer chains rooted on the surface.
+- **`render_homochirality()`** — Frank-1953 reaction scheme (`A+L→2L`, `A+R→2R`,
+  `L+R→inert`) + a 2-D field split into teal L-domains / magenta R-domains.
+- **`render_rna_world()`** — Hamming-distance grid, fitness-weighted
+  colonisation arrow, error-threshold box `ε_c = ln(σ)/L ≈ 0.14`.
+- **`render_genetic_code()`** — a cell carrying both a codon strand and a private
+  codon→amino-acid table, decode→peptide→target-compare loop, `code_consensus`.
+- **`render_coacervate()`** — gold Cahn-Hilliard droplets coarsening (Ostwald
+  ripening) with the conserved-φ equations `μ = φ³−φ−κ∇²φ`, `∂φ/∂t = M∇²μ`.
+- **`render_luca()`** — gene-presence matrix across lineages with the ≥70 %-
+  prevalence core highlighted; `luca_size` readout.
+
+Reference shots committed at `docs/generated/audit/apparatus_{minerals,chirality,
+rna,code,coacervate,luca}.png`.
+
+### Added — E3/E4 metadata for the 7 extended `StageInfo` entries (A1)
+`_STAGE_VENT_INFO`, `_STAGE_MINERAL_INFO`, `_STAGE_CHIRALITY_INFO`,
+`_STAGE_RNA_INFO`, `_STAGE_CODE_INFO`, `_STAGE_COACERVATE_INFO`, and
+`_STAGE_LUCA_INFO` left all seven of the v4.0.6 fields
+(`apparatus`/`methods`/`control`/`expect`/`caveats`/`consumes`/`produces`)
+empty, so the "How it works" panel printed "(not yet documented…)" and the
+chapter card had no narrative line for them. All seven are now populated from
+`docs/science.md`, with each `control` keyed to the actual knob/stat the rule
+exposes (vent → `pmf_mV`; minerals → `polymer_on_clay_x100`; chirality →
+`k_cross`; RNA → `error_threshold_x1000`; code → `code_mutation`; coacervate →
+`kappa`/`droplets`; LUCA → `luca_size`/`core_prevalence`), and `consumes`/
+`produces` following the extended-pipeline order.
+
+### Verified — Stage 3 vesicle SEM render (A4, closes the deferred V4 audit)
+The v4.0.5 audit deferred confirming the B1–B8 substrate changes didn't regress
+the Stage 3 lipid-bilayer rendering. Confirmed: Stage 3 under SEM mode composes
+a rich depth-shaded image (variance ≈ 3.7 k, 6.4 k unique colours, 398 membrane
+cells) — no regression.
+
+### Notes
+- The 5 *shared* canonical `StageInfo` entries keep their canonical-neighbour
+  `consumes`/`produces` prose; in the extended pipeline their narrative line
+  still references the canonical neighbour rather than the extended one. A
+  per-pipeline narrative override is tracked as a v4.1 nicety, not a gap.
+- 158 / 158 tests green; ruff + mypy clean. No engine/physics change — every SEM
+  pixel still traces to a real `render_rgb(state)` value.
+
+---
+
+## [4.0.7] — 2026-05-27
+
+**E1 — apparatus diagrams shipped.** The v4.0.6 honesty audit deferred E1
+(visible apparatus diagrams) as "highest cost, lowest honesty-per-hour."
+User pushback after v4.0.6 was direct: "did we add all the experiments
+like the Miller-Urey for the primordial soup yet?" — answer was no, only
+the prose lived in the "How it works" dialog. v4.0.7 adds the visual
+diagrams alongside the prose so the user sees the apparatus, not just
+hears it described.
+
+### Added — `cellauto/diagrams.py`
+Procedural PIL renderers for the canonical 5-stage pipeline:
+
+- **`render_miller_urey()`** — Stage 0: boiling-water flask with flame,
+  vapour-tube with directional arrows, spark-gap chamber labelled
+  CH₄/NH₃/H₂/H₂O with teal electrical-arc between electrodes, condenser
+  coil, product trap with stippled amino-acid solution. Caption names
+  the outcome (glycine, alanine, formic acid) and pins it to
+  `MILLER_UREY_SPECIES`.
+- **`render_gray_scott_reactor()`** — Stage 1: continuous-flow reactor
+  with u feed reservoir, F (feed rate) labelled, gel-stage box containing
+  cartoon spots, F+k waste outlet, teal v-autocatalyst return loop.
+  Control caption: "F = 0 ⇒ v decays exponentially → no spots ever form."
+- **`render_raf_vessel()`** — Stage 2: round Kauffman vessel with
+  continuously-fed food-set arrow, species inventory as labelled nodes,
+  teal RAF-closure cycle highlighting a self-sustaining loop, RHS legend
+  listing the three RAF rules (every reaction catalysed; catalyst is in
+  the set; reactants from food set) and the connectivity threshold
+  n_reactions / n_species ≳ 1.0.
+- **`render_cmc_bilayer()`** — Stage 3: solution column with mM
+  concentration axis, dashed teal CMC threshold at 85 mM, vesicle rings
+  nucleating above threshold, scattered amphiphiles (head + tail) below,
+  centre-right zoomed bilayer cross-section showing hydrophilic-head /
+  hydrophobic-tail arrangement.
+- **`render_protocell_selection()`** — Stage 4: three generations of
+  protocells (N → N+1 → N+2) showing growth, division, selection;
+  per-cell genome bars; fitness colour mapping in a legend (teal = high /
+  selected, dim bone = low / purged).
+- **`render_vent_chimney()`** — Standalone (extended-pipeline stage II):
+  Lost-City alkaline hydrothermal vent cross-section. Porous chimney wall
+  in centre with pore texture, ocean on both sides labelled (pH ≈ 5.5
+  acidic, CO₂-rich), vent interior labelled (pH ≈ 10 alkaline), H₂ feed
+  arrow rising from serpentinisation below, CO₂ feed arrows from the
+  ocean into the wall, Wood-Ljungdahl reaction box (`2 CO₂ + 4 H₂ →
+  CH₃COOH`), thermodynamic readout (PMF ≈ 266 mV, ΔG ≈ −25.7 kJ/mol).
+- **`render_apparatus(stage_index, *, rule_name=None)`** — dispatch
+  wrapper. Stages 0-4 return a populated diagram; `rule_name` is checked
+  for standalone rules (`abiogenesis-hydrothermal-vent` → vent); other
+  cases return `None` and the dialog quietly skips the diagram section.
+
+### Wired into `app.py:_show_how_it_works`
+Above the prose APPARATUS section, the dialog now embeds the rendered
+diagram via `tk.PhotoImage(format="PPM")` (no ImageTk dependency).
+Falls back to prose-only when the diagram returns `None` (extended-
+pipeline stages 6-11 ship without diagrams until the v4.1 catalogue).
+
+### Quality gates
+- 158 / 158 tests still pass (no new test regressions).
+- `ruff check` + `ruff format` clean on `cellauto/diagrams.py` and the
+  updated `app.py`.
+- `mypy cellauto/diagrams.py` clean.
+- Five reference shots committed at
+  `docs/generated/audit/apparatus_stage{0..4}.png` and a live UI capture
+  at `docs/generated/audit/post_e1_howitworks_stage1.png`.
+
+### Still deferred
+- **E2** — split-canvas A/B control view (live + null-parameter twin).
+  Highest scientific value, highest implementation cost; deferred to
+  v4.0.8.
+- **On-canvas callout arrows** — annotated labels pointing at features
+  in the live render. Stuck behind E2 because the canvas layout is in flux.
+- **Extended-pipeline apparatus** — diagrams for stages 6-11 (vents,
+  minerals, chirality, RNA world, genetic code, coacervates, LUCA).
+  Deferred to v4.1.
+
+---
+
+## [4.0.6] — 2026-05-27
+
+**Scientific-honesty audit closure (E0, E3, E4)** — user critique caught
+that the app had become "results-only science": gorgeous SEM renders with
+no apparatus, no controls, no plain-English explanation, and no causal
+narrative connecting the stages. A whipgen-claude audit confirmed every
+gap and identified the most damning finding — **all of this content
+already lived in `docs/science.md`, and the UI actively threw it away,
+referencing the file only as a dead string in the About dialog.** v4.0.6
+ships E0 + E3 + E4 from that audit; E1 (apparatus diagrams) and E2 (A/B
+control view) remain in the punchlist as separate cycles.
+
+### Added — E0: SEM badge honesty
+- Badge text changed `LIVE SEM FEED · Stage N — name` → `SEM RENDER · Stage N — name`.
+  The old "LIVE SEM FEED" implied an instrument feed; this is a depth-shaded
+  interpretation of a simulation, not a measurement.
+- New centred footer below the scale bar: "Render of simulated chemistry — not a microscope image." in dim bone.
+
+### Added — E3: "How does this stage work?" panel
+- **`StageInfo` extended** with five optional prose fields per stage:
+  `apparatus`, `methods`, `control`, `expect`, `caveats` — all sourced
+  from existing `docs/science.md` per-stage notes.
+- **`?` button** beside the wall-label title and **`Help ▸ How does this
+  stage work?…`** menu item open a scrollable `Toplevel` dialog showing
+  every field as a labelled section: APPARATUS · METHODS · CONTROL ·
+  EXPECT TO SEE · HONEST LIMITATIONS · CONSUMES FROM PREVIOUS STAGE ·
+  PRODUCES FOR NEXT STAGE.
+- All five canonical pipeline stages (0–4) ship with the full prose:
+  Miller-Urey spark gap, Gray-Scott flow reactor, Kauffman reaction
+  vessel + RAF closure, fatty-acid CMC bilayer, Eigen-Schuster replicator
+  population. Each has a NAMED control variant (F=0 for Stage 1, h2=0
+  for the vent, catalysis_level=0 for RAF, cmc_threshold above peak for
+  vesicles, mutation_rate above ε_c for protocell error catastrophe).
+- Stages without populated prose show "(not yet documented for this stage
+  — see docs/science.md)" per missing field instead of crashing.
+
+### Added — E4: Connected-narrative chapter card
+- `StageInfo` gained `consumes` + `produces` fields naming what each
+  stage hands off to the next.
+- `_show_chapter_card` now renders an extra narrative line under the
+  principle when both are populated: "From last stage: X → Now: Y" — so
+  entering Stage 2 tells you what Stage 1 produced and what Stage 2 will
+  produce, rather than treating each stage as a disconnected demo.
+- Falls back to principle-only for stages where the connective tissue
+  isn't populated yet (legacy + non-pipeline rules).
+
+### Changed
+- Badge font size kept; only the leading word + footer added.
+- Chapter card grows from 460×170 to 520×220 only when the narrative
+  line is populated (preserves the existing layout for fallback stages).
+
+### Not changed
+- Engine, rules, science — every pixel still traces back to a rule's
+  `render_rgb(state)`. SEM is a rendering choice; science.md still owns
+  the canonical reference.
+- 158 / 158 tests still pass. Lint + format clean.
+
+### Deferred (subsequent cycles)
+- **E1** — per-stage apparatus diagrams (Miller-Urey flask sketch, vent
+  chimney cross-section, RAF reactor vessel). Highest cost, deferred to
+  v4.1 once E2 stabilises.
+- **E2** — split-canvas A/B control view: live experiment + a null-
+  parameter twin running on the same seed. Scientifically the highest-
+  value, technically the bug-prone-est; deferred to v4.0.7.
+- **On-canvas callout arrows** — annotated labels pointing at features
+  in the live render. Stuck behind E2 because the layout is in flux.
+
+---
+
+## [4.0.5] — 2026-05-27
+
+**Brutal-feedback audit closure** — a multimodal whipgen-claude critique loop
+(four rounds, fed live SEM renders + the renderer source each time) drove
+twelve concrete deltas labelled V1–V5, B1–B8, R1–R8. The result: Stage 1
+under SEM mode now reads as scattered isolated protocell spheres on a dark
+crystalline substrate with visible contact-shadow rings and rare pink
+granules — a substantial step closer to the user's Stage 0 SEM reference.
+
+### Round-by-round verdicts (whipgen-claude judge)
+- **V1+V2 (pre-audit baseline)** — flipped height-sign so v-peaks render as
+  domes not craters; disabled the Stage 1 sprite layer that read as floating
+  "strange balls" stickers.
+- **Round-1 audit (5/10)** — "STILL BAD: hex-packed lattice, velvet substrate,
+  amputated dome bodies." Filed B1, B3–B8.
+- **Round-2 (5/10)** — substrate fixed but R1 over-corrected. Filed R1–R5.
+- **Round-3 (4/10)** — Lambertian gating amputated dome flanks. Filed R6.
+- **Round-4 (4/10)** — soft floor still gating Lambertian on flanks. Filed R7.
+- **Round-5 (7/10)** — bodies and contact shadows present. "SHIP after one
+  more fix — soften the apex hotspot." Filed R8.
+- **Round-6 (ship)** — apex hotspots spread across the upper third of each
+  dome via height_bias_exponent 1.6 → 1.2.
+
+### Added — shading pipeline upgrades (closes B1, B3, B4, B5, B6, B7, R1, R2, R3, R4, R5, R6, R7, R8)
+- **`_voronoi_noise(h, w, density=220)`** in `renderer_sem.py` — F2-F1
+  cellular noise for crystalline salt-crystal substrate texture; cached by
+  shape + density.
+- **`_contact_shadow(h, foot_threshold=0.45, base_threshold=0.18)`** —
+  ramp-darkening in the foot-ring band so domes visibly anchor to substrate.
+- **`_sprinkle_pink_variety(rgb, intensity, fraction=0.008)`** — tints
+  ~0.8% of top-quartile-intensity (q92+) pixels toward dusty pink
+  `(0xC8, 0x9A, 0x9A)` for the "Miller-Urey product class" variety read.
+- **`_build_lut(stops, gamma=2.2)`** — gamma-biased LUT mapping so dark
+  substrate sits in stops 0-1 and only dome apices reach the bone-cream
+  stops 4-5.
+- **Non-linear height remap** in `shade_height` — `np.where(h > 0.15,
+  0.15 + (h-0.15)*2.5, h*0.3)` crushes substrate range, stretches dome range.
+- **Soft height_gate on specular only** (`0.25 + 0.75*clip(h*2.5, 0, 1)`) —
+  Lambertian stays full-strength on dome flanks (R7), specular is
+  height-gated so substrate doesn't show specular hotspots.
+- **`AbiogenesisStage1GrayScott.init_state` Poisson-disk scatter** — 6-10
+  random seed patches with min-spacing rejection so the hero frame shows
+  scattered isolated spheres rather than a hex-packed lattice. Degenerate
+  fallback preserved for tiny grids (≤ 9 px wide).
+
+### Changed
+- Default `SemRenderer.specular_hardness` 24 → 12 (widens specular spot,
+  kills the apex horizontal-slash artifact).
+- Default `SemRenderer.height_bias_exponent` 1.6 → 1.2 (spreads height
+  contribution across the upper third of each dome).
+- Default `SemRenderer.substrate_kind` = `"crystalline"`; under that path
+  the substrate texture is `0.5 * voronoi(d=1400) + 0.5 * value_noise(...)`
+  — fine grain on a smooth bed.
+- Default `SemRenderer.pink_variety` = 0.008 (~6-10 visible granules).
+- `Stage1.render_sprites` permanently returns `[]` — depth-shaded substrate
+  is the topography (v4.0.2 / V2 audit verdict, preserved).
+- `tests/test_sem_sprites.py` updated: the Stage 1 sprite-count assertion
+  is replaced with a contract-pin that `render_sprites()` returns `[]`.
+
+### Not changed
+- Engine, rules, science modules — every pixel still traces back to a
+  rule's `render_rgb(state)` output. SEM is purely a rendering choice.
+- 158 / 158 tests still pass; ruff + mypy clean.
+
+### Deferred (subsequent cycles)
+- **B8** — sprite tint + contact-shadow fix for the asset compositing path.
+  Kept disabled for Stage 1; reserved for Stage 0 (which needs SEM-on-
+  discrete-renderer routing — v4.0.6 work).
+- **S7** — sprite libraries for the remaining nine stages (v4.1).
+- **S10** — optional `moderngl` GPU acceleration (v4.2).
+- **S11** — AI image-to-image refinement (v4.3).
+
+### Quality gates (CI)
+- `pytest -q` — **158 / 158 pass** (no test count regression vs v4.0.1).
+- `ruff check` + `ruff format --check` — clean on every v4.0.x source file.
+- `mypy cellauto/renderer_sem.py` — clean.
+- Audit hero shots committed at
+  `docs/generated/audit/post_r8_stage1_warm.png` and `_cool.png`.
+
+---
+
+## [4.0.1] — 2026-05-26
+
+**Phase 2 sprite library** — closes S6 from the v4.0 punchlist. The depth-
+shaded substrate from v4.0.0a1 now carries a stage-specific sprite layer:
+each frame, the active rule's `render_sprites(state)` emits a list of sprite
+positions which `SemRenderer.compose()` alpha-composites over the SEM
+background before the instrument chrome overlay. Lifts Stage 1 (Gray-Scott)
+and Stage 3 (vesicles) to "recognisable biological form" reading per PRD
+§F3. Lifts the prerelease alpha designation; v4.0 is now a full release.
+
+### Added — sprite compositing (closes S6 for stages 1 and 3)
+- **Sprite library architecture** in `cellauto/renderer_sem.py`:
+  `composite_sprites(img, sprites, palette, grid_w, grid_h)` alpha-composites
+  a list of `(sim_x, sim_y, name, scale)` tuples over the depth-shaded
+  background using PIL `alpha_composite`. `load_sprite(name, palette)` opens
+  the asset PNG, tints it to the current palette's mid-tone via
+  `ImageOps.colorize`, and caches by `(name, palette)`. `set_sprite_dir(path)`
+  test hook overrides the asset root.
+- **Sprite assets** at `cellauto/assets/sprites/`:
+  - `stage0/granule.png` (48 px) and `stage0/protocell.png` (96 px)
+  - `stage1/spot.png` (80 px) — bone-cream depth-shaded sphere with
+    upper-left specular highlight
+  - `stage3/vesicle.png` (112 px) — translucent membrane with phospholipid
+    bilayer ring + sheen
+- **Deterministic generator script** at `tools/render_sprites.py`. Re-running
+  the script produces byte-for-byte identical PNGs; sprites are committed
+  alongside the source so installations don't need PIL at import time.
+- **Per-stage `render_sprites()` methods**:
+  - `AbiogenesisStage1GrayScott.render_sprites` — local-maximum filter on the
+    v-field, one bone-cream spot per peak above threshold 0.30, scaled by
+    field magnitude.
+  - `AbiogenesisStage3Vesicles.render_sprites` — connected-component
+    labelling on the membrane mask, one vesicle sprite per centroid, scaled
+    by component area.
+- **App integration.** `App._render` calls `rule.render_sprites(state)` (or
+  the pipeline's `inner_rule.render_sprites(inner_state)`) when the active
+  renderer is `SemRenderer`. Discrete and `FieldRenderer` paths ignore the
+  sprite layer — they remain byte-equivalent to v3.6 / v4.0.0a1.
+- **Tests.** `tests/test_sem_sprites.py` (8 pins): sprite cache + tint round-
+  trip, sprite compose differs from sprite-free, sensible per-stage counts,
+  deterministic output, missing-asset graceful skip, empty-list noop.
+- **Hero shots.** `docs/generated/sem_stage1_sprites_{warm-sepia,cool-mono}.png`,
+  `docs/generated/sem_stage3_sprites.png`, plus the no-sprite baseline
+  `docs/generated/sem_stage3.png`.
+
+### Changed
+- `cellauto-4.0.1` (was 4.0.0a1). The alpha tag is dropped now that Phase 2
+  has shipped; the deferred items (S7, S10, S11) are subsequent cycles
+  rather than pre-release blockers.
+- `SemRenderer.compose(rgb_array, *, sprites=None)` gains the optional
+  `sprites` kwarg. Existing callers that pass no sprites get the v4.0.0a1
+  behaviour byte-for-byte.
+- `SemRenderer.render(rgb_array, sprites=None)` mirrors the new kwarg so the
+  Tk render path stays a thin wrapper around `compose`.
+
+### Not changed
+- Engine, rules, science modules, all 141 v3.6 + 9 v4.0.0a1 SEM tests.
+- `FieldRenderer` (viridis path) — sprite layer is SEM-only. Toggling SEM
+  off still uses the v3.6 viridis pipeline unchanged.
+- The v3.6 web client. Sprite layer is desktop-only in this release.
+
+### Deferred (subsequent cycles, scope unchanged from v4.0.0a1)
+- **S7** — sprite libraries for the remaining nine stages (Phase 3, v4.1).
+- **S10** — optional `moderngl` GPU acceleration (Phase 4, v4.2).
+- **S11** — AI image-to-image refinement (Phase 5, v4.3).
+- **Stage 0 sprites** — `stage0/granule.png` + `stage0/protocell.png` ship
+  in the asset library but are not yet wired, because Stage 0 (the soup
+  rule) runs on `DiscreteRenderer` not `SemRenderer`. Routing SEM-aware
+  rendering through the discrete path is v4.0.2 work.
+
+### Quality gates (CI)
+- `pytest -q` — **158 / 158 pass** (141 v3.6 + 9 SEM renderer + 8 SEM sprites).
+- `ruff check` + `ruff format --check` — clean on all v4.0.x source files.
+- `mypy cellauto/renderer_sem.py cellauto/app.py` — clean.
+- `python -m build --wheel` produces a working
+  `cellauto-4.0.1-py3-none-any.whl`; smoke-installed via
+  `pip install --force-reinstall --no-deps dist/*.whl`.
+
+---
+
+## [4.0.0a1] — 2026-05-25
+
+The **SEM-grade rendering** release, Phase 1 of the v4.0 cycle. The v3.x line
+earned scientific credibility (real Eigen-Schuster ODE, Helfrich bending,
+Miyazawa-Jernigan landscape, pathway-graph LUCA, coupled 12-stage pipeline);
+this release earns scientific **representation** — depth-shaded warm-sepia
+micrograph rendering replaces the viridis heat-map as the default field
+renderer. The simulation engine, constants, dynamics, and tests from v3.6
+are unchanged. The alpha designation reflects the deferred Phase 2 / 3 sprite
+libraries (see "Deferred" below); the rendering pipeline itself is feature-
+complete for Phase 1.
+
+### Added — Phase 1 SEM rendering (closes S1–S5, S8, S9, S12)
+- **`cellauto/renderer_sem.py`** — a depth-shaded numpy rasteriser exposing
+  the same `render(rgb_array)` interface as `FieldRenderer`. The per-stage
+  rule's `render_rgb(state)` output is reinterpreted as a height field;
+  gradients → Lambertian + ambient + specular shading → value-noise
+  micro-texture → sepia/mono LUT → LANCZOS upscale → vignette + crosshair
+  + LIVE SEM FEED badge + scale bar overlay. Same signature as the v3.6
+  renderer, so `app.py` swaps between them with a single attribute flip.
+- **Two palette modes.** `warm-sepia` (default — matches the user-supplied
+  reference SEM micrograph) and `cool-mono` (extends the Catalytic Silence
+  obsidian + bone + teal palette into 3-D shading).
+- **`View ▸ SEM mode` toggle** (default ON when SEM rendering is available)
+  and **`View ▸ SEM palette` submenu** in `cellauto/app.py`. Both fire
+  immediate re-renders without restarting the engine.
+- **Config persistence.** SEM mode + palette persist across launches via
+  `~/.cellauto/config.json`, read/written by `_load_sem_config()` /
+  `_save_sem_config()` in `cellauto/app.py`.
+- **Graceful fallback.** If Pillow lacks LANCZOS or `SemRenderer` cannot
+  initialise, the app falls back to the v3.6 `FieldRenderer` and surfaces
+  a one-time non-blocking toast explaining why. No crashes; the rest of
+  the GUI continues to work.
+- **Reduced-motion integration.** The v3.6 `View ▸ Reduced motion`
+  preference propagates to the LIVE SEM FEED badge pulse — the badge dot
+  freezes when reduced motion is on, satisfying WCAG 2.2.2 / 2.3.3.
+- **Hero shots.** `docs/generated/sem_stage1.png` (warm-sepia) and
+  `docs/generated/sem_stage1_cool-mono.png`. The v3.6 viridis baseline
+  for the same seed and step count is preserved at
+  `docs/generated/viridis_stage1.png` for the README before/after plate.
+- **`tests/test_sem_renderer.py`** — the regression-pin file for S9
+  (≥ 8 SEM pins: non-trivial output per stage, SEM/viridis step-count
+  parity on the same seed, zero-field → near-uniform background, palette
+  persists across init, reduced-motion disables the pulse, PNG export
+  matches the on-screen view, LANCZOS-missing fallback, performance
+  budget).
+
+### Changed
+- The default field renderer for the GUI is now `SemRenderer` (when
+  available). The v3.6 `FieldRenderer` is preserved as the A/B baseline and
+  the fallback — toggle from `View ▸ SEM mode`. Headless `cellauto export`
+  and `cellauto simulate` are unchanged.
+- Version bumped to `4.0.0a1` in `pyproject.toml` and `cellauto/__init__.py`.
+
+### Not changed (and that's the point)
+- Simulation maths, constants, RNG handling, snapshot format, rule
+  registry, pipeline coupling, hypercycle ODE, Helfrich term,
+  Miyazawa-Jernigan landscape, pathway-graph LUCA — all identical to
+  v3.6.0. Every SEM pixel still traces back to a real engine value via
+  the rule's `render_rgb(state)`; the depth shading is interpretive
+  (height-from-luminance), not measurement. See `docs/science.md` for
+  the explicit framing.
+
+### Deferred (to v4.0.1+)
+- **S6, S7 — stage-specific sprite library (Phases 2 + 3).** Each stage's
+  characteristic forms (protocell granules, Gray-Scott spots, vesicle
+  bilayers, …) pre-rendered as alpha PNGs and composited over the shaded
+  background. Phase 1 ships only the height-from-luminance interpretation
+  of the existing `render_rgb` output.
+- **S10 — optional GPU path (Phase 4).** `cellauto[gpu]` extra bringing
+  `moderngl` + a GLSL port of the Phase-1 pipeline. Maintains pixel parity
+  with the CPU path (golden-image regression).
+- **S11 — AI image-to-image refinement (Phase 5).** `tools/sem_refine.py`
+  running SEM output through a fine-tuned diffusion model at strength
+  ≈ 0.35 for hero-shot quality. Opt-in, never the default.
+- **`render_height(state)` per-rule overrides.** v4.0 derives the height
+  field from the luminance of the existing `render_rgb` output; a future
+  release will let stages expose a dedicated height map.
+
+### Quality gates
+- All four v3.6 CI gates still green: ruff, ruff-format, mypy, pytest.
+  The v3.6 test suite (141/141) is unaffected by the SEM additions;
+  the new `tests/test_sem_renderer.py` adds ≥ 8 SEM pins on top.
 
 ---
 
