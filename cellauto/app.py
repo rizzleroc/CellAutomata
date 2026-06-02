@@ -21,6 +21,7 @@ from __future__ import annotations
 
 import ctypes
 import ctypes.wintypes
+import json
 import logging
 import sys
 import tempfile
@@ -33,14 +34,23 @@ from typing import Any
 
 import numpy as np
 
+from cellauto.channel import NarrativeChannel
 from cellauto.engine import Engine
 from cellauto.export import export_gif
+from cellauto.hires import EXPORT_SIZES, export_hires_png
 from cellauto.mascot import AmoebaMascot
 from cellauto.renderer import DiscreteRenderer, FieldRenderer, cmap_viridis
+from cellauto.renderer_sem import (
+    PALETTE_COOL_MONO,
+    PALETTE_WARM_SEPIA,
+    SemRenderer,
+    sem_is_available,
+)
 from cellauto.rules import REGISTRY
 from cellauto.rules.abiogenesis.pipeline import stage_info
 from cellauto.rules.abiogenesis.science import GRAY_SCOTT_PRESETS
 from cellauto.rules.params import PARAM_SPECS, PEARSON_PRESET_RULES, ParamSpec
+from cellauto.sprites import build_sprite_provider
 from cellauto.tutorial import tutorial_for
 
 ASSETS_DIR = Path(__file__).parent / "assets"
@@ -65,6 +75,31 @@ STOP_R = "#7a3036"  # restrained brick — only on stop
 # Window is fixed so iterations never reflow the layout.
 WINDOW_W = 720
 WINDOW_H = 1000
+
+
+# ── v4.0 config (SEM mode preferences) ──────────────────────────────────────
+
+_CONFIG_PATH = Path.home() / ".cellauto" / "config.json"
+
+
+def _load_sem_config() -> dict:
+    """Load persisted v4.0 preferences. Returns an empty dict if absent /
+    unreadable — never raises. The file is best-effort; first launch on a
+    fresh user account just uses defaults (SEM mode ON, warm-sepia).
+    """
+    try:
+        return json.loads(_CONFIG_PATH.read_text(encoding="utf-8"))
+    except Exception:
+        return {}
+
+
+def _save_sem_config(cfg: dict) -> None:
+    """Persist v4.0 preferences. Silently swallows IO errors — never user-visible."""
+    try:
+        _CONFIG_PATH.parent.mkdir(parents=True, exist_ok=True)
+        _CONFIG_PATH.write_text(json.dumps(cfg, indent=2), encoding="utf-8")
+    except Exception:
+        pass
 
 
 # ── Font loading ────────────────────────────────────────────────────────────
@@ -144,14 +179,59 @@ class App(tk.Frame):
         self._status_dot_id: int | None = None  # canvas item id for the pulse dot
         self._status_dot_canvas: tk.Canvas | None = None
 
+        # v4.0 — SEM-grade rendering. Capability-detected at startup; if Pillow
+        # is too old (no LANCZOS) we fall back to FieldRenderer and emit a
+        # one-time toast (S8). Config persists in ~/.cellauto/config.json.
+        self._sem_available, self._sem_unavailable_reason = sem_is_available()
+        cfg = _load_sem_config()
+        self._sem_mode = bool(cfg.get("sem_mode", True)) and self._sem_available
+        self._sem_palette = str(cfg.get("sem_palette", PALETTE_WARM_SEPIA))
+        if self._sem_palette not in (PALETTE_WARM_SEPIA, PALETTE_COOL_MONO):
+            self._sem_palette = PALETTE_WARM_SEPIA
+        self._sem_fallback_toast_pending = bool(cfg.get("sem_mode", True)) and not self._sem_available
+
+        # v4.1 — Channel B (narrative "Day in the Life") + hi-res render scale.
+        # The channel is an additive, toggleable post-compositor over the SEM
+        # frame; render_scale (1/2/3×) supersamples the live canvas. Both persist
+        # in the same config file as the SEM prefs.
+        self._story_enabled = bool(cfg.get("story_enabled", False))
+        self._render_scale = int(cfg.get("render_scale", 1))
+        if self._render_scale not in (1, 2, 3):
+            self._render_scale = 1
+        self._channel = NarrativeChannel(
+            size=CANVAS_SIZE,
+            palette=self._sem_palette,
+            enabled=self._story_enabled,
+            reduced_motion=self._reduced_motion,
+        )
+        # Install generated protagonist body art if any is present on disk;
+        # build_sprite_provider() returns None when the asset dir is empty, so
+        # the channel keeps its fully-procedural body in the shipped build.
+        try:
+            self._channel.set_sprite_provider(build_sprite_provider())
+        except Exception:
+            pass
+
         self._setup_theme()
         self._build_widgets()
         self._build_menu()
         self._apply_window_icon()
-        self._renderer: FieldRenderer | DiscreteRenderer | None = None
+        self._renderer: FieldRenderer | DiscreteRenderer | SemRenderer | None = None
         self._new_engine(rule_name=rule_name, grid_size=grid_size, seed=seed)
         self._anim_frame = 0
         self._animate()
+        # S8 — one-time fallback notice if SEM was requested by config but
+        # unavailable on this platform (e.g. Pillow too old). Scheduled after
+        # widgets exist so the toast strip is ready.
+        if self._sem_fallback_toast_pending:
+            self.master_window.after(
+                250,
+                lambda: self._toast(
+                    f"SEM mode unavailable, using viridis ({self._sem_unavailable_reason})",
+                    kind="warn",
+                ),
+            )
+            self._sem_fallback_toast_pending = False
 
     # ── Theme ───────────────────────────────────────────────────────────────
 
@@ -404,13 +484,64 @@ class App(tk.Frame):
     def _init_renderer(self) -> None:
         kind = getattr(self.engine.rule, "renderer_kind", "discrete")
         w, h = self._state_dims()
-        renderer: FieldRenderer | DiscreteRenderer
-        if kind == "field":
+        renderer: FieldRenderer | DiscreteRenderer | SemRenderer
+        inner = getattr(self.engine.state, "inner_rule", None)
+        sem_eligible = bool(
+            getattr(inner, "sem_eligible", False) or getattr(self.engine.rule, "sem_eligible", False)
+        )
+        if (kind == "field" or sem_eligible) and self._sem_mode and self._sem_available:
+            renderer = SemRenderer(
+                canvas=self.canvas,
+                canvas_size=CANVAS_SIZE,
+                palette=self._sem_palette,
+                reduced_motion=self._reduced_motion,
+                running=self.running,
+                render_size=(self._render_scale * CANVAS_SIZE if self._render_scale > 1 else 0),
+            )
+            self._apply_sem_stage_label(renderer)
+        elif kind == "field":
             renderer = FieldRenderer(canvas=self.canvas, canvas_size=CANVAS_SIZE)
         else:
             renderer = DiscreteRenderer(canvas=self.canvas, canvas_size=CANVAS_SIZE)
         renderer.reset(w, h)
         self._renderer = renderer
+        self._sync_story_channel()
+
+    def _pipeline_len(self) -> int:
+        """Number of stages in the active pipeline (used to map the live stage
+        onto a narrative beat). Plain rules with no pipeline report 12 so the
+        extended day-in-the-life arc is used by default."""
+        classes = getattr(self.engine.rule, "stage_classes", None)
+        if classes is not None:
+            try:
+                return max(1, len(classes))
+            except TypeError:
+                pass
+        return 12
+
+    def _sync_story_channel(self) -> None:
+        """Keep Channel B's enabled-state, palette, reduced-motion and pipeline
+        stage in sync, and install / remove it as the SEM post-compositor. Safe
+        to call whenever the renderer, stage, palette or prefs change."""
+        self._channel.set_enabled(self._story_enabled)
+        self._channel.set_palette(self._sem_palette)
+        self._channel.set_reduced_motion(self._reduced_motion)
+        stage = getattr(self.engine.state, "current_stage", None)
+        self._channel.set_stage(int(stage) if stage is not None else 0, self._pipeline_len())
+        if isinstance(self._renderer, SemRenderer):
+            self._renderer.post_compositor = self._channel.compose if self._story_enabled else None
+
+    def _persist_view_config(self) -> None:
+        """Persist all v4.0/v4.1 view preferences together so writing one key
+        (e.g. palette) never clobbers another (e.g. story toggle)."""
+        _save_sem_config(
+            {
+                "sem_mode": self._sem_mode,
+                "sem_palette": self._sem_palette,
+                "story_enabled": self._story_enabled,
+                "render_scale": self._render_scale,
+            }
+        )
 
     # ── Accessibility ───────────────────────────────────────────────────────
 
@@ -529,8 +660,15 @@ class App(tk.Frame):
         self._wall_principle_var = tk.StringVar(value="")
         self._wall_citation_var = tk.StringVar(value="")
         self._wall_legend_var = tk.StringVar(value="")
-        # Title row — large display style.
-        ttk.Label(body, textvariable=self._wall_title_var, style="StageTitle.TLabel").pack(anchor="w")
+        # Title row — large display style + tiny "?" button (E3) that opens
+        # the "How it works" panel: apparatus, methods, control, expect,
+        # caveats. Until v4.0.6 these fields lived only in docs/science.md
+        # and the user never saw them in the UI.
+        title_row = ttk.Frame(body)
+        title_row.pack(anchor="w", fill="x")
+        ttk.Label(title_row, textvariable=self._wall_title_var, style="StageTitle.TLabel").pack(side="left")
+        self._how_it_works_btn = ttk.Button(title_row, text="?", width=2, command=self._show_how_it_works)
+        self._how_it_works_btn.pack(side="left", padx=(8, 0))
         # Citation row — small mono.
         ttk.Label(body, textvariable=self._wall_citation_var, style="Apparatus.TLabel").pack(
             anchor="w", pady=(2, 6)
@@ -797,6 +935,105 @@ class App(tk.Frame):
         except tk.TclError:
             pass
 
+    def _on_sem_mode_toggle(self) -> None:
+        """v4.0 — toggle between viridis and SEM rendering for field stages.
+
+        Rebuilds the renderer for the active rule. Persists the choice so the
+        preference survives restart. Discrete rules (Conway, Wolfram, Stage 0)
+        keep their DiscreteRenderer regardless of this flag.
+        """
+        if not self._sem_available:
+            self._sem_mode_var.set(False)
+            self._toast(f"SEM mode unavailable: {self._sem_unavailable_reason}", kind="warn")
+            return
+        self._sem_mode = bool(self._sem_mode_var.get())
+        self._persist_view_config()
+        self._init_renderer()
+        self._render()
+        self._sync_stage_caption()
+
+    def _on_sem_palette_change(self) -> None:
+        self._sem_palette = self._sem_palette_var.get()
+        if self._sem_palette not in (PALETTE_WARM_SEPIA, PALETTE_COOL_MONO):
+            self._sem_palette = PALETTE_WARM_SEPIA
+        self._persist_view_config()
+        self._channel.set_palette(self._sem_palette)
+        if isinstance(self._renderer, SemRenderer):
+            self._renderer.set_palette(self._sem_palette)
+            self._render()
+
+    def _apply_sem_stage_label(self, renderer: SemRenderer) -> None:
+        """Initial stage label for a freshly-built SemRenderer."""
+        stage = getattr(self.engine.state, "current_stage", None)
+        if stage is None:
+            renderer.set_stage_label(self.engine.rule.name)
+            return
+        rule = self.engine.rule
+        info = rule.stage_info_for(stage) if hasattr(rule, "stage_info_for") else stage_info(stage)
+        renderer.set_stage_label(f"Stage {stage} — {info.title}")
+
+    def _on_story_toggle(self) -> None:
+        """v4.1 — toggle Channel B, the narrative 'Day in the Life' layer.
+
+        The story layer is additive and reversible: enabling installs it as the
+        SEM post-compositor; disabling removes it and re-renders the untouched
+        SEM frame (Channel A is never altered). Persists across restart. It
+        rides on the SEM micrograph, so it has no effect on discrete renderers.
+        """
+        self._story_enabled = bool(self._story_var.get())
+        self._persist_view_config()
+        self._sync_story_channel()
+        if isinstance(self._renderer, SemRenderer):
+            self._render()
+        elif self._story_enabled:
+            self._toast("Story layer rides on SEM mode — enable SEM mode to see it.", kind="info")
+
+    def _on_render_scale_change(self) -> None:
+        """v4.1 — set the live supersample factor (1/2/3×). The SEM frame is
+        composed at factor×canvas then LANCZOS-downsampled for crisper output.
+        Rebuilds the renderer so the new render_size takes effect."""
+        scale = int(self._render_scale_var.get())
+        if scale not in (1, 2, 3):
+            scale = 1
+        self._render_scale = scale
+        self._persist_view_config()
+        if isinstance(self._renderer, SemRenderer):
+            self._renderer.render_size = scale * CANVAS_SIZE if scale > 1 else 0
+            self._render()
+
+    def _export_hires_png(self) -> None:
+        """v4.1 — export a single composed frame at a chosen hi-res edge length
+        (1080/1440/2160²). Only available in SEM mode; the export is composed
+        through the same SEM + Channel-B path as the live canvas, just larger,
+        so the story overlay (if on) exports crisp at full resolution."""
+        if not isinstance(self._renderer, SemRenderer):
+            self._toast("Hi-res PNG export needs SEM mode — enable it first.", kind="info")
+            return
+        path = filedialog.asksaveasfilename(
+            defaultextension=".png",
+            filetypes=[("PNG", "*.png")],
+            title="Export hi-res PNG",
+            initialfile=f"{self.engine.rule.name}-seed{self.engine.seed}-hires.png",
+        )
+        if not path:
+            return
+        renderer = self._renderer
+        rule = self.engine.rule
+        base_rgb = rule.render_rgb(self.engine.state)
+        # Resolve the desired edge from the menu's largest preset by default; we
+        # offer the standard preset set and pick 1440² as a sensible middle.
+        size = EXPORT_SIZES.get("1440²", 1440)
+        try:
+            export_hires_png(lambda s: renderer.compose_at(base_rgb, s), path, size)
+        except Exception as exc:  # pragma: no cover — IO / PIL surface
+            self._toast(f"Hi-res export failed: {exc}", kind="error")
+            return
+        # The export composed at `size`, leaving the renderer's cached pre-overlay
+        # frame at export resolution; re-render so the live reanimate loop keeps
+        # working at display resolution.
+        self._render()
+        self._toast(f"Hi-res PNG ({size}²) saved to {path}", kind="success")
+
     def _on_reduced_motion_toggle(self) -> None:
         """L6 — apply the reduced-motion preference.
 
@@ -809,6 +1046,11 @@ class App(tk.Frame):
         self._reduced_motion = bool(self._reduced_motion_var.get())
         # Force pulse to idle immediately so the user sees the change.
         self._set_pulse_phase(0.0)
+        # Propagate to the SEM renderer (freezes the badge pulse).
+        if isinstance(self._renderer, SemRenderer):
+            self._renderer.set_reduced_motion(self._reduced_motion)
+        # Propagate to Channel B (freezes the character's own animation clock).
+        self._channel.set_reduced_motion(self._reduced_motion)
         # Cap any in-flight FPS slider down to 10 Hz if currently higher.
         try:
             fps_var = getattr(self, "_fps_var", None)
@@ -1116,6 +1358,7 @@ class App(tk.Frame):
         filemenu.add_command(label="Save snapshot…", command=self._save_snapshot, accelerator="Ctrl+S")
         filemenu.add_separator()
         filemenu.add_command(label="Export frame as PNG…", command=self._export_png)
+        filemenu.add_command(label="Export hi-res PNG…", command=self._export_hires_png)
         filemenu.add_command(label="Export GIF…", command=self._export_gif)
         filemenu.add_command(label="Export stats as CSV…", command=self._export_csv)
         filemenu.add_separator()
@@ -1179,9 +1422,56 @@ class App(tk.Frame):
             variable=self._reduced_motion_var,
             command=self._on_reduced_motion_toggle,
         )
+        # v4.0 — SEM-grade rendering toggle + palette picker (S3).
+        viewmenu.add_separator()
+        self._sem_mode_var = tk.BooleanVar(value=self._sem_mode)
+        viewmenu.add_checkbutton(
+            label="SEM mode (depth-shaded micrograph)",
+            variable=self._sem_mode_var,
+            command=self._on_sem_mode_toggle,
+            state=("normal" if self._sem_available else "disabled"),
+        )
+        self._sem_palette_var = tk.StringVar(value=self._sem_palette)
+        sempalmenu = tk.Menu(viewmenu, tearoff=0)
+        sempalmenu.add_radiobutton(
+            label="Warm sepia",
+            value=PALETTE_WARM_SEPIA,
+            variable=self._sem_palette_var,
+            command=self._on_sem_palette_change,
+        )
+        sempalmenu.add_radiobutton(
+            label="Cool mono",
+            value=PALETTE_COOL_MONO,
+            variable=self._sem_palette_var,
+            command=self._on_sem_palette_change,
+        )
+        viewmenu.add_cascade(label="SEM palette", menu=sempalmenu)
+        # v4.1 — Channel B narrative "Day in the Life" layer + hi-res render
+        # scale. The story layer is an additive post-compositor over the SEM
+        # frame; render scale supersamples the live canvas for crisper output.
+        viewmenu.add_separator()
+        self._story_var = tk.BooleanVar(value=self._story_enabled)
+        viewmenu.add_checkbutton(
+            label="Story · Day in the Life (narrative layer)",
+            variable=self._story_var,
+            command=self._on_story_toggle,
+            state=("normal" if self._sem_available else "disabled"),
+        )
+        self._render_scale_var = tk.IntVar(value=self._render_scale)
+        scalemenu = tk.Menu(viewmenu, tearoff=0)
+        for slabel, factor in (("1× (fast)", 1), ("2× (crisp)", 2), ("3× (max)", 3)):
+            scalemenu.add_radiobutton(
+                label=slabel,
+                value=factor,
+                variable=self._render_scale_var,
+                command=self._on_render_scale_change,
+            )
+        viewmenu.add_cascade(label="Render scale (supersample)", menu=scalemenu)
         menubar.add_cascade(label="View", menu=viewmenu)
 
         helpmenu = tk.Menu(menubar, tearoff=0)
+        helpmenu.add_command(label="How does this stage work?…", command=self._show_how_it_works)
+        helpmenu.add_separator()
         helpmenu.add_command(label="Start tutorial", command=self._tutorial_start)
         helpmenu.add_command(label="Tutorial — all steps…", command=self._tutorial_all_steps)
         helpmenu.add_command(label="Keyboard shortcuts…", command=self._show_keyboard_help)
@@ -1314,6 +1604,131 @@ class App(tk.Frame):
         self._render()
         self._update_status()
 
+    def _show_how_it_works(self) -> None:
+        """v4.0.6 E3 — surface the apparatus / methods / control / expect /
+        caveats prose that already lives in StageInfo (sourced from
+        docs/science.md). Pops a Toplevel dialog so it doesn't compete for
+        space in the fixed-window main UI.
+
+        For the canonical 5-stage pipeline these fields are fully populated.
+        For single-stage rules or for the legacy 12-stage extended pipeline
+        whose StageInfo entries predate v4.0.6, the panel still opens but
+        shows "(not yet documented for this stage — see docs/science.md)"
+        per missing field instead of crashing.
+        """
+        stage = getattr(self.engine.state, "current_stage", None)
+        rule = self.engine.rule
+        info = None
+        if stage is not None and hasattr(rule, "stage_info_for"):
+            info = rule.stage_info_for(stage)
+        elif stage is not None:
+            from cellauto.rules.abiogenesis.pipeline import stage_info as _si
+
+            info = _si(stage)
+        if info is None:
+            self._toast(
+                "How-it-works is documented per pipeline stage. Switch to abiogenesis-pipeline to see it.",
+                kind="info",
+            )
+            return
+
+        dlg = tk.Toplevel(self.master_window)
+        dlg.title(f"How it works — Stage {info.index} · {info.title}")
+        dlg.configure(background=BG)
+        dlg.geometry("800x680")
+        try:
+            dlg.transient(self.master_window)
+        except tk.TclError:
+            pass
+
+        outer = ttk.Frame(dlg, padding=18)
+        outer.pack(fill="both", expand=True)
+        ttk.Label(outer, text=f"STAGE {info.index} · {info.title}", style="Title.TLabel").pack(anchor="w")
+        ttk.Label(outer, text=info.citation, style="Apparatus.TLabel").pack(anchor="w", pady=(2, 12))
+
+        # v4.0.7 E1/E2 — embed the apparatus diagram side-by-side with the
+        # matching control-experiment diagram. Both are procedural PIL renders
+        # (Miller-Urey flask, Gray-Scott reactor, RAF vessel, etc.) keyed on the
+        # effective rule name, with index fallback. Falls back gracefully when
+        # the stage is outside the canonical set.
+        try:
+            from cellauto.diagrams import render_apparatus, render_control
+
+            inner = getattr(self.engine.state, "inner_rule", None)
+            rule_name = getattr(inner, "name", None) or getattr(self.engine.rule, "name", None)
+            # Render at the diagrams' native design resolution (640×320), where
+            # the typeset labels fit without clipping, then downscale the IMAGE
+            # into the embed box (see _embed_diagram). Rendering directly at the
+            # smaller embed width clipped fixed-position text — the diagrams
+            # don't reflow — so we supersample-and-shrink instead.
+            _NW, _NH = 640, 320
+            exp_img = render_apparatus(info.index, width=_NW, height=_NH, rule_name=rule_name)
+            ctrl_img = render_control(info.index, width=_NW, height=_NH, rule_name=rule_name)
+        except Exception:
+            exp_img = ctrl_img = None
+
+        # Embed box for each diagram (the 2:1 native render is downscaled to fit
+        # this, preserving aspect → 360×180). Two side-by-side fit the dialog.
+        _EMB = (360, 180)
+
+        def _embed_diagram(parent: ttk.Frame, pil_img: object, attr: str, caption: str) -> None:
+            if pil_img is None:
+                return
+            from PIL import Image as _PILImage
+
+            col = ttk.Frame(parent)
+            col.pack(side="left", padx=(0, 10))
+            ttk.Label(col, text=caption, style="Eyebrow.TLabel").pack(anchor="w")
+            img = pil_img.convert("RGB")  # type: ignore[attr-defined]
+            img.thumbnail(_EMB, _PILImage.Resampling.LANCZOS)
+            w_d, h_d = img.size
+            ppm_header = f"P6\n{w_d} {h_d}\n255\n".encode("ascii")
+            body_bytes = img.tobytes()
+            photo = tk.PhotoImage(width=w_d, height=h_d, data=ppm_header + body_bytes, format="PPM")
+            # Keep a ref on the dialog so Tk doesn't GC the image.
+            setattr(dlg, attr, photo)
+            tk.Label(col, image=photo, background=BG, borderwidth=0).pack(anchor="w")
+
+        if exp_img is not None or ctrl_img is not None:
+            ab_row = ttk.Frame(outer)
+            ab_row.pack(anchor="w", pady=(0, 12))
+            _embed_diagram(ab_row, exp_img, "_apparatus_photo", "EXPERIMENT")
+            _embed_diagram(ab_row, ctrl_img, "_control_photo", "CONTROL")
+
+        # Scrollable body so long methods/caveats don't get clipped.
+        canvas = tk.Canvas(outer, background=BG, highlightthickness=0, bd=0)
+        scrollbar = ttk.Scrollbar(outer, orient="vertical", command=canvas.yview)
+        body = ttk.Frame(canvas)
+        body.bind("<Configure>", lambda _e: canvas.configure(scrollregion=canvas.bbox("all")))
+        canvas.create_window((0, 0), window=body, anchor="nw")
+        canvas.configure(yscrollcommand=scrollbar.set)
+        canvas.pack(side="left", fill="both", expand=True)
+        scrollbar.pack(side="right", fill="y")
+
+        sections = (
+            ("APPARATUS", "what physical setup we're modelling", info.apparatus),
+            ("METHODS", "how the engine step maps to the experiment", info.methods),
+            ("CONTROL", "what the null / control experiment looks like", info.control),
+            ("EXPECT TO SEE", "the visual signature of success / failure", info.expect),
+            ("HONEST LIMITATIONS", "what this ISN'T", info.caveats),
+            ("CONSUMES FROM PREVIOUS STAGE", "", info.consumes),
+            ("PRODUCES FOR NEXT STAGE", "", info.produces),
+        )
+        missing = "(not yet documented for this stage — see docs/science.md)"
+        for header, subhead, prose in sections:
+            ttk.Label(body, text=header, style="Section.TLabel").pack(anchor="w", pady=(10, 0))
+            if subhead:
+                ttk.Label(body, text=subhead, style="Eyebrow.TLabel").pack(anchor="w")
+            ttk.Label(
+                body,
+                text=prose or missing,
+                style="Caption.TLabel",
+                wraplength=640,
+                justify="left",
+            ).pack(anchor="w", pady=(4, 0))
+
+        ttk.Button(outer, text="CLOSE", command=dlg.destroy).pack(pady=(16, 0))
+
     def _show_keyboard_help(self) -> None:
         dlg = tk.Toplevel(self.master_window)
         dlg.title("Keyboard shortcuts")
@@ -1356,7 +1771,7 @@ class App(tk.Frame):
     def _step_once(self) -> None:
         self.engine.step()
         expected_kind = getattr(self.engine.rule, "renderer_kind", "discrete")
-        current_kind = "field" if isinstance(self._renderer, FieldRenderer) else "discrete"
+        current_kind = "field" if isinstance(self._renderer, (FieldRenderer, SemRenderer)) else "discrete"
         if expected_kind != current_kind:
             self._init_renderer()
         self._render()
@@ -1446,6 +1861,8 @@ class App(tk.Frame):
         self.stop_button.configure(state="normal")
         if hasattr(self, "mascot"):
             self.mascot.set_happy(True)
+        if isinstance(self._renderer, SemRenderer):
+            self._renderer.set_running(True)
         self._loop()
 
     def _stop(self) -> None:
@@ -1455,6 +1872,8 @@ class App(tk.Frame):
         self.stop_button.configure(state="disabled")
         if hasattr(self, "mascot"):
             self.mascot.set_happy(False)
+        if isinstance(self._renderer, SemRenderer):
+            self._renderer.set_running(False)
 
     def _loop(self) -> None:
         if not self.running:
@@ -1509,6 +1928,15 @@ class App(tk.Frame):
                 renderer.animate(self._anim_frame)
             except tk.TclError:
                 pass  # don't return — we still need to reschedule the next tick
+        # v4.1 — Channel B runs on its OWN ~20 Hz clock, independent of the sim
+        # step loop: advance it and cheaply re-blit the cached SEM frame so the
+        # protagonist breathes/types even while the simulation is paused.
+        if self._story_enabled and not self._reduced_motion and isinstance(renderer, SemRenderer):
+            self._channel.tick(0.05)
+            try:
+                renderer.reanimate_overlay()
+            except tk.TclError:
+                pass
         # L8 + L9 — drive both playback pulses from this same tick.
         self._tick_playback_pulse()
         try:
@@ -1586,14 +2014,32 @@ class App(tk.Frame):
 
     def _show_chapter_card(self, stage: int, info: Any) -> None:
         """Display a brief title/principle overlay on the canvas when a new
-        stage begins. Fades automatically via the `_animate` countdown."""
+        stage begins. Fades automatically via the `_animate` countdown.
+
+        v4.0.6 E4 — chapter card now carries the connected-narrative line
+        when StageInfo has `consumes` / `produces` populated, so entering
+        Stage III tells you what Stage II handed off and what III hands
+        forward. Falls back to principle-only for stages where the
+        connective tissue isn't populated yet.
+        """
         try:
             self.canvas.delete("chapter_card")
         except tk.TclError:
             return
         cx = CANVAS_SIZE // 2
         cy = CANVAS_SIZE // 2
-        w, h = 460, 170
+        # E4 — taller card when the narrative line is present so prose
+        # doesn't compete with the citation footer.
+        narrative = ""
+        consumes = getattr(info, "consumes", "")
+        produces = getattr(info, "produces", "")
+        if consumes and produces:
+            narrative = f"From last stage: {consumes}  →  Now: {produces}"
+        elif produces:
+            narrative = f"This stage produces: {produces}"
+        elif consumes:
+            narrative = f"From last stage: {consumes}"
+        w, h = (520, 220) if narrative else (460, 170)
         x0, y0 = cx - w // 2, cy - h // 2
         x1, y1 = cx + w // 2, cy + h // 2
         # Dimmed plate so the card reads on top of any field background.
@@ -1629,6 +2075,18 @@ class App(tk.Frame):
             text=info.principle,
             tags="chapter_card",
         )
+        if narrative:
+            self.canvas.create_text(
+                cx,
+                y0 + 142,
+                anchor="n",
+                fill=TEXT_DIM,
+                font=self._font_eyebrow,
+                width=w - 32,
+                justify="center",
+                text=narrative,
+                tags="chapter_card",
+            )
         self.canvas.create_text(
             cx,
             y1 - 18,
@@ -1732,31 +2190,12 @@ class App(tk.Frame):
                 writer.writerow(row)
         log.info("exported %d stat samples to %s", len(self._stats_history), path)
 
-    def _onscreen_field_rgb(self):
-        """The exact RGB array the live canvas is showing for a field rule —
-        the SEM 'live feed' plate when the active (inner) rule exposes
-        ``render_sem`` (Stage XIII), else ``render_rgb``. Used by PNG/GIF/
-        snapshot export so exports are WYSIWYG, not a different viridis render.
-        Returns None for non-field rules."""
-        rule = self.engine.rule
-        state = self.engine.state
-        if getattr(rule, "renderer_kind", "discrete") != "field":
-            return None
-        active_rule = getattr(state, "inner_rule", None) or rule
-        active_state = getattr(state, "inner_state", None)
-        active_state = active_state if active_state is not None else state
-        if hasattr(active_rule, "render_sem"):
-            return active_rule.render_sem(
-                active_state, CANVAS_SIZE, CANVAS_SIZE, phase=float(self.engine.step_count)
-            )
-        return rule.render_rgb(state)
-
     def _export_png(self) -> None:
         """Export the current frame as a PNG at the canvas resolution.
 
-        WYSIWYG: a field rule exports the exact frame on screen (the SEM plate
-        for Stage XIII, else ``render_rgb``); discrete rules rasterise via
-        ``render_cell`` per grid cell (oval cells drawn as inscribed circles)."""
+        Field rules render through ``render_rgb`` already; for discrete rules we
+        rasterise via ``render_cell`` per grid cell (oval cells are drawn as
+        filled circles inscribed in their cell)."""
         path = filedialog.asksaveasfilename(
             defaultextension=".png", filetypes=[("PNG", "*.png")], title="Export frame as PNG"
         )
@@ -1767,10 +2206,8 @@ class App(tk.Frame):
         rule = self.engine.rule
         kind = getattr(rule, "renderer_kind", "discrete")
         if kind == "field":
-            arr = self._onscreen_field_rgb()
-            img = Image.fromarray(arr, "RGB")
-            if img.size != (CANVAS_SIZE, CANVAS_SIZE):
-                img = img.resize((CANVAS_SIZE, CANVAS_SIZE), Image.Resampling.NEAREST)
+            arr = rule.render_rgb(self.engine.state)
+            img = Image.fromarray(arr, "RGB").resize((CANVAS_SIZE, CANVAS_SIZE), Image.Resampling.NEAREST)
         else:
             w, h = self._state_dims()
             cw, ch = CANVAS_SIZE / w, CANVAS_SIZE / h
@@ -1872,11 +2309,9 @@ class App(tk.Frame):
         rule = self.engine.rule
         kind = getattr(rule, "renderer_kind", "discrete")
         if kind == "field":
-            # WYSIWYG: capture the on-screen frame (SEM plate for Stage XIII),
-            # so a recorded GIF matches what the user is watching.
             return {
                 "kind": "field",
-                "rgb": self._onscreen_field_rgb().tolist(),
+                "rgb": rule.render_rgb(self.engine.state).tolist(),
                 "canvas_size": CANVAS_SIZE,
             }
         w, h = self._state_dims()
@@ -2055,23 +2490,12 @@ class App(tk.Frame):
         Works for both the direct stage rule and the pipeline at stage 4."""
         state = self.engine.state
         sel = getattr(state, "inner_state", None) or state
-        w, h = self._state_dims()
-        gx = event.x / max(1.0, CANVAS_SIZE / w)
-        gy = event.y / max(1.0, CANVAS_SIZE / h)
-
-        # Stage XIII — digital life: resolve the live rule + state across both
-        # the direct-rule case and the extended-pipeline case (inner_rule /
-        # inner_state), mirroring how _open_network_view discovers its inner.
-        rule = getattr(state, "inner_rule", None) or self.engine.rule
-        if hasattr(rule, "organism_at"):
-            org = rule.organism_at(sel, int(gx), int(gy))
-            if org is not None:
-                self._show_organism_inspector(rule, sel, org)
-                return
-
         cells = getattr(sel, "cells", None)
         if not cells:
             return
+        w, h = self._state_dims()
+        gx = event.x / max(1.0, CANVAS_SIZE / w)
+        gy = event.y / max(1.0, CANVAS_SIZE / h)
         for i, c in enumerate(cells):
             if not getattr(c, "alive", True):
                 continue
@@ -2120,86 +2544,6 @@ class App(tk.Frame):
                 "Fitness is the hypercycle-flavoured cyclic coupling "
                 "Σ g[i]·g[(i+1) mod n] — zero if any species is missing, "
                 "maximal at equal concentrations."
-            ),
-        ).pack(anchor="w", pady=(10, 0))
-
-    def _show_organism_inspector(self, rule: Any, state: Any, org: Any) -> None:
-        """Toplevel detail panel for one Stage XIII digital organism — surfaces
-        its genome (as a strip of virtual-CPU opcodes with the executing token
-        marked), energy, instruction pointer, and surviving ancestry, so a
-        learner can watch an evolved program run and see where it came from."""
-        from cellauto.rules.abiogenesis.life_vm import OPCODES
-
-        dlg = tk.Toplevel(self.master_window)
-        dlg.title(f"Organism #{org.oid}")
-        dlg.configure(background=BG)
-        dlg.transient(self.master_window)
-        body = ttk.Frame(dlg, padding=(22, 18))
-        body.pack(fill="both", expand=True)
-        ttk.Label(body, text=f"DIGITAL ORGANISM  ·  #{org.oid}", style="Eyebrow.TLabel").pack(anchor="w")
-
-        def row(label: str, value: str) -> None:
-            r = ttk.Frame(body)
-            r.pack(fill="x", pady=(6, 0))
-            ttk.Label(r, text=label, style="Apparatus.TLabel", width=14).pack(side="left")
-            ttk.Label(r, text=value, style="Value.TLabel").pack(side="left")
-
-        glen = max(1, len(org.genome))
-        ip_idx = org.ip % glen
-        cur_op = OPCODES[org.current_instruction()]
-        row("position", f"({org.x}, {org.y})")
-        row("energy", f"{float(org.energy):.1f}")
-        row("age", f"{org.age} steps")
-        row("lineage", f"#{org.lineage}")
-        row("divisions", f"{org.n_divisions}")
-        row("instr. pointer", f"{ip_idx}")
-        row("current instr.", cur_op)
-
-        ttk.Label(body, text="genome", style="Apparatus.TLabel").pack(anchor="w", pady=(8, 0))
-        ttk.Label(
-            body,
-            text=f"▶ now: {cur_op} (ip {ip_idx}/{glen})",
-            style="Value.TLabel",
-        ).pack(anchor="w")
-        tokens = []
-        for i, g in enumerate(org.genome):
-            name = OPCODES[int(g) % len(OPCODES)]
-            tokens.append(f"[{name}]" if i == ip_idx else name)
-        ttk.Label(
-            body,
-            text="  ".join(tokens),
-            style="Value.TLabel",
-            wraplength=440,
-            justify="left",
-        ).pack(anchor="w")
-
-        ttk.Label(body, text="ancestry", style="Apparatus.TLabel").pack(anchor="w", pady=(8, 0))
-        chain = rule.ancestry(state, org)
-        ancestry_txt = "  ←  ".join(f"#{oid}" for oid in chain)
-        tail = state.organisms.get(chain[-1]) if chain else None
-        if tail is not None and getattr(tail, "parent", None) is None:
-            ancestry_txt += "  (founder)"
-        ttk.Label(
-            body,
-            text=ancestry_txt or f"#{org.oid}  (founder)",
-            style="Value.TLabel",
-            wraplength=440,
-            justify="left",
-        ).pack(anchor="w")
-
-        ttk.Label(
-            body,
-            style="Caption.TLabel",
-            wraplength=440,
-            justify="left",
-            text=(
-                "Each token is one virtual-CPU instruction; the organism "
-                "executes one instruction per step, advancing the pointer. "
-                "Energy is spent per instruction and gained by INGEST; at the "
-                "energy threshold the organism divides, copying its genome with "
-                "per-instruction mutation. Lineage is the id of its founding "
-                "ancestor — the ancestry chain follows surviving parents back "
-                "toward that founder."
             ),
         ).pack(anchor="w", pady=(10, 0))
 
@@ -2341,26 +2685,28 @@ class App(tk.Frame):
 
     def _render(self) -> None:
         rule = self.engine.rule
-        state = self.engine.state
         kind = getattr(rule, "renderer_kind", "discrete")
-        if kind == "field" and isinstance(self._renderer, FieldRenderer):
-            # Stage XIII renders as the "LIVE SEM FEED · 400×" microscopy plate
-            # at canvas resolution. Resolve the pipeline's inner rule/state so
-            # this fires both for the standalone life rule and the pipeline at
-            # its final stage. The FieldRenderer auto-scales the full-res frame.
-            active_rule = getattr(state, "inner_rule", None) or rule
-            active_state = getattr(state, "inner_state", None)
-            active_state = active_state if active_state is not None else state
-            if hasattr(active_rule, "render_sem"):
-                # step_count drives the membrane wobble / cilia beat / gut churn
-                # so the SEM feed is visibly alive frame-to-frame.
-                frame = active_rule.render_sem(
-                    active_state, CANVAS_SIZE, CANVAS_SIZE, phase=float(self.engine.step_count)
-                )
-                self._renderer.render(frame)
-            else:
-                self._renderer.render(rule.render_rgb(state))
-        elif isinstance(self._renderer, DiscreteRenderer):
+        inner = getattr(self.engine.state, "inner_rule", None)
+        sem_eligible = bool(getattr(inner, "sem_eligible", False) or getattr(rule, "sem_eligible", False))
+        want_sem = self._sem_mode and self._sem_available and (kind == "field" or sem_eligible)
+
+        if want_sem and not isinstance(self._renderer, SemRenderer):
+            self._init_renderer()
+            self._render()
+            return
+        if isinstance(self._renderer, SemRenderer):
+            sprites = None
+            sprite_source = inner if inner is not None else rule
+            sprite_state = getattr(self.engine.state, "inner_state", self.engine.state)
+            if sprite_source is not None and hasattr(sprite_source, "render_sprites"):
+                try:
+                    sprites = sprite_source.render_sprites(sprite_state)
+                except Exception:
+                    sprites = None
+            self._renderer.render(rule.render_rgb(self.engine.state), sprites=sprites)
+        elif kind == "field" and isinstance(self._renderer, FieldRenderer):
+            self._renderer.render(rule.render_rgb(self.engine.state))
+        elif isinstance(self._renderer, DiscreteRenderer) and not want_sem:
             self._renderer.render(lambda x, y: rule.render_cell(self.engine.state, x, y))
         else:
             self._init_renderer()
@@ -2498,6 +2844,11 @@ class App(tk.Frame):
             tags="stage_overlay",
         )
         self.canvas.tag_raise("stage_overlay")
+        # Keep the SEM badge text in sync with the active stage.
+        if isinstance(self._renderer, SemRenderer):
+            self._renderer.set_stage_label(f"Stage {stage} — {info.title}")
+        # Keep Channel B's narration pointed at the same pipeline stage.
+        self._channel.set_stage(int(stage), self._pipeline_len())
         # On entering a new stage, announce it in the marginalia and stop any
         # in-progress manual tutorial walk so the chapter intro is visible.
         if stage != getattr(self, "_displayed_stage", None):

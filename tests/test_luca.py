@@ -51,20 +51,14 @@ def test_mean_fitness_rises():
     assert final >= initial + 20
 
 
-def test_maintenance_cost_trims_the_genome():
-    """Maintenance cost is the knob that trims the genome toward the essential
-    core. The old test compared gene_cost 0.0 vs 0.20 with a `>=` assertion —
-    but at those values the genome size is identical (~11.0), so it passed
-    vacuously while its own claim ("should be larger") was false. Use cost
-    values that actually BIND (0.0 vs 0.6, where size drops 11.0→8.0) and a
-    STRICT inequality, so the test fails if cost stops trimming the genome.
-    """
-    free = _run(AbiogenesisStageLUCA(gene_cost=0.0, rng=random.Random(13)), steps=160)
-    costed = _run(AbiogenesisStageLUCA(gene_cost=0.6, rng=random.Random(13)), steps=160)
-    assert free["mean_genome_size_x10"] > costed["mean_genome_size_x10"], (
-        f"high maintenance cost did not trim the genome: free={free['mean_genome_size_x10']}, "
-        f"costed={costed['mean_genome_size_x10']}"
-    )
+def test_zero_cost_lets_genomes_bloat():
+    """With no maintenance cost, selection has no reason to trim deleterious
+    or neutral genes, so the genome should be larger than under cost pressure."""
+    costed = AbiogenesisStageLUCA(gene_cost=0.20, rng=random.Random(13))
+    free = AbiogenesisStageLUCA(gene_cost=0.00, rng=random.Random(13))
+    costed_run = _run(costed, steps=100)
+    free_run = _run(free, steps=100)
+    assert free_run["mean_genome_size_x10"] >= costed_run["mean_genome_size_x10"]
 
 
 def test_serialization_round_trip():

@@ -89,11 +89,39 @@ class AbiogenesisStage1GrayScott:
             if v is None:
                 v = np.zeros((height, width), dtype=np.float32)
         else:
+            # v4.0.4 B1 — sparse Poisson-disk scatter of 6-10 seed patches so
+            # the hero frame shows scattered isolated spheres rather than a
+            # hex-packed lattice at carrying capacity. The single-central-patch
+            # legacy behaviour saturated the domain by ~step 600 and made the
+            # Gray-Scott Stage 1 SEM look tiled. Deterministic via self.rng.
             v = np.zeros((height, width), dtype=np.float32)
-            cx, cy = width // 2, height // 2
-            r = max(2, min(width, height) // 16)
-            u[cy - r : cy + r, cx - r : cx + r] = 0.5
-            v[cy - r : cy + r, cx - r : cx + r] = 0.25
+            margin = max(4, min(width, height) // 12)
+            # For tiny grids (where 2*margin would exceed the dimensions),
+            # fall through to the degenerate single-patch fallback so we
+            # never hit an empty-range randint.
+            placed: list[tuple[int, int]] = []
+            if width > 2 * margin + 1 and height > 2 * margin + 1:
+                min_spacing = max(8, min(width, height) // 6)
+                target = self.rng.randint(6, 10)
+                attempts = 0
+                while len(placed) < target and attempts < 400:
+                    attempts += 1
+                    cx = self.rng.randint(margin, width - margin - 1)
+                    cy = self.rng.randint(margin, height - margin - 1)
+                    if all((cx - px) ** 2 + (cy - py) ** 2 >= min_spacing**2 for px, py in placed):
+                        placed.append((cx, cy))
+                for cx, cy in placed:
+                    r = self.rng.randint(2, max(3, min(width, height) // 14))
+                    seed_v = self.rng.uniform(0.20, 0.45)
+                    u[cy - r : cy + r, cx - r : cx + r] = 0.5
+                    v[cy - r : cy + r, cx - r : cx + r] = seed_v
+            if not placed:
+                # Degenerate fallback (tiny grid): retain the legacy single-patch
+                # behaviour so we never ship with v = 0 everywhere.
+                cx, cy = width // 2, height // 2
+                r = max(2, min(width, height) // 16)
+                u[cy - r : cy + r, cx - r : cx + r] = 0.5
+                v[cy - r : cy + r, cx - r : cx + r] = 0.25
         # Small random noise so symmetric initial conditions break (and so a
         # uniform seed field still has the variability the PDE needs to grow
         # interesting structure).
@@ -129,6 +157,57 @@ class AbiogenesisStage1GrayScott:
     def render_rgb(self, state: GrayScottState) -> np.ndarray:
         # Map v concentration through viridis — produces a published-paper-style image.
         return cmap_viridis(state.v)
+
+    def render_sprites(self, state: GrayScottState) -> list:
+        """v4.0.2 — disabled. The v4.0.1 audit (whipgen-claude critique, see
+        ROADMAP §6a) found that the sprite layer FOUGHT the depth-shaded
+        substrate: spots became "ball bearings in egg cups" because the
+        substrate was rendering peaks as craters AND the sprites superimposed
+        discrete spheres on top. v4.0.2 flips the substrate light direction
+        so peaks read as raised domes, and drops the sprite layer for
+        Stage 1 — the continuous Gray-Scott concentration field IS the
+        topography. Method kept (returns []) so the app's optional dispatch
+        stays a no-op; the previous logic is preserved below as `_v401_sprites`
+        for the historical record.
+        """
+        return []
+
+    def _v401_sprites(self, state: GrayScottState) -> list:
+        """Historical: the v4.0.1 sprite-emitter that the v4.0.2 audit
+        retired. Kept for reference and for any future re-experimentation."""
+        v = state.v
+        if v.size == 0:
+            return []
+        h, w = v.shape
+        threshold = 0.30
+        # Cheap 3×3 local-maximum filter via numpy roll — no scipy dep.
+        peaks = (v >= threshold) & (
+            v
+            == np.maximum.reduce(
+                [
+                    v,
+                    np.roll(v, 1, 0),
+                    np.roll(v, -1, 0),
+                    np.roll(v, 1, 1),
+                    np.roll(v, -1, 1),
+                    np.roll(np.roll(v, 1, 0), 1, 1),
+                    np.roll(np.roll(v, 1, 0), -1, 1),
+                    np.roll(np.roll(v, -1, 0), 1, 1),
+                    np.roll(np.roll(v, -1, 0), -1, 1),
+                ]
+            )
+        )
+        ys, xs = np.nonzero(peaks)
+        # Scale per-spot by the v-field magnitude so younger spots are smaller.
+        # Map to the canvas via the sprite library's 80px native size.
+        canonical = 80.0  # spot.png native dimension in px
+        # Target spot footprint: ~5 sim cells wide on the canvas so spots read
+        # as raised protocell-sized blobs above the depth-shaded substrate.
+        scale_base = 5.0 * (720.0 / max(w, h)) / canonical
+        return [
+            (int(x), int(y), "stage1/spot.png", float(scale_base * (0.8 + 0.4 * float(v[y, x]))))
+            for y, x in zip(ys, xs, strict=False)
+        ]
 
     def population(self, state: GrayScottState) -> Mapping[str, int]:
         total = state.v.size

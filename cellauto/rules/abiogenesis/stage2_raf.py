@@ -62,11 +62,6 @@ class AbiogenesisStage2RAF:
     food_fraction: float = 0.4
     food_supply: float = 0.05  # food concentration injected per cell per step
     diffusion_rate: float = 0.05
-    # Faint uncatalysed bootstrap so a cold autocatalytic loop can fire its
-    # first reaction (the CAF caveat); small enough that with no catalyst the
-    # rate is ~2 orders of magnitude below the catalysed rate, so the rendered
-    # dynamics are genuinely catalysis-gated.
-    _BOOTSTRAP: float = 0.05
     rng: random.Random = field(default_factory=random.Random)
 
     def init_state(
@@ -141,30 +136,23 @@ class AbiogenesisStage2RAF:
             new_c[:, :, s] += self.food_supply
             new_c[:, :, s] *= 0.995  # mild outflow to keep totals bounded
 
-        # Reactions. The RAF is a *topological* property (closed + food-
-        # generated, every reaction catalysed). The *dynamics* must honour that
-        # too: a catalysed reaction's rate is proportional to its catalyst's
-        # local concentration, so where the catalyst is absent the reaction
-        # effectively does not run — the on-screen "ignition" is then genuinely
-        # catalysis-gated, not plain bimolecular mass action. A tiny
-        # uncatalysed bootstrap term (``_BOOTSTRAP``) lets a mutually-catalysing
-        # loop fire the first time (the CAF / "constructively autocatalytic"
-        # caveat), without which a cold loop could never start.
-        dt = 0.1
+        # Reactions. We fire the RAF reactions and highlight them as the
+        # self-sustaining core. Note the RAF is a *topological* property of the
+        # network (it is closed and food-generated); dynamic realizability is a
+        # related but distinct notion (a CAF — constructively autocatalytic
+        # set), since a mutually-catalysing pair may need one reaction to fire
+        # uncatalysed first. Our mass-action term keeps a baseline (the 1.0
+        # below) so that bootstrap firing can occur.
         for r in state.raf if state.raf else state.network.reactions:
             a, b = r.reactants
             ca = new_c[:, :, a]
             cb = new_c[:, :, b]
+            # Mass-action rate: r = k * [A] * [B], modulated by catalyst if any.
+            rate = r.rate_constant * ca * cb
             if r.catalyst is not None:
-                # Rate ∝ k·[A]·[B]·[catalyst]; a faint bootstrap so a loop can
-                # ignite, but with [catalyst]=0 the rate is ~0, not k·[A]·[B].
-                cat = new_c[:, :, r.catalyst]
-                rate = r.rate_constant * ca * cb * (self._BOOTSTRAP + 5.0 * cat)
-            else:
-                # An uncatalysed reaction can never belong to a RAF; only
-                # reachable here when no RAF was found and we fall back to the
-                # raw network. Plain mass action then.
-                rate = r.rate_constant * ca * cb
+                rate = rate * (1.0 + 5.0 * new_c[:, :, r.catalyst])
+            # Apply: consume A and B, produce C.
+            dt = 0.1
             delta = np.minimum(rate * dt, np.minimum(ca, cb))
             new_c[:, :, a] -= delta
             new_c[:, :, b] -= delta

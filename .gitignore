@@ -19,8 +19,3 @@ exports/*.png
 audit-*.png
 v32-*.png
 .mcp.json
-.claude/
-
-# Node (web4 runtime verification installs three ephemerally)
-node_modules/
-package-lock.json
