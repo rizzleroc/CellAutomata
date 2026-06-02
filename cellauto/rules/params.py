@@ -124,18 +124,6 @@ PARAM_SPECS: dict[str, list[ParamSpec]] = {
         ParamSpec("death_rate", "death rate", 0.02, 0.30, 0.01),
         ParamSpec("core_prevalence", "core ≥", 0.5, 0.99, 0.01),
     ],
-    "abiogenesis-life": [
-        # The flagship Stage XIII knobs. ε is the copy-error rate (push it past
-        # ε_c ≈ 1/L to watch the error catastrophe); ingest_gain / e_div tune
-        # the metabolic economy; waste_toxicity + substrate_regen shape the
-        # ecology. initial_population reinits the world (founder count).
-        ParamSpec("mutation_rate", "copy error  ε", 0.0, 0.30, 0.005),
-        ParamSpec("ingest_gain", "ingest gain", 5.0, 60.0, 1.0),
-        ParamSpec("e_div", "divide energy", 40.0, 300.0, 5.0),
-        ParamSpec("substrate_regen", "substrate regen", 0.0, 0.20, 0.005),
-        ParamSpec("waste_toxicity", "waste toxicity", 0.0, 0.05, 0.001),
-        ParamSpec("initial_population", "founders", 20, 600, 10, integer=True, reinit=True),
-    ],
     "wolfram1d": [
         # Rule 30 = chaos, 90 = Sierpiński, 110 = Turing-complete (Cook 2004).
         ParamSpec("rule_number", "rule  #", 0, 255, 1, integer=True, reinit=True),

@@ -5,7 +5,7 @@ change, check it against the Feature Inventory: nothing listed there should
 silently disappear. The Punchlist tracks the current work cycle; the Roadmap
 captures what's deliberately deferred.
 
-Last updated: 2026-05-25.
+Last updated: 2026-05-30.
 
 > **v3.5 status:** all G1–G12 punchlist items from the v3.4 gap audit
 > are CLOSED. The 12-stage pipeline is genuinely coupled; Stage XI runs
@@ -19,115 +19,31 @@ Last updated: 2026-05-25.
 > items closed; L2 (tabbed panels) + L10 (background grain) deferred
 > with rationale in §5.
 >
-> **Web track status:** the canonical user-facing client is now
-> **`docs/web3/`** (on branch `origin/claude/zealous-meitner-SrX1L`,
-> not yet merged to `main`). Web3 implements the v4.0 SEM PRD + the
-> v4.1 §F3 bioform sprite-overlay layer + Stage 3 (Helfrich vesicles,
-> B3 from the punchlist). Web3's authoritative punchlist lives at
-> [`docs/web3/PUNCHLIST.md`](web3/PUNCHLIST.md). Root `docs/index.html`
-> redirects `/` → `/web3/`. The earlier `docs/web2/` (Control Round /
-> The Arc Round / production deploy 2026-05-31) is preserved at
-> `/web2/`; the original Gray-Scott-only museum plate at `/web/`.
->
-> **v4.0 status (PROPOSED):** SEM-grade live rendering. See §6 below and
+> **v4.0.0a1 SHIPPED — SEM-grade live rendering, Phase 1.** Eight of
+> twelve S items closed (S1, S2, S3, S4, S5, S8, S9, S12); four
+> deferred to v4.0.1+ (S6, S7 sprite library — Phases 2 + 3; S10
+> optional GPU path — Phase 4; S11 AI image-to-image refinement —
+> Phase 5). The alpha designation reflects the deferred Phase 2 / 3
+> sprite libraries; the rendering pipeline itself is feature-complete
+> for Phase 1. The v3.6 simulation engine, constants, dynamics, and
+> snapshot format are unchanged — every SEM pixel still traces back
+> to a real engine value via `render_rgb(state)`. See §6 below and
 > the full PRD at [PRD_SEM_VISUALIZATION.md](PRD_SEM_VISUALIZATION.md).
-> Twelve S items (S1–S12) span four phases — CPU rasteriser → sprite
-> library → full stage catalogue → optional GPU shader → opt-in AI
-> refinement. The goal is photographic instrument-grade rendering of
-> every frame the engine produces, without changing the underlying
-> simulation. **Web side already half-shipped on web3** — the SEM
-> substrate (sem.js) + sprite overlay (sprites.js) are live; what
-> remains for the desktop side is the Python `SemRenderer` port.
 >
-> **v5.0 status (SHIPPED through Phase 5.1):** LIFE — virtual-CPU
-> digital organisms after LUCA. v5.0.0 through Phase 5.1 has shipped:
-> punchlist items V1–V10 are done (the `abiogenesis-life` Stage XIII
-> rule, energy metabolism, mutation + lineage tracking, viridis + SEM
-> rendering, and the internal-anatomy plate). V11 (ecology, Phase 5.2)
-> and V12 (Tierra shared-memory, Phase 5.4) remain open. See §7 and the
-> full PRD at
-> [PRD_LIFE_DIGITAL_ORGANISMS.md](PRD_LIFE_DIGITAL_ORGANISMS.md).
-> Inspired by the user's 400× Brachionus reference: post-LUCA, the
-> simulator extends into a thirteenth stage where digital organisms
-> with virtual-CPU genomes have **visible internal anatomy**, ingest
-> substrate, excrete waste, divide with mutation, and form lineages.
-> Draws on Tierra, Avida, Polyworld. Twelve V items (V1–V12) span
-> five phases.
-
----
-
-## 0Z. v5.0 brutal-audit punchlist (16-agent fan-out, 2026-06-01)
-
-A 16-agent parallel audit (12 dimensions) + adversarial verification of the
-v5.0 branch against the "scientifically-vetted, AAA, no-vibe-coded-shortcuts"
-bar. 84 findings; 25 severe verified → 22 confirmed, 3 knocked down. The
-verified items and their status:
-
-### Showstoppers
-- [x] **AU1 — Seeded LIFE run not bit-reproducible across save/load.** Lossy
-  `np.round(…,4)` in `stage_life.serialize_state` broke the determinism
-  guarantee. **FIXED**: full-precision serialize; pinned by
-  `test_seeded_run_is_bit_reproducible_across_save_load`.
-- [ ] **AU2 — The entire v5.0 LIFE capability is unmerged; `main` is still
-  v3.6** with no digital life. **OPEN (maintainer action)**: requires merging
-  the v5 branch chain (PR #14 + #16 + this branch) to `main` and tagging
-  v5.0.0. Cannot be closed by a feature branch alone.
-
-### High (confirmed) — FIXED on this branch
-- [x] **AU3 — Version lie** (pyproject/`__version__` 3.6.0 vs docs 5.0.0).
-  Bumped to 5.0.0 + added `tests/test_version_consistency.py` gate.
-- [x] **AU4 — Stage V (RAF) rendered dynamics fired uncatalyzed.** Rate is now
-  ∝ catalyst concentration (+ faint bootstrap); pinned by
-  `test_rendered_dynamics_are_catalysis_gated`.
-- [x] **AU5 — Extended pipeline dropped inner-stage config on save/load.**
-  `pipeline.serialize_state` now persists + reapplies `inner_rule.to_config()`.
-- [x] **AU6 — Stage XIII exports (PNG/GIF) diverged from the on-screen SEM
-  render** (WYSIWYG lie). Added `_onscreen_field_rgb`; PNG/GIF/snapshot now
-  use the same frame the canvas shows.
-- [x] **AU7 — Flagship LIFE stage had no live param sliders** (missing
-  `PARAM_SPECS["abiogenesis-life"]`). Added ε / ingest / e_div / regen /
-  toxicity / founders.
-- [x] **AU8 — `vents.js` claimed a Lane-Martin proton-gradient mechanism it
-  doesn't simulate** (it's an advection-diffusion plume). Prose rewritten to
-  state plainly it's geometry-only; the chemiosmotic model is Python-side.
-- [x] **AU9 — `vesicles.js` claimed to "port" the Python Gray-Scott+biharmonic
-  stage but runs Allen-Cahn.** Header now says "inspired by, not a port of."
-- [x] **AU10 — LUCA "topological invariant emerging from network topology"
-  overclaim.** Reworded: it's a hand-specified pathway-union (epistatic
-  AND-gate); the emergent part is the *recovered* core.
-- [x] **AU11 — Stage VIII VWG innovation-sharing/HGT in docstring, not in
-  code.** Added an honest scope note: convergence is vertical-descent
-  selection, not the VWG HGT mechanism.
-- [x] **AU12 — Selection-enrichment test compared to a null the population
-  never sampled.** Replaced with a head-to-head competition test (ancestor
-  vs random genomes); selection differential is now real.
-- [x] **AU13 — Full-arc handoff test sampled only 2 of 12 transitions.** Now
-  walks every transition and asserts each informative one carries the signal.
-- [x] **AU14 — `test_zero_cost_lets_genomes_bloat` vacuous** (`>=` at
-  non-binding costs). Replaced with binding costs (0.0 vs 0.6) + strict `>`.
-- [x] **AU15 — science.md Stage 4 stale** ("Shannon entropy TOY"); **PRD VM-
-  parity claimed "asserts"** (it's a skip); **PRD SEM phase self-contradiction**;
-  **ROADMAP §1 said 12 stages + contradicted itself on G1/G2/G3.** All
-  corrected in this pass.
-- [ ] **AU16 — Web/JS smoke gate doesn't run on `pull_request`** (only on
-  push to main). **FIXED**: added `pull_request:` to the Pages workflow.
-- [x] **AU17 — Stage XIII round-trip test too weak** to catch the determinism
-  break. Strengthened to assert every field bit-exact + Engine-level
-  save/load == continuous.
-
-### Knocked down by verification (not acted on, or downgraded)
-- **v4.0 SEM "vapor" findings → `low`.** The general cross-stage SEM renderer
-  is genuinely unbuilt, but it is an *honest open roadmap item* (§6 S1–S12 all
-  `[ ]`), not a false claim — provided the docs don't imply it shipped (the
-  PRD/ROADMAP wording contradictions that *did* imply that are fixed under
-  AU15). Building it is the open v4.0 cycle, not an audit defect.
-
-### Deferred (real, non-showstopper, scoped to future cycles)
-- Stage VIII VWG **HGT mechanism** implementation (vs the docstring honesty
-  note shipped now). · Python↔JS **VM bit-parity** test (currently a visible
-  skip). · `life_sem.py` deeper **render unit tests** (one shape test today).
-  · Web triplication **consolidation** (web/web2/web3). · LUCA→LIFE **genome
-  derivation** (coupling is positional-only, disclosed).
+> **v4.1.0 SHIPPED — two-channel render + hi-res.** The render path is now
+> explicitly two-channel: **Channel A** is the unchanged grounded SEM
+> micrograph; **Channel B** (`cellauto/channel.py`) is a new additive,
+> toggleable narrative layer — "A Day in the Life of a Cell" — with a
+> procedural mood-driven protagonist (`cellauto/character.py`), a narration
+> ribbon + day-clock (`cellauto/narrative.py`), a time-of-day grade, and its
+> own animation clock independent of the sim loop. It installs as a pure
+> `SemRenderer.post_compositor`, so Channel A is never altered and the layer is
+> fully reversible (`View ▸ Story · Day in the Life`). Hi-res
+> (`cellauto/hires.py`) decouples render from display resolution:
+> `View ▸ Render scale` supersamples the live canvas 1×/2×/3× and
+> `File ▸ Export hi-res PNG…` writes a composed frame up to 4K. The narrative
+> art bundle + smoke test lives at `tools/render_narrative_art.py`. The
+> simulation engine, constants, and snapshot format remain unchanged.
 
 ---
 
@@ -314,29 +230,26 @@ Every feature below is implemented and expected to keep working. A change that
 removes or breaks one of these is a regression, not a simplification.
 
 ### Simulation science
-- **Thirteen abiogenesis stages**, each an independently runnable rule
-  (verdicts per §0.C — REAL = published dynamics implemented; PARTIAL =
-  scientifically suggestive demonstration). The v3.5 G-cycle closed the
-  former PARTIAL gaps on Stages X/XI/XII; v5.0 added Stage XIII:
+- **Twelve abiogenesis stages**, each an independently runnable rule (verdicts
+  per §0.C — REAL = published dynamics implemented; PARTIAL = scientifically
+  suggestive demonstration):
   - Stage 0 — primordial soup (discrete four-rule mixing/condensation). REAL.
   - Stage I — Gray-Scott reaction-diffusion (forward-Euler, 5-pt Laplacian, CFL-stable). REAL.
   - Stage II — alkaline hydrothermal vent — pH gradient, Nernst PMF (mV), Faraday ΔG (kJ/mol), Wood-Ljungdahl carbon fixation (2 CO₂ + 4 H₂ → acetate). REAL.
   - Stage III — Gray-Scott reaction-diffusion (cont.) (legacy slot used by some pipelines).
   - Stage IV — mineral catalysis on a Na-montmorillonite mask (Ferris-style localisation). REAL.
-  - Stage V — Kauffman autocatalytic sets via the **correct Hordijk-Steel RAF closure**; rendered dynamics are catalysis-gated. REAL.
+  - Stage V — Kauffman autocatalytic sets via the **correct Hordijk-Steel RAF closure**. REAL.
   - Stage VI — Frank-model homochirality (autocatalysis + mutual antagonism). REAL.
   - Stage VII — spatial Eigen quasispecies; threshold ε_c = ln(σ)/L. REAL.
-  - Stage VIII — genetic-code coevolution (Miyazawa-Jernigan folding landscape; selection-driven code convergence by **vertical descent** — NOT VWG innovation-sharing/HGT). PARTIAL — honest scope in docstring; G4 closed the landscape, HGT deferred.
+  - Stage VIII — genetic-code coevolution (toy codon → amino → fixed-target peptide match). PARTIAL — concept only; G4 to deepen.
   - Stage IX — Cahn-Hilliard coacervates (conserved-order-parameter LLPS). REAL.
-  - Stage X — lipid vesicle self-assembly (CMC threshold + **Helfrich biharmonic bending term**, G3 closed). REAL.
-  - Stage XI — protocell selection (**Eigen-Schuster hypercycle replicator ODE**, G2 closed — the "TOY" caveat is gone). REAL.
-  - Stage XII — LUCA distillation (epistatic pathway-coupled fitness; 70 %-prevalence core recovery, G5 closed; essential set is a hand-specified pathway union, recovery is the emergent part). REAL methodology.
-  - Stage XIII — **LIFE: digital organisms** (Tierra/Avida virtual-CPU genomes with **self-encoded replication** — an organism must run its own COPY loop to reproduce; strip COPY and the lineage leaves no offspring). REAL (artificial-life model; energy constants tuned, not biophysical — disclosed).
+  - Stage X — lipid vesicle self-assembly (CMC threshold + connected-component vesicle counting). PARTIAL — threshold gate, no Helfrich curvature dynamics; G3 to deepen.
+  - Stage XI — protocell selection (genome-product fitness proxy gating growth/division/death). PARTIAL — **self-confessed TOY** in docstring; G2 to deepen.
+  - Stage XII — LUCA distillation (gene-presence bitsets; 70 %-prevalence core). PARTIAL — methodology real, landscape hand-shaped; G5 to deepen.
 - **Pipeline rules** — `abiogenesis-pipeline` (5 stages) and
-  `abiogenesis-pipeline-extended` (**13 stages**). The G1 fix (v3.5) makes
-  promotion carry the upstream signal forward into the next stage's init, so
-  the pipeline is a coupled narrative, not isolated runs (pinned by
-  `tests/test_pipeline_handoff.py`, which now checks every transition).
+  `abiogenesis-pipeline-extended` (12 stages). **NB:** until G1 is closed,
+  promotion resets the inner state — the "pipeline" is a sequence of
+  isolated runs, not a coupled narrative.
 - **Reference automata**: Conway's Game of Life, Wolfram 1D (rules 0–255).
 - **Legacy alias** `natural-selection` → Stage 0 (kept for old snapshots/CLI).
 - **Real published data** backing the constants:
@@ -499,7 +412,7 @@ the v3.6+ direction.
 
 ---
 
-## 6. v4.0 — SEM-grade visualization cycle (proposed)
+## 6. v4.0 — SEM-grade visualization cycle (v4.0.0a1 SHIPPED)
 
 Full PRD: **[docs/PRD_SEM_VISUALIZATION.md](PRD_SEM_VISUALIZATION.md)**.
 
@@ -520,42 +433,74 @@ and the v3.6 three-column composition. We get there by adding a new
 toggling between them from `View ▸ SEM mode`. Underlying simulation
 stays unchanged — the win is purely visual.
 
+**v4.0.1 status.** Phases 1 + 2 of the cycle have shipped: S1, S2, S3,
+S4, S5, S6, S8, S9, S12 are closed. The alpha designation has been lifted.
+Phase 1 (v4.0.0a1) delivered `cellauto/renderer_sem.py` as the depth-shaded
+numpy rasteriser with warm-sepia + cool-mono palettes, `View ▸ SEM mode`
+toggle and palette picker, persistence via `~/.cellauto/config.json`, LIVE
+SEM FEED badge / scale bar / vignette / crosshair framing, the Stage 1
+hero pass, Pillow-LANCZOS fallback, regression test pins, and the v4.0
+documentation. Phase 2 (v4.0.1) added the sprite-compositing layer in
+`SemRenderer.compose(..., sprites=...)`, the `load_sprite()` / `set_sprite_dir()`
+helpers, sprite assets at `cellauto/assets/sprites/` (generated by
+`tools/render_sprites.py`), and per-stage `render_sprites()` methods on
+`AbiogenesisStage1GrayScott` (local-max v-field peaks) and
+`AbiogenesisStage3Vesicles` (connected-component centroids).
+158 / 158 tests pass; ruff + mypy clean; the wheel ships sprite assets and
+installs cleanly into a fresh site-packages. Stage 0 sprites are in the
+asset library but not yet wired (Stage 0 runs through `DiscreteRenderer`,
+which is v4.0.2 work). The remaining deferred items (S7 — full 12-stage
+sprite catalogue, S10 — GPU, S11 — AI refinement) are tracked below.
+
 ### Punchlist (open until each phase ships)
 
-- [ ] **S1 — `SemRenderer` core (Phase 1).** New module
+- [x] **S1 — `SemRenderer` core (Phase 1).** New module
   `cellauto/renderer_sem.py` implementing the depth-shaded numpy
   rasteriser: height-field → gradients → normals → Lambertian +
   ambient + specular shading → procedural noise overlay → sepia /
   mono LUT → LANCZOS upscale → vignette + crosshair + scale-bar
   overlay. Same `render(state)` signature as `FieldRenderer` so app.py
   stays agnostic. Target: 20 FPS @ 60×60 grid on CPU.
-- [ ] **S2 — Palette modes.** `warm-sepia` (matches the reference image)
+- [x] **S2 — Palette modes.** `warm-sepia` (matches the reference image)
   and `cool-mono` (extends the existing Catalytic Silence palette into
   3-D shading). Picker under `View ▸ SEM palette`. Both verified
   colourblind-safe via `colorspacious`.
-- [ ] **S3 — `View ▸ SEM mode` toggle.** Checkbox flips between
+- [x] **S3 — `View ▸ SEM mode` toggle.** Checkbox flips between
   viridis (legacy v3.6) and SEM rendering. Persists in the existing
-  config. Both render paths share step counts on the same seed
-  (regression-pinned).
-- [ ] **S4 — Instrument framing.** Centred crosshair reticle (1-px
+  config (`~/.cellauto/config.json` via `_load_sem_config()` /
+  `_save_sem_config()` in `cellauto/app.py`). Both render paths share
+  step counts on the same seed (regression-pinned).
+- [x] **S4 — Instrument framing.** Centred crosshair reticle (1-px
   hairline teal), "LIVE SEM FEED · Stage N — name" microcaps badge
   upper-right, scale-bar microcopy below the canvas, ~10 % corner
-  vignette. Pulse-syncs the badge opacity with the v3.6 playback dot.
-- [ ] **S5 — Stage 1 hero pass.** Tune the height-map derivation +
-  shading parameters until Stage 1 (Gray-Scott) reads as the
-  reference image. This is the *demo gate* for the cycle — if Stage 1
-  doesn't look like an SEM, ship nothing.
-- [ ] **S6 — Sprite library, stages 0 / 1 / 3 (Phase 2).** Each stage's
-  characteristic forms (protocell granules, Gray-Scott spots, vesicle
-  bilayers) pre-rendered as alpha PNGs and composited over the
-  shaded background per the per-stage sim state.
+  vignette. Pulse-syncs the badge opacity with the v3.6 playback dot;
+  reduced-motion mode freezes the pulse.
+- [x] **S5 — Stage 1 hero pass.** Stage 1 (Gray-Scott) under SEM mode
+  reads as the reference image; the hero shots are committed at
+  `docs/generated/sem_stage1.png` (warm-sepia) and
+  `docs/generated/sem_stage1_cool-mono.png`, with the v3.6 viridis
+  baseline at `docs/generated/viridis_stage1.png` for the README
+  before/after plate.
+- [x] **S6 — Sprite library, stages 0 / 1 / 3 (Phase 2).** Sprite
+  compositing wired into `SemRenderer.compose(..., sprites=...)` via the
+  new `load_sprite()` / `composite_sprites()` helpers. Stage 1 (Gray-Scott)
+  and Stage 3 (vesicles) both ship `render_sprites(state)` emitters and
+  hero shots at `docs/generated/sem_stage{1,3}_sprites*.png`. Sprite
+  assets at `cellauto/assets/sprites/{stage0,stage1,stage3}/*.png`,
+  generated deterministically by `tools/render_sprites.py` and shipped in
+  the wheel via `[tool.setuptools.package-data]`. 8 sprite-layer pins in
+  `tests/test_sem_sprites.py`. **Stage 0 sprites** (granule + protocell)
+  are in the library but not yet wired into the app — Stage 0 runs through
+  `DiscreteRenderer`; routing SEM-aware rendering through the discrete
+  path is v4.0.2 work.
 - [ ] **S7 — Full stage catalogue (Phase 3).** Sprite library extended
   to all 12 stages of the extended pipeline. `docs/generated/sem_<stage>.png`
-  committed for each.
-- [ ] **S8 — Graceful fallback (F6).** If Pillow / numpy / Tk capability
-  detection fails, drop to v3.6 viridis rendering with a one-time toast
-  explaining why. No crashes.
-- [ ] **S9 — Regression tests.** ≥ 8 new pins:
+  committed for each. *Deferred to v4.0.1+.* Depends on S6.
+- [x] **S8 — Graceful fallback (F6).** If Pillow / numpy / Tk capability
+  detection fails (notably Pillow without LANCZOS), drop to v3.6 viridis
+  rendering with a one-time toast explaining why. No crashes.
+- [x] **S9 — Regression tests.** `tests/test_sem_renderer.py` ships
+  ≥ 8 SEM pins:
     - SemRenderer produces non-trivial image for each stage
     - SEM and viridis renderers produce same step count on the same seed
     - Zero-field input → near-uniform background
@@ -567,14 +512,113 @@ stays unchanged — the win is purely visual.
 - [ ] **S10 — Optional GPU path (Phase 4).** `cellauto[gpu]` extra
   brings `moderngl`; auto-select if importable. GLSL fragment shader
   port of the Phase-1 pipeline. Maintains exact pixel parity with
-  CPU path (golden-image regression).
+  CPU path (golden-image regression). *Deferred to v4.0.1+.* The
+  Phase-1 CPU rasteriser hits the 20 FPS @ 60×60 budget; GPU is for
+  the larger grids that arrive with the sprite library.
 - [ ] **S11 — Stretch: AI image-to-image refinement (Phase 5).**
   `tools/sem_refine.py` runs SEM output through a fine-tuned diffusion
   model at strength 0.35 for hero-shot quality. `File ▸ Export refined
-  PNG…` menu entry. Slow, opt-in, never the default.
-- [ ] **S12 — Documentation.** README + CHANGELOG carry a before/after
-  comparison image. `docs/science.md` notes that SEM mode is purely a
-  rendering choice; the underlying physics is unchanged.
+  PNG…` menu entry. Slow, opt-in, never the default. *Deferred to
+  v4.0.1+.* Stretch goal — gated on the sprite library landing first
+  so the input to refinement is already representationally faithful.
+- [x] **S12 — Documentation.** README + CHANGELOG carry a before/after
+  comparison plate (`docs/generated/viridis_stage1.png` →
+  `docs/generated/sem_stage1.png` / `sem_stage1_cool-mono.png`).
+  `docs/science.md` carries a new section noting that SEM mode is
+  purely a rendering choice; the underlying physics is unchanged.
+
+## §6a — Brutal-feedback audit findings (v4.0.5)
+
+A multimodal whipgen-claude critique loop (four rounds, fed live SEM
+renders + the renderer source each time) drove twelve concrete deltas.
+All shipped in v4.0.5; reference shots at `docs/generated/audit/`.
+
+- [x] **V1** — flip substrate height-sign so v-peaks render as domes not craters.
+- [x] **V2** — disable the Stage 1 sprite layer (the v4.0.1 sprites read as floating "strange balls" stickers).
+- [x] **V3** — round-1 MCP verification.
+- [x] **B1** — sparsify Stage 1 init_state to Poisson-disk scatter of 6-10 seed patches (was a single central perturbation that tiled to carrying capacity).
+- [x] **B3** — Voronoi (F2-F1 cellular) substrate noise mixed 50/50 with value-noise for fine salt-crystal grain on a smooth bed.
+- [x] **B4** — non-linear height remap (`np.where(h>0.15, 0.15+(h-0.15)*2.5, h*0.3)`) crushes substrate range, stretches dome range.
+- [x] **B5** — `_contact_shadow` ramp-darkening in the foot-ring band (post-R4 thresholds 0.18–0.45) anchors raised features to the substrate.
+- [x] **B6** — `_build_lut(stops, gamma=2.2)` gamma-biased LUT mapping; substrate lands in dark stops 0-1, apices reach bone-cream stops 4-5.
+- [x] **B7** — `_sprinkle_pink_variety` tints ~0.8% of top-quartile (q92+) intensity pixels toward dusty pink for Miller-Urey colour variety.
+- [x] **R5** — `specular_hardness` 24 → 12 widens the specular spot; kills the apex horizontal-slash artifact.
+- [x] **R7** — Lambertian un-gated (only specular is height-gated); restores dome flank body without re-brightening substrate.
+- [x] **R8** — `height_bias_exponent` 1.6 → 1.2 softens the apex hotspot from a hard speck to a curved highlight.
+
+Out of scope for the audit cycle (subsequent versions):
+
+- [x] **B8** — sprite tint + contact-shadow fix for the asset compositing
+  path. **Shipped v4.0.9.** Kept disabled for Stage 1 (depth-shaded substrate
+  alone is the hero — see V2); re-enabled for Stage 0 via `sem_eligible`
+  opt-in + SEM-on-discrete-renderer routing, with a sparse protocell-body +
+  granule-scatter sprite set that avoids the "wall of balls". See §6c.
+- [x] **Stage 3 vesicle audit** — confirmed B1-B8 did NOT regress Stage 3
+  (lipid-bilayer rule). v4.0.8: Stage 3 under SEM mode composes a rich
+  depth-shaded image (variance ≈ 3.7 k, 6.4 k unique colours, 398 membrane
+  cells). Closed as item A4 in §6b.
+
+## §6b — Brutal full-app review (v4.0.8)
+
+A ground-up audit asked the question the user posed: *what is documented as
+complete but only partially built, or just documented?* The dominant finding
+was that the apparatus / "How it works" / connected-narrative feature
+(E1/E3/E4, shipped v4.0.6–v4.0.7) was complete for the canonical 5-stage
+pipeline but **silently degraded for 7 of the 12 stages** of the extended
+pipeline — plus a latent correctness bug in the diagram dispatch. All resolved
+in v4.0.8. 158/158 tests green, ruff + mypy clean.
+
+- [x] **A1 — extended `StageInfo` metadata.** The 7 extended-only entries
+  (`_STAGE_VENT_INFO`, `_STAGE_MINERAL_INFO`, `_STAGE_CHIRALITY_INFO`,
+  `_STAGE_RNA_INFO`, `_STAGE_CODE_INFO`, `_STAGE_COACERVATE_INFO`,
+  `_STAGE_LUCA_INFO`) left all 7 v4.0.6 fields empty, so "How it works" showed
+  "(not yet documented…)" and chapter cards had no narrative line for them.
+  Populated from `docs/science.md`; each `control` keyed to the real knob/stat
+  the rule exposes.
+- [x] **A2 — apparatus dispatch correctness bug.** `render_apparatus(info.index)`
+  collided: extended `StageInfo.index` reuses canonical indices, so the vent
+  (index=1) rendered the Gray-Scott reactor and minerals (index=3) rendered the
+  CMC bilayer. Re-keyed dispatch on each rule's unique `name`
+  (`_RENDERERS_BY_RULE_NAME` now maps all 12 abiogenesis rules);
+  `_show_how_it_works` passes `engine.state.inner_rule.name`. All 12 stages now
+  resolve to the correct diagram.
+- [x] **A3 — 6 missing apparatus diagrams.** Added `render_mineral_clay`,
+  `render_homochirality`, `render_rna_world`, `render_genetic_code`,
+  `render_coacervate`, `render_luca` (Catalytic Silence grammar, control-footer
+  caption, grounded in `docs/science.md`). Reference shots at
+  `docs/generated/audit/apparatus_{minerals,chirality,rna,code,coacervate,luca}.png`.
+- [x] **A4 — Stage 3 vesicle SEM regression check** (closes the deferred §6a
+  Stage 3 audit). No regression — see above.
+
+Confirmed-deferred (documented future work, *not* partial gaps): S7 (full
+12-stage sprite catalogue), S10 (GPU path), S11 (AI refinement). The 5 shared
+canonical `StageInfo` entries keep canonical-neighbour `consumes`/`produces`
+prose; per-pipeline narrative override is a v4.1 nicety. *(E2 and B8, listed
+here as deferred in v4.0.8, were both shipped in v4.0.9 — see §6c.)*
+
+## §6c — Closed the last two deferred punchlist items (v4.0.9)
+
+The two items carried as "confirmed-deferred" in §6b — **E2** and **B8** — are
+both shipped, verified by reading the actual rendered output (not assertions
+alone). 262/262 tests green, ruff + mypy clean.
+
+- [x] **B8 — SEM sprite tint + contact shadow + Stage 0 re-enable.**
+  `load_sprite` ramps sprites through the palette LUT (`black=lut[110]`,
+  `white=lut[250]`) so opaque pixels floor at a mid stop instead of pure black;
+  alpha pulled to 0.9; `composite_sprites` lays a blurred down-right contact
+  shadow. Stage 0 opts into the SEM field renderer (`sem_eligible=True`, gated
+  so the discrete path is byte-identical when SEM is off) and emits a *sparse*
+  sprite set — ≤5 spatially-spread protocell bodies + ≤26 granule specks —
+  fixing the naïve "one sprite per `is_ameba` cell" wall-of-balls (≈90% of the
+  grid is `is_ameba`). Stage 3 vesicles verified unregressed.
+- [x] **E2 — control-experiment A/B view.** `render_control` + 12 null-experiment
+  panels mirror the apparatus diagrams (struck-through driver, null outcome,
+  shared `_control_plate` grammar). "How it works" embeds EXPERIMENT | CONTROL
+  side-by-side. Diagrams are rendered at native 640×320 and image-downscaled
+  into the embed box to avoid clipping non-reflowing text; four renderers that
+  crashed/clipped at narrow widths (`render_rna_world`, `render_coacervate`,
+  `render_homochirality`, `render_genetic_code`) were made size-robust
+  (fractional coords + clamps) with parametrized tests.
 
 ### Out of scope for v4.0
 - Replacing Tk with PyQt / Electron / web-only (the v3.6 audit settled
@@ -593,101 +637,6 @@ See PRD §9. Headlines:
 3. Stage 1 under SEM mode reads as a microscope view, not a screenshot.
 4. Four CI gates green; ≥ 8 new tests.
 5. v4.0 entry in CHANGELOG with a before/after comparison image.
-
----
-
-## 7. v5.0 — LIFE: Digital Organisms (proposed)
-
-Full PRD: **[docs/PRD_LIFE_DIGITAL_ORGANISMS.md](PRD_LIFE_DIGITAL_ORGANISMS.md)**.
-
-### One-line vision
-After LUCA distillation, real digital organisms. Inspired by the
-user-supplied 400× DIC reference of *Brachionus plicatilis* — a living
-rotifer with visible internal motion. A new Stage XIII populates the
-post-LUCA world with **virtual-CPU genomes** that execute instructions,
-ingest substrate, excrete waste, divide, mutate, and form lineages
-under selection. Draws from Tierra (Ray 1991), Avida (Ofria 1999), and
-the broader artificial-life canon.
-
-### Cycle direction
-The v3.x line stopped at the *recipe* for life (LUCA distillation).
-v5.0 walks one step further: from "the lineage that emerged" to "the
-lineages that lived." Every behaviour visible in the rendered organism
-maps to a real instruction or state in the virtual machine — no
-decorative motion. The Brachionus reference is the visual target:
-translucent body wall + visible internal compartments + cytoplasmic
-shimmer at instruction-execution rate.
-
-### Punchlist (V1–V10 shipped through Phase 5.1; V11–V12 open)
-
-- [x] **V1 — Virtual CPU + opcode set.** ~20 opcodes (load, store,
-  add, jump, copy, ingest, excrete, sense, move, …); ≤ 512-instruction
-  genome cap. Tierra-derived, Avida-flavoured. Per-organism private
-  memory (Tierra-shared variant comes later in V11).
-- [x] **V2 — Energy + metabolism loop.** Every instruction costs
-  1 unit of energy; INGEST replenishes from the substrate field;
-  EXCRETE adds to waste. Energy = 0 → death; energy ≥ E_div → division.
-- [x] **V3 — Stage XIII rule (`abiogenesis-life`).** Registered in
-  `cellauto/rules/`; appears as the thirteenth stage of the extended
-  pipeline. Pipeline hand-off (G1) from Stage XII seeds the initial
-  population at LUCA pathway-graph hot-spots.
-- [x] **V4 — Substrate + waste grid.** 60 × 60 default grid; substrate
-  replenishes linearly; waste accumulates and increases nearby
-  death probability.
-- [x] **V5 — Mutation + lineage tracking.** Per-instruction ε mutation
-  at copy time; per-organism parent pointer; ancestry chain
-  reconstructible to the founder.
-- [x] **V6 — Per-organism inspector.** Click-to-inspect Toplevel
-  (Tk) / drawer (web) showing genome strip, energy, instruction
-  pointer, ancestry tree.
-- [x] **V7 — V3.6 viridis rendering.** Default render: filled
-  energy-coloured discs on the substrate field; this is the v5.0.0
-  ship target. Internal anatomy (V9) requires SEM mode and waits for
-  v4.0.
-- [x] **V8 — Twelve regression tests.** VM opcodes, energy → death,
-  energy → division, mutation gates lineage diversity, ε > ε_c →
-  catastrophe, distinct lineage within 10k steps at default seed,
-  substrate depletion → crash, ancestry tracked, pipeline hand-off,
-  no per-step allocation, serialisation round-trip, web/Python VM
-  parity (deferred).
-- [x] **V9 — Translucent body sprite (Phase 5.1).** Each organism
-  rendered with a translucent ellipse body — no internal anatomy yet,
-  just the membrane. Requires SEM mode.
-- [x] **V10 — Internal anatomy (Phase 5.1).** Gut compartment with
-  drifting ingested particles + genome strip + nucleus
-  visible inside each organism. Cytoplasmic shimmer at execution
-  rate. Brachionus-style preview shipped to
-  `docs/generated/stage13_life.png`.
-- [ ] **V11 — Ecology mechanics (Phase 5.2).** Predation between
-  lineages; cross-cell substrate gradients; self-organised
-  predator-prey cycle visible in the population sparkline within
-  20k steps.
-- [ ] **V12 — Tierra shared-memory variant (Phase 5.4).** Optional
-  `dynamics="tierra"` rule config puts all organisms in one shared
-  instruction tape so parasites can emerge as in Tierra 1991.
-  Pinned by a parasite-emergence regression.
-
-### Out of scope for v5.0
-- Multicellular organisms with differentiated tissues (v5.x+).
-- Neural-network controllers à la Polyworld.
-- 3-D bodies / physical morphology à la Framsticks.
-- Replacing the v4.0 SEM renderer (LIFE feeds it; doesn't replace it).
-
-### Acceptance criteria for v5.0.0
-See PRD §7. Headlines:
-1. New rule `abiogenesis-life` (or `digital-life`) registered;
-   thirteen-stage extended pipeline.
-2. Self-sustaining population for ≥ 10k steps at default seed.
-3. Per-organism click inspector shows genome, energy, ancestry.
-4. ≥ 12 new tests; four CI gates green.
-5. v5.0 entry in CHANGELOG; README updated to "13-stage pipeline".
-
-### Cycle direction recommendation
-See PRD §10. The recommended path is to **pair v4.0 SEM (S1–S5) with
-v5.0 LIFE (V1–V8)** on a shared cycle — the SEM substrate gives LIFE
-the rendering vocabulary the Brachionus reference demands, and LIFE
-provides content that exercises SEM in ways the existing 12 stages
-don't. Shipping them together is the cleanest story.
 
 ---
 

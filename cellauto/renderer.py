@@ -342,23 +342,11 @@ class FieldRenderer:
         self.canvas.image = zoomed
 
     def render(self, rgb_array: np.ndarray) -> None:
-        import tkinter as tk
-
         h, w = rgb_array.shape[:2]
-        # ``configure(data=...)`` writes into the existing PhotoImage without
-        # resizing it, so a frame whose size differs from the one reset() built
-        # would be clipped. Rebuild the backing image when the size changes —
-        # this lets a rule render at (near) canvas resolution (e.g. the Stage
-        # XIII SEM feed at 600×600) while grid-sized fields keep their old size.
-        if self._image.width() != w or self._image.height() != h:
-            self._image = tk.PhotoImage(width=w, height=h)
         # Build a PPM-format byte string Tk can ingest.
         header = f"P6\n{w} {h}\n255\n".encode("ascii")
         body = rgb_array.astype(np.uint8).tobytes()
         self._image.configure(data=header + body, format="PPM")
-        # Recompute the integer zoom from the ACTUAL frame size so the SEM feed
-        # displays ~1:1 while grid-sized fields still scale up to fill the canvas.
-        self._scale = max(1, self.canvas_size // max(w, h))
         # Re-zoom and swap the canvas image to refresh.
         zoomed = self._image.zoom(self._scale, self._scale)
         self.canvas.itemconfigure(self._image_item, image=zoomed)

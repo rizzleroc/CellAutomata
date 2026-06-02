@@ -17,7 +17,6 @@ from cellauto.rules.abiogenesis.stage4_selection import AbiogenesisStage4Selecti
 from cellauto.rules.abiogenesis.stage_chirality import AbiogenesisStageHomochirality
 from cellauto.rules.abiogenesis.stage_coacervate import AbiogenesisStageCoacervate
 from cellauto.rules.abiogenesis.stage_code import AbiogenesisStageGeneticCode
-from cellauto.rules.abiogenesis.stage_life import AbiogenesisStageLife
 from cellauto.rules.abiogenesis.stage_luca import AbiogenesisStageLUCA
 from cellauto.rules.abiogenesis.stage_minerals import AbiogenesisStageMinerals
 from cellauto.rules.abiogenesis.stage_rna import AbiogenesisStageRNAWorld
@@ -44,8 +43,6 @@ REGISTRY: dict[str, type] = {
     "abiogenesis-mineral-catalysis": AbiogenesisStageMinerals,
     "abiogenesis-genetic-code": AbiogenesisStageGeneticCode,
     "abiogenesis-luca": AbiogenesisStageLUCA,
-    # Stage XIII — digital life (v5.0): virtual-CPU organisms post-LUCA.
-    "abiogenesis-life": AbiogenesisStageLife,
     # Reference automata.
     "conway": ConwaysLifeRule,
     "wolfram1d": Wolfram1DRule,

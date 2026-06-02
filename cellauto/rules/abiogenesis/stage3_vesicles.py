@@ -160,6 +160,56 @@ class AbiogenesisStage3Vesicles:
         base[mask] = (255, 204, 0)  # amber, like a real lipid stain
         return base
 
+    def render_sprites(self, state: VesicleState) -> list:
+        """v4.0.1 — one translucent vesicle sprite per connected-component centroid.
+
+        SemRenderer composites these as bilayer membranes on the depth-shaded
+        substrate. FieldRenderer ignores the return value.
+        """
+        mask = state.membrane_mask
+        if mask.size == 0 or not mask.any():
+            return []
+        h, w = mask.shape
+        # Two-pass connected-components labelling, same approach as _count_connected.
+        visited = np.zeros_like(mask, dtype=bool)
+        components: list[tuple[float, float, int]] = []
+        stack: list[tuple[int, int]] = []
+        for sy in range(h):
+            for sx in range(w):
+                if not mask[sy, sx] or visited[sy, sx]:
+                    continue
+                stack.append((sy, sx))
+                visited[sy, sx] = True
+                xs, ys = [], []
+                while stack:
+                    cy, cx = stack.pop()
+                    xs.append(cx)
+                    ys.append(cy)
+                    for dy in (-1, 0, 1):
+                        for dx in (-1, 0, 1):
+                            if dx == 0 and dy == 0:
+                                continue
+                            ny, nx = cy + dy, cx + dx
+                            if 0 <= ny < h and 0 <= nx < w and mask[ny, nx] and not visited[ny, nx]:
+                                visited[ny, nx] = True
+                                stack.append((ny, nx))
+                if xs:
+                    components.append((sum(xs) / len(xs), sum(ys) / len(ys), len(xs)))
+
+        canonical = 112.0  # vesicle.png native size
+        cells_per_canvas = 720.0 / max(w, h)
+        # Vesicle visible footprint scales as sqrt of its cell area so big
+        # connected blobs render as bigger membranes.
+        return [
+            (
+                float(cx),
+                float(cy),
+                "stage3/vesicle.png",
+                float((1.0 + 0.10 * (area**0.5)) * cells_per_canvas / canonical * 1.4),
+            )
+            for cx, cy, area in components
+        ]
+
     def population(self, state: VesicleState) -> Mapping[str, int]:
         membrane_cells = int(state.membrane_mask.sum())
         n_vesicles = self._count_connected(state.membrane_mask)

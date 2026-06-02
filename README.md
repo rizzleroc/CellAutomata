@@ -7,20 +7,91 @@
 [![CI](https://github.com/rizzleroc/CellAutomata/actions/workflows/ci.yml/badge.svg)](https://github.com/rizzleroc/CellAutomata/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 ![Python](https://img.shields.io/badge/python-3.10%2B-blue)
-![Version](https://img.shields.io/badge/version-5.0.0-brightgreen)
+![Version](https://img.shields.io/badge/version-4.1.1-orange)
+
+> **v4.0 alpha — SEM-grade rendering codebase.** This is the production fork
+> for the v4.0 cycle: depth-shaded warm-sepia / cool-mono micrograph rendering
+> with a LIVE SEM FEED instrument framing on top of the unchanged v3.6 science
+> engine. Toggle from `View ▸ SEM mode`. The v3.6 viridis renderer remains the
+> A/B baseline and the safe fallback. See [docs/PRD_SEM_VISUALIZATION.md](docs/PRD_SEM_VISUALIZATION.md)
+> and [docs/ROADMAP.md §6](docs/ROADMAP.md).
+
+## What's new in v4.1
+
+v4.1.0 makes the render path explicitly **two-channel** and adds **hi-res**:
+
+- **Channel A — the grounded SEM micrograph.** Unchanged. Every pixel still
+  traces to a real `render_rgb(state)` value.
+- **Channel B — "A Day in the Life of a Cell."** A new, additive, *toggleable*
+  narrative layer (`cellauto/channel.py`): a procedural protagonist cell with
+  seven moods and its own breathe/blink animation, a typeset narration ribbon
+  (day-clock + title + typewriter line), a gentle time-of-day grade, and a
+  "STORY" tag so it never reads as instrument truth. The twelve pipeline stages
+  map onto twelve day beats, dawn → rebirth (`cellauto/narrative.py`). Channel B
+  has its **own clock**, so the cell keeps breathing while the sim is paused.
+  Toggle from `View ▸ Story · Day in the Life`. It installs as a pure
+  `SemRenderer.post_compositor`, so Channel A is never altered and the layer is
+  fully reversible.
+- **Hi-res.** `View ▸ Render scale` supersamples the live canvas (1× / 2× / 3×),
+  and `File ▸ Export hi-res PNG…` writes a single composed frame at up to 4K
+  (`cellauto/hires.py`). The story overlay exports crisp at full resolution.
+- **`tools/render_narrative_art.py`** renders all twelve day beats + a contact
+  sheet into `docs/generated/narrative/` — and doubles as an end-to-end
+  Channel-A → Channel-B smoke test.
+
+See [docs/ROADMAP.md](docs/ROADMAP.md) and [CHANGELOG.md](CHANGELOG.md).
+
+## What's new in v4.0
+
+v4.0.0a1 ships **Phase 1** of the SEM-grade rendering cycle. The simulation
+engine, constants, and dynamics are byte-for-byte the v3.6 release; the win
+is purely a new rendering path.
+
+- **`cellauto/renderer_sem.py`** — a depth-shaded numpy rasteriser exposing
+  the same `render(rgb_array)` interface as `FieldRenderer`, so `app.py`
+  swaps between viridis and SEM with a single attribute flip. The
+  per-stage rule's `render_rgb(state)` output is reinterpreted as a height
+  field; gradients → Lambertian + ambient + specular shading →
+  value-noise micro-texture → sepia/mono LUT → LANCZOS upscale →
+  vignette + crosshair + LIVE SEM FEED badge + scale bar.
+- **Two palettes.** `warm-sepia` (default, matches the user-supplied
+  reference micrograph) and `cool-mono` (extends the Catalytic Silence
+  palette into 3-D shading). Picked from `View ▸ SEM palette`.
+- **View menu.** `View ▸ SEM mode` checkbox (default ON when SEM mode is
+  available) and `View ▸ SEM palette` submenu.
+- **Persistence.** SEM mode and palette persist in `~/.cellauto/config.json`
+  via the `_load_sem_config()` / `_save_sem_config()` helpers in
+  `cellauto/app.py`.
+- **Graceful fallback.** If Pillow lacks LANCZOS or the rasteriser can't
+  initialise, the app falls back to the v3.6 `FieldRenderer` and emits a
+  one-time toast explaining why. No crashes.
+- **Reduced-motion mode** (v3.6 `View ▸ Reduced motion`) propagates to the
+  SEM badge pulse — the LIVE SEM FEED dot freezes when reduced motion is on.
+
+Before / after at Stage 1 (Gray-Scott "spots"), same seed, same step count:
+
+| v3.6 viridis | v4.0 SEM (warm-sepia) | v4.0 SEM (cool-mono) |
+|---|---|---|
+| ![Stage 1 under viridis](docs/generated/viridis_stage1.png) | ![Stage 1 under SEM warm-sepia](docs/generated/sem_stage1.png) | ![Stage 1 under SEM cool-mono](docs/generated/sem_stage1_cool-mono.png) |
+
+**Deferred to v4.0.1+.** Stage-specific sprite library (S6, S7 — Phase 2
+and 3), GPU acceleration via `moderngl` (S10 — Phase 4), AI image-to-image
+hero-shot refinement (S11 — Phase 5), and per-rule `render_height(state)`
+overrides (v4.0 derives height from the luminance of the existing
+`render_rgb` output). See [docs/ROADMAP.md §6](docs/ROADMAP.md) for the
+full S-item punchlist.
 
 A scientifically-grounded cellular sandbox exploring the **chemistry-to-life
 transition** — the abiogenesis problem — across a canonical five-stage
-pipeline *and* a **coupled 13-stage extended pipeline** that walks every
+pipeline *and* a **coupled 12-stage extended pipeline** that walks every
 major origin-of-life process (alkaline hydrothermal vents with real
 Wood-Ljungdahl chemistry, mineral catalysis, autocatalytic sets,
 homochirality, RNA world, genetic-code coevolution, coacervates, vesicles,
-protocell selection, LUCA distillation, and — new in v5.0 — digital life)
-in scientific order.
+protocell selection, and LUCA distillation) in scientific order.
 
 In v3.5 every stage transition genuinely passes its output field forward
 to the next stage's initial condition, so the pipeline is now a single
-continuous narrative — not thirteen isolated demos on a timer. Stage XI
+continuous narrative — not twelve isolated demos on a timer. Stage XI
 runs the real Eigen-Schuster replicator ODE; Stage X has Helfrich
 bending elasticity; Stage VIII scores peptides under a Miyazawa-Jernigan
 contact-energy landscape; Stage XII derives the LUCA core from a
@@ -93,10 +164,10 @@ Every constant traces to a published measurement; see
 [docs/science.md](docs/science.md) for the values and citations. The
 `abiogenesis-pipeline` rule walks all five stages end to end.
 
-Eight more origin-of-life processes ship as standalone selectable rules
-and together appear as the **13-stage `abiogenesis-pipeline-extended`** in
+Seven more origin-of-life processes ship as standalone selectable rules
+and together appear as the **12-stage `abiogenesis-pipeline-extended`** in
 scientific order — soup → vent → RD → mineral → RAF → chirality → RNA →
-genetic code → coacervate → vesicles → selection → LUCA → LIFE:
+genetic code → coacervate → vesicles → selection → LUCA:
 
 | Process | Science |
 |---|---|
@@ -107,22 +178,14 @@ genetic code → coacervate → vesicles → selection → LUCA → LIFE:
 | **Genetic-code coevolution** | Code → translation product → selection feedback drives convergence (Vetsigian-Woese-Goldenfeld 2006; Ikehara GADV-protein world) |
 | **Coacervates** | Cahn-Hilliard liquid-liquid phase separation (Oparin 1924; Banani et al. 2017) |
 | **LUCA distillation** | Comparative-genomics parsimony with a 70 % prevalence threshold; surfaces the conserved gene families shared by every surviving lineage (Weiss et al. 2016) |
-| **Digital life (Stage XIII)** | Virtual-CPU genomes (20 opcodes) that execute, ingest, excrete, divide, and mutate under selection; per-instruction mutation governed by Eigen's error threshold `ε_c = ln(σ)/L`; open-ended divergence from a common ancestor (Ray 1991 Tierra; Ofria & Wilke 2004 Avida; Channon 2003) |
 
 ## Try it in your browser (no install)
 
-Two static demos, both deployable to GitHub Pages from `/docs`:
-
-- [`docs/web2/`](docs/web2/) — **web 2.0**, the multi-rule sandbox: Conway's
-  Life, Wolfram 1D, Gray-Scott, and a Brownian primordial soup share one
-  canvas. Brush-paint cells with the mouse, scrub Pearson presets, share
-  the exact frame you're looking at by URL hash. Speed/brush/FPS readouts,
-  keyboard shortcuts (`space`, `1`-`4`, …), responsive layout, fullscreen.
-- [`docs/web/`](docs/web/) — **web 1.0**, the original Stage-1-only Gray-Scott
-  demo. Kept around as a single-purpose museum plate.
-
-Both pages are vanilla JS, no build step, no Pyodide. The other eight
-origin-of-life stages run only in the Python build below.
+A live in-browser Stage 1 demo lives at [`docs/web/`](docs/web/) — a single
+static page with the Gray-Scott reaction-diffusion PDE running on a `<canvas>`
+via vanilla JS (no Pyodide). F/k sliders, Pearson preset chips, and the same
+viridis colormap as the desktop build. The other stages are exhibited as
+static museum plates beneath. Deployable to GitHub Pages from `/docs`.
 
 ## Install
 
@@ -179,7 +242,7 @@ than v1 in practice.
 | Rule name | Renderer | What it is |
 |---|---|---|
 | `abiogenesis-pipeline` | mixed | Canonical 5-stage pipeline, auto-promoting |
-| `abiogenesis-pipeline-extended` | mixed | **13-stage pipeline** walking *every* shipped origin-of-life process in scientific order |
+| `abiogenesis-pipeline-extended` | mixed | **12-stage pipeline** walking *every* shipped origin-of-life process in scientific order |
 | `abiogenesis-stage0-soup` | discrete | Primordial soup; init weighted by Miller's 1953 yields |
 | `abiogenesis-stage1-grayscott` | field | Gray-Scott reaction-diffusion |
 | `abiogenesis-stage2-raf` | field | Kauffman RAF autocatalytic chemistry |
@@ -192,7 +255,6 @@ than v1 in practice.
 | `abiogenesis-mineral-catalysis` | field | Na-montmorillonite clay mask — Ferris-style surface catalysis of activated ImpA monomers |
 | `abiogenesis-genetic-code` | field | Vetsigian-Woese-Goldenfeld code coevolution — codon→amino-acid table converges under selection |
 | `abiogenesis-luca` | field | LUCA distillation — comparative-genomics parsimony surfaces the core gene set (Weiss et al. 2016) |
-| `abiogenesis-life` | field | **Stage XIII — digital life**: virtual-CPU genomes (20 opcodes) executing, ingesting, dividing, and mutating under selection (Ray 1991 Tierra; Ofria & Wilke 2004 Avida) |
 | `conway` | discrete | Conway's Game of Life (B3/S23) |
 | `wolfram1d` | discrete | Elementary 1D automaton, rule 0–255 |
 | `natural-selection` | discrete | **Legacy alias** — same mechanics as Stage 0 |
@@ -237,6 +299,10 @@ so every control is reachable on any screen size.
 - **Sparkline** trace of the headline population stat (rolling 180 samples).
 - Click any **Stage 4** protocell disc to open the per-protocell inspector
   (position, radius, age, fitness, genome vector).
+- **SEM-grade field rendering** is the default in v4.0: every continuous-field
+  stage is depth-shaded as a live scanning-electron-microscope feed
+  (`cellauto/renderer_sem.py`). The v3.6 viridis path is preserved as the A/B
+  baseline and the fallback — toggle from `View ▸ SEM mode`.
 
 **Menus**
 - **File** — Open/Save snapshot (JSON, exact RNG round-trip); Export frame
@@ -360,26 +426,22 @@ The project's history is its own gap analysis:
     transition, WL stoichiometric cap, real code-consensus test,
     pipeline handoff) and G11–G12 (README + CHANGELOG + ROADMAP
     honesty). Test count 120 → 141; coverage 87.09 % → 88.13 %.
-- **v5.0** (2026-06-01): **LIFE — digital organisms (Stage XIII).** After
-  Stage XII distils LUCA — the *recipe* for life — Stage XIII populates the
-  post-LUCA world with discrete digital organisms whose behaviour is an
-  *executing program*, not a probability table. New **`abiogenesis-life`**
-  rule built on a 20-opcode virtual CPU (`life_vm.py`): each organism is a
-  tape of opcodes run instruction-by-instruction, with an energy metabolism
-  on a substrate/waste grid (every instruction costs energy; `INGEST`
-  converts substrate to energy; `EXCRETE` adds toxic waste; energy = 0 ⇒
-  death; energy ≥ `E_div` ⇒ division). Daughter genomes are copied with
-  per-instruction mutation ε governed by Eigen's error threshold
-  `ε_c = ln(σ)/L`; lineage + per-organism ancestry are tracked, and the
-  LUCA → LIFE pipeline hand-off seeds founders at the brightest LUCA cells.
-  This extends the extended pipeline to **13 stages** (soup → … → LUCA →
-  LIFE). Rendering: viridis energy discs (V7), SEM translucent body walls
-  (V9), and a high-resolution internal-anatomy plate (V10, Phase 5.1) with
-  gut/genome-strip/nucleus/cytoplasmic-shimmer. New regression test suite and
-  a web3 `life.js` counterpart. Ecology (V11) and Tierra shared-memory
-  parasites (V12) are deferred to later v5.x phases.
+- **v4.0.0a1** (2026-05-25): SEM-grade rendering, Phase 1. New
+  `cellauto/renderer_sem.py` depth-shaded numpy rasteriser; warm-sepia and
+  cool-mono palettes; `View ▸ SEM mode` + `View ▸ SEM palette` with
+  `~/.cellauto/config.json` persistence; graceful fallback to the v3.6
+  viridis path when Pillow LANCZOS is unavailable; reduced-motion mode
+  propagates to the SEM badge pulse. Stage 1 hero shots at
+  `docs/generated/sem_stage1.png` (warm-sepia) and
+  `docs/generated/sem_stage1_cool-mono.png`; v3.6 baseline at
+  `docs/generated/viridis_stage1.png`. Simulation maths unchanged from
+  v3.6 — every SEM pixel still traces back to a real engine value via
+  `render_rgb(state)`. Alpha designation reflects deferred Phase 2 / 3
+  sprite libraries (S6, S7), GPU shader (S10), and AI refinement (S11).
+  See [docs/PRD_SEM_VISUALIZATION.md](docs/PRD_SEM_VISUALIZATION.md) and
+  [docs/ROADMAP.md §6](docs/ROADMAP.md).
 
-**See [docs/science.md](docs/science.md) for the
+**141 tests, all passing.** See [docs/science.md](docs/science.md) for the
 math and citations, and [docs/ROADMAP.md](docs/ROADMAP.md) for the feature
 inventory, mandated UI toolset, and remaining roadmap. Full version history in
 [CHANGELOG.md](CHANGELOG.md).
