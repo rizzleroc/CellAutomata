@@ -36,7 +36,48 @@ html, body { margin: 0; height: 100%; background: var(--bg); color: var(--ink);
 
 /* ── Stage / viewport ── */
 .stage { position: relative; min-width: 0; }
-.viewport { position: absolute; inset: 0; }
+.viewport { position: absolute; inset: 0; }   /* unchanged, now scoped inside .pane-lab */
+
+/* ── Lab | Experiment split ──────────────────────────────────────────────── */
+.stage-split { position: absolute; inset: 0; display: flex; z-index: 0; }
+.pane { position: relative; min-width: 0; min-height: 0; height: 100%; overflow: hidden; }
+/* The experiment pane letterboxes the SEM micrograph against the instrument
+   backdrop so the SQUARE rule grid (60×60 .. 220×220) is never anisotropically
+   stretched into ovals — same intent as web3's .canvas-frame (aspect-ratio:1/1).*/
+.pane-exp { display: flex; align-items: center; justify-content: center; background: #0a0e16; }
+.split-divider { flex: 0 0 2px; background: var(--line); display: none; }
+/* Square, contained: cap to the smaller of the pane's width/height so the
+   micrograph stays 1:1 and letterboxes (does NOT stretch) in any view/mode. */
+.exp-canvas { aspect-ratio: 1 / 1; max-width: 100%; max-height: 100%;
+  width: auto; height: auto;
+  image-rendering: pixelated; background: #0a0e16; display: block; }
+.exp-caption { position: absolute; left: 14px; bottom: 12px; z-index: 2;
+  font: 11px/1 ui-monospace, monospace; letter-spacing: 1.5px;
+  text-transform: uppercase; color: var(--accent);
+  background: rgba(8,6,4,.55); padding: 4px 8px; border-radius: 5px;
+  pointer-events: none; }
+.exp-empty { position: absolute; inset: 0; display: flex; align-items: center;
+  justify-content: center; color: var(--muted); font-size: 13px;
+  text-align: center; padding: 0 24px; }
+
+/* view states — pure CSS off the .stage data-view attribute */
+.stage[data-view="lab"] .pane-lab { flex: 1 1 100%; }
+.stage[data-view="lab"] .pane-exp,
+.stage[data-view="lab"] .split-divider { display: none; }
+.stage[data-view="exp"] .pane-exp { flex: 1 1 100%; }
+.stage[data-view="exp"] .pane-lab,
+.stage[data-view="exp"] .split-divider { display: none; }
+.stage[data-view="split"] .pane-lab { flex: 1 1 50%; }
+.stage[data-view="split"] .pane-exp { flex: 1 1 50%; }
+.stage[data-view="split"] .split-divider { display: block; }
+
+/* 3-way segmented toggle, in the existing bottom-bar */
+.view-toggle { display: inline-flex; border: 1px solid var(--line);
+  border-radius: 8px; overflow: hidden; }
+.vt-btn { background: transparent; color: var(--muted); border: none;
+  padding: 7px 12px; font-size: 11px; cursor: pointer; }
+.vt-btn:not(:last-child) { border-right: 1px solid var(--line); }
+.vt-btn.active { background: #241c10; color: var(--ink); }
 .overlay { position: absolute; z-index: 5; pointer-events: none; }
 .top-left { top: 22px; left: 26px; max-width: 60%; }
 .ap-label { color: var(--accent); font-size: 11px; text-transform: uppercase; letter-spacing: 2.5px; }
@@ -70,4 +111,6 @@ html, body { margin: 0; height: 100%; background: var(--bg); color: var(--ink);
 @media (max-width: 920px) {
   .app { grid-template-columns: 1fr; }
   .sidebar, .parts-panel { display: none; }
+  /* Split stacks vertically on narrow screens (lab/exp are already single-pane). */
+  .stage[data-view="split"] .stage-split { flex-direction: column; }
 }

@@ -12,6 +12,7 @@
 // Pure assertions; exits non-zero on the first hard failure so it gates CI.
 
 import fs from "node:fs";
+import vm from "node:vm";
 import path from "node:path";
 import { execFileSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
@@ -115,6 +116,151 @@ const scene = read("scene.js");
 assert(/ACESFilmicToneMapping/.test(scene), "scene.js does not use ACES tone-mapping");
 assert(/RoomEnvironment/.test(scene), "scene.js does not set up image-based lighting");
 assert(/UnrealBloomPass/.test(scene), "scene.js does not add bloom (spark glow)");
+
+// ── 7. Live SEM experiment integration ──────────────────────────────────────
+// This is the split-screen lab→experiment feature. It bridges ES modules and
+// CLASSIC scripts via globals, so a regression here (a renamed rule key, a
+// dropped <script>, viridis.js loaded after a rule that reads VIRIDIS_LUT, a
+// STAGE_MAP value with no copied rule) would ship green under the checks above.
+// This block gates all of those structurally AND at runtime.
+
+// 7a. Parse STAGE_MAP out of main.js and confirm every key matches a meta id.
+const META_IDS = {
+  miller_urey: "stage0-miller-urey", grayscott_dish: "stage1-grayscott",
+  raf_flask: "stage2-raf", vesicle_microscope: "stage3-vesicles",
+  vent_reactor: "stage4-vent", mineral_flask: "stage5-minerals",
+  chirality_polarimeter: "stage6-chirality", rna_thermocycler: "stage7-rna",
+  code_bench: "stage8-code", coacervate_microscope: "stage9-coacervate",
+  microfluidic_chip: "stage10-selection", luca_console: "stage11-luca",
+  stromatolite: "capstone-stromatolite",
+};
+const mapBlock = main.match(/const\s+STAGE_MAP\s*=\s*\{([\s\S]*?)\}/);
+assert(!!mapBlock, "main.js has no STAGE_MAP");
+const stageMap = {};
+if (mapBlock) {
+  for (const m of mapBlock[1].matchAll(/['"]([\w-]+)['"]\s*:\s*['"]([\w-]+)['"]/g)) {
+    stageMap[m[1]] = m[2];
+  }
+  const metaIdSet = new Set(Object.values(META_IDS));
+  assert(Object.keys(stageMap).length === 13,
+    `STAGE_MAP should have 13 entries, found ${Object.keys(stageMap).length}`);
+  for (const stageId of Object.keys(stageMap)) {
+    assert(metaIdSet.has(stageId), `STAGE_MAP key "${stageId}" is not a real apparatus meta id`);
+  }
+}
+
+// 7b. index.html loads viridis.js + sem.js + the mapped rule files as CLASSIC
+//     scripts (no type=module) BEFORE the module main.js, in a safe order.
+const classicSrcs = [...html.matchAll(/<script\s+src="(\.\/experiment\/[^"]+)"\s*>/g)].map((m) => m[1]);
+const moduleTag = html.match(/<script\s+type="module"\s+src="\.\/main\.js"\s*>/);
+assert(!!moduleTag, "index.html does not load main.js as a module");
+const moduleIdx = moduleTag ? html.indexOf(moduleTag[0]) : -1;
+for (const src of classicSrcs) {
+  assert(html.indexOf(`src="${src}"`) < moduleIdx,
+    `classic script ${src} must be loaded BEFORE the module main.js`);
+  const rel = src.replace(/^\.\//, "");
+  assert(exists(rel), `index.html references missing experiment file ${src}`);
+  // must NOT be a module (globals wouldn't bridge to main.js)
+  assert(!new RegExp(`type="module"[^>]*src="${src.replace(/[.\/]/g, "\\$&")}"`).test(html)
+       && !new RegExp(`src="${src.replace(/[.\/]/g, "\\$&")}"[^>]*type="module"`).test(html),
+    `experiment script ${src} must be a CLASSIC script, not a module`);
+}
+// Index each experiment <script> tag by its src, in document (= execution) order.
+const tagIdx = (src) => html.indexOf(`src="./experiment/${src}"`);
+const viridisIdx = tagIdx("viridis.js");
+const semIdx = tagIdx("sem.js");
+assert(viridisIdx > -1 && semIdx > -1, "index.html must load viridis.js and sem.js");
+// viridis.js (defines the bare global VIRIDIS_LUT) must precede EVERY rule that
+// reads it — checked against the actual reader files, not just the first rule,
+// so a reordered/duplicated viridis tag can't slip a reader ahead of its LUT.
+const VIRIDIS_READERS = ["grayscott.js", "life.js"];
+for (const r of VIRIDIS_READERS) {
+  const ri = tagIdx(`rules/${r}`);
+  assert(ri > -1, `index.html does not load rules/${r}`);
+  assert(viridisIdx > -1 && viridisIdx < ri,
+    `viridis.js must load before rules/${r} (it reads VIRIDIS_LUT)`);
+}
+// every STAGE_MAP value must have a copied rule file loaded as a classic script,
+// using the underscore filename convention (natural-selection → natural_selection.js).
+for (const ruleId of new Set(Object.values(stageMap))) {
+  const file = `experiment/rules/${ruleId.replace(/-/g, "_")}.js`;
+  assert(exists(file), `STAGE_MAP value "${ruleId}" has no copied rule file (${file})`);
+  assert(html.includes(`src="./${file}"`), `index.html does not load ${file}`);
+}
+
+// 7c. The second canvas + 3-way toggle markup exists.
+assert(/id="expCanvas"/.test(html), "index.html missing the experiment canvas (#expCanvas)");
+assert(/id="expCaption"/.test(html), "index.html missing the SEM caption (#expCaption)");
+assert(/id="viewToggle"/.test(html), "index.html missing the view toggle (#viewToggle)");
+for (const v of ["lab", "split", "exp"]) {
+  assert(new RegExp(`data-view="${v}"`).test(html), `view toggle missing a "${v}" button`);
+}
+
+// 7d. main.js drives the SEM pipeline with web3's exact convention.
+assert(/SEM\.render\s*\(/.test(main), "main.js does not call SEM.render");
+assert(/renderHeight\s*\(/.test(main), "main.js does not call renderHeight (SEM depth path)");
+assert(/putImageData/.test(main), "main.js does not blit the experiment frame");
+
+// 7e. RUNTIME: load the classic scripts the way the browser does (one shared
+//     lexical scope so rules see VIRIDIS_LUT), then confirm every STAGE_MAP rule
+//     instantiates, resets, steps, and passes through SEM.render to a painted,
+//     fully-opaque RGBA buffer — i.e. the experiment canvas can't be blank.
+const sandbox = { window: { CA: { RULES: {} } }, Math, Float32Array, Uint8Array, Uint8ClampedArray, console };
+sandbox.CA = sandbox.window.CA;
+sandbox.globalThis = sandbox;
+vm.createContext(sandbox);
+const EXP = path.join(WEB4, "experiment");
+const loadOrder = [
+  "viridis.js", "sem.js",
+  ...[...new Set(Object.values(stageMap))].map((r) => `rules/${r.replace(/-/g, "_")}.js`),
+];
+// Concatenate so VIRIDIS_LUT (a bare top-level const) is in scope for the rules,
+// exactly as sibling classic <script> tags share scope in the browser. Read
+// defensively: a missing file reported by 7b above shouldn't crash this block.
+let SEM = null, RULES = null;
+const missing = loadOrder.filter((f) => !fs.existsSync(path.join(EXP, f)));
+if (missing.length) {
+  fail(`experiment files missing, cannot load bundle: ${missing.join(", ")}`);
+} else {
+  const bundle = loadOrder.map((f) => fs.readFileSync(path.join(EXP, f), "utf8")).join("\n;\n");
+  try {
+    vm.runInContext(bundle, sandbox, { filename: "experiment-bundle.js" });
+    SEM = sandbox.window.SEM;
+    RULES = sandbox.window.CA.RULES;
+    ok();
+  } catch (e) {
+    fail(`experiment classic scripts failed to load: ${String(e.message).slice(0, 160)}`);
+  }
+}
+assert(SEM && typeof SEM.render === "function", "window.SEM.render not defined after loading sem.js");
+if (SEM && RULES) {
+  for (const [stageId, ruleId] of Object.entries(stageMap)) {
+    const factory = RULES[ruleId];
+    if (typeof factory !== "function") { fail(`CA.RULES["${ruleId}"] (for ${stageId}) is not a factory`); continue; }
+    try {
+      const rule = factory();
+      assert(Number.isInteger(rule.width) && Number.isInteger(rule.height) && rule.width > 0,
+        `${ruleId}: bad width/height`);
+      assert(typeof rule.renderHeight === "function", `${ruleId}: missing renderHeight (SEM path)`);
+      rule.reset();
+      for (let s = 0; s < 12; s++) rule.step();
+      const ht = new Float32Array(rule.width * rule.height);
+      rule.renderHeight(ht);
+      const pixels = new Uint8ClampedArray(rule.width * rule.height * 4);
+      SEM.render(ht, rule.width, rule.height, pixels, { palette: "warm-sepia" });
+      // Must be fully opaque (no transparent gaps) and not a single flat colour.
+      let opaque = true, distinct = new Set();
+      for (let i = 0; i < pixels.length; i += 4) {
+        if (pixels[i + 3] !== 255) { opaque = false; break; }
+        distinct.add((pixels[i] << 16) | (pixels[i + 1] << 8) | pixels[i + 2]);
+      }
+      assert(opaque, `${ruleId} (${stageId}): SEM output has non-opaque pixels`);
+      assert(distinct.size > 1, `${ruleId} (${stageId}): SEM output is a single flat colour (blank)`);
+    } catch (e) {
+      fail(`${ruleId} (${stageId}) SEM pipeline threw: ${String(e.message).slice(0, 160)}`);
+    }
+  }
+}
 
 console.log(`\n${checks} checks passed, ${failures} failure(s).`);
 process.exit(failures === 0 ? 0 : 1);

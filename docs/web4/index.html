@@ -31,9 +31,19 @@
     </div>
   </aside>
 
-  <!-- ── Centre: viewport ── -->
-  <main class="stage">
-    <div id="viewport" class="viewport"></div>
+  <!-- ── Centre: viewport (lab apparatus) | experiment (live SEM feed) ── -->
+  <main class="stage" data-view="lab">
+    <div class="stage-split">
+      <div class="pane pane-lab">
+        <div id="viewport" class="viewport"></div>
+      </div>
+      <div class="split-divider" aria-hidden="true"></div>
+      <div class="pane pane-exp">
+        <canvas id="expCanvas" class="exp-canvas"></canvas>
+        <div class="exp-caption" id="expCaption">LIVE SEM · —</div>
+        <div class="exp-empty" id="expEmpty" hidden>no live experiment for this stage yet</div>
+      </div>
+    </div>
 
     <div class="overlay top-left">
       <div id="apLabel" class="ap-label">Stage 0 — Miller–Urey</div>
@@ -48,6 +58,11 @@
         <input id="explode" type="range" min="0" max="1" step="0.01" value="0">
       </div>
       <div id="readout" class="readout"></div>
+      <div class="view-toggle" id="viewToggle" role="group" aria-label="View">
+        <button data-view="lab"   class="vt-btn active" aria-pressed="true">Lab</button>
+        <button data-view="split" class="vt-btn" aria-pressed="false">Split</button>
+        <button data-view="exp"   class="vt-btn" aria-pressed="false">Experiment</button>
+      </div>
     </div>
   </main>
 
@@ -62,6 +77,26 @@
   </aside>
 
 </div>
+
+<!-- ── Live SEM experiment: web3 physics + SEM pipeline, as CLASSIC scripts ──
+     These execute synchronously in document order and MUST run before the
+     deferred ES module main.js, so window.CA.RULES + window.SEM (and the
+     bare script-global VIRIDIS_LUT that grayscott.js/life.js read) are all
+     populated before main.js's first line. viridis.js MUST be first. -->
+<script src="./experiment/viridis.js"></script>
+<script src="./experiment/sem.js"></script>
+<script src="./experiment/rules/soup.js"></script>
+<script src="./experiment/rules/grayscott.js"></script>
+<script src="./experiment/rules/raf.js"></script>
+<script src="./experiment/rules/vesicles.js"></script>
+<script src="./experiment/rules/vents.js"></script>
+<script src="./experiment/rules/chirality.js"></script>
+<script src="./experiment/rules/rna.js"></script>
+<script src="./experiment/rules/code.js"></script>
+<script src="./experiment/rules/coacervate.js"></script>
+<script src="./experiment/rules/natural_selection.js"></script>
+<script src="./experiment/rules/luca.js"></script>
+<script src="./experiment/rules/life.js"></script>
 <script type="module" src="./main.js"></script>
 </body>
 </html>

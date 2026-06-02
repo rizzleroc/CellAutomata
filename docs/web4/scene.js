@@ -102,6 +102,10 @@ export function createLab(container) {
 
   function setSize() {
     const w = container.clientWidth, h = container.clientHeight;
+    // In Experiment view the lab pane is display:none → clientWidth/Height are 0.
+    // Skip the resize then (camera.aspect would be NaN); the next switch back to
+    // lab/split re-runs setSize with real dims. Guards against a 0×0 renderer.
+    if (w === 0 || h === 0) return;
     camera.aspect = w / h;
     camera.updateProjectionMatrix();
     renderer.setSize(w, h);
