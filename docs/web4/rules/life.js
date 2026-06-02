@@ -103,6 +103,27 @@
     } catch (e) { /* no DOM (e.g. node smoke) — hi-res path simply stays inactive */ }
   })();
 
+  // Fixed-pattern film grain tile (built once → no frame-to-frame flicker).
+  let GRAIN = null;
+  function makeGrain(n) {
+    try {
+      const c = document.createElement("canvas");
+      c.width = c.height = n;
+      const g = c.getContext("2d");
+      const im = g.createImageData(n, n);
+      const d = im.data;
+      for (let i = 0; i < d.length; i += 4) {
+        const v = 118 + ((Math.random() * 74) | 0);
+        d[i] = d[i + 1] = d[i + 2] = v;
+        d[i + 3] = 255;
+      }
+      g.putImageData(im, 0, 0);
+      return c;
+    } catch (e) {
+      return null;
+    }
+  }
+
   function make() {
     // Three coupled grids + the live population.
     const substrate = new Float32Array(N);   // [0,1] — food
@@ -537,6 +558,26 @@
             ctx.translate(cx, cy);
             ctx.rotate(ang);
             ctx.drawImage(img, sx, sy, tile, tile, -dw / 2, -dw / 2, dw, dw);
+            // undulating cilia fringe — a metachronal beat wave around the rim
+            const ncil = 26, erx = dw * 0.46, ery = dw * 0.42;
+            ctx.strokeStyle = "rgba(214,196,154,0.5)";
+            ctx.lineWidth = Math.max(1, dw * 0.012);
+            for (let c = 0; c < ncil; c++) {
+              const a = (c / ncil) * 6.2832;
+              const ph = hrFrame * 0.5 - (c / ncil) * 6.2832 * 3;
+              const wl = dw * (0.07 + 0.05 * Math.sin(ph));
+              const ex = Math.cos(a), ey = Math.sin(a);
+              const bx = ex * erx, by = ey * ery;
+              const curl = dw * 0.03 * Math.cos(ph);
+              const tx = -ey, ty = ex;
+              ctx.beginPath();
+              ctx.moveTo(bx, by);
+              ctx.quadraticCurveTo(
+                bx + ex * wl * 0.6 + tx * curl, by + ey * wl * 0.6 + ty * curl,
+                bx + ex * wl, by + ey * wl,
+              );
+              ctx.stroke();
+            }
             ctx.restore();
           }
         } else {
@@ -551,6 +592,31 @@
             ctx.fill();
           }
         }
+        // --- DIC film finish (cheap canvas-op approximation of the Python
+        //     photographic_finish): warm sepia grade + lens vignette + fixed
+        //     film grain. Kept to composite ops so the browser stays smooth. ---
+        ctx.save();
+        ctx.globalCompositeOperation = "multiply";
+        ctx.fillStyle = "rgba(255,244,222,0.16)"; // warm sepia tint
+        ctx.fillRect(0, 0, CW, CH);
+        ctx.globalCompositeOperation = "source-over";
+        const vg = ctx.createRadialGradient(
+          CW / 2, CH / 2, Math.min(CW, CH) * 0.22, CW / 2, CH / 2, Math.max(CW, CH) * 0.62,
+        );
+        vg.addColorStop(0, "rgba(0,0,0,0)");
+        vg.addColorStop(1, "rgba(10,7,4,0.42)");
+        ctx.fillStyle = vg;
+        ctx.fillRect(0, 0, CW, CH);
+        ctx.restore();
+        if (GRAIN === null) GRAIN = makeGrain(256);
+        if (GRAIN) {
+          ctx.save();
+          ctx.globalAlpha = 0.06;
+          const pat = ctx.createPattern(GRAIN, "repeat");
+          if (pat) { ctx.fillStyle = pat; ctx.fillRect(0, 0, CW, CH); }
+          ctx.restore();
+        }
+
         // instrument chrome: badge + scale bar
         ctx.fillStyle = "rgba(20,15,10,0.5)";
         ctx.fillRect(CW - 372, 14, 358, 30);
