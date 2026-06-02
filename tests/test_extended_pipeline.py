@@ -20,10 +20,12 @@ def test_canonical_pipeline_still_has_five_stages():
     assert tuple(rule.stage_classes) == STAGE_CLASSES
 
 
-def test_extended_pipeline_has_twelve_stages():
+def test_extended_pipeline_has_thirteen_stages():
+    # 13 = the 12 chemistry-to-LUCA stages + the restored Stage XIII digital-life
+    # stage (AbiogenesisStageLife) so the pipeline walks all the way into life.
     rule = AbiogenesisExtendedPipelineRule()
-    assert len(rule.stage_classes) == 12
-    assert len(rule.stage_infos) == 12
+    assert len(rule.stage_classes) == 13
+    assert len(rule.stage_infos) == 13
     assert tuple(rule.stage_classes) == EXTENDED_STAGE_CLASSES
     assert tuple(rule.stage_infos) == EXTENDED_STAGE_INFO
 

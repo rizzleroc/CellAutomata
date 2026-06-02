@@ -1,0 +1,236 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>cellauto · web 2.0 — multi-rule sandbox</title>
+  <meta name="description" content="A live in-browser multi-rule cellular automata sandbox — Conway's Life, Wolfram 1D, Gray–Scott reaction–diffusion, and the primordial soup. Brush-paint cells, scrub presets, share state by URL." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;1,400&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <header class="plate-header">
+    <p class="eyebrow">P L A T E &nbsp; II &nbsp; · &nbsp; C E L L A U T O &nbsp; W E B &nbsp; 2 . 0 &nbsp; · &nbsp; M M X X V I</p>
+    <h1>cellauto <span class="version-tag">2.0</span></h1>
+    <p class="subtitle">the building blocks of life, and how each is controlled</p>
+    <hr class="hairline" />
+  </header>
+
+  <main class="layout">
+    <!-- ── LEFT COLUMN: canvas + readout ──────────────────────────────────── -->
+    <section class="observation">
+      <p class="section-label"><span class="roman">I</span> &nbsp; O B S E R V A T I O N</p>
+
+      <div class="canvas-frame" id="canvas-frame">
+        <canvas id="ca-canvas" width="256" height="256" aria-label="Live cellular automaton"></canvas>
+        <!-- v4.0 instrument identity overlays. -->
+        <div id="sem-badge" class="sem-badge" aria-hidden="true">
+          <span class="sem-dot"></span>
+          <span class="sem-badge-text">LIVE SEM FEED · STAGE — —</span>
+        </div>
+        <svg class="sem-reticle" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">
+          <!-- Crosshair + quadrant tick marks. -->
+          <line x1="50" y1="38" x2="50" y2="48" stroke="currentColor" stroke-width="0.18" />
+          <line x1="50" y1="52" x2="50" y2="62" stroke="currentColor" stroke-width="0.18" />
+          <line x1="38" y1="50" x2="48" y2="50" stroke="currentColor" stroke-width="0.18" />
+          <line x1="52" y1="50" x2="62" y2="50" stroke="currentColor" stroke-width="0.18" />
+          <circle cx="50" cy="50" r="0.6" fill="currentColor" />
+          <line x1="25" y1="0.4" x2="25" y2="1.4" stroke="currentColor" stroke-width="0.18" />
+          <line x1="75" y1="0.4" x2="75" y2="1.4" stroke="currentColor" stroke-width="0.18" />
+          <line x1="25" y1="98.6" x2="25" y2="99.6" stroke="currentColor" stroke-width="0.18" />
+          <line x1="75" y1="98.6" x2="75" y2="99.6" stroke="currentColor" stroke-width="0.18" />
+          <line x1="0.4" y1="25" x2="1.4" y2="25" stroke="currentColor" stroke-width="0.18" />
+          <line x1="0.4" y1="75" x2="1.4" y2="75" stroke="currentColor" stroke-width="0.18" />
+          <line x1="98.6" y1="25" x2="99.6" y2="25" stroke="currentColor" stroke-width="0.18" />
+          <line x1="98.6" y1="75" x2="99.6" y2="75" stroke="currentColor" stroke-width="0.18" />
+        </svg>
+        <div class="sem-vignette" aria-hidden="true"></div>
+        <div id="brush-hint" class="brush-hint" aria-hidden="true">click·drag to paint</div>
+      </div>
+
+      <div class="scale-bar" id="scale-bar" aria-hidden="true">
+        <span class="scale-bar-line"></span>
+        <span class="scale-bar-text" id="scale-bar-text">1 μm</span>
+      </div>
+
+      <div class="readout-bar">
+        <div class="readout-cell"><span class="rk">rule</span><span class="rv" id="rd-rule">—</span></div>
+        <div class="readout-cell"><span class="rk">gen</span><span class="rv" id="rd-gen">0</span></div>
+        <div class="readout-cell"><span class="rk">pop</span><span class="rv" id="rd-pop">—</span></div>
+        <div class="readout-cell"><span class="rk">fps</span><span class="rv" id="rd-fps">—</span></div>
+      </div>
+
+      <!-- P1-A4 — persistent, collapsed-by-default "About this stage" panel.
+           A ~50-word, origin-of-life-framed paragraph about the current rule;
+           the body text is populated from currentRule.aboutStage in setRule(). -->
+      <div class="about-stage">
+        <button id="about-toggle" class="about-toggle" type="button"
+                aria-expanded="false" aria-controls="about-body">
+          <span class="about-caret" aria-hidden="true">&#9656;</span>
+          About this stage
+        </button>
+        <div id="about-body" class="about-body" role="region"
+             aria-label="About this stage" hidden></div>
+      </div>
+
+      <p class="caption" id="stage-caption">SELECT A RULE</p>
+      <p class="caption-detail" id="stage-detail">&nbsp;</p>
+      <p class="what-this-is" id="what-this-is">&nbsp;</p>
+    </section>
+
+    <!-- ── RIGHT COLUMN: controls ────────────────────────────────────────── -->
+    <section class="controls">
+      <p class="section-label"><span class="roman">II</span> &nbsp; C O N F I G U R A T I O N</p>
+
+      <div class="control-row">
+        <label class="ctl-label" for="rule-select">rule</label>
+        <select id="rule-select" class="select"></select>
+      </div>
+
+      <div class="control-row">
+        <label class="ctl-label" for="speed-slider">speed</label>
+        <input id="speed-slider" class="slider" type="range" min="1" max="60" step="1" value="30" />
+        <span class="readout" id="speed-readout">30</span>
+      </div>
+
+      <div class="control-row">
+        <label class="ctl-label" for="brush-slider">brush</label>
+        <input id="brush-slider" class="slider" type="range" min="1" max="20" step="1" value="5" />
+        <span class="readout" id="brush-readout">5</span>
+      </div>
+
+      <!-- v4.0 SEM rendering controls. -->
+      <div class="control-row">
+        <label class="ctl-label" for="sem-mode">SEM mode</label>
+        <input id="sem-mode" type="checkbox" checked />
+      </div>
+      <div class="control-row">
+        <label class="ctl-label" for="palette-select">palette</label>
+        <select id="palette-select" class="select">
+          <option value="warm-sepia" selected>warm-sepia</option>
+          <option value="cool-mono">cool-mono</option>
+        </select>
+      </div>
+
+      <!-- Per-rule controls injected here. -->
+      <div id="rule-controls" class="rule-controls"></div>
+
+      <!-- P0-G2: focus/touch a slider above and this hint says what the
+           knob does to the biology, not just the math. -->
+      <p class="control-hint" id="control-hint">&nbsp;</p>
+
+      <div class="control-row buttons">
+        <button id="btn-play" class="btn primary">PLAY</button>
+        <button id="btn-stop" class="btn danger" disabled>STOP</button>
+        <button id="btn-step" class="btn">STEP</button>
+        <button id="btn-reset" class="btn">RESET</button>
+      </div>
+      <div class="control-row buttons">
+        <button id="btn-clear" class="btn">CLEAR</button>
+        <button id="btn-random" class="btn">RANDOMIZE</button>
+        <button id="btn-share" class="btn">COPY LINK</button>
+        <button id="btn-full" class="btn">FULLSCREEN</button>
+      </div>
+      <div class="control-row buttons">
+        <button id="btn-tour" class="btn">START TOUR</button>
+        <button id="btn-help" class="btn">ABOUT</button>
+      </div>
+
+      <p class="keymap">
+        <span class="kbd">space</span> play/pause &nbsp;
+        <span class="kbd">s</span> step &nbsp;
+        <span class="kbd">r</span> reset &nbsp;
+        <span class="kbd">c</span> clear &nbsp;
+        <span class="kbd">n</span> randomize &nbsp;
+        <span class="kbd">1–8</span> rule &nbsp;
+        <span class="kbd">m</span> SEM &nbsp;
+        <span class="kbd">p</span> palette &nbsp;
+        <span class="kbd">t</span> tour &nbsp;
+        <span class="kbd">?</span> about
+      </p>
+    </section>
+
+    <!-- ── MARGINALIA TICKER ────────────────────────────────────────────── -->
+    <section class="marginalia">
+      <p class="section-label"><span class="roman">III</span> &nbsp; M A R G I N A L I A</p>
+      <p class="commentary marginalia-ticker" id="marginalia" aria-live="polite">
+        Loading…
+      </p>
+    </section>
+
+  </main>
+
+  <footer>
+    <p class="footer-text">
+      cellauto web 2.0 — multi-rule sandbox · MIT · source on
+      <a href="https://github.com/rizzleroc/CellAutomata">GitHub</a>
+      · v1 (Stage 1 only) at <a href="../web/">/docs/web/</a>
+    </p>
+    <p class="footer-text footer-honesty">
+      Four further building blocks — autocatalytic sets (Kauffman),
+      the RNA world (Eigen quasispecies), the genetic code
+      (Vetsigian–Woese–Goldenfeld), and LUCA — run only in the Python
+      desktop build. Each is several hundred lines of NumPy / SciPy and
+      resists a faithful JS port.
+      <code>pip install -e .</code> then <code>cellauto gui</code>.
+    </p>
+  </footer>
+
+  <div id="toast" class="toast" aria-live="polite"></div>
+
+  <!-- P0-G3 first-visit orientation lede + P0-G4 control-mechanism
+       legend, packaged as one welcome modal.  Dismissed forever via
+       localStorage.  A "?" button in the header (and the keyboard
+       shortcut "?") re-opens it on demand. -->
+  <div id="welcome" class="welcome" role="dialog" aria-modal="true" aria-labelledby="welcome-title" hidden>
+    <div class="welcome-card">
+      <button class="welcome-close" id="welcome-close" aria-label="Close">×</button>
+      <p class="eyebrow">W E L C O M E</p>
+      <h2 class="welcome-title" id="welcome-title">cellauto — the building blocks of life</h2>
+      <p class="welcome-lede">
+        Nine live simulations, in canonical chemistry-to-life order. Each
+        one is a separate <em>building block</em> — a different way the
+        universe organises itself into something life-like. Each one is
+        <em>controlled</em> by sliders that the right-hand panel says — in
+        plain English — what each knob does to the biology. Press
+        <span class="kbd">space</span> to pause, <span class="kbd">1</span>–<span class="kbd">9</span>
+        to jump rules, <span class="kbd">t</span> to start a guided tour.
+      </p>
+      <p class="welcome-legend-label">B U I L D I N G   B L O C K S   ·   C O N T R O L   T Y P E</p>
+      <table class="welcome-legend">
+        <tbody>
+          <tr><td>Stage 0 · primordial soup</td>           <td>chemistry without organisation</td></tr>
+          <tr><td>Stage 0 · natural selection</td>         <td>compartment-from-mixing</td></tr>
+          <tr><td>Stage 1 · reaction–diffusion</td>        <td>pattern self-organisation</td></tr>
+          <tr><td>Stage 2 · alkaline vents</td>            <td>geological compartment + energy</td></tr>
+          <tr><td>Stage 6 · homochirality</td>             <td>symmetry-breaking</td></tr>
+          <tr><td>Stage 9 · coacervate</td>                <td>membrane-less proto-cell</td></tr>
+          <tr><td>Stage 11 · vesicle</td>                  <td>lipid-bilayer compartment</td></tr>
+          <tr><td class="aside">Stage ∞ · Conway / Wolfram</td><td class="aside">off-arc reference automata</td></tr>
+        </tbody>
+      </table>
+      <p class="welcome-footer">
+        Four more stages — autocatalytic sets, the RNA world, the
+        genetic code, and LUCA — run in the Python build only; see the
+        footer link.
+      </p>
+      <button class="btn primary welcome-cta" id="welcome-cta">START EXPLORING</button>
+    </div>
+  </div>
+
+  <script src="viridis.js"></script>
+  <script src="sem.js"></script>
+  <script src="rules/conway.js"></script>
+  <script src="rules/wolfram1d.js"></script>
+  <script src="rules/grayscott.js"></script>
+  <script src="rules/soup.js"></script>
+  <script src="rules/natural_selection.js"></script>
+  <script src="rules/chirality.js"></script>
+  <script src="rules/coacervate.js"></script>
+  <script src="rules/vents.js"></script>
+  <script src="rules/vesicles.js"></script>
+  <script src="main.js"></script>
+</body>
+</html>
