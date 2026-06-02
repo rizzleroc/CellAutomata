@@ -20,3 +20,4 @@ audit-*.png
 v32-*.png
 .mcp.json
 docs/web4/
+node_modules/
