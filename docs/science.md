@@ -218,10 +218,14 @@ in a way isolated self-replicators are not — they sidestep Eigen's "error
 catastrophe" by distributing information across multiple replicating
 species.
 
-This stage's implementation is deliberately a TOY. Each protocell carries
-a vector "genome" representing its internal species mix; its fitness is the
-Shannon entropy × total concentration; size grows with fitness; division at
-a radius threshold creates a mutated daughter; old/small protocells die.
+This stage's implementation runs the genuine Eigen-Schuster replicator
+dynamics. Each protocell carries a vector "genome" of internal species
+concentrations that evolve by the replicator ODE dxᵢ/dt = xᵢ(kᵢ·xᵢ₋₁ − Φ);
+a protocell grows only while its hypercycle is complete (gated by its
+limiting species — the weakest member of the loop), divides at a radius
+threshold into a mutated daughter, and old or small protocells die. A
+legacy scalar "proxy" fitness remains available as an A/B reference behind
+`dynamics="proxy"`.
 Real protocell evolution involves internal RAF dynamics and stochastic
 mutation rates that determine the error threshold (see Adamala & Szostak's
 2013 experimental work).

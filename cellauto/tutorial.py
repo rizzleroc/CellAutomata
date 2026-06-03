@@ -55,7 +55,7 @@ _TUTORIALS: dict[str, tuple[str, ...]] = {
     ),
     "abiogenesis-stage4-selection": (
         "Protocell selection. Vesicles tracked as discrete agents with internal 'genomes'.",
-        "Fitness = Shannon entropy × total internal concentration. Cells with diverse internal chemistry grow; degenerate cells shrink.",
+        "Fitness is the integrity of the Eigen-Schuster hypercycle: each protocell's internal species evolve by a replicator ODE, and the cell grows only while every member of the catalytic loop is present — a cycle is only as strong as its weakest member. Incomplete cycles shrink.",
         "Sufficient size triggers division; the daughter inherits the parent's genome with mutation. Heritable variation + differential survival = Darwinian evolution.",
         "Eigen-Schuster (1977) showed that mutually-catalyzing replicator loops (hypercycles) are evolutionarily stable in a way isolated replicators are not.",
         "This stage is a toy model of the moment biology splits off from chemistry.",
