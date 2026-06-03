@@ -41,11 +41,16 @@ def test_cli_simulate_emits_valid_population_json():
     # Tiny headless Wolfram run: deterministic, numpy-light, no display needed.
     proc = _run(
         "simulate",
-        "--rule", "wolfram1d",
-        "--grid", "9",
-        "--steps", "3",
-        "--seed", "0",
-        "--rule-config", "rule_number=110",
+        "--rule",
+        "wolfram1d",
+        "--grid",
+        "9",
+        "--steps",
+        "3",
+        "--seed",
+        "0",
+        "--rule-config",
+        "rule_number=110",
     )
     assert proc.returncode == 0, proc.stderr
     payload = json.loads(proc.stdout)

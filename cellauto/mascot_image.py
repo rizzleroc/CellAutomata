@@ -59,8 +59,14 @@ def render_amoeba(
     # Small upper-left sheen = cuddly 3D highlight (mirrors the Tk renderer's
     # offset _lighten() blob, not a big translucent wash).
     hi = blob_points(
-        cx - rx * 0.30, cy - ry * 0.40, rx * 0.44, ry * 0.34,
-        n=72, seed=seed ^ 0x5EED, phase=frame * 0.05, wobble=0.10,
+        cx - rx * 0.30,
+        cy - ry * 0.40,
+        rx * 0.44,
+        ry * 0.34,
+        n=72,
+        seed=seed ^ 0x5EED,
+        phase=frame * 0.05,
+        wobble=0.10,
     )
     draw.polygon(hi, fill=(*BODY_TEAL_HI, 210))
 
@@ -81,12 +87,17 @@ def render_amoeba(
     line_w = max(2, int(s * 0.012))
     if happy:
         # Bottom arc of the ellipse = an upturned smile.
-        draw.arc([cx - mw / 2, my - mw * 0.35, cx + mw / 2, my + mw * 0.75],
-                 start=20, end=160, fill=(*PUPIL, 255), width=line_w)
+        draw.arc(
+            [cx - mw / 2, my - mw * 0.35, cx + mw / 2, my + mw * 0.75],
+            start=20,
+            end=160,
+            fill=(*PUPIL, 255),
+            width=line_w,
+        )
     else:
         mr = r * 0.06
         draw.ellipse([cx - mr, my - mr, cx + mr, my + mr], fill=(*PUPIL, 255))
 
     if ss != 1:
-        img = img.resize((size, size), Image.LANCZOS)
+        img = img.resize((size, size), Image.Resampling.LANCZOS)
     return img

@@ -20,3 +20,9 @@ def test_render_amoeba_frames_differ():
     a = render_amoeba(48, frame=0, supersample=2).tobytes()
     b = render_amoeba(48, frame=20, supersample=2).tobytes()
     assert a != b
+
+
+def test_render_amoeba_neutral_mouth_variant():
+    # Exercise the happy=False branch (neutral mouth) so it stays covered.
+    img = render_amoeba(48, happy=False, supersample=2)
+    assert img.size == (48, 48)

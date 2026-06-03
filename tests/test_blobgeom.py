@@ -33,7 +33,7 @@ def test_blob_membrane_motion_is_non_degenerate():
     # Advancing phase must actually move the membrane (otherwise it's static).
     p0 = blob_points(0.0, 0.0, 6.0, 6.0, seed=7, phase=0.0)
     p1 = blob_points(0.0, 0.0, 6.0, 6.0, seed=7, phase=0.9)
-    moved = max(math.hypot(a[0] - b[0], a[1] - b[1]) for a, b in zip(p0, p1))
+    moved = max(math.hypot(a[0] - b[0], a[1] - b[1]) for a, b in zip(p0, p1, strict=True))
     assert moved > 1e-3
 
 
