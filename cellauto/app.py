@@ -69,8 +69,14 @@ TEXT = "#e6e0d0"  # warm bone (museum caption)
 TEXT_DIM = "#8c8a82"  # quiet bone
 HAIRLINE = "#1f4f4c"  # desaturated teal — for thin separators
 HAIRLINE_HI = "#39d4c8"  # accent teal — for canvas rim and focus
+TEAL_MID = "#2c8d86"  # mid-teal — pulse mid-tone between HAIRLINE and HAIRLINE_HI
 RECORD_M = "#d439a4"  # magenta — counterpoint, only on record
 STOP_R = "#7a3036"  # restrained brick — only on stop
+DISABLED_FG = "#3a3934"  # muted bone — disabled foreground
+DISABLED_BORDER = "#262421"  # near-obsidian — disabled bordercolor
+PANEL = "#0e1218"  # raised obsidian panel (intentionally not BG)
+TOAST_OK = "#9ad8d0"  # bone-tinted teal — success toast, in-system
+TOAST_ERR = "#d47d57"  # warm brick — error toast, same family as STOP_R
 
 # Window is fixed so iterations never reflow the layout.
 WINDOW_W = 720
@@ -255,8 +261,9 @@ class App(tk.Frame):
         self._fam_display = first("Italiana", "Constantia", "Cambria", "Georgia")
         self._fam_italic = first("Crimson Pro", "CrimsonPro", "Constantia", "Georgia", "TkDefaultFont")
         self._fam_mono = first("IBM Plex Mono", "IBMPlexMono", "Cascadia Mono", "Consolas", "TkFixedFont")
-        # ttk needs an actual sans for combobox text; we keep the platform one.
-        self._fam_ui = first("Segoe UI", "TkDefaultFont")
+        # Widget body text stays in the bundled mono; platform sans is only a
+        # last-resort fallback so the system never leaks Segoe UI into the UI.
+        self._fam_ui = first("IBM Plex Mono", "IBMPlexMono", "Segoe UI", "TkDefaultFont")
 
         # 3-tuples throughout so mypy's tk stub overloads accept the fonts as
         # arguments to canvas.create_text (the 2-tuple form only matches a
@@ -316,8 +323,8 @@ class App(tk.Frame):
         style.map(
             "TButton",
             background=[("active", "#10141d"), ("pressed", BG), ("disabled", BG)],
-            foreground=[("disabled", "#3a3934")],
-            bordercolor=[("active", HAIRLINE_HI), ("disabled", "#262421")],
+            foreground=[("disabled", DISABLED_FG)],
+            bordercolor=[("active", HAIRLINE_HI), ("disabled", DISABLED_BORDER)],
         )
 
         # Primary (play): teal hairline always.
@@ -332,8 +339,8 @@ class App(tk.Frame):
         style.map(
             "Primary.TButton",
             background=[("active", "#0f1a1e"), ("pressed", BG), ("disabled", BG)],
-            foreground=[("disabled", "#3a3934")],
-            bordercolor=[("disabled", "#262421"), ("active", HAIRLINE_HI)],
+            foreground=[("disabled", DISABLED_FG)],
+            bordercolor=[("disabled", DISABLED_BORDER), ("active", HAIRLINE_HI)],
         )
 
         # Stop: restrained brick.
@@ -348,8 +355,8 @@ class App(tk.Frame):
         style.map(
             "Danger.TButton",
             background=[("active", "#1a0e10"), ("pressed", BG), ("disabled", BG)],
-            foreground=[("disabled", "#3a3934")],
-            bordercolor=[("disabled", "#262421"), ("active", STOP_R)],
+            foreground=[("disabled", DISABLED_FG)],
+            bordercolor=[("disabled", DISABLED_BORDER), ("active", STOP_R)],
         )
 
         # Record: magenta hairline.
@@ -383,7 +390,7 @@ class App(tk.Frame):
         style.map(
             "TCombobox",
             fieldbackground=[("readonly", BG), ("disabled", BG)],
-            foreground=[("disabled", "#3a3934")],
+            foreground=[("disabled", DISABLED_FG)],
             bordercolor=[("active", HAIRLINE_HI), ("focus", HAIRLINE_HI)],
             arrowcolor=[("active", TEXT)],
         )
@@ -910,8 +917,8 @@ class App(tk.Frame):
         # Colour by kind. Error and success use distinct foreground colours.
         colour = {
             "info": TEXT,
-            "success": "#9ad8d0",  # soft teal-bone
-            "error": "#d47d57",  # warm brick — same family as the STOP button
+            "success": TOAST_OK,  # soft teal-bone
+            "error": TOAST_ERR,  # warm brick — same family as the STOP button
         }.get(kind, TEXT)
         try:
             self._toast_label.configure(foreground=colour)
@@ -1985,8 +1992,8 @@ class App(tk.Frame):
             dot_color = HAIRLINE  # dim
             rim_color = HAIRLINE_HI  # bright (idle preserves the existing look)
         elif phase < 0.67:
-            dot_color = "#2c8d86"  # mid teal
-            rim_color = "#2c8d86"
+            dot_color = TEAL_MID  # mid teal
+            rim_color = TEAL_MID
         else:
             dot_color = HAIRLINE_HI  # bright
             rim_color = HAIRLINE_HI  # bright
@@ -2885,7 +2892,7 @@ class App(tk.Frame):
         key = keys[0]
         values = [int(row.get(key, 0)) for row in self._stats_history[-180:]]
         x0, y0, x1, y1 = 12, CANVAS_SIZE - 78, 188, CANVAS_SIZE - 32
-        self.canvas.create_rectangle(x0, y0, x1, y1, fill="#0e1218", outline=HAIRLINE, tags="sparkline")
+        self.canvas.create_rectangle(x0, y0, x1, y1, fill=PANEL, outline=HAIRLINE, tags="sparkline")
         vmin, vmax = min(values), max(values)
         span = max(vmax - vmin, 1)
         n = len(values)
