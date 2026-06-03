@@ -130,15 +130,15 @@ From the chrome audit — small, no structural rewrite:
 
 ## 4. Definition of Done
 
-- [ ] WS-1 faces + animation on at the default grid; legible; large grids unaffected
-- [ ] WS-2 organic blob bodies + membrane motion; `blobgeom` tests green
-- [ ] WS-3 gaze drifts, stays in-eye, deterministic
-- [ ] WS-4 amoeba hero rendered headlessly + wired; favicons; canonical icon documented
-- [ ] WS-5 chrome leaks closed; `app.py` compiles; palette fully named
-- [ ] WS-6 Rule-110 test, CLI subprocess tests, Stage-4 copy fixed + guard test
-- [ ] WS-7 version 4.2.0 + CHANGELOG; PRD/ROADMAP updated
-- [ ] Full suite green (baseline: 316 passed locally; CI adds the Tk-gated tests)
-- [ ] Security review clean (or findings resolved + documented)
+- [x] WS-1 faces + animation on at the default grid; legible; large grids unaffected
+- [x] WS-2 organic blob bodies + membrane motion; `blobgeom` tests green
+- [x] WS-3 gaze drifts, stays in-eye, deterministic
+- [x] WS-4 amoeba hero rendered headlessly + wired (README + favicons); canonical icon documented — *About-dialog gallery wiring deferred (untestable Tk layout)*
+- [x] WS-5 chrome leaks closed; `app.py` compiles; palette fully named
+- [x] WS-6 Rule-110 test, CLI subprocess tests, Stage-4 copy fixed + guard test
+- [x] WS-7 version 4.2.0 + CHANGELOG; PRD/ROADMAP updated
+- [x] Full suite green (328 passed locally; CI adds the Tk-gated tests)
+- [ ] Security review clean (or findings resolved + documented) — pending
 
 ---
 

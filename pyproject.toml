@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "cellauto"
-version = "4.1.1"
+version = "4.2.0"
 description = "Scientifically-grounded abiogenesis sandbox with SEM-grade live rendering (v4.0). Coupled 12-stage chemistry-to-life pipeline (real Eigen-Schuster hypercycle ODE, Helfrich curvature, Miyazawa-Jernigan fitness, pathway-graph LUCA) rendered as a live scanning-electron-microscope feed — depth-shaded warm-sepia or cool-mono micrographs with crosshair reticle, LIVE SEM FEED badge, and scale-bar. Desktop Tk client (UX parity with the Flask web client) + optional GPU acceleration path."
 readme = "README.md"
 license = { file = "LICENSE" }

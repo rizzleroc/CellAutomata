@@ -36,7 +36,7 @@ from cellauto.rules.conway import ConwaysLifeRule
 from cellauto.rules.natural_selection import NaturalSelectionRule
 from cellauto.rules.wolfram1d import Wolfram1DRule
 
-__version__ = "4.1.1"
+__version__ = "4.2.0"
 
 __all__ = [
     "Engine",

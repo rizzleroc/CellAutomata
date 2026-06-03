@@ -196,7 +196,12 @@ Repo is public with no license. Legally, nobody can use, fork, or contribute to 
 - Catalytic Silence visual identity: bundled fonts, museum-plate sections, app icon, About dialog.
 - CHANGELOG.md, version 3.1.0.
 
-### v3.2 — Living colony & visual identity (the UI is not there yet) ← **current**
+### v3.2 — Living colony & visual identity ✅ shipped (v4.2.0, 2026-06-03)
+> Shipped: organic blob amoebas that breathe / ripple / look around and show
+> faces at the default grid, an amoeba hero baked from the colony geometry, web
+> favicons, a Catalytic-Silence chrome cleanup, and the Stage-4 / Rule-110 / CLI
+> test+doc nits. Full spec + Definition of Done:
+> [docs/design/V3_2_LIVING_COLONY.md](docs/design/V3_2_LIVING_COLONY.md).
 The infrastructure is honest but the *experience* is unfinished. The signature "cuddly cartoon amoeba" exists only as the header mascot; the colony renders as flat colored dots with faces that never appear at the default grid. And we surface only 4 of ~16 generated art assets.
 - **Living colony:** port the mascot's wobble / blink / 3D-highlight / blobby-body animation into the colony renderer, driven by a continuous tick so it's alive even when paused.
 - **Visible faces by default:** fix the `FACE_MIN_CELL_PX` vs default-grid mismatch so the amoebas read as characters out of the box.
