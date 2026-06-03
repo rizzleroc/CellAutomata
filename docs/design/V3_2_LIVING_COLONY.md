@@ -138,7 +138,7 @@ From the chrome audit — small, no structural rewrite:
 - [x] WS-6 Rule-110 test, CLI subprocess tests, Stage-4 copy fixed + guard test
 - [x] WS-7 version 4.2.0 + CHANGELOG; PRD/ROADMAP updated
 - [x] Full suite green (328 passed locally; CI adds the Tk-gated tests)
-- [ ] Security review clean (or findings resolved + documented) — pending
+- [x] Security review clean — no high-confidence findings (see §7)
 
 ---
 
@@ -159,3 +159,18 @@ This sandbox has **no tkinter and no DISPLAY**, so the Tk GUI can't run here.
 Worktreams are partitioned by file so parallel agents never collide. Edits are
 committed per workstream with descriptive messages; the final diff goes through
 security review before the milestone is declared shippable.
+
+---
+
+## 7. Security review
+
+Reviewed the full v3.2 diff (23 files, +701/−44) before release. Data flow was
+traced from every plausible untrusted-input source to sensitive sinks across the
+changed source files (docs/tests/metadata excluded).
+
+**Result: no high-confidence exploitable findings.** The changes are geometry
+(`blobgeom`), PIL/Tk rendering (`mascot_image`, `renderer`), UI colour/font
+constants (`app.py`), a dev-only render tool (script-relative paths, no
+argv/env/stdin), and four static `<link rel="icon">` lines — none of which cross
+a trust boundary. No injection, deserialization, RCE, secret, or XSS surface is
+introduced. Verdict: **safe to release.**
