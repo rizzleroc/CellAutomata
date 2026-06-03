@@ -530,7 +530,7 @@ mutation drive the population; the headline `luca_size` stat is the number
 of genes present in ≥ 70% of surviving lineages — exactly the kind of
 prevalence threshold real LUCA reconstruction uses. From random initial
 genomes, `luca_size` climbs and locks at roughly the essential-gene count
-(6 by default). That intersection IS the simulated LUCA, the genome every
+(12 by default). That intersection IS the simulated LUCA, the genome every
 lineage inherited.
 
 **What this captures:** comparative-genomics distillation of a core ancestral
