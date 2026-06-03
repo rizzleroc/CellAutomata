@@ -1,11 +1,12 @@
 """Renderers — turn rule output into something a Tk canvas can show.
 
 Two strategies:
-  - DiscreteRenderer: per-cell rect/oval items on a tk.Canvas. Used by rules
+  - DiscreteRenderer: per-cell rect/blob items on a tk.Canvas. Used by rules
     whose state is a coarse grid of distinct cells (Conway, Wolfram 1D, the
-    Stage 0 soup rule). When cells are large enough (>= 18 px) and oval-shaped
-    (the natural-selection rule's amoebas) the renderer paints little faces
-    on top so the colony reads as a cuddly cartoon, not just coloured discs.
+    Stage 0 soup rule). When cells are large enough (>= 10 px) and amoeba-shaped
+    (the natural-selection rule's amoebas) the renderer draws an organic,
+    wobbling membrane blob with a little face on top, so the colony reads as a
+    cuddly living cartoon rather than a field of coloured discs.
   - FieldRenderer: numpy array → tk.PhotoImage via PPM blit, displayed as a
     single canvas image. Used by continuous-field rules (Gray-Scott and the
     rest of the abiogenesis pipeline) where per-pixel updates are common.
@@ -23,8 +24,13 @@ from typing import Any
 
 import numpy as np
 
-# Cell width (px) below which we skip face overlays — they'd be sub-pixel mush.
-FACE_MIN_CELL_PX = 16
+from cellauto.blobgeom import blob_points, gaze_offset
+
+# Cell width (px) below which we skip face overlays + membrane animation —
+# below this the features would be sub-pixel mush. At the app's default 600 px
+# canvas this keeps the colony alive + faced for grids up to 60 (10 px cells);
+# finer grids (100, 150) fall back to plain coloured cells.
+FACE_MIN_CELL_PX = 10
 
 EYE_WHITE = "#fdf6e3"  # warm white (matches the header mascot)
 PUPIL = "#0a0e16"  # obsidian
@@ -32,6 +38,15 @@ PUPIL = "#0a0e16"  # obsidian
 # Face item indices within _CellItems.face_ids (fixed order so animate() can
 # move individual features without querying the canvas).
 _F_EYE_L, _F_EYE_R, _F_PUP_L, _F_PUP_R, _F_MOUTH = range(5)
+
+
+def _flat(points: list[tuple[float, float]]) -> list[float]:
+    """Flatten [(x, y), ...] -> [x, y, x, y, ...] for Tk coords/create_polygon."""
+    out: list[float] = []
+    for x, y in points:
+        out.append(x)
+        out.append(y)
+    return out
 
 
 @dataclass
@@ -45,18 +60,20 @@ class _CellItems:
     expression: str = ""  # "smile" | "surprise" | ""
     phase: float = 0.0  # per-cell animation phase so the colony isn't in sync
     blink_off: int = 0  # per-cell blink offset (frames)
+    seed: int = 0  # per-cell membrane/gaze seed (deterministic from x, y)
 
 
 @dataclass
 class DiscreteRenderer:
     """Persistent rect/oval items for discrete-cell rules.
 
-    Oval cells are the rule's "amoebas": they get a soft 3D highlight, a little
-    face, and — when ``animate()`` is driven by a continuous tick — they
-    breathe, bob and blink so the colony reads as a cuddly cartoon rather than
-    a field of coloured dots. Each cell carries a deterministic phase/blink
-    offset (hashed from x,y) so they move with their own personality instead of
-    pulsing in lockstep.
+    Amoeba cells render as an organic, wobbling membrane blob (not a perfect
+    oval): they get a soft 3D highlight, a little face with wandering eyes,
+    and — when ``animate()`` is driven by a continuous tick — they breathe, bob,
+    blink and ripple so the colony reads as a cuddly living cartoon rather than
+    a field of coloured dots. Each cell carries a deterministic phase/blink/seed
+    (hashed from x,y) so they move with their own personality instead of pulsing
+    in lockstep.
     """
 
     canvas: Any
@@ -90,6 +107,7 @@ class DiscreteRenderer:
                     shape="rect",
                     phase=self._hash01(x, y) * 6.2832,
                     blink_off=int(self._hash01(x + 7, y + 13) * 130),
+                    seed=(x * 73856093 ^ y * 19349663) & 0xFFFFFF,
                 )
                 for x in range(width)
             ]
@@ -143,11 +161,14 @@ class DiscreteRenderer:
         item.expression = ""
         if shape == "oval":
             cx, cy, rx, ry = self._body_geom(x, y)
-            item.body_id = self.canvas.create_oval(cx - rx, cy - ry, cx + rx, cy + ry, fill=color, outline="")
-            # Soft inner highlight — gives the amoeba a cuddly 3D sheen.
+            # Organic membrane blob (smoothed spline) instead of a perfect oval.
+            body = blob_points(cx, cy, rx, ry, seed=item.seed)
+            item.body_id = self.canvas.create_polygon(_flat(body), fill=color, outline="", smooth=True)
+            # Soft inner highlight — a smaller, calmer offset blob = cuddly 3D sheen.
             hx, hy, hrx, hry = self._highlight_geom(cx, cy, rx, ry)
-            item.highlight_id = self.canvas.create_oval(
-                hx - hrx, hy - hry, hx + hrx, hy + hry, fill=_lighten(color), outline=""
+            hi = blob_points(hx, hy, hrx, hry, seed=item.seed ^ 0x5EED, wobble=0.10)
+            item.highlight_id = self.canvas.create_polygon(
+                _flat(hi), fill=_lighten(color), outline="", smooth=True
             )
         else:
             item.body_id = self.canvas.create_rectangle(
@@ -174,8 +195,10 @@ class DiscreteRenderer:
         cy = y * ch + ch / 2
         eye_dx = cw * 0.20
         eye_dy = -ch * 0.12
-        ew = max(1.6, cw * 0.14)
-        pr = max(0.9, ew * 0.55)
+        # Slightly larger eyes so the face still reads at the small (~10 px)
+        # cells the default grid produces.
+        ew = max(1.8, cw * 0.16)
+        pr = max(1.0, ew * 0.5)
         return cx, cy, eye_dx, eye_dy, ew, pr
 
     @staticmethod
@@ -243,14 +266,17 @@ class DiscreteRenderer:
                 ph = item.phase
                 bob = math.sin(frame * 0.11 + ph) * (self._ch * 0.045)
                 breath = math.sin(frame * 0.08 + ph * 1.3) * 0.07
+                mem = frame * 0.06 + ph  # slow membrane-ripple phase
                 cx, cy, rx, ry = self._body_geom(x, y)
                 cyb = cy + bob
                 bx = rx * (1.0 + breath)
                 by = ry * (1.0 - breath * 0.6)
-                canvas.coords(item.body_id, cx - bx, cyb - by, cx + bx, cyb + by)
+                body = blob_points(cx, cyb, bx, by, seed=item.seed, phase=mem)
+                canvas.coords(item.body_id, *_flat(body))
                 if item.highlight_id is not None:
                     hx, hy, hrx, hry = self._highlight_geom(cx, cyb, bx, by)
-                    canvas.coords(item.highlight_id, hx - hrx, hy - hry, hx + hrx, hy + hry)
+                    hi = blob_points(hx, hy, hrx, hry, seed=item.seed ^ 0x5EED, phase=mem * 0.8, wobble=0.10)
+                    canvas.coords(item.highlight_id, *_flat(hi))
                 if item.face_ids:
                     blinking = ((frame + item.blink_off) % 132) < 6
                     self._animate_face(x, y, item, cyb, blinking)
@@ -261,6 +287,8 @@ class DiscreteRenderer:
         canvas = self.canvas
         ey = cyb + eye_dy
         ids = item.face_ids
+        # Pupils wander together within the eye-white so the amoeba looks around.
+        gx, gy = gaze_offset(self._frame, item.seed, ew - pr - 0.5)
         for slot, pslot, sx in ((_F_EYE_L, _F_PUP_L, -1), (_F_EYE_R, _F_PUP_R, 1)):
             ex = cx + sx * eye_dx
             if blinking:
@@ -269,7 +297,8 @@ class DiscreteRenderer:
                 canvas.itemconfigure(ids[pslot], fill="")
             else:
                 canvas.coords(ids[slot], ex - ew, ey - ew, ex + ew, ey + ew)
-                canvas.coords(ids[pslot], ex - pr, ey - pr, ex + pr, ey + pr)
+                px, py = ex + gx, ey + gy
+                canvas.coords(ids[pslot], px - pr, py - pr, px + pr, py + pr)
                 canvas.itemconfigure(ids[pslot], fill=PUPIL)
         if item.expression == "surprise":
             mr = max(1.0, cw * 0.10)
