@@ -1,5 +1,6 @@
 <p align="center">
   <img src="docs/icon.png" width="128" alt="cellauto app icon — protocell mid-division" />
+  <img src="docs/amoeba_hero.png" width="148" alt="the cellauto colony mascot — a cuddly amoeba" />
 </p>
 
 # cellauto
