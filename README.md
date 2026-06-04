@@ -1,6 +1,9 @@
 <p align="center">
-  <img src="docs/icon.png" width="128" alt="cellauto app icon — protocell mid-division" />
-  <img src="docs/amoeba_hero.png" width="148" alt="the cellauto colony mascot — a cuddly amoeba" />
+  <img src="docs/amoeba_hero_ai.png" width="300" alt="the cellauto colony mascot — a cuddly amoeba, with the colony shrinking to scale" />
+</p>
+
+<p align="center">
+  <img src="docs/icon.png" width="96" alt="cellauto app icon — protocell mid-division" />
 </p>
 
 # cellauto
