@@ -3,6 +3,15 @@
 **Status:** Implemented — v5.0.0 through Phase 5.1 has shipped (punchlist V1–V10; V11 ecology / V12 Tierra shared-memory deferred)
 **Last updated:** 2026-06-01
 
+> **⚑ Review note (2026-06-03).** The full-application review found Stage XIII
+> is the strongest *new* stage — self-encoded replication is genuinely pinned
+> (`test_life.py:136`) — but it is (a) **not registered** as a selectable rule,
+> reachable only via the extended pipeline, not the rule selector/CLI (REV-29);
+> (b) **undocumented** in the pipeline `StageInfo` (all 7 "How it works" fields
+> empty, REV-11); and (c) its `life_sem.py` renderer is **untested** beyond a
+> shape smoke (REV-05). See **[docs/review/ISSUE_REGISTER.md](review/ISSUE_REGISTER.md)**.
+> Note: this PRD self-labels "v5.0" while the shipped package is v4.1.1 (REV-14).
+
 ![v5 LIFE UI mockup — Stage XIII Digital Life](generated/v5_life_ui_mockup.png)
 
 *v5 UI mockup, generated via the whipgen MCP (ChatGPT image, 1792×1024) on

@@ -1,5 +1,17 @@
 # Cellular Automata Natural Selection Simulator — PRD & Brutal Gap Analysis
 
+> **⚑ STATUS BANNER (2026-06-03).** This document is **historical**. Its header
+> below ("reviewed at commit `7c705f6`, 2024-04-02"; "the live roadmap is now
+> v3.2") predates the current product by ~two major lines. The shipped version
+> is **v4.1.1** (`cellauto/__init__.py` / `pyproject.toml` / `CHANGELOG.md` all
+> agree). The live roadmap + punchlist is **[docs/ROADMAP.md](docs/ROADMAP.md)**;
+> the current full-application review (goals/expectations/results + screenshots)
+> is **[docs/review/APPLICATION_REVIEW_v4.1.md](docs/review/APPLICATION_REVIEW_v4.1.md)**
+> with all issues in **[docs/review/ISSUE_REGISTER.md](docs/review/ISSUE_REGISTER.md)**.
+> The `../PHASE2_BRUTAL.md` link referenced below no longer exists (tracked as
+> REV-16). The v1.x→v3.1 gap analysis that follows is preserved as the original
+> record.
+
 **Repo:** `rizzleroc/CellAutomata`
 **Reviewed at:** commit `7c705f6` (2024-04-02)
 **Reviewer date:** 2026-05-18 (~2 years after last commit)
