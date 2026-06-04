@@ -35,6 +35,8 @@ jobs:
           node-version: "20"
       - name: Web6 lab smoke tests
         run: node docs/web6/tests/smoke.mjs
+      - name: Web6 living-colony tests
+        run: node docs/web6/tests/colony.mjs
       - name: Web6 apparatus runtime verification
         run: |
           npm install three@0.162.0 --no-save --no-package-lock --silent
