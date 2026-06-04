@@ -5,6 +5,58 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ---
 
+## [4.2.0] — 2026-06-03
+
+**The colony comes alive.** The roadmap's "v3.2 — Living colony & visual
+identity" lands on the desktop client: the amoeba colony now breathes, ripples
+and looks around *by default*, the brand finally has a real amoeba hero, and the
+Catalytic-Silence chrome leaks are closed. (The package skipped from the 4.x
+web/SEM line straight to this deferred desktop polish — see
+`docs/design/V3_2_LIVING_COLONY.md` for the full spec + Definition of Done.)
+
+### Added — living-colony geometry (`cellauto/blobgeom.py`)
+Pure-stdlib, headless-testable membrane + gaze geometry: deterministic organic
+blob outlines (`blob_points` — a 3rd+5th-harmonic wobble advanced by a per-frame
+phase) and a bounded wandering pupil offset (`gaze_offset`). Six unit tests, no
+display required.
+
+### Added — amoeba hero art (`cellauto/mascot_image.py`, `tools/render_mascot_hero.py`)
+A headless PIL twin of the live colony amoeba bakes the project's amoeba hero
+(`docs/amoeba_hero.png`) from the *same* geometry the colony draws — no external
+image service. Surfaced in the README header; all four web clients
+(web/web2/web3/web6) gained the canonical `docs/icon.png` favicon.
+
+### Changed — the amoeba colony is alive by default (`cellauto/renderer.py`)
+Amoebas render as smoothed, rippling membrane **blobs** (not perfect ovals), with
+a wandering gaze and a matching offset highlight. `FACE_MIN_CELL_PX` 16 → 10 so
+the colony breathes and shows faces at the default 60-grid (10 px cells) instead
+of only at grid 30; finer grids (100/150) still fall back to plain cells to avoid
+sub-pixel mush. The independent ~20 fps animation tick (already alive while
+paused) now has something to animate out of the box.
+
+### Changed — Catalytic-Silence chrome (`cellauto/app.py`)
+Closed the visual-identity leaks: widget body text now uses the bundled IBM Plex
+Mono instead of platform sans, and the magic colours (disabled grays, the pulse
+mid-teal, toast + panel fills) are hoisted to named palette constants so the
+palette is auditable from one block. No behaviour change beyond the font.
+
+### Fixed — docs/test honesty
+- The Stage-4 tutorial copy and `docs/science.md` now describe the shipped
+  Eigen-Schuster hypercycle (replicator ODE, weakest-member gating) instead of
+  the retired "Shannon entropy × total concentration" placeholder; a guard test
+  locks it in.
+- First Wolfram **Rule 110** (Turing-complete; Cook 2004) regression test.
+- First end-to-end **CLI subprocess** smokes (`python -m cellauto …`: `--help`,
+  required-subcommand, headless `simulate` JSON contract, unknown-rule).
+
+### Notes
+- About-dialog hero wiring is deferred (it needs untestable Tk button-layout
+  changes; the README already surfaces the hero). `docs/icon_v2.png` stays an
+  unused alternate — canonical icon is `docs/icon.png`.
+- 12 new tests; **328 green locally**, CI adds the display-backed Tk suite.
+
+---
+
 ## [4.1.1] — 2026-06-01
 
 **Generated protagonist art lands in Channel B.** The "Day in the Life"

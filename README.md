@@ -1,5 +1,9 @@
 <p align="center">
-  <img src="docs/icon.png" width="128" alt="cellauto app icon — protocell mid-division" />
+  <img src="docs/amoeba_hero_ai.png" width="300" alt="the cellauto colony mascot — a cuddly amoeba, with the colony shrinking to scale" />
+</p>
+
+<p align="center">
+  <img src="docs/icon.png" width="96" alt="cellauto app icon — protocell mid-division" />
 </p>
 
 # cellauto
@@ -7,7 +11,7 @@
 [![CI](https://github.com/rizzleroc/CellAutomata/actions/workflows/ci.yml/badge.svg)](https://github.com/rizzleroc/CellAutomata/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 ![Python](https://img.shields.io/badge/python-3.10%2B-blue)
-![Version](https://img.shields.io/badge/version-4.1.1-orange)
+![Version](https://img.shields.io/badge/version-4.2.0-orange)
 
 > **v4.0 alpha — SEM-grade rendering codebase.** This is the production fork
 > for the v4.0 cycle: depth-shaded warm-sepia / cool-mono micrograph rendering
