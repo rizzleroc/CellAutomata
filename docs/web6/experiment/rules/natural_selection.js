@@ -24,6 +24,47 @@
     [154, 99, 36], [255, 250, 200], [128, 0, 0],    [170, 255, 195],
   ];
 
+  // ── Living-colony face (port of renderer.py _draw_face/_animate_face). Drawn
+  //    fresh each frame; `frame` is a continuous clock so eyes wander + blink. ──
+  const EYE_WHITE = "#fdf6e3", PUPIL = "#0a0e16";
+  function drawFace(ctx, blob, x, y, cx, cy, cw, ch, seed, bodyRGB, frame) {
+    const eyeDx = cw * 0.20, eyeDy = -ch * 0.12;
+    const ew = Math.max(1.6, cw * 0.16), pr = Math.max(0.9, ew * 0.5);
+    const surprise = ((((x * 73856093) ^ (y * 19349663)) & 0xFFFF) % 100) >= 86;
+    const blinkOff = (blob.hash01(x + 7, y + 13) * 130) | 0;
+    const blinking = (((frame + blinkOff) | 0) % 132) < 6;
+    const g = blob.gazeOffset(frame, seed, ew - pr - 0.5);
+    const ey = cy + eyeDy;
+    const lightBody = blob.isLight(bodyRGB[0], bodyRGB[1], bodyRGB[2]);
+    for (let s = 0; s < 2; s++) {
+      const sx = s === 0 ? -1 : 1;
+      const ex = cx + sx * eyeDx;
+      ctx.beginPath();
+      if (blinking) ctx.ellipse(ex, ey, ew, 0.8, 0, 0, 6.2832);
+      else ctx.ellipse(ex, ey, ew, ew, 0, 0, 6.2832);
+      ctx.fillStyle = EYE_WHITE; ctx.fill();
+      if (lightBody) { ctx.lineWidth = 1; ctx.strokeStyle = PUPIL; ctx.stroke(); }
+      if (!blinking) {
+        ctx.beginPath();
+        ctx.ellipse(ex + g[0], ey + g[1], pr, pr, 0, 0, 6.2832);
+        ctx.fillStyle = PUPIL; ctx.fill();
+      }
+    }
+    if (surprise) {
+      const mr = Math.max(1.0, cw * 0.10);
+      ctx.beginPath(); ctx.ellipse(cx, cy + ch * 0.18, mr, mr, 0, 0, 6.2832);
+      ctx.fillStyle = PUPIL; ctx.fill();
+    } else {
+      const mw = cw * 0.30;
+      ctx.beginPath();
+      ctx.lineWidth = Math.max(1, cw / 14);
+      ctx.strokeStyle = PUPIL;
+      // smile: lower arc (canvas y grows downward → angles 0..π trace the bottom).
+      ctx.arc(cx, cy + ch * 0.04, mw / 2, Math.PI * 0.15, Math.PI * 0.85);
+      ctx.stroke();
+    }
+  }
+
   function make() {
     // Three parallel Uint arrays keep the per-cell tuple light.
     const color  = new Uint8Array(N);   // species index 0..15
@@ -58,6 +99,8 @@
       paletteFg: [230, 224, 208],
       width: W,
       height: H,
+      hiRes: true,   // browser: render the living cartoon colony (vector); the
+                     // SEM renderHeight()/render() paths below stay for the smoke.
 
       params: {
         amoebaLifespan: { label: "amoeba lifespan", min: 10, max: 200, step: 5, value: AMOEBA_LIFESPAN },
@@ -161,6 +204,59 @@
             pixels[p]   = Math.min(255, r + 60);
             pixels[p+1] = Math.min(255, g + 60);
             pixels[p+2] = Math.min(255, b + 60);
+          }
+        }
+      },
+
+      // ── Living colony — browser hi-res VECTOR render (port of
+      //    cellauto/renderer.py DiscreteRenderer). main.js uses this because
+      //    hiRes:true; the SEM renderHeight()/render() paths above are untouched
+      //    (the headless smoke still drives them). Amoebas are wobbling membrane
+      //    blobs with a 3D sheen + a wandering, blinking face; non-amoeba cells
+      //    are flat species tiles. Faces appear once cells are big enough to read
+      //    (mirrors renderer.py FACE_MIN_CELL_PX). ──
+      renderPhotoreal(ctx, wpx, hpx) {
+        const blob = (typeof window !== "undefined" && window.CA && window.CA.blob) || null;
+        const cw = wpx / W, ch = hpx / H;
+        const frame = (typeof performance !== "undefined" ? performance.now() : Date.now()) * 0.06;
+        ctx.fillStyle = "rgb(10,14,22)";
+        ctx.fillRect(0, 0, wpx, hpx);
+        // 1) Non-amoeba cells: flat species tiles (the soup substrate).
+        for (let y = 0; y < H; y++) {
+          for (let x = 0; x < W; x++) {
+            const i = y * W + x;
+            if (flags[i] & 0b10) continue;
+            const c = PALETTE[color[i]];
+            ctx.fillStyle = "rgb(" + c[0] + "," + c[1] + "," + c[2] + ")";
+            ctx.fillRect(x * cw, y * ch, cw + 0.7, ch + 0.7);
+          }
+        }
+        if (!blob) return; // geometry module absent → legible substrate only.
+        const faces = cw >= 8.0;
+        // 2) Amoebas: organic membrane blob + 3D sheen + (optional) face.
+        for (let y = 0; y < H; y++) {
+          for (let x = 0; x < W; x++) {
+            const j = y * W + x;
+            if ((flags[j] & 0b10) === 0) continue;
+            const col = PALETTE[color[j]];
+            const seed = ((x * 73856093) ^ (y * 19349663)) & 0xFFFFFF;
+            const ph = blob.hash01(x, y) * 6.2832;
+            const cx = x * cw + cw / 2, cyBase = y * ch + ch / 2;
+            const bob = Math.sin(frame * 0.11 + ph) * (ch * 0.045);
+            const breath = Math.sin(frame * 0.08 + ph * 1.3) * 0.07;
+            const mem = frame * 0.06 + ph;
+            const cy = cyBase + bob;
+            const rx = cw * 0.46 * (1.0 + breath), ry = ch * 0.46 * (1.0 - breath * 0.6);
+            blob.blobPath(ctx, blob.blobPoints(cx, cy, rx, ry, { seed: seed, phase: mem }));
+            ctx.fillStyle = "rgb(" + col[0] + "," + col[1] + "," + col[2] + ")";
+            ctx.fill();
+            const hl = blob.lighten(col[0], col[1], col[2]);
+            blob.blobPath(ctx, blob.blobPoints(
+              cx - rx * 0.30, cy - ry * 0.38, rx * 0.42, ry * 0.34,
+              { seed: seed ^ 0x5EED, phase: mem * 0.8, wobble: 0.10 }));
+            ctx.fillStyle = "rgb(" + hl[0] + "," + hl[1] + "," + hl[2] + ")";
+            ctx.fill();
+            if (faces) drawFace(ctx, blob, x, y, cx, cy, cw, ch, seed, col, frame);
           }
         }
       },
