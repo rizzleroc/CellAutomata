@@ -1,0 +1,297 @@
+[
+  {
+    "rule": "abiogenesis-stage0-soup",
+    "steps": 60,
+    "grid": 60,
+    "population": {
+      "amoebas": 2766,
+      "new": 666,
+      "settled": 168
+    },
+    "kind": "discrete",
+    "render": "docs/review/screenshots/abiogenesis-stage0-soup.png"
+  },
+  {
+    "rule": "natural-selection",
+    "steps": 60,
+    "grid": 60,
+    "population": {
+      "amoebas": 2766,
+      "new": 666,
+      "settled": 168
+    },
+    "kind": "discrete",
+    "render": "docs/review/screenshots/natural-selection.png"
+  },
+  {
+    "rule": "conway",
+    "steps": 120,
+    "grid": 80,
+    "population": {
+      "alive": 682,
+      "dead": 5718
+    },
+    "kind": "discrete",
+    "render": "docs/review/screenshots/conway.png"
+  },
+  {
+    "rule": "wolfram1d",
+    "steps": 118,
+    "grid": 120,
+    "population": {
+      "live_now": 68,
+      "history_on": 4003,
+      "history_off": 10277
+    },
+    "kind": "discrete",
+    "render": "docs/review/screenshots/wolfram1d.png"
+  },
+  {
+    "rule": "abiogenesis-stage1-grayscott",
+    "steps": 1500,
+    "grid": 110,
+    "population": {
+      "active": 2321,
+      "high_concentration": 0,
+      "inactive": 9779
+    },
+    "kind": "field",
+    "render_rgb_shape": [
+      110,
+      110,
+      3
+    ],
+    "viridis": "docs/review/screenshots/abiogenesis-stage1-grayscott.png",
+    "sem": "docs/review/screenshots/abiogenesis-stage1-grayscott_sem.png"
+  },
+  {
+    "rule": "abiogenesis-stage2-raf",
+    "steps": 400,
+    "grid": 100,
+    "population": {
+      "active_cells": 10000,
+      "ignited_cells": 10000,
+      "raf_size": 1,
+      "network_size": 16,
+      "catalysis_level_x100": 200
+    },
+    "kind": "field",
+    "render_rgb_shape": [
+      100,
+      100,
+      3
+    ],
+    "viridis": "docs/review/screenshots/abiogenesis-stage2-raf.png",
+    "sem": "docs/review/screenshots/abiogenesis-stage2-raf_sem.png"
+  },
+  {
+    "rule": "abiogenesis-stage3-vesicles",
+    "steps": 600,
+    "grid": 100,
+    "population": {
+      "membrane_cells": 2054,
+      "vesicles": 46,
+      "active_lipid": 5030,
+      "cmc_mM": 85
+    },
+    "kind": "field",
+    "render_rgb_shape": [
+      100,
+      100,
+      3
+    ],
+    "viridis": "docs/review/screenshots/abiogenesis-stage3-vesicles.png",
+    "sem": "docs/review/screenshots/abiogenesis-stage3-vesicles_sem.png"
+  },
+  {
+    "rule": "abiogenesis-stage4-selection",
+    "steps": 500,
+    "grid": 100,
+    "population": {
+      "protocells": 0,
+      "avg_radius": 0,
+      "avg_fitness_x1000": 0,
+      "mutation_rate_x1000": 20,
+      "error_threshold_x1000": 250
+    },
+    "kind": "field",
+    "render_rgb_shape": [
+      100,
+      100,
+      3
+    ],
+    "viridis": "docs/review/screenshots/abiogenesis-stage4-selection.png",
+    "sem": "docs/review/screenshots/abiogenesis-stage4-selection_sem.png"
+  },
+  {
+    "rule": "abiogenesis-hydrothermal-vent",
+    "steps": 400,
+    "grid": 100,
+    "population": {
+      "organic_cells": 400,
+      "interface_cells": 0,
+      "mean_grad_x1000": 18,
+      "delta_pH_x10": 45,
+      "pmf_mV": 266,
+      "delta_G_x10_kJmol": -257,
+      "wl_delta_G_kJmol": -95,
+      "acetate_yield_x100": 3,
+      "h2_pool_x100": 17,
+      "co2_pool_x100": 66
+    },
+    "kind": "field",
+    "render_rgb_shape": [
+      100,
+      100,
+      3
+    ],
+    "viridis": "docs/review/screenshots/abiogenesis-hydrothermal-vent.png",
+    "sem": "docs/review/screenshots/abiogenesis-hydrothermal-vent_sem.png"
+  },
+  {
+    "rule": "abiogenesis-mineral-catalysis",
+    "steps": 500,
+    "grid": 100,
+    "population": {
+      "polymer_cells": 10000,
+      "clay_pct": 24,
+      "polymer_on_clay_x100": 531,
+      "polymer_in_bulk_x100": 43
+    },
+    "kind": "field",
+    "render_rgb_shape": [
+      100,
+      100,
+      3
+    ],
+    "viridis": "docs/review/screenshots/abiogenesis-mineral-catalysis.png",
+    "sem": "docs/review/screenshots/abiogenesis-mineral-catalysis_sem.png"
+  },
+  {
+    "rule": "abiogenesis-homochirality",
+    "steps": 600,
+    "grid": 100,
+    "population": {
+      "active": 10000,
+      "ee_x100": 28,
+      "L_dominant": 6196,
+      "R_dominant": 3680
+    },
+    "kind": "field",
+    "render_rgb_shape": [
+      100,
+      100,
+      3
+    ],
+    "viridis": "docs/review/screenshots/abiogenesis-homochirality.png",
+    "sem": "docs/review/screenshots/abiogenesis-homochirality_sem.png"
+  },
+  {
+    "rule": "abiogenesis-rna-world",
+    "steps": 350,
+    "grid": 100,
+    "population": {
+      "strands": 8618,
+      "master_pct": 68,
+      "mean_distance_x10": 4,
+      "error_rate_x1000": 20,
+      "error_threshold_x1000": 144
+    },
+    "kind": "field",
+    "render_rgb_shape": [
+      100,
+      100,
+      3
+    ],
+    "viridis": "docs/review/screenshots/abiogenesis-rna-world.png",
+    "sem": "docs/review/screenshots/abiogenesis-rna-world_sem.png"
+  },
+  {
+    "rule": "abiogenesis-coacervate",
+    "steps": 800,
+    "grid": 100,
+    "population": {
+      "coacervate_cells": 2669,
+      "droplets": 97,
+      "rich_pct": 27
+    },
+    "kind": "field",
+    "render_rgb_shape": [
+      100,
+      100,
+      3
+    ],
+    "viridis": "docs/review/screenshots/abiogenesis-coacervate.png",
+    "sem": "docs/review/screenshots/abiogenesis-coacervate_sem.png"
+  },
+  {
+    "rule": "abiogenesis-genetic-code",
+    "steps": 350,
+    "grid": 100,
+    "population": {
+      "cells": 9458,
+      "mean_fitness_x100": 93,
+      "best_fitness_x100": 100,
+      "master_pct": 45,
+      "code_consensus_x100": 65
+    },
+    "kind": "field",
+    "render_rgb_shape": [
+      100,
+      100,
+      3
+    ],
+    "viridis": "docs/review/screenshots/abiogenesis-genetic-code.png",
+    "sem": "docs/review/screenshots/abiogenesis-genetic-code_sem.png"
+  },
+  {
+    "rule": "abiogenesis-luca",
+    "steps": 350,
+    "grid": 100,
+    "population": {
+      "cells": 9376,
+      "mean_fitness_x100": 85,
+      "luca_size": 12,
+      "essential_target": 12,
+      "mean_genome_size_x10": 127
+    },
+    "kind": "field",
+    "render_rgb_shape": [
+      100,
+      100,
+      3
+    ],
+    "viridis": "docs/review/screenshots/abiogenesis-luca.png",
+    "sem": "docs/review/screenshots/abiogenesis-luca_sem.png"
+  },
+  {
+    "rule": "abiogenesis-pipeline",
+    "steps": 500,
+    "grid": 100,
+    "population": {
+      "stage": 4,
+      "protocells": 101,
+      "avg_radius": 6,
+      "avg_fitness_x1000": 916,
+      "mutation_rate_x1000": 20,
+      "error_threshold_x1000": 250
+    },
+    "kind": "discrete",
+    "render": "docs/review/screenshots/abiogenesis-pipeline.png"
+  },
+  {
+    "rule": "abiogenesis-pipeline-extended",
+    "steps": 700,
+    "grid": 100,
+    "population": {
+      "stage": 7,
+      "cells": 9268,
+      "mean_fitness_x100": 78,
+      "best_fitness_x100": 100,
+      "master_pct": 10,
+      "code_consensus_x100": 42
+    },
+    "kind": "discrete",
+    "render": "docs/review/screenshots/abiogenesis-pipeline-extended.png"
+  }
+]

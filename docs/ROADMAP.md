@@ -7,6 +7,18 @@ captures what's deliberately deferred.
 
 Last updated: 2026-05-30.
 
+> **⚑ Review correction (2026-06-03, v4.1.1).** A full-application review
+> re-measured the project against running code: **13 abiogenesis stages**
+> (Stage XIII digital life shipped), **≈318 tests collected** (279 fns;
+> 316 passed / 1 env-failure / 1 skipped), **91 % coverage**, and **six CI
+> checks + a security job** (not "four gates"). The G1–G5 items below remain
+> shipped, but two are real-but-overclaimed (G3 Helfrich, G4 Miyazawa-Jernigan)
+> and the coupling is via `extract_signal`/`seed_field`, not an `inherit_from`
+> adapter. Stale counts/phrasing in the historical entries below are preserved
+> as record; the live numbers and 36 documented issues are in
+> **[docs/review/](review/)** (`APPLICATION_REVIEW_v4.1.md` + `ISSUE_REGISTER.md`),
+> tracked as the §7 punchlist at the end of this file.
+
 > **v3.5 status:** all G1–G12 punchlist items from the v3.4 gap audit
 > are CLOSED. The 12-stage pipeline is genuinely coupled; Stage XI runs
 > the real Eigen-Schuster ODE; Stage X has Helfrich bending; Stage VIII
@@ -247,9 +259,11 @@ removes or breaks one of these is a regression, not a simplification.
   - Stage XI — protocell selection (genome-product fitness proxy gating growth/division/death). PARTIAL — **self-confessed TOY** in docstring; G2 to deepen.
   - Stage XII — LUCA distillation (gene-presence bitsets; 70 %-prevalence core). PARTIAL — methodology real, landscape hand-shaped; G5 to deepen.
 - **Pipeline rules** — `abiogenesis-pipeline` (5 stages) and
-  `abiogenesis-pipeline-extended` (12 stages). **NB:** until G1 is closed,
-  promotion resets the inner state — the "pipeline" is a sequence of
-  isolated runs, not a coupled narrative.
+  `abiogenesis-pipeline-extended` (now 13 stages, incl. Stage XIII digital
+  life). G1 is **closed**: promotion hands state across stages via
+  `extract_signal`/`seed_field`, so the pipeline is a coupled narrative
+  (verified 2026-06-03, spatial corr ≈ 0.99). *(Stale "until G1 is closed"
+  wording corrected — see review REV-15.)*
 - **Reference automata**: Conway's Game of Life, Wolfram 1D (rules 0–255).
 - **Legacy alias** `natural-selection` → Stage 0 (kept for old snapshots/CLI).
 - **Real published data** backing the constants:
@@ -741,3 +755,41 @@ distinct set of UX qualities the Tk app lacks. v3.6 closes those gaps.
 - **Adding a feature?** Add it to the Feature Inventory.
 - **Starting work?** Move the item from Roadmap → Punchlist "in progress."
 - **Shipping?** Re-read the Feature Inventory and confirm nothing on it broke.
+
+---
+
+## 7. v4.2 — Full-application review closure (REV-*) — CURRENT punchlist
+
+A full-application review on **2026-06-03** (build v4.1.1) audited engine, GUI,
+web, tests/CI, docs, and assets; verified every headline claim against running
+code + rendered output; and confirmed the load-bearing science against the
+literature (Helfrich κ≈10⁻¹⁹ J, Eigen ε_c≈ln σ/L, Wood-Ljungdahl ΔG°′≈−95 kJ/mol
+all check out). Write-up + screenshots: **[docs/review/APPLICATION_REVIEW_v4.1.md](review/APPLICATION_REVIEW_v4.1.md)**;
+all 36 issues with evidence + fix direction: **[docs/review/ISSUE_REGISTER.md](review/ISSUE_REGISTER.md)**.
+
+Headline: the cited science is accurate; debt is in claim-vs-code overreach,
+doc drift, test/CI hygiene, one Tk-coupled test failure, and web
+canonicalisation. **0 blocker · 11 major · 25 minor.**
+
+### P0 — honest-green + brand-risk (do first)
+- [ ] **REV-01** Decouple SEM-config I/O from `tkinter` so the suite is green headless (red without Tk today; CI passes only because ubuntu ships Tk).
+- [ ] **REV-08/09/10/15** Close the 3 overclaims with prose: science.md Stage-4 fitness (entropy → hypercycle ODE + proxy); soften "Helfrich real"; LUCA "core = invariant" + 6→12 *(done)*; drop the non-existent `inherit_from` wording *(done)*.
+- [ ] **REV-11** Author Stage XIII `_STAGE_LIFE_INFO` (7 fields) so the flagship stage has "How it works" + chapter card.
+- [ ] **REV-02** Genetic-code: implement the donor-code-compatibility gate the docstring claims, or downgrade the prose.
+
+### P1 — doc reconciliation (mostly mechanical)
+- [ ] **REV-12** PRD.md status banner + repoint dead `PHASE2_BRUTAL.md` links *(banner applied)*.
+- [ ] **REV-13/16** Create or repoint `docs/PRD_LAB_EXPERIMENTS.md` and `PHASE2_BRUTAL.md`.
+- [ ] **REV-14/17** Reconcile counts everywhere (13 stages · ≈318 tests · 91 % · six CI checks) *(current-state banner applied)*.
+- [ ] **REV-29** Register `abiogenesis-life` in `rules/__init__.py`, or document the deliberate exclusion.
+
+### P2 — web canonicalisation
+- [ ] **REV-18** Port `stage_minerals.py` → `experiment/rules/minerals.js` (today it's a Gray-Scott stand-in).
+- [ ] **REV-19** Gate web2/web3 smokes in CI, or declare them frozen-legacy and remove.
+- [ ] **REV-20/21/22/23** web4→web6 rename; railway healthcheck `/web6/`; vendor Three.js; update web2/web3 PUNCHLISTs.
+
+### P3 — tests / CI / UX hygiene
+- [ ] **REV-04/05/06/07** De-tautologise tests; add `test_life_sem.py`; cover `tutorial.py`/`params.py`; pin published constants.
+- [ ] **REV-33/34/35/36** Pin action versions consistently + bump node; raise coverage gate to ~88; audit the installed env; mypy `--disallow-untyped-defs` + add py3.13.
+- [ ] **REV-24/25/26/27/28** UX: stop-before-export + non-modal panels; transport above the fold; toast for the plate-not-found error; menu/state gating; polish.
+- [ ] **REV-30/31/32** Delete dead `_v401_sprites`; align genetic-code `render_cell` with `render_rgb`; fix `_division_site` docstring.
