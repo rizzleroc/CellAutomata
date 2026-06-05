@@ -41,11 +41,13 @@ const MODULES = [
   "mineral_flask", "chirality_polarimeter", "rna_thermocycler", "code_bench",
   "coacervate_microscope", "microfluidic_chip", "luca_console", "stromatolite",
 ];
+const ONLY = process.argv[2];                       // optional single-apparatus filter
+const RUN = ONLY ? MODULES.filter((m) => m === ONLY) : MODULES;
 const isFiniteVec = (v) => v && [v.x, v.y, v.z].every(Number.isFinite);
 
 let fails = 0;
-console.log(`Running web7 apparatus runtime verification (${MODULES.length} apparatus)…\n`);
-for (const name of MODULES) {
+console.log(`Running web7 apparatus runtime verification (${RUN.length} apparatus)…\n`);
+for (const name of RUN) {
   try {
     const { meta } = await import(pathToFileURL(path.join(APP, `${name}.js`)).href);
     if (!meta || typeof meta.build !== "function") throw new Error("meta.build missing");
@@ -83,5 +85,5 @@ for (const name of MODULES) {
   }
 }
 
-console.log(`\n${MODULES.length - fails}/${MODULES.length} apparatus executed cleanly.`);
+console.log(`\n${RUN.length - fails}/${RUN.length} apparatus executed cleanly.`);
 process.exit(fails ? 1 : 0);
