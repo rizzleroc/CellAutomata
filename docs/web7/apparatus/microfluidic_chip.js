@@ -94,11 +94,14 @@ export function build() {
   }
   group.add(wellArray);
 
+  // Fitness ramp on the sanctioned palette: magenta (low) → teal (high).
+  const FIT_LO = new THREE.Color(MAGENTA), FIT_HI = new THREE.Color(TEAL);
   function colorWell(w) {
-    const f = w.userData.fitness;                          // red(0)→green(1)
-    const rr = Math.min(1, 2 * (1 - f)), gg = Math.min(1, 2 * f);
-    w.material.color.setRGB(rr, gg, 0.1);
-    w.material.emissive.setRGB(rr * 0.25 * f, gg * 0.35 * f, 0.0);
+    const f = w.userData.fitness;                          // magenta(0)→teal(1)
+    const k = Math.min(1, Math.max(0, f));
+    w.material.color.copy(FIT_LO).lerp(FIT_HI, k);
+    w.material.emissive.copy(FIT_LO).lerp(FIT_HI, k);
+    w.material.emissiveIntensity = 0.3 * f;                // ≤ 0.3·f
   }
   wells.forEach(colorWell);
 
