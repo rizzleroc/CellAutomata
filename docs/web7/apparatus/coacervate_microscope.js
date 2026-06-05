@@ -124,10 +124,11 @@ export function build() {
 
   // ── Coacervate field: droplets that coalesce + coarsen over time ──────────
   const { ctx, size } = dyn;
+  const FIELD_N = 36;                          // capped drop count (radial-gradient fills are pricey)
   let drops = [];
   function seed() {
     drops = [];
-    for (let i = 0; i < 90; i++) {
+    for (let i = 0; i < FIELD_N; i++) {
       drops.push({ x: Math.random() * size, y: Math.random() * size,
         r: 3 + Math.random() * 4, vx: (Math.random() - 0.5) * 6, vy: (Math.random() - 0.5) * 6, alive: true });
     }
@@ -149,10 +150,18 @@ export function build() {
       }
     }
   }
-  function paint() {
+  // Throttle the 256² canvas repaint to ~20 fps: redrawing every animation
+  // frame and filling a radial gradient per drop is the heaviest cost here.
+  let paintAcc = 0;
+  function paint(dt) {
+    if (dt !== undefined) {                    // throttled path (called from update)
+      paintAcc += dt;
+      if (paintAcc < 0.05) return;             // ~20 fps cap
+      paintAcc = 0;
+    }
     ctx.fillStyle = '#0d1410'; ctx.fillRect(0, 0, size, size);
     for (const d of drops) {
-      if (!d.alive) continue;
+      if (!d.alive) continue;                  // skip merged/invisible drops
       const g = ctx.createRadialGradient(d.x - d.r * 0.3, d.y - d.r * 0.3, 1, d.x, d.y, d.r);
       g.addColorStop(0, 'rgba(190,210,180,0.95)');
       g.addColorStop(0.7, 'rgba(120,150,110,0.7)');
@@ -209,7 +218,7 @@ export function build() {
         if (d.y < d.r || d.y > size - d.r) d.vy *= -1;
       }
       mergeTimer += dt;
-      if (mergeTimer > 0.12) { coalesce3D(); mergeTimer = 0; }
+      if (mergeTimer > 0.12) { coalesce3D(); coarsen(); mergeTimer = 0; }
 
       // Physical droplets on the slide: nucleate, drift, coarsen, settle scale.
       for (const b of blobs) {
@@ -225,10 +234,11 @@ export function build() {
         b.mat.emissiveIntensity = 0.3 + 0.25 * b.born;
       }
 
-      // Coarsening fraction → progress: mean blob radius across its growth range.
+      // Coarsening fraction → progress: mean blob radius across its growth
+      // range, OR how far the 2-D field has merged down (coarsen() culls drops).
       const meanR = blobs.reduce((s, b) => s + b.r, 0) / blobs.length;
       const alive = drops.filter((d) => d.alive).length;
-      const fieldFrac = 1 - (alive - 1) / 89;
+      const fieldFrac = 1 - (alive - 1) / (FIELD_N - 1);
       progress = Math.min(1, Math.max(fieldFrac, (meanR - 0.012) / (0.09 - 0.012)));
 
       // Microscope-lamp illumination flicker (warm) + slow focus-knob drift.
@@ -240,7 +250,7 @@ export function build() {
       focusCoarse.rotation.x = Math.sin(t * 0.4) * 0.25;   // coarse knob drifts
       focusFine.rotation.x = Math.sin(t * 0.9 + 1.0) * 0.4; // fine knob hunts focus
 
-      paint();
+      paint(dt);                               // throttled to ~20 fps internally
     },
   };
 

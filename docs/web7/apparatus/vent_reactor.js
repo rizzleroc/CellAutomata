@@ -2,7 +2,7 @@
 //
 // Lane–Martin chemiosmosis on the bench: a sealed glass/steel reactor column
 // clamped to a ring-stand, packed with a porous FeS mineral chimney lit by a
-// warm orange glow from below. Alkaline fluid percolates up across a proton
+// candle-warm glow from below. Alkaline fluid percolates up across a proton
 // gradient, bubbling, driving Wood–Ljungdahl carbon fixation. A pH probe enters
 // the top; copper tubing feeds it; a Bakelite readout panel beside it shows live
 // PMF (mV) and ΔG (kJ/mol) on a glowing CanvasTexture display. Parts are named.
@@ -54,9 +54,9 @@ export function build() {
 
   // ── Vent glow: emissive plug + warm point light from below ────────────────
   const ventGlow = part(new THREE.SphereGeometry(0.3, 20, 16),
-    new THREE.MeshBasicMaterial({ color: 0xff7a18 }), 'vent-glow', V(cx, colBot + 0.25, 0));
+    new THREE.MeshBasicMaterial({ color: 0xffb866 }), 'vent-glow', V(cx, colBot + 0.25, 0));
   group.add(ventGlow);
-  const glowLight = new THREE.PointLight(0xff7a18, 5, 4, 2);
+  const glowLight = new THREE.PointLight(0xffb866, 5, 4, 2);
   glowLight.position.set(cx, colBot + 0.4, 0);
   group.add(glowLight);
 
@@ -172,17 +172,17 @@ export function build() {
           b.position.y += b.userData.v * dt;
           if (b.position.y > colBot + colH * 0.9) b.userData.reset();
         }
-        // warm flicker + shimmer: the vent light wavers in intensity, drifts a
-        // touch as convection rolls the plume, and breathes warm hue.
-        const flick = 0.8 + Math.random() * 0.4;
+        // warm flicker + shimmer: the vent breathes via slow thermal convection,
+        // wavering gently in intensity and drifting as the warm plume rolls.
+        const flick = 0.9 + Math.random() * 0.2;
         glowLight.intensity = 5 * flick;
         glowLight.position.set(
-          cx + Math.sin(t * 5.1) * 0.05,
-          colBot + 0.4 + Math.sin(t * 3.3) * 0.06,
-          Math.cos(t * 4.2) * 0.05,
+          cx + Math.sin(t * 1.8) * 0.05,
+          colBot + 0.4 + Math.sin(t * 1.3) * 0.06,
+          Math.cos(t * 1.5) * 0.05,
         );
-        const warm = 0.5 + 0.5 * (0.6 + 0.4 * Math.sin(t * 6.0));   // amber↔gold breath
-        glowLight.color.setRGB(1.0, 0.62 + 0.16 * warm, 0.30 + 0.10 * warm);
+        const warm = 0.5 + 0.5 * Math.sin(t * 1.5);                 // slow warm breath
+        glowLight.color.setRGB(1.0, 0.69 + 0.04 * warm, 0.38 + 0.04 * warm);
         ventGlow.visible = true;
         ventGlow.scale.setScalar(0.85 + 0.3 * flick);
         // readouts drift as the gradient builds

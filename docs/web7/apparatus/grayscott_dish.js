@@ -123,10 +123,17 @@ export function build() {
     { x: 0.68, y: 0.38, ph: 3.1 }, { x: 0.6, y: 0.7, ph: 4.5 },
   ];
   let running = true, progress = 0;
+  // Throttle the heavy CanvasTexture repaint to ~24 fps. The BZ phase advances
+  // with t, so the texture is always drawn at the current phase — a slightly
+  // lower repaint cadence than the render loop is imperceptible.
+  const PAINT_DT = 1 / 24;
+  let paintAccum = 0;
 
   // BZ phase colours: amber (oxidised, ferriin) ↔ teal (reduced, ferroin-ish).
   const amber = new THREE.Color(0xc8731e);
   const teal = new THREE.Color(0x1f8f86);
+  const warm = new THREE.Color(0xffb866);       // glow colour at the oxidised phase
+  const glowScratch = new THREE.Color();         // reused — no per-frame allocation
   const filmBaseY = film.position.y;
   filmMat.color.copy(amber);
 
@@ -171,12 +178,14 @@ export function build() {
       if (!on) calm();
     },
     getProgress() { return progress; },
-    reset() { progress = 0; calm(); paint(0); },
+    reset() { progress = 0; paintAccum = 0; calm(); paint(0); },
     update(dt, t) {
       if (!running) return;
       // Reaction maturity drives the readout.
       progress = Math.min(1, progress + dt / 30);
-      paint(t);
+      // Repaint the dish texture at ~24 fps rather than every frame.
+      paintAccum += dt;
+      if (paintAccum >= PAINT_DT) { paintAccum = 0; paint(t); }
 
       // BZ colour oscillation: the whole film breathes amber ↔ teal as the
       // ferroin/ferriin couple flips. Oscillation quickens as the run matures.
@@ -184,7 +193,7 @@ export function build() {
       filmMat.color.copy(amber).lerp(teal, osc);
 
       // Reaction glow pulses in step (teal at the reduced peak, warm otherwise).
-      glow.color.copy(teal).lerp(new THREE.Color(0xffb866), 1 - osc);
+      glow.color.copy(glowScratch.copy(teal).lerp(warm, 1 - osc));
       glow.intensity = 0.4 + 1.3 * osc;
 
       // Gentle surface ripple/shimmer: the film breathes vertically and in

@@ -164,11 +164,11 @@ export function build() {
 
   function paint(t) {
     const ctx = dyn.ctx, S = dyn.size;
-    ctx.fillStyle = '#03110d'; ctx.fillRect(0, 0, S, S);
+    ctx.fillStyle = '#06120e'; ctx.fillRect(0, 0, S, S);
     // scanline flicker
-    ctx.fillStyle = 'rgba(80,255,180,0.04)';
+    ctx.fillStyle = 'rgba(125,240,192,0.04)';
     for (let y = 0; y < S; y += 4) ctx.fillRect(0, y + (Math.sin(t * 4) > 0 ? 0 : 2), S, 1);
-    ctx.fillStyle = '#3fffb0'; ctx.font = 'bold 16px monospace'; ctx.textAlign = 'left';
+    ctx.fillStyle = '#7df0c0'; ctx.font = 'bold 16px monospace'; ctx.textAlign = 'left';
     ctx.fillText('LUCA · CORE GENE SET', 14, 24);
     ctx.font = '13px monospace';
     const coreSet = new Set(coreOrder.slice(0, revealed));
@@ -176,12 +176,12 @@ export function build() {
       const col = i < 8 ? 14 : 132, row = (i % 8);
       const y = 50 + row * 24;
       if (coreSet.has(i)) {
-        ctx.fillStyle = '#aaffd9';
+        ctx.fillStyle = '#bff5dc';
         ctx.fillText('▶ ' + GENES[i], col, y);
       } else {
         // un-conserved families fade out
         const fade = revealed > 0 && !coreOrder.includes(i) ? 0.25 : 0.6;
-        ctx.fillStyle = `rgba(63,255,176,${fade})`;
+        ctx.fillStyle = `rgba(125,240,192,${fade})`;
         ctx.fillText('  ' + GENES[i], col, y);
       }
     }
@@ -189,9 +189,9 @@ export function build() {
     let line = '';
     const off = Math.floor(scroll);
     for (let i = 0; i < 30; i++) line += BASES[(i + off) * 2654435761 % 4 & 3];
-    ctx.fillStyle = 'rgba(170,255,217,0.85)'; ctx.font = '12px monospace';
+    ctx.fillStyle = 'rgba(191,245,220,0.85)'; ctx.font = '12px monospace';
     ctx.fillText(line, 14, S - 28);
-    ctx.fillStyle = '#3fffb0';
+    ctx.fillStyle = '#7df0c0';
     ctx.fillText('parsimony distill: ' + revealed + '/' + coreOrder.length, 14, S - 12);
     dyn.tex.needsUpdate = true;
   }
@@ -207,6 +207,31 @@ export function build() {
     reset() {
       revealed = 0; progress = 0; timer = 0; spin = 0; scroll = 0;
       treeGroup.rotation.y = 0;
+      // restore dynamic state (else a reset-while-stopped freezes last-run values)
+      // ticker bars back to their start positions and neutral height
+      for (let i = 0; i < ticks.length; i++) {
+        ticks[i].position.x = tickerX0 + (i / TICKS) * tickerSpan;
+        ticks[i].scale.y = 1;
+      }
+      // tree tips back to base scale + opacity
+      for (let i = 0; i < tips.length; i++) {
+        tips[i].scale.setScalar(1);
+        tips[i].material.opacity = 0.85;
+      }
+      lineMat.opacity = 0.7;
+      // core + halo back to un-condensed size; core colour + glow to "off"
+      root.scale.setScalar(1);
+      coreHalo.scale.setScalar(1);
+      coreHalo.material.opacity = 0.18;
+      rootMat.color.setHex(TEAL);
+      rootGlow.intensity = 0.6;
+      // indicator-lamp bank back to dim/off
+      for (let i = 0; i < lamps.length; i++) {
+        lamps[i].bulb.material.color.setHex(lamps[i].off);
+        lamps[i].light.intensity = 0.0;
+      }
+      seqLamp.material.color.setHex(TEAL);
+      screenLight.intensity = 0.8;
       paint(0);
     },
     update(dt, t) {

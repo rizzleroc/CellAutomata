@@ -67,7 +67,7 @@ export function build() {
   const nodePivot = new THREE.Group();
   nodePivot.position.copy(flaskC);
   group.add(nodePivot);
-  const nodeColors = [0xffd24a, 0x7df0c0, 0xc77dff, 0x5ab8ff, 0xff8a5a];
+  const nodeColors = [0xffd24a, 0x7df0c0, 0xc77dff, 0x3fe0d0, 0xffb866];
   const nodePos = [];
   const nodes = [];
   for (let i = 0; i < 5; i++) {
@@ -169,21 +169,21 @@ export function build() {
     update(dt, t) {
       if (!running) return;
       progress = Math.min(1, progress + dt / 25);
-      barPivot.rotation.y += dt * 14;          // fast stir bar
+      barPivot.rotation.y += dt * 7;           // calm stir bar (visibly turns)
       nodePivot.rotation.y += dt * 0.5;        // slow node rotation
-      vortexPivot.rotation.y += dt * 9;        // swirl tracks the stir bar
+      vortexPivot.rotation.y += dt * 4.5;      // swirl tracks the stir bar
 
       // vortex dimple: deepen as stir spins up, with a small surface wobble
-      const dip = 0.04 + 0.03 * Math.abs(Math.sin(t * 7));
+      const dip = 0.04 + 0.03 * Math.abs(Math.sin(t * 3.5));
       sol.scale.y = 0.62 - dip;
       vortexPivot.position.y = solTopY - dip * R * 0.9 * 0.55;
       vortex.scale.y = 1 + dip * 4;            // dimple grows with the dip
-      swirlMat.opacity = 0.25 + 0.2 * Math.abs(Math.sin(t * 7));
+      swirlMat.opacity = 0.25 + 0.2 * Math.abs(Math.sin(t * 3.5));
 
       // rising reaction bubbles, spiralling up the vortex toward the surface
       for (const b of bubbles) {
-        b.userData.wob += dt * 6;
-        b.userData.swirlA += dt * 3.5;          // curl with the swirl
+        b.userData.wob += dt * 3;
+        b.userData.swirlA += dt * 1.75;         // curl with the swirl
         b.position.y += b.userData.v * dt;
         const climb = (b.position.y - bubbleFloorY) / Math.max(0.001, solTopY - bubbleFloorY);
         const rad = b.userData.rad * (0.4 + 0.6 * climb);
