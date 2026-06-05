@@ -5,12 +5,23 @@
 // gene families (~16 → a highlighted conserved core), a small "sequencer" unit
 // beside it with a keyboard, and a faint glowing "tree of life" hologram above
 // built from thin emissive line branches converging downward to a single root —
-// LUCA. The branches pulse/converge; the screen highlights surviving core genes
-// one by one (Weiss et al. 2016 comparative-genomics parsimony).
+// LUCA. When "Run experiment" is pressed the whole console comes alive: the
+// tree-of-life hologram slowly ROTATES (teal, emissive), a bank of indicator
+// lamps blinks, a genomic readout ticker scrolls across the panel, and a glowing
+// "core" node brightens/condenses as the conserved gene set distils.
+// (Weiss et al. 2016 comparative-genomics parsimony.)
 // progress = fraction of gene families distilled to the core.
 
 import * as THREE from 'three';
 import { part, V, steelMat, bakeliteMat, brassMat, emissiveMat, makeDynamicTexture } from './lib.js';
+
+// Light/emissive palette — teal, magenta, warm (no brass UI lighting).
+const TEAL = 0x3fe0d0;
+const MAGENTA = 0xd77bff;
+const WARM = 0xffb866;
+const TEAL_DIM = 0x0e2a27;
+const MAGENTA_DIM = 0x2a1430;
+const WARM_DIM = 0x2e1f10;
 
 export function build() {
   const group = new THREE.Group();
@@ -35,22 +46,57 @@ export function build() {
     new THREE.MeshBasicMaterial({ map: dyn.tex }), 'screen', V(0, 1.35, 0.72));
   group.add(screen);
   group.add(part(new THREE.BoxGeometry(3.0, 1.8, 0.12), brassMat(), 'screen-bezel', V(0, 1.35, 0.66)));
-  const screenLight = new THREE.PointLight(0x66ffcc, 0.8, 3, 2);
+  const screenLight = new THREE.PointLight(TEAL, 0.8, 3, 2);
   screenLight.position.set(0, 1.35, 1.2); group.add(screenLight);
 
   // ── Sequencer unit beside the console ─────────────────────────────────────
   const sequencer = part(new THREE.BoxGeometry(1.0, 1.4, 1.0), steelMat(), 'sequencer', V(2.6, 0.85, 0));
   group.add(sequencer);
   group.add(part(new THREE.CylinderGeometry(0.32, 0.32, 0.2, 24), bakeliteMat(0x15171b), 'sequencer-reel', V(2.6, 1.4, 0.45)));
-  const seqLamp = part(new THREE.SphereGeometry(0.07, 12, 12), emissiveMat(0x55ff99), 'sequencer-lamp', V(2.6, 1.55, 0.4));
+  const seqLamp = part(new THREE.SphereGeometry(0.07, 12, 12), emissiveMat(TEAL), 'sequencer-lamp', V(2.6, 1.55, 0.4));
   group.add(seqLamp);
+
+  // ── Console indicator-lamp bank (UNNAMED dynamic elements) ─────────────────
+  // A row of small emissive lamps along the cabinet face that blink in sequence
+  // while the experiment runs (and a soft point light each so the blink reads as
+  // light, not just colour). Calm/steady-dim when stopped.
+  const lampHexes = [TEAL, MAGENTA, WARM, TEAL, MAGENTA, WARM, TEAL];
+  const lampDims = [TEAL_DIM, MAGENTA_DIM, WARM_DIM, TEAL_DIM, MAGENTA_DIM, WARM_DIM, TEAL_DIM];
+  const lamps = [];
+  for (let i = 0; i < lampHexes.length; i++) {
+    const x = -1.5 + i * 0.5;
+    const bulb = new THREE.Mesh(new THREE.SphereGeometry(0.06, 12, 12), emissiveMat(lampDims[i]));
+    bulb.position.set(x, 0.45, 0.71);
+    group.add(bulb);
+    const light = new THREE.PointLight(lampHexes[i], 0.0, 1.2, 2);
+    light.position.set(x, 0.45, 0.95);
+    group.add(light);
+    lamps.push({ bulb, light, on: lampHexes[i], off: lampDims[i] });
+  }
+
+  // ── Scrolling genomic readout ticker (UNNAMED dynamic elements) ────────────
+  // A strip of short emissive bars beneath the screen that march sideways like a
+  // sequencer trace ("…ACGT…") while running, looping when they run off the end.
+  const tickerY = 0.34, tickerZ = 0.73;
+  const tickerX0 = -1.45, tickerX1 = 1.45, tickerSpan = tickerX1 - tickerX0;
+  const ticks = [];
+  const TICKS = 22;
+  for (let i = 0; i < TICKS; i++) {
+    const h = 0.05 + 0.10 * ((i * 7) % 5) / 4;          // varied bar heights (the "trace")
+    const hex = [TEAL, MAGENTA, WARM][i % 3];
+    const bar = new THREE.Mesh(new THREE.BoxGeometry(0.04, h, 0.02), emissiveMat(hex));
+    bar.userData.h = h;
+    bar.position.set(tickerX0 + (i / TICKS) * tickerSpan, tickerY, tickerZ);
+    group.add(bar);
+    ticks.push(bar);
+  }
 
   // ── Tree-of-life hologram above the console ───────────────────────────────
   // Thin emissive line branches converging downward to a single root (LUCA).
   const treeGroup = new THREE.Group(); treeGroup.name = 'tree-hologram';
   treeGroup.position.set(0, 3.1, 0.1);
   const rootY = 0; // local
-  const lineMat = new THREE.LineBasicMaterial({ color: 0x7fffd0, transparent: true, opacity: 0.7 });
+  const lineMat = new THREE.LineBasicMaterial({ color: TEAL, transparent: true, opacity: 0.7 });
   // build by levels: 8 tips at top fan in to 1 root
   const levels = 4;
   let nodes = [];
@@ -78,10 +124,28 @@ export function build() {
   branchGeo.setAttribute('position', new THREE.BufferAttribute(posArr, 3));
   const branches = new THREE.LineSegments(branchGeo, lineMat);
   branches.name = 'branch-lines'; treeGroup.add(branches);
-  // glowing root node = LUCA
-  const root = part(new THREE.SphereGeometry(0.14, 20, 16), emissiveMat(0xaaffe0), 'root', V(0, rootY - 0.1, 0));
+  // glowing tip nodes at the leaves of the tree (UNNAMED) — they twinkle as the
+  // distillation surveys each lineage, so the rotating hologram clearly lives.
+  const tipMat = new THREE.MeshBasicMaterial({ color: TEAL, transparent: true, opacity: 0.85 });
+  const tips = [];
+  for (let i = 0; i < 8; i++) {
+    const tip = new THREE.Mesh(new THREE.SphereGeometry(0.05, 10, 8), tipMat.clone());
+    tip.position.set(-2.1 + i * 0.6, 1.8, 0);
+    treeGroup.add(tip);
+    tips.push(tip);
+  }
+  // glowing root node = LUCA (the distilled "core"): brightens + condenses
+  const rootMat = emissiveMat(TEAL);
+  const root = part(new THREE.SphereGeometry(0.14, 20, 16), rootMat, 'root', V(0, rootY - 0.1, 0));
   treeGroup.add(root);
-  const rootGlow = new THREE.PointLight(0x7fffd0, 0.6, 2.5, 2);
+  // a soft halo shell around the core that condenses (shrinks) as genes distil
+  const coreHalo = new THREE.Mesh(
+    new THREE.SphereGeometry(0.34, 20, 16),
+    new THREE.MeshBasicMaterial({ color: TEAL, transparent: true, opacity: 0.18 }),
+  );
+  coreHalo.position.set(0, rootY - 0.1, 0);
+  treeGroup.add(coreHalo);
+  const rootGlow = new THREE.PointLight(TEAL, 0.6, 2.5, 2);
   rootGlow.position.set(0, rootY - 0.1, 0); treeGroup.add(rootGlow);
   group.add(treeGroup);
 
@@ -95,6 +159,8 @@ export function build() {
   // core survivors (highlighted one by one): indices that persist
   const coreOrder = [0, 8, 2, 10, 3, 5, 12, 1];
   let revealed = 0; // how many core genes highlighted
+  let scroll = 0;   // genomic-readout scroll offset (chars)
+  const BASES = 'ACGT';
 
   function paint(t) {
     const ctx = dyn.ctx, S = dyn.size;
@@ -119,29 +185,75 @@ export function build() {
         ctx.fillText('  ' + GENES[i], col, y);
       }
     }
-    ctx.fillStyle = '#3fffb0'; ctx.font = '12px monospace';
+    // scrolling genomic readout strip along the bottom (a marching sequence)
+    let line = '';
+    const off = Math.floor(scroll);
+    for (let i = 0; i < 30; i++) line += BASES[(i + off) * 2654435761 % 4 & 3];
+    ctx.fillStyle = 'rgba(170,255,217,0.85)'; ctx.font = '12px monospace';
+    ctx.fillText(line, 14, S - 28);
+    ctx.fillStyle = '#3fffb0';
     ctx.fillText('parsimony distill: ' + revealed + '/' + coreOrder.length, 14, S - 12);
     dyn.tex.needsUpdate = true;
   }
   paint(0);
 
-  let running = true, progress = 0, timer = 0;
+  // helper: 0..1 triangle/blink phase for a lamp index, offset along the bank
+  const blink = (t, i) => 0.5 + 0.5 * Math.sin(t * 5 - i * 0.9);
+
+  let running = true, progress = 0, timer = 0, spin = 0;
   group.userData.anim = {
     setRunning(on) { running = on; },
     getProgress() { return progress; },
-    reset() { revealed = 0; progress = 0; timer = 0; paint(0); },
+    reset() {
+      revealed = 0; progress = 0; timer = 0; spin = 0; scroll = 0;
+      treeGroup.rotation.y = 0;
+      paint(0);
+    },
     update(dt, t) {
       if (running) {
         timer += dt;
         if (timer > 0.9 && revealed < coreOrder.length) { revealed++; timer = 0; }
         progress = revealed / coreOrder.length;
-        // tree pulses + converges
-        const pulse = 0.45 + 0.35 * (0.5 + 0.5 * Math.sin(t * 2));
-        lineMat.opacity = pulse;
-        rootGlow.intensity = 0.4 + 0.5 * (0.5 + 0.5 * Math.sin(t * 2 + 1)) + progress * 0.6;
-        root.scale.setScalar(1 + 0.15 * Math.sin(t * 3) + progress * 0.4);
-        seqLamp.material.color.setHex(Math.sin(t * 6) > 0 ? 0x55ff99 : 0x114422);
-        screenLight.intensity = 0.7 + 0.15 * Math.sin(t * 5);
+
+        // tree-of-life hologram slowly rotates (the headline motion)
+        spin += dt * 0.6;
+        treeGroup.rotation.y = spin;
+
+        // branches pulse; tips twinkle out of phase
+        lineMat.opacity = 0.45 + 0.35 * (0.5 + 0.5 * Math.sin(t * 2));
+        for (let i = 0; i < tips.length; i++) {
+          tips[i].material.opacity = 0.35 + 0.55 * blink(t * 0.7, i * 1.3);
+          tips[i].scale.setScalar(0.8 + 0.5 * blink(t, i));
+        }
+
+        // glowing core brightens + condenses as the conserved set distils
+        rootGlow.intensity = 0.4 + 0.5 * (0.5 + 0.5 * Math.sin(t * 2 + 1)) + progress * 1.2;
+        root.scale.setScalar(1 + 0.15 * Math.sin(t * 3) + progress * 0.5);
+        // warmer/brighter core colour as it condenses to LUCA
+        rootMat.color.setRGB(0.25 + 0.7 * progress, 0.88, 0.82 - 0.2 * progress);
+        coreHalo.scale.setScalar(1.0 - 0.45 * progress + 0.06 * Math.sin(t * 2.5));
+        coreHalo.material.opacity = 0.10 + 0.18 * (0.5 + 0.5 * Math.sin(t * 2.5)) + progress * 0.12;
+
+        // console indicator-lamp bank blinks in sequence
+        for (let i = 0; i < lamps.length; i++) {
+          const b = blink(t, i);
+          const lit = b > 0.55;
+          lamps[i].bulb.material.color.setHex(lit ? lamps[i].on : lamps[i].off);
+          lamps[i].light.intensity = b * 0.8;
+        }
+
+        // scrolling genomic readout ticker marches sideways and loops
+        scroll += dt * 9;
+        for (let i = 0; i < ticks.length; i++) {
+          let x = ticks[i].position.x - dt * 0.6;
+          if (x < tickerX0) x += tickerSpan;            // wrap to the right edge
+          ticks[i].position.x = x;
+          // gentle breathing of the trace so a frozen frame still reads as data
+          ticks[i].scale.y = 0.7 + 0.6 * (0.5 + 0.5 * Math.sin(t * 6 + i));
+        }
+
+        seqLamp.material.color.setHex(Math.sin(t * 6) > 0 ? TEAL : TEAL_DIM);
+        screenLight.intensity = 0.7 + 0.3 * Math.sin(t * 5);
       }
       paint(t);
     },

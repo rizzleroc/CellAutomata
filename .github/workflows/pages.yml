@@ -45,6 +45,8 @@ jobs:
         run: node docs/web7/tests/design.mjs
       - name: Web7 apparatus runtime verification
         run: node docs/web7/tests/runtime.mjs   # three already installed above
+      - name: Web7 apparatus animation verification
+        run: node docs/web7/tests/anim.mjs      # proves each experiment visibly runs
 
   build:
     needs: test

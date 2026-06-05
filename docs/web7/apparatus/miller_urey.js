@@ -59,6 +59,15 @@ export function buildMillerUrey() {
   );
   gas.name = 'gases'; gas.position.copy(sphereC); group.add(gas);
 
+  // faint swirling tint that drifts inside the chamber while sparking (unnamed):
+  // a slightly squashed, off-centre shell so its slow rotation reads as a swirl.
+  const swirlMat = new THREE.MeshBasicMaterial({
+    color: 0xd77bff, transparent: true, opacity: 0.0, depthWrite: false,
+  });
+  const swirl = new THREE.Mesh(new THREE.SphereGeometry(R * 0.8, 24, 18), swirlMat);
+  swirl.position.copy(sphereC); swirl.scale.set(1.0, 0.78, 1.0);
+  group.add(swirl);
+
   // ── Electrodes: two black caps with coiled leads, tips meeting at centre ──
   const electrodes = [];
   for (const sgn of [-1, 1]) {
@@ -275,6 +284,30 @@ export function buildMillerUrey() {
     d.userData.reset();
     group.add(d); drops.push(d);
   }
+  // occasional fat condensate/organic drip that beads at the condenser mouth and
+  // falls the whole way down the neck into the collection flask (unnamed). These
+  // are staggered and mostly idle, so only one is usually in flight at a time.
+  const dripMat = new THREE.MeshPhysicalMaterial({
+    color: 0xc8d8dd, transmission: 0.85, roughness: 0.12, thickness: 0.3,
+    ior: 1.33, transparent: true,
+  });
+  const drips = [];
+  for (let i = 0; i < 3; i++) {
+    const d = new THREE.Mesh(new THREE.SphereGeometry(0.045, 10, 10), dripMat);
+    // wait → bead (swell at the condenser mouth) → fall → land in the flask.
+    d.userData.arm = () => {
+      d.position.set(1.5, 1.66, 0);
+      d.userData.v = 0;
+      d.userData.wait = 0.8 + Math.random() * 2.6;   // staggered release
+      d.userData.bead = 0;                            // 0..1 swell before it drops
+      d.userData.land = 0.62 + Math.random() * 0.16;  // splashes onto the liquid
+      d.scale.setScalar(0.001);
+      d.visible = false;
+    };
+    d.userData.arm();
+    d.userData.wait = i * 1.4;                         // spread the first releases
+    group.add(d); drips.push(d);
+  }
 
   let running = true;
   let progress = 0; // 0..1 organic accumulation
@@ -293,8 +326,13 @@ export function buildMillerUrey() {
       sparkLight.intensity = 6 * flick;
       sparkMat.opacity = 0.6 + Math.random() * 0.4;
       sparkCore.scale.setScalar(0.7 + Math.random() * 0.6);
+      // faint gas swirl: slow drift + a gentle flicker-coupled breathing tint.
+      swirl.rotation.y += dt * 0.55;
+      swirl.rotation.x = Math.sin(t * 0.4) * 0.18;
+      swirlMat.opacity = 0.05 + 0.03 * (0.5 + 0.5 * Math.sin(t * 1.3)) + 0.02 * flick;
     } else {
       sparkLight.intensity = 0;
+      swirlMat.opacity = Math.max(0, swirlMat.opacity - dt * 0.6);  // settle to clear
     }
     // boiling bubbles
     for (const b of bubbles) {
@@ -310,6 +348,24 @@ export function buildMillerUrey() {
       d.userData.v += 4 * dt;
       d.position.y -= d.userData.v * dt;
       if (d.position.y < 1.0) d.userData.reset();
+    }
+    // occasional drip: bead at the condenser mouth, then fall into the flask.
+    for (const d of drips) {
+      if (!running) { d.visible = false; continue; }
+      const u = d.userData;
+      if (u.wait > 0) {                         // idle between drips
+        u.wait -= dt; d.visible = false; continue;
+      }
+      if (u.bead < 1) {                         // swell into a hanging bead
+        u.bead = Math.min(1, u.bead + dt * 1.6);
+        d.visible = true;
+        d.scale.setScalar(0.35 + u.bead * 0.65);
+        d.position.y = 1.66 - u.bead * 0.02;    // sags a touch as it grows
+      } else {                                  // released — accelerate downward
+        u.v += 5 * dt;
+        d.position.y -= u.v * dt;
+        if (d.position.y < u.land) u.arm();     // splashed onto the liquid → re-arm
+      }
     }
     // organic accumulation: liquid rises + darkens
     if (running) progress = Math.min(1, progress + dt / 45);

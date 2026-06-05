@@ -79,6 +79,43 @@ export function build() {
 
   group.position.y = 0;
 
+  // ── Dynamic chemistry elements (UNNAMED so they stay out of the parts panel)─
+  // Reaction-glow light: a soft tint that pulses with the BZ phase. Colour is
+  // drawn only from the sanctioned palette (teal ↔ warm), the liquid below
+  // stays a physical reagent colour.
+  const glow = new THREE.PointLight(0x3fe0d0, 0, 4.5, 2);
+  glow.position.set(cx, cy + 0.25, 0);
+  group.add(glow);
+
+  // A handful of CO₂ bubbles that nucleate near the dish floor and rise through
+  // the thin film, then re-seed — small, translucent, physical (no emissive).
+  const filmTop = cy - 0.06 + 0.035;      // top surface of the reagent film
+  const filmBottom = cy - 0.06 - 0.035;
+  const bubbleMat = new THREE.MeshPhysicalMaterial({
+    color: 0xffffff, roughness: 0.15, transmission: 0.85,
+    thickness: 0.1, ior: 1.2, transparent: true, opacity: 0.6,
+  });
+  const bubbles = [];
+  for (let i = 0; i < 7; i++) {
+    const b = new THREE.Mesh(new THREE.SphereGeometry(0.03, 10, 8), bubbleMat);
+    b.userData.reset = () => {
+      const a = Math.random() * Math.PI * 2;
+      const rad = Math.random() * R * 0.9;
+      b.userData.bx = cx + Math.cos(a) * rad;
+      b.userData.bz = Math.sin(a) * rad;
+      b.position.set(b.userData.bx, filmBottom, b.userData.bz);
+      b.userData.v = 0.10 + Math.random() * 0.14;     // rise speed
+      b.userData.s = 0.7 + Math.random() * 0.8;        // size
+      b.scale.setScalar(b.userData.s);
+      b.userData.wob = Math.random() * Math.PI * 2;    // shimmer phase
+    };
+    b.userData.reset();
+    // stagger the initial heights so they don't all pop at once
+    b.position.y = filmBottom + Math.random() * (filmTop - filmBottom);
+    group.add(b);
+    bubbles.push(b);
+  }
+
   // ── Animation: paint expanding BZ rings into the film texture ─────────────
   const { ctx, size } = dyn;
   const sources = [
@@ -86,6 +123,12 @@ export function build() {
     { x: 0.68, y: 0.38, ph: 3.1 }, { x: 0.6, y: 0.7, ph: 4.5 },
   ];
   let running = true, progress = 0;
+
+  // BZ phase colours: amber (oxidised, ferriin) ↔ teal (reduced, ferroin-ish).
+  const amber = new THREE.Color(0xc8731e);
+  const teal = new THREE.Color(0x1f8f86);
+  const filmBaseY = film.position.y;
+  filmMat.color.copy(amber);
 
   function paint(t) {
     ctx.fillStyle = '#1a3320';
@@ -111,14 +154,53 @@ export function build() {
   }
   paint(0);
 
+  // Settle the dynamic phenomenon back to a calm, stopped state.
+  function calm() {
+    glow.intensity = 0;
+    filmMat.color.copy(amber);
+    film.position.y = filmBaseY;
+    film.scale.set(1, 1, 1);
+    for (const b of bubbles) b.visible = false;
+  }
+
   group.userData.anim = {
-    setRunning(on) { running = on; ringLight.intensity = on ? 2.2 : 0.6; ringInner.material.color.setHex(on ? 0xfff4d8 : 0x44403a); },
+    setRunning(on) {
+      running = on;
+      ringLight.intensity = on ? 2.2 : 0.6;
+      ringInner.material.color.setHex(on ? 0xfff4d8 : 0x44403a);
+      if (!on) calm();
+    },
     getProgress() { return progress; },
-    reset() { progress = 0; paint(0); },
+    reset() { progress = 0; calm(); paint(0); },
     update(dt, t) {
       if (!running) return;
+      // Reaction maturity drives the readout.
       progress = Math.min(1, progress + dt / 30);
       paint(t);
+
+      // BZ colour oscillation: the whole film breathes amber ↔ teal as the
+      // ferroin/ferriin couple flips. Oscillation quickens as the run matures.
+      const osc = 0.5 + 0.5 * Math.sin(t * (1.3 + progress * 0.9));
+      filmMat.color.copy(amber).lerp(teal, osc);
+
+      // Reaction glow pulses in step (teal at the reduced peak, warm otherwise).
+      glow.color.copy(teal).lerp(new THREE.Color(0xffb866), 1 - osc);
+      glow.intensity = 0.4 + 1.3 * osc;
+
+      // Gentle surface ripple/shimmer: the film breathes vertically and in
+      // plane — a subtle, finite oscillation of the liquid surface.
+      film.position.y = filmBaseY + Math.sin(t * 2.2) * 0.012;
+      const sh = 1 + Math.sin(t * 1.7) * 0.012;
+      film.scale.set(sh, 1, sh);
+
+      // CO₂ bubbles nucleate at the floor and rise; wobble laterally a touch.
+      for (const b of bubbles) {
+        b.visible = true;
+        b.position.y += b.userData.v * dt;
+        b.position.x = b.userData.bx + Math.sin(t * 2.4 + b.userData.wob) * 0.02;
+        b.position.z = b.userData.bz + Math.cos(t * 2.1 + b.userData.wob) * 0.02;
+        if (b.position.y > filmTop) b.userData.reset();
+      }
     },
   };
 

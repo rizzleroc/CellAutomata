@@ -36,7 +36,8 @@ export function build() {
 
   // ── Porous mineral chimney: stack of irregular dark cones/cylinders ───────
   const chimney = new THREE.Group(); chimney.name = 'chimney';
-  const chimMat = new THREE.MeshStandardMaterial({ color: 0x2a211c, roughness: 0.95, metalness: 0.25, emissive: 0x190600 });
+  // FeS mineral; its emissive pulses with the proton-motive force while running.
+  const chimMat = new THREE.MeshStandardMaterial({ color: 0x2a211c, roughness: 0.95, metalness: 0.25, emissive: 0xffb866, emissiveIntensity: 0.12 });
   let cyN = colBot + 0.2;
   for (let i = 0; i < 7; i++) {
     const rTop = 0.34 - i * 0.03 + Math.sin(i * 1.7) * 0.04;
@@ -48,6 +49,7 @@ export function build() {
     chimney.add(seg);
     cyN += h * 0.85;
   }
+  const chimTop = cyN;
   group.add(chimney);
 
   // ── Vent glow: emissive plug + warm point light from below ────────────────
@@ -103,6 +105,23 @@ export function build() {
     group.add(b); bubbles.push(b);
   }
 
+  // ── Thin mineral-precipitate plume rising off the chimney top (unnamed) ───
+  // Fresh FeS precipitates in the alkaline upwelling: a faint warm thread of
+  // fine particles drifting up the column centre, only while the vent runs.
+  const plumeTop = colBot + colH * 0.9;
+  const plumeMat = new THREE.MeshBasicMaterial({ color: 0xffb866, transparent: true, opacity: 0.0 });
+  const plume = [];
+  for (let i = 0; i < 26; i++) {
+    const p = new THREE.Mesh(new THREE.SphereGeometry(0.012 + Math.random() * 0.016, 6, 6), plumeMat);
+    p.userData.reset = () => {
+      p.position.set(cx + (Math.random() - 0.5) * 0.1, chimTop + Math.random() * 0.15, (Math.random() - 0.5) * 0.1);
+      p.userData.v = 0.22 + Math.random() * 0.3;
+      p.userData.ph = Math.random() * Math.PI * 2;          // sway phase
+    };
+    p.userData.reset();
+    group.add(p); plume.push(p);
+  }
+
   // ── Animation ──────────────────────────────────────────────────────────────
   const { ctx, size } = dyn;
   let running = true, progress = 0, pmf = 150, dG = -20;
@@ -128,12 +147,21 @@ export function build() {
         glowLight.intensity = on ? 5 : 0;
         ventGlow.visible = on;
         for (const b of bubbles) b.visible = on;
+        for (const p of plume) p.visible = on;
+        if (!on) {
+          // settle to a calm, un-pulsing baseline
+          glowLight.color.setHex(0xffb866);
+          glowLight.position.set(cx, colBot + 0.4, 0);
+          chimMat.emissiveIntensity = 0.12;
+          plumeMat.opacity = 0.0;
+        }
       },
       getProgress() { return progress; },
       reset() { progress = 0; pmf = 150; dG = -20; paintDisplay(); },
       update(dt, t) {
         if (!running) {
           for (const b of bubbles) b.visible = false;
+          for (const p of plume) p.visible = false;
           ventGlow.visible = false;
           return;
         }
@@ -144,14 +172,36 @@ export function build() {
           b.position.y += b.userData.v * dt;
           if (b.position.y > colBot + colH * 0.9) b.userData.reset();
         }
-        // warm flicker
+        // warm flicker + shimmer: the vent light wavers in intensity, drifts a
+        // touch as convection rolls the plume, and breathes warm hue.
         const flick = 0.8 + Math.random() * 0.4;
         glowLight.intensity = 5 * flick;
+        glowLight.position.set(
+          cx + Math.sin(t * 5.1) * 0.05,
+          colBot + 0.4 + Math.sin(t * 3.3) * 0.06,
+          Math.cos(t * 4.2) * 0.05,
+        );
+        const warm = 0.5 + 0.5 * (0.6 + 0.4 * Math.sin(t * 6.0));   // amber↔gold breath
+        glowLight.color.setRGB(1.0, 0.62 + 0.16 * warm, 0.30 + 0.10 * warm);
         ventGlow.visible = true;
         ventGlow.scale.setScalar(0.85 + 0.3 * flick);
         // readouts drift as the gradient builds
         pmf = 150 + progress * 60 + Math.sin(t * 1.3) * 8;
         dG = -20 - progress * 25 + Math.cos(t * 0.9) * 3;
+        // chimney mineral glows with the proton-motive force: brighter as the
+        // gradient steepens, pulsing on the same beat the PMF reading swings.
+        const pmfNorm = Math.max(0, Math.min(1, (pmf - 150) / 80));
+        chimMat.emissiveIntensity = 0.12 + pmfNorm * 0.55 + 0.12 * (0.5 + 0.5 * Math.sin(t * 1.3));
+        // mineral-precipitate plume threads up the column, swaying gently
+        const plumeOpacity = 0.12 + pmfNorm * 0.3;
+        plumeMat.opacity = plumeOpacity;
+        for (const p of plume) {
+          p.visible = true;
+          p.position.y += p.userData.v * dt;
+          p.position.x = cx + Math.sin(t * 1.4 + p.userData.ph) * 0.07;
+          p.position.z = Math.cos(t * 1.1 + p.userData.ph) * 0.07;
+          if (p.position.y > plumeTop) p.userData.reset();
+        }
         paintDisplay();
       },
     },

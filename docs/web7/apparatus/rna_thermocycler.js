@@ -54,15 +54,33 @@ export function build() {
   group.add(part(new THREE.BoxGeometry(3.42, 0.9, 0.06), steelMat(), 'cycler-fascia', V(-0.6, 0.55, 1.21)));
 
   // ── Heat block on top, recessed ────────────────────────────────────────────
-  const block = part(new THREE.BoxGeometry(2.6, 0.4, 1.2), steelMat(), 'heat-block', V(-0.6, 1.6, 0));
+  // Emissive-capable steel so the block itself can glow hot during denature and
+  // go dark/cold at anneal — this is the visible heart of the thermal cycle.
+  const blockMat = new THREE.MeshStandardMaterial({
+    color: 0x8c8f96, metalness: 0.9, roughness: 0.45,
+    emissive: new THREE.Color(0xffb866), emissiveIntensity: 0,
+  });
+  const block = part(new THREE.BoxGeometry(2.6, 0.4, 1.2), blockMat, 'heat-block', V(-0.6, 1.6, 0));
   group.add(block);
 
   // ── 8-tube strip seated in the block ──────────────────────────────────────
   const tubeMat = glassMat();
+  const tubeXs = [];
+  const reactMats = [];      // per-tube reaction-fluid materials (warm when hot)
   for (let i = 0; i < 8; i++) {
     const tx = -0.6 - 1.0 + i * (2.0 / 7);
+    tubeXs.push(tx);
     const t = part(new THREE.CylinderGeometry(0.1, 0.05, 0.42, 16), tubeMat, `tube-${i}`, V(tx, 1.78, 0));
     group.add(t);
+    // reaction fluid inside each tube (unnamed) — emissive ramps with the block
+    const rMat = new THREE.MeshStandardMaterial({
+      color: 0x163a30, roughness: 0.3, metalness: 0.0, transparent: true, opacity: 0.85,
+      emissive: new THREE.Color(0x3fe0d0), emissiveIntensity: 0.0,
+    });
+    const fluid = new THREE.Mesh(new THREE.CylinderGeometry(0.075, 0.045, 0.28, 14), rMat);
+    fluid.position.set(tx, 1.71, 0);
+    group.add(fluid);
+    reactMats.push(rMat);
     // cap
     group.add(part(new THREE.CylinderGeometry(0.12, 0.1, 0.08, 16), darkMetalMat(), `tube-cap-${i}`, V(tx, 2.0, 0)));
   }
@@ -74,7 +92,13 @@ export function build() {
   lid.name = 'lid';
   const lidPlate = part(new THREE.BoxGeometry(2.8, 0.18, 1.4), steelMat(), 'lid-plate', V(0, 0, 0));
   lid.add(lidPlate);
-  lid.add(part(new THREE.BoxGeometry(2.6, 0.1, 1.2), darkMetalMat(), 'lid-heater-face', V(0, -0.12, 0)));
+  // Heater face is emissive-capable so the underside of the lid glows hot with
+  // the block during denature, then fades as it cools.
+  const lidFaceMat = new THREE.MeshStandardMaterial({
+    color: 0x1b1b1f, metalness: 0.7, roughness: 0.5,
+    emissive: new THREE.Color(0xffb866), emissiveIntensity: 0,
+  });
+  lid.add(part(new THREE.BoxGeometry(2.6, 0.1, 1.2), lidFaceMat, 'lid-heater-face', V(0, -0.12, 0)));
   // hinge at back edge, lid raised at an angle
   lid.position.set(-0.6, 1.95, -0.6);
   lid.rotation.x = -0.9;
@@ -111,38 +135,123 @@ export function build() {
     new THREE.MeshBasicMaterial({ map: gelTex.tex }), 'gel-screen', V(2.2, 1.4, 0.61)));
   group.add(part(new THREE.TorusGeometry(0.68, 0.04, 10, 40), steelMat(), 'gel-bezel', V(2.2, 1.4, 0.62)));
 
+  // ── Bubbles inside the reaction tubes (rise during the hot/denature phase) ──
+  // Unnamed dynamic meshes; each is bound to a tube column and resets to the
+  // bottom of the fluid once it reaches the surface.
+  const bubbleGeo = new THREE.SphereGeometry(0.022, 8, 8);
+  const bubbleMat = new THREE.MeshStandardMaterial({
+    color: 0xeafff8, roughness: 0.2, metalness: 0.0, transparent: true, opacity: 0.7,
+  });
+  const TUBE_BASE = 1.60, TUBE_TOP = 1.86;   // fluid span inside a tube
+  const bubbles = [];
+  for (let i = 0; i < 8; i++) {
+    const tx = tubeXs[i];
+    for (let k = 0; k < 4; k++) {
+      const b = new THREE.Mesh(bubbleGeo, bubbleMat);
+      b.userData.tx = tx;
+      b.userData.reset = () => {
+        b.position.set(tx + (Math.random() - 0.5) * 0.06, TUBE_BASE + Math.random() * 0.04,
+          (Math.random() - 0.5) * 0.06);
+        b.userData.v = 0.10 + Math.random() * 0.16;
+        b.userData.wob = Math.random() * Math.PI * 2;
+      };
+      b.userData.reset();
+      b.visible = false;
+      group.add(b);
+      bubbles.push(b);
+    }
+  }
+
   group.position.y = 0;
 
   // ── Animation ──────────────────────────────────────────────────────────────
   let running = true, progress = 0, clock = 0, cycle = 1, gelOffset = 0;
+  let phaseClock = 0;          // advances only while running → pulse stops on Stop
+  let heat = 0;                // smoothed 0..1 thermal value (denature=1, anneal=0)
   const TOTAL_CYCLES = 30;
   const phaseNames = ['DENATURE', 'ANNEAL', 'EXTEND'];
+  const COLD = new THREE.Color(0x14141a);     // block colour when cold
+  const HOT = new THREE.Color(0xffb866);      // warm heat-glow colour
+  const blockBaseRGB = { r: 0x8c / 255, g: 0x8f / 255, b: 0x96 / 255 };
+
+  // Smoothly interpolate the setpoint program so temperature RAMPS between
+  // steps (a real block has thermal inertia) rather than snapping — this gives
+  // the emissive a continuous driver across the whole loop.
+  function smoothTemp(c) {
+    const fStep = c / STEP_T;
+    const i = Math.floor(fStep) % PROGRAM.length;
+    const frac = fStep - Math.floor(fStep);
+    const a = PROGRAM[i];
+    const b = PROGRAM[(i + 1) % PROGRAM.length];
+    const e = frac * frac * (3 - 2 * frac);   // smoothstep ease
+    return { temp: a + (b - a) * e, stepIdx: i };
+  }
 
   group.userData.anim = {
     setRunning(on) { running = on; },
     getProgress() { return progress; },
     reset() {
-      progress = 0; clock = 0; cycle = 1; gelOffset = 0;
+      progress = 0; clock = 0; cycle = 1; gelOffset = 0; phaseClock = 0; heat = 0;
       drawDisplay(dispTex.ctx, dispTex.size, PROGRAM[0], 1, phaseNames[0]); dispTex.tex.needsUpdate = true;
       drawGel(gelTex.ctx, gelTex.size, 0); gelTex.tex.needsUpdate = true;
       glow.material.opacity = 0; heatLight.intensity = 0;
+      blockMat.emissiveIntensity = 0; lidFaceMat.emissiveIntensity = 0;
+      blockMat.color.setRGB(blockBaseRGB.r, blockBaseRGB.g, blockBaseRGB.b);
+      for (const rMat of reactMats) rMat.emissiveIntensity = 0;
+      for (const b of bubbles) b.visible = false;
     },
     update(dt, t) {
-      if (!running) { glow.material.opacity *= 0.9; heatLight.intensity *= 0.9; return; }
+      if (!running) {
+        // Idle: relax the whole thermal display toward cold/dark and freeze bubbles.
+        heat *= 0.9;
+        glow.material.opacity *= 0.9;
+        heatLight.intensity *= 0.9;
+        blockMat.emissiveIntensity *= 0.9;
+        lidFaceMat.emissiveIntensity *= 0.9;
+        blockMat.color.lerp(new THREE.Color(blockBaseRGB.r, blockBaseRGB.g, blockBaseRGB.b), 0.1);
+        for (const rMat of reactMats) rMat.emissiveIntensity *= 0.9;
+        for (const b of bubbles) b.visible = false;
+        return;
+      }
       clock += dt;
-      const stepIdx = Math.floor(clock / STEP_T) % PROGRAM.length;
-      // advance cycle each full program
+      phaseClock += dt;
+      const { temp, stepIdx } = smoothTemp(clock);
       const totalSteps = Math.floor(clock / STEP_T);
       cycle = 1 + Math.floor(totalSteps / PROGRAM.length);
-      const temp = PROGRAM[stepIdx];
       drawDisplay(dispTex.ctx, dispTex.size, temp, Math.min(cycle, TOTAL_CYCLES), phaseNames[stepIdx]);
       dispTex.tex.needsUpdate = true;
-      // lid heat glow pulses, hottest at denature (95)
-      const heat = (temp - 55) / 40;            // 0..1
-      const pulse = 0.5 + 0.5 * Math.sin(t * 4);
-      glow.material.opacity = 0.15 + heat * 0.5 * pulse;
-      heatLight.intensity = 0.5 + heat * 2.5 * pulse;
-      // gel bands migrate downward
+
+      // Smoothed thermal value (95→1, 55→0) drives every hot element.
+      const target = (temp - 55) / 40;          // 0..1
+      heat += (target - heat) * Math.min(1, dt * 6);
+      const pulse = 0.55 + 0.45 * Math.sin(phaseClock * 5);   // shimmer of the heater
+
+      // Heat block glows hot and shifts colour toward warm at denature.
+      blockMat.emissiveIntensity = heat * (0.9 + 0.25 * pulse);
+      blockMat.color.copy(COLD).lerp(HOT, 0.15 + heat * 0.55).lerp(
+        new THREE.Color(blockBaseRGB.r, blockBaseRGB.g, blockBaseRGB.b), 0.35 * (1 - heat));
+      // Lid heater face + glow plane + point light pulse in lock-step.
+      lidFaceMat.emissiveIntensity = heat * (0.8 + 0.3 * pulse);
+      glow.material.opacity = 0.1 + heat * 0.55 * pulse;
+      heatLight.intensity = 0.4 + heat * 2.6 * pulse;
+      // Reaction fluid brightens (teal → warm) as it heats.
+      for (const rMat of reactMats) {
+        rMat.emissiveIntensity = 0.05 + heat * 0.6 * pulse;
+        rMat.emissive.copy(new THREE.Color(0x3fe0d0)).lerp(HOT, heat * 0.7);
+      }
+
+      // Bubbles boil up the tubes during the hot phase (heat > ~0.4).
+      const boiling = heat > 0.4;
+      for (const b of bubbles) {
+        if (!boiling) { b.visible = false; continue; }
+        b.visible = true;
+        b.userData.wob += dt * 6;
+        b.position.y += b.userData.v * heat * dt;
+        b.position.x = b.userData.tx + Math.sin(b.userData.wob) * 0.012;
+        if (b.position.y > TUBE_TOP) b.userData.reset();
+      }
+
+      // Gel bands migrate downward (driven by replication over cycles).
       gelOffset += dt * 0.04;
       drawGel(gelTex.ctx, gelTex.size, gelOffset); gelTex.tex.needsUpdate = true;
       // progress over cycles

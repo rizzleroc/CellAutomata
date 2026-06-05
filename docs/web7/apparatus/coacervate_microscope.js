@@ -83,6 +83,43 @@ export function build() {
   group.add(part(new THREE.TorusGeometry(1.32, 0.08, 16, 64), brassMat(),
     'eyepiece-view-bezel', V(2.9, 3.4, 0.4)));
 
+  // ── Physical coacervate droplets ON the slide (unnamed dynamic meshes) ─────
+  // Translucent teal blobs sitting on the glass under the coverslip. They
+  // NUCLEATE (grow from nothing), COARSEN (slowly enlarge), drift, and COALESCE
+  // (Ostwald ripening: when two touch, the larger absorbs the smaller, which
+  // re-nucleates elsewhere). This is the real liquid–liquid phase separation,
+  // mirrored by the eyepiece-view field. Shared geometry; per-blob materials so
+  // each can fade its own opacity. Sphere flattened onto the slide surface.
+  const SLIDE_Y = 2.17;                      // just above the slide, under coverslip
+  const FIELD = { cx: 0.05, cz: 0.55, half: 0.13 };   // coverslip footprint
+  const blobGeo = new THREE.SphereGeometry(1, 18, 14);
+  const blobs = [];
+  const NB = 7;
+  const newBlob = (b) => {
+    b.bx = FIELD.cx + (Math.random() - 0.5) * FIELD.half * 2;
+    b.bz = FIELD.cz + (Math.random() - 0.5) * FIELD.half * 2;
+    b.r = 0.012 + Math.random() * 0.01;      // nucleus radius
+    b.target = b.r;
+    b.vx = (Math.random() - 0.5) * 0.012;
+    b.vz = (Math.random() - 0.5) * 0.012;
+    b.grow = 0.004 + Math.random() * 0.006;  // coarsening rate
+    b.born = 0;                              // nucleation fade-in 0..1
+  };
+  for (let i = 0; i < NB; i++) {
+    const mat = new THREE.MeshPhysicalMaterial({
+      color: 0x123028, emissive: 0x3fe0d0, emissiveIntensity: 0.35,
+      roughness: 0.15, transmission: 0.7, thickness: 0.4, ior: 1.36,
+      transparent: true, opacity: 0,
+    });
+    const m = new THREE.Mesh(blobGeo, mat);  // intentionally UNNAMED
+    const b = { mesh: m, mat };
+    newBlob(b);
+    m.position.set(b.bx, SLIDE_Y, b.bz);
+    m.scale.set(b.r, b.r * 0.6, b.r);
+    blobs.push(b);
+    group.add(m);
+  }
+
   group.position.y = 0;
 
   // ── Coacervate field: droplets that coalesce + coarsen over time ──────────
@@ -126,14 +163,45 @@ export function build() {
   }
   paint();
 
+  // Resize a flattened blob mesh to its current radius (sits on the slide).
+  const setBlobScale = (b) => b.mesh.scale.set(b.r, b.r * 0.6, b.r);
+
+  // Coalescence of the physical 3D blobs: the larger of a touching pair grows
+  // (volume-conserving in the slide plane), the smaller re-nucleates elsewhere.
+  function coalesce3D() {
+    for (let i = 0; i < blobs.length; i++) {
+      const a = blobs[i];
+      for (let j = i + 1; j < blobs.length; j++) {
+        const b = blobs[j];
+        const dx = a.bx - b.bx, dz = a.bz - b.bz;
+        if (Math.hypot(dx, dz) < a.r + b.r) {
+          const big = a.r >= b.r ? a : b, small = big === a ? b : a;
+          big.target = Math.min(0.09, Math.sqrt(big.r * big.r + small.r * small.r));
+          newBlob(small);                    // re-nucleates: fades back in small
+        }
+      }
+    }
+  }
+
   let running = true, progress = 0;
   let mergeTimer = 0;
   group.userData.anim = {
-    setRunning(on) { running = on; illLight.intensity = on ? 1.4 : 0.3; lamp.material.color.setHex(on ? 0xfff2cf : 0x4a4636); },
+    setRunning(on) {
+      running = on;
+      illLight.intensity = on ? 1.4 : 0.3;
+      lamp.material.color.setHex(on ? 0xffb866 : 0x4a4636);
+    },
     getProgress() { return progress; },
-    reset() { progress = 0; seed(); paint(); focusCoarse.rotation.x = 0; },
+    reset() {
+      progress = 0; seed(); paint();
+      focusCoarse.rotation.x = 0; focusFine.rotation.x = 0;
+      illLight.intensity = 1.4; lamp.material.color.setHex(0xffb866);
+      for (const b of blobs) { newBlob(b); b.mesh.position.set(b.bx, SLIDE_Y, b.bz); setBlobScale(b); b.mat.opacity = 0; }
+    },
     update(dt, t) {
-      if (!running) return;
+      if (!running) return;                  // Stop ⇒ everything holds still
+
+      // 2-D eyepiece field: drifting, merging coacervate circles.
       for (const d of drops) {
         if (!d.alive) continue;
         d.x += d.vx * dt; d.y += d.vy * dt;
@@ -141,10 +209,37 @@ export function build() {
         if (d.y < d.r || d.y > size - d.r) d.vy *= -1;
       }
       mergeTimer += dt;
-      if (mergeTimer > 0.12) { coarsen(); mergeTimer = 0; }
+      if (mergeTimer > 0.12) { coalesce3D(); mergeTimer = 0; }
+
+      // Physical droplets on the slide: nucleate, drift, coarsen, settle scale.
+      for (const b of blobs) {
+        b.born = Math.min(1, b.born + dt * 1.5);          // nucleation fade-in
+        b.target = Math.min(0.09, b.target + b.grow * dt); // Ostwald coarsening
+        b.r += (b.target - b.r) * Math.min(1, dt * 4);     // ease toward target
+        b.bx += b.vx * dt; b.bz += b.vz * dt;
+        if (Math.abs(b.bx - FIELD.cx) > FIELD.half) b.vx *= -1;
+        if (Math.abs(b.bz - FIELD.cz) > FIELD.half) b.vz *= -1;
+        b.mesh.position.set(b.bx, SLIDE_Y, b.bz);
+        setBlobScale(b);
+        b.mat.opacity = 0.85 * b.born;
+        b.mat.emissiveIntensity = 0.3 + 0.25 * b.born;
+      }
+
+      // Coarsening fraction → progress: mean blob radius across its growth range.
+      const meanR = blobs.reduce((s, b) => s + b.r, 0) / blobs.length;
       const alive = drops.filter((d) => d.alive).length;
-      progress = Math.min(1, 1 - (alive - 1) / 89);     // coarsening fraction
-      focusCoarse.rotation.x = Math.sin(t * 0.4) * 0.25; // focus knob drifts
+      const fieldFrac = 1 - (alive - 1) / 89;
+      progress = Math.min(1, Math.max(fieldFrac, (meanR - 0.012) / (0.09 - 0.012)));
+
+      // Microscope-lamp illumination flicker (warm) + slow focus-knob drift.
+      const flick = 0.85 + Math.sin(t * 11) * 0.1 + Math.sin(t * 27) * 0.06;
+      illLight.intensity = 1.4 * flick;
+      lamp.material.emissiveIntensity = flick;             // MeshBasic: no-op visually, but warm
+      const warm = 0.5 + 0.5 * flick;
+      lamp.material.color.setRGB(warm, warm * 0.72, warm * 0.4);
+      focusCoarse.rotation.x = Math.sin(t * 0.4) * 0.25;   // coarse knob drifts
+      focusFine.rotation.x = Math.sin(t * 0.9 + 1.0) * 0.4; // fine knob hunts focus
+
       paint();
     },
   };
