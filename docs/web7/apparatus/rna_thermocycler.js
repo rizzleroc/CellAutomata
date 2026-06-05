@@ -13,10 +13,18 @@ import { part, steelMat, bakeliteMat, glassMat, darkMetalMat, brassMat, makeDyna
 const PROGRAM = [95, 55, 72]; // denature / anneal / extend (°C)
 const STEP_T = 1.6;           // seconds per thermal step
 
+// Hoisted module-scope colours so the per-frame update() (and its 8-tube loop)
+// allocates zero THREE.Color objects in the hot path.
+const COLD_C = new THREE.Color(0x14141a);          // heat block when cold
+const HOT_C = new THREE.Color(0xffb866);           // warm heat-glow colour
+const BLOCK_BASE_C = new THREE.Color(0x8c8f96);    // heat block base steel
+const TEAL_C = new THREE.Color(0x3fe0d0);          // reaction fluid when cool
+const _scratch = new THREE.Color();                // single reused scratch
+
 function drawDisplay(ctx, size, temp, cycle, phase) {
-  ctx.fillStyle = '#04130c'; ctx.fillRect(0, 0, size, size);
+  ctx.fillStyle = '#06120e'; ctx.fillRect(0, 0, size, size);
   ctx.fillStyle = '#0d3a22'; ctx.fillRect(6, 6, size - 12, size - 12);
-  ctx.fillStyle = '#39ff9a'; ctx.textAlign = 'center';
+  ctx.fillStyle = '#7df0c0'; ctx.textAlign = 'center';
   ctx.font = `bold ${size * 0.34}px "Courier New", monospace`;
   ctx.fillText(`${Math.round(temp)}°C`, size / 2, size * 0.46);
   ctx.font = `${size * 0.13}px "Courier New", monospace`;
@@ -25,7 +33,7 @@ function drawDisplay(ctx, size, temp, cycle, phase) {
 }
 
 function drawGel(ctx, size, offset) {
-  ctx.fillStyle = '#07110d'; ctx.fillRect(0, 0, size, size);
+  ctx.fillStyle = '#06120e'; ctx.fillRect(0, 0, size, size);
   const lanes = 6;
   for (let l = 0; l < lanes; l++) {
     const x = (l + 0.5) * (size / lanes);
@@ -37,7 +45,7 @@ function drawGel(ctx, size, offset) {
       const y = 14 + (base % (size - 28));
       const w = size * 0.07 * (1 - b * 0.12);
       const a = 0.85 - b * 0.15;
-      ctx.fillStyle = `rgba(140,255,180,${a})`;
+      ctx.fillStyle = `rgba(110,224,200,${a})`;
       ctx.fillRect(x - w, y, w * 2, size * 0.022);
     }
   }
@@ -107,10 +115,10 @@ export function build() {
   group.add(lid);
   // heat-glow plane under the lid heater
   const glow = part(new THREE.PlaneGeometry(2.5, 1.1),
-    new THREE.MeshBasicMaterial({ color: 0xff6a2a, transparent: true, opacity: 0.0 }), 'lid-glow', V(-0.6, 1.84, 0));
+    new THREE.MeshBasicMaterial({ color: 0xffb866, transparent: true, opacity: 0.0 }), 'lid-glow', V(-0.6, 1.84, 0));
   glow.rotation.x = -Math.PI / 2;
   group.add(glow);
-  const heatLight = new THREE.PointLight(0xff7a30, 0, 3, 2);
+  const heatLight = new THREE.PointLight(0xffb866, 0, 3, 2);
   heatLight.position.set(-0.6, 2.0, 0);
   group.add(heatLight);
 
@@ -168,11 +176,12 @@ export function build() {
   let running = true, progress = 0, clock = 0, cycle = 1, gelOffset = 0;
   let phaseClock = 0;          // advances only while running → pulse stops on Stop
   let heat = 0;                // smoothed 0..1 thermal value (denature=1, anneal=0)
+  // CanvasTexture repaints are throttled to ~12 fps (the kinetic glow/bubbles
+  // still update every frame) so the 256² textures aren't re-uploaded each frame.
+  const REPAINT_DT = 0.08;     // ≈12 fps
+  let dispAcc = REPAINT_DT, gelAcc = REPAINT_DT;
   const TOTAL_CYCLES = 30;
   const phaseNames = ['DENATURE', 'ANNEAL', 'EXTEND'];
-  const COLD = new THREE.Color(0x14141a);     // block colour when cold
-  const HOT = new THREE.Color(0xffb866);      // warm heat-glow colour
-  const blockBaseRGB = { r: 0x8c / 255, g: 0x8f / 255, b: 0x96 / 255 };
 
   // Smoothly interpolate the setpoint program so temperature RAMPS between
   // steps (a real block has thermal inertia) rather than snapping — this gives
@@ -192,11 +201,12 @@ export function build() {
     getProgress() { return progress; },
     reset() {
       progress = 0; clock = 0; cycle = 1; gelOffset = 0; phaseClock = 0; heat = 0;
+      dispAcc = REPAINT_DT; gelAcc = REPAINT_DT;
       drawDisplay(dispTex.ctx, dispTex.size, PROGRAM[0], 1, phaseNames[0]); dispTex.tex.needsUpdate = true;
       drawGel(gelTex.ctx, gelTex.size, 0); gelTex.tex.needsUpdate = true;
       glow.material.opacity = 0; heatLight.intensity = 0;
       blockMat.emissiveIntensity = 0; lidFaceMat.emissiveIntensity = 0;
-      blockMat.color.setRGB(blockBaseRGB.r, blockBaseRGB.g, blockBaseRGB.b);
+      blockMat.color.copy(BLOCK_BASE_C);
       for (const rMat of reactMats) rMat.emissiveIntensity = 0;
       for (const b of bubbles) b.visible = false;
     },
@@ -208,7 +218,7 @@ export function build() {
         heatLight.intensity *= 0.9;
         blockMat.emissiveIntensity *= 0.9;
         lidFaceMat.emissiveIntensity *= 0.9;
-        blockMat.color.lerp(new THREE.Color(blockBaseRGB.r, blockBaseRGB.g, blockBaseRGB.b), 0.1);
+        blockMat.color.lerp(BLOCK_BASE_C, 0.1);
         for (const rMat of reactMats) rMat.emissiveIntensity *= 0.9;
         for (const b of bubbles) b.visible = false;
         return;
@@ -218,8 +228,12 @@ export function build() {
       const { temp, stepIdx } = smoothTemp(clock);
       const totalSteps = Math.floor(clock / STEP_T);
       cycle = 1 + Math.floor(totalSteps / PROGRAM.length);
-      drawDisplay(dispTex.ctx, dispTex.size, temp, Math.min(cycle, TOTAL_CYCLES), phaseNames[stepIdx]);
-      dispTex.tex.needsUpdate = true;
+      dispAcc += dt;
+      if (dispAcc >= REPAINT_DT) {
+        dispAcc = 0;
+        drawDisplay(dispTex.ctx, dispTex.size, temp, Math.min(cycle, TOTAL_CYCLES), phaseNames[stepIdx]);
+        dispTex.tex.needsUpdate = true;
+      }
 
       // Smoothed thermal value (95→1, 55→0) drives every hot element.
       const target = (temp - 55) / 40;          // 0..1
@@ -228,8 +242,8 @@ export function build() {
 
       // Heat block glows hot and shifts colour toward warm at denature.
       blockMat.emissiveIntensity = heat * (0.9 + 0.25 * pulse);
-      blockMat.color.copy(COLD).lerp(HOT, 0.15 + heat * 0.55).lerp(
-        new THREE.Color(blockBaseRGB.r, blockBaseRGB.g, blockBaseRGB.b), 0.35 * (1 - heat));
+      blockMat.color.copy(COLD_C).lerp(HOT_C, 0.15 + heat * 0.55).lerp(
+        _scratch.copy(BLOCK_BASE_C), 0.35 * (1 - heat));
       // Lid heater face + glow plane + point light pulse in lock-step.
       lidFaceMat.emissiveIntensity = heat * (0.8 + 0.3 * pulse);
       glow.material.opacity = 0.1 + heat * 0.55 * pulse;
@@ -237,7 +251,7 @@ export function build() {
       // Reaction fluid brightens (teal → warm) as it heats.
       for (const rMat of reactMats) {
         rMat.emissiveIntensity = 0.05 + heat * 0.6 * pulse;
-        rMat.emissive.copy(new THREE.Color(0x3fe0d0)).lerp(HOT, heat * 0.7);
+        rMat.emissive.copy(TEAL_C).lerp(HOT_C, heat * 0.7);
       }
 
       // Bubbles boil up the tubes during the hot phase (heat > ~0.4).
@@ -253,7 +267,11 @@ export function build() {
 
       // Gel bands migrate downward (driven by replication over cycles).
       gelOffset += dt * 0.04;
-      drawGel(gelTex.ctx, gelTex.size, gelOffset); gelTex.tex.needsUpdate = true;
+      gelAcc += dt;
+      if (gelAcc >= REPAINT_DT) {
+        gelAcc = 0;
+        drawGel(gelTex.ctx, gelTex.size, gelOffset); gelTex.tex.needsUpdate = true;
+      }
       // progress over cycles
       progress = Math.min(1, (clock / STEP_T / PROGRAM.length) / TOTAL_CYCLES);
     },

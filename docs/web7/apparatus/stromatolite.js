@@ -23,6 +23,13 @@ export function build() {
   const group = new THREE.Group();
   group.name = 'stromatolite-specimen';
 
+  // A hand specimen turns on its mount; the plinth, felt, scale-bar and label
+  // do NOT. So ONLY the rock + its living-water overlay live in this sub-group,
+  // and the slow `spin` is applied to it — never to the whole `group`.
+  const rock = new THREE.Group();
+  rock.name = 'specimen-rock';
+  group.add(rock);
+
   // ── Museum mount / plinth (low, dark) ─────────────────────────────────────
   group.add(part(new THREE.BoxGeometry(3.6, 0.5, 2.4), bakeliteMat(0x14110e), 'museum-mount', V(0, 0.25, 0)));
   // felt pad on top of the mount
@@ -35,7 +42,7 @@ export function build() {
   const rockMat = new THREE.MeshStandardMaterial({ color: 0x6b5a44, roughness: 0.85, metalness: 0.05 });
   const slab = part(new THREE.BoxGeometry(2.6, 2.4, 0.8), rockMat, 'slab', V(0, 1.78, -0.1));
   // slight irregular lean so it doesn't read as a perfect box
-  slab.rotation.z = 0.02; group.add(slab);
+  slab.rotation.z = 0.02; rock.add(slab);
 
   // ── Polished front face: painted wavy laminations ─────────────────────────
   const dyn = makeDynamicTexture(512);
@@ -43,7 +50,7 @@ export function build() {
     map: dyn.tex, roughness: 0.12, metalness: 0.0, clearcoat: 0.7, clearcoatRoughness: 0.1,
   });
   const face = part(new THREE.PlaneGeometry(2.5, 2.3), faceMat, 'slab-face', V(0, 1.78, 0.31));
-  face.rotation.z = 0.02; group.add(face);
+  face.rotation.z = 0.02; rock.add(face);
 
   // ── Rough darker crust along the top edge ─────────────────────────────────
   const crustMat = new THREE.MeshStandardMaterial({ color: 0x2c2218, roughness: 0.98, metalness: 0 });
@@ -51,12 +58,12 @@ export function build() {
   crust.rotation.z = 0.02;
   // jitter the crust scale to look broken/irregular
   crust.scale.set(1.0, 1.0 + Math.random() * 0.15, 1.0);
-  group.add(crust);
+  rock.add(crust);
 
   // ── Pale calcite vein (a thin bright crystalline streak on the face) ──────
   const veinMat = new THREE.MeshStandardMaterial({ color: 0xe8e2d0, roughness: 0.3, metalness: 0.1, emissive: 0x161410 });
   const vein = part(new THREE.BoxGeometry(0.07, 2.2, 0.02), veinMat, 'calcite-vein', V(0.55, 1.78, 0.32));
-  vein.rotation.z = 0.18; group.add(vein);
+  vein.rotation.z = 0.18; rock.add(vein);
 
   // ── 1 cm scale-bar plate in front ─────────────────────────────────────────
   const barGroup = new THREE.Group(); barGroup.name = 'scale-bar';
@@ -154,12 +161,12 @@ export function build() {
   const water = new THREE.Mesh(new THREE.PlaneGeometry(FW * 0.98, FH * 0.98), waterMat);
   water.position.set(FACE.x, FACE.y, FACE.z + 0.04);
   water.rotation.z = 0.02; water.visible = false;
-  group.add(water);
+  rock.add(water);
 
   // Soft teal underwater glow that breathes with the caustics.
   const matLight = new THREE.PointLight(0x3fe0d0, 0, 4, 2);
   matLight.position.set(FACE.x, FACE.y + 0.2, FACE.z + 0.6);
-  group.add(matLight);
+  rock.add(matLight);
 
   // O₂ bubbles peeling off the mat and rising through the water film.
   const bubbleMat = new THREE.MeshPhysicalMaterial({
@@ -187,7 +194,7 @@ export function build() {
     seedBubble(b, false);
     placeBubble(b);            // sit on the face from the start (still invisible)
     b.visible = false;
-    group.add(b); bubbles.push(b);
+    rock.add(b); bubbles.push(b);
   }
 
   let running = true;
@@ -205,7 +212,7 @@ export function build() {
   group.userData.anim = {
     setRunning(on) { running = on; if (!on) { /* one-off settle handled in update */ } },
     getProgress() { return 0; },             // terminal specimen — no yield to report
-    reset() { spin = 0; wphase = 0; life = 0; group.rotation.y = 0; calm(); paint(0.3); paintCaustic(0); },
+    reset() { spin = 0; wphase = 0; life = 0; rock.rotation.y = 0; calm(); paint(0.3); paintCaustic(0); },
     update(dt, t) {
       // ease aliveness toward running state: a gentle fade-in on Run, a quick
       // fade-out on Stop so the specimen settles back to a still, dry rock.
@@ -222,7 +229,7 @@ export function build() {
       paint(h);
 
       if (running) { spin += dt * 0.06; wphase += dt * 1.2; }   // slow turn + ripples
-      group.rotation.y = spin;
+      rock.rotation.y = spin;   // ONLY the rock + its water overlay turn — mount/scale-bar/label stay put
 
       // water sheet: shimmering teal caustics, opacity breathing with life
       if (life > 0.002) {

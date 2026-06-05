@@ -20,16 +20,36 @@ import { part, steelMat, brassMat, glassMat, bakeliteMat, liquidMat, makeDynamic
 
 const GRID = 4;                 // 4x4 codon-cell table
 const N = GRID * GRID;
-// canonical (settled) colours each cell converges to — amino-acid classes
-const SETTLED = [
-  0xd95f5f, 0xd98a4f, 0xd9c24f, 0x9fd94f, 0x4fd96b, 0x4fd9b0, 0x4fb6d9, 0x4f78d9,
-  0x6b4fd9, 0xa84fd9, 0xd94fc2, 0xd94f86, 0xb0b0b0, 0x8fa86b, 0x6ba88f, 0xa88f6b,
-];
 
 // emissive/light palette (teal / magenta / warm only)
 const TEAL = 0x3fe0d0, MAGENTA = 0xd77bff, WARM = 0xffb866;
 // per-residue amino-acid sphere colours (cycled as the chain grows)
 const AA_COLORS = [TEAL, WARM, MAGENTA, 0x9fd9c4, 0xffd0a0, 0xc8a8ff];
+
+// Canonical (settled) colours each codon cell locks into. The code converges
+// onto an ORDERED axis, not a festive rainbow: a teal→warm→magenta ramp folded
+// with neutral greys (same amino-acid sphere ramp idiom — sanctioned hues plus
+// desaturated/grey neighbours), so lock-in reads as a tidy spectrum.
+const SETTLED = (() => {
+  const stops = [new THREE.Color(TEAL), new THREE.Color(WARM), new THREE.Color(MAGENTA)];
+  const ramp = (k) => {                              // k 0..1 along teal→warm→magenta
+    const s = Math.min(0.9999, Math.max(0, k)) * (stops.length - 1);
+    const i = Math.floor(s);
+    return stops[i].clone().lerp(stops[i + 1], s - i);
+  };
+  const greys = [new THREE.Color(0x6b6b6b), new THREE.Color(0x9a9a9a)];
+  const out = [];
+  for (let i = 0; i < N; i++) {
+    const k = i / (N - 1);
+    // every 4th cell is a neutral grey residue class; the rest follow the ramp,
+    // muted toward grey so the whole table stays calm and coordinated.
+    const c = (i % 4 === 3)
+      ? greys[(i >> 2) % greys.length].clone()
+      : ramp(k).lerp(new THREE.Color(0x707070), 0.18);
+    out.push(c.getHex());
+  }
+  return out;
+})();
 
 function drawGrid(ctx, size, lockT, t, running) {
   ctx.fillStyle = '#100d0a'; ctx.fillRect(0, 0, size, size);
@@ -57,16 +77,19 @@ function drawGrid(ctx, size, lockT, t, running) {
 }
 
 function drawReadout(ctx, size, frac) {
-  ctx.fillStyle = '#04130c'; ctx.fillRect(0, 0, size, size);
-  ctx.fillStyle = '#39ff9a'; ctx.textAlign = 'left';
+  // Teal terminal readout — shares the vent_reactor display idiom
+  // (text #7df0c0 on a dark #06120e ground) so the bench's screens match.
+  ctx.fillStyle = '#06120e'; ctx.fillRect(0, 0, size, size);
+  ctx.fillStyle = '#7df0c0'; ctx.textAlign = 'left';
   ctx.font = `bold ${size * 0.16}px "Courier New", monospace`;
   ctx.fillText('CONVERGENCE', size * 0.08, size * 0.26);
+  ctx.fillStyle = '#9fffe0';
   ctx.font = `bold ${size * 0.28}px "Courier New", monospace`;
   ctx.fillText(`${Math.round(frac * 100)}%`, size * 0.08, size * 0.62);
   // bar
-  ctx.strokeStyle = '#1d6b40'; ctx.lineWidth = 4;
+  ctx.strokeStyle = '#1f5a3a'; ctx.lineWidth = 4;
   ctx.strokeRect(size * 0.08, size * 0.72, size * 0.84, size * 0.16);
-  ctx.fillStyle = '#39ff9a';
+  ctx.fillStyle = '#7df0c0';
   ctx.fillRect(size * 0.08 + 3, size * 0.72 + 3, (size * 0.84 - 6) * frac, size * 0.16 - 6);
 }
 
