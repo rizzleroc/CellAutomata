@@ -1,0 +1,709 @@
+{
+  "searched": 658,
+  "alive": 569,
+  "per_rule": [
+    {
+      "rule": "abiogenesis-luca",
+      "cfg": {
+        "mutation_rate": 0.02,
+        "core_prevalence": 0.5,
+        "seed_fraction": 0.3
+      },
+      "seed": 2,
+      "cls": "chaotic",
+      "score": 0.9035,
+      "ent": 0.7726,
+      "edge": 0.16467,
+      "struct": 0.2156,
+      "chroma": 0.2052,
+      "cover": 0.924,
+      "motion": 0.12042,
+      "alive": 0.952
+    },
+    {
+      "rule": "abiogenesis-stage0-soup",
+      "cfg": {
+        "amoeba_lifespan": 40
+      },
+      "seed": 1,
+      "cls": "chaotic",
+      "score": 0.8978,
+      "ent": 0.7376,
+      "edge": 0.21203,
+      "struct": 0.2375,
+      "chroma": 0.2452,
+      "cover": 1.0,
+      "motion": 0.09671,
+      "alive": 0.952
+    },
+    {
+      "rule": "natural-selection",
+      "cfg": {},
+      "seed": 2,
+      "cls": "chaotic",
+      "score": 0.8975,
+      "ent": 0.7362,
+      "edge": 0.21106,
+      "struct": 0.2367,
+      "chroma": 0.2456,
+      "cover": 1.0,
+      "motion": 0.13817,
+      "alive": 0.952
+    },
+    {
+      "rule": "abiogenesis-rna-world",
+      "cfg": {
+        "error_rate": 0.06,
+        "superiority": 5
+      },
+      "seed": 1,
+      "cls": "chaotic",
+      "score": 0.8941,
+      "ent": 0.7758,
+      "edge": 0.17114,
+      "struct": 0.2173,
+      "chroma": 0.1619,
+      "cover": 0.857,
+      "motion": 0.1675,
+      "alive": 0.952
+    },
+    {
+      "rule": "abiogenesis-genetic-code",
+      "cfg": {
+        "strand_mutation": 0.08,
+        "code_mutation": 0.02,
+        "seed_fraction": 0.2
+      },
+      "seed": 1,
+      "cls": "chaotic",
+      "score": 0.8697,
+      "ent": 0.6923,
+      "edge": 0.14575,
+      "struct": 0.2021,
+      "chroma": 0.2585,
+      "cover": 0.939,
+      "motion": 0.1076,
+      "alive": 0.952
+    },
+    {
+      "rule": "abiogenesis-coacervate",
+      "cfg": {
+        "kappa": 0.5,
+        "mean_composition": 0.0,
+        "noise": 0.3
+      },
+      "seed": 1,
+      "cls": "chaotic",
+      "score": 0.8486,
+      "ent": 0.7949,
+      "edge": 0.10251,
+      "struct": 0.2418,
+      "chroma": 0.0996,
+      "cover": 1.0,
+      "motion": 0.00997,
+      "alive": 0.952
+    },
+    {
+      "rule": "abiogenesis-stage3-vesicles",
+      "cfg": {
+        "cmc_threshold": 0.2,
+        "kappa_bend": 0.015,
+        "F": 0.025,
+        "k": 0.055
+      },
+      "seed": 2,
+      "cls": "chaotic",
+      "score": 0.8357,
+      "ent": 0.5084,
+      "edge": 0.09147,
+      "struct": 0.2821,
+      "chroma": 0.2299,
+      "cover": 1.0,
+      "motion": 0.07065,
+      "alive": 0.952
+    },
+    {
+      "rule": "abiogenesis-stage4-selection",
+      "cfg": {
+        "n_species": 6,
+        "mutation_rate": 0.005,
+        "dynamics": "proxy"
+      },
+      "seed": 1,
+      "cls": "chaotic",
+      "score": 0.8062,
+      "ent": 0.4834,
+      "edge": 0.05415,
+      "struct": 0.2673,
+      "chroma": 0.1835,
+      "cover": 0.918,
+      "motion": 0.07604,
+      "alive": 0.952
+    },
+    {
+      "rule": "abiogenesis-homochirality",
+      "cfg": {
+        "k_auto": 0.5,
+        "k_cross": 3.0,
+        "noise": 0.03
+      },
+      "seed": 2,
+      "cls": "chaotic",
+      "score": 0.7577,
+      "ent": 0.5914,
+      "edge": 0.05603,
+      "struct": 0.1593,
+      "chroma": 0.2289,
+      "cover": 1.0,
+      "motion": 0.00636,
+      "alive": 0.952
+    },
+    {
+      "rule": "wolfram1d",
+      "cfg": {
+        "rule_number": 75
+      },
+      "seed": 1,
+      "cls": "chaotic",
+      "score": 0.6406,
+      "ent": 0.2181,
+      "edge": 0.35121,
+      "struct": 0.447,
+      "chroma": 0.0,
+      "cover": 1.0,
+      "motion": 0.42641,
+      "alive": 0.952
+    },
+    {
+      "rule": "conway",
+      "cfg": {
+        "initial_density": 0.55
+      },
+      "seed": 2,
+      "cls": "chaotic",
+      "score": 0.6055,
+      "ent": 0.0886,
+      "edge": 0.09229,
+      "struct": 0.2257,
+      "chroma": 0.0,
+      "cover": 1.0,
+      "motion": 0.08742,
+      "alive": 0.952
+    },
+    {
+      "rule": "abiogenesis-stage1-grayscott",
+      "cfg": {
+        "F": 0.038,
+        "k": 0.063
+      },
+      "seed": 2,
+      "cls": "chaotic",
+      "score": 0.5785,
+      "ent": 0.5656,
+      "edge": 0.03097,
+      "struct": 0.089,
+      "chroma": 0.1321,
+      "cover": 1.0,
+      "motion": 0.00967,
+      "alive": 0.952
+    },
+    {
+      "rule": "abiogenesis-mineral-catalysis",
+      "cfg": {
+        "k_clay": 0.15,
+        "clay_patches": 16,
+        "feed": 0.08
+      },
+      "seed": 1,
+      "cls": "living",
+      "score": 0.5594,
+      "ent": 0.4062,
+      "edge": 0.01719,
+      "struct": 0.2388,
+      "chroma": 0.2148,
+      "cover": 1.0,
+      "motion": 0.00252,
+      "alive": 0.952
+    },
+    {
+      "rule": "abiogenesis-pipeline-extended",
+      "cfg": {
+        "stage_duration": 40
+      },
+      "seed": 1,
+      "cls": "chaotic",
+      "score": 0.5412,
+      "ent": 0.2424,
+      "edge": 0.04602,
+      "struct": 0.0976,
+      "chroma": 0.1754,
+      "cover": 0.887,
+      "motion": 0.20214,
+      "alive": 0.81
+    },
+    {
+      "rule": "abiogenesis-hydrothermal-vent",
+      "cfg": {
+        "vent_alkalinity": 0.03,
+        "k_synth": 6,
+        "decay": 0.08
+      },
+      "seed": 1,
+      "cls": "living",
+      "score": 0.312,
+      "ent": 0.4477,
+      "edge": 0.00307,
+      "struct": 0.0467,
+      "chroma": 0.1986,
+      "cover": 1.0,
+      "motion": 0.00059,
+      "alive": 0.952
+    },
+    {
+      "rule": "abiogenesis-stage2-raf",
+      "cfg": {
+        "n_species": 8,
+        "n_reactions": 16,
+        "food_fraction": 0.3
+      },
+      "seed": 1,
+      "cls": "living",
+      "score": 0.2282,
+      "ent": 0.0566,
+      "edge": 0.00028,
+      "struct": 0.0089,
+      "chroma": 0.2932,
+      "cover": 1.0,
+      "motion": 0.00333,
+      "alive": 0.952
+    },
+    {
+      "rule": "abiogenesis-pipeline",
+      "cfg": {
+        "stage_duration": 70
+      },
+      "seed": 2,
+      "cls": "chaotic",
+      "score": 0.112,
+      "ent": 0.0,
+      "edge": 0.0,
+      "struct": 0.0,
+      "chroma": 0.2779,
+      "cover": 1.0,
+      "motion": 0.10379,
+      "alive": 0.077
+    }
+  ],
+  "global_top": [
+    {
+      "rule": "abiogenesis-luca",
+      "cfg": {
+        "mutation_rate": 0.02,
+        "core_prevalence": 0.5,
+        "seed_fraction": 0.3
+      },
+      "seed": 2,
+      "cls": "chaotic",
+      "score": 0.9035,
+      "ent": 0.7726,
+      "edge": 0.16467,
+      "struct": 0.2156,
+      "chroma": 0.2052,
+      "cover": 0.924,
+      "motion": 0.12042,
+      "alive": 0.952
+    },
+    {
+      "rule": "abiogenesis-luca",
+      "cfg": {
+        "mutation_rate": 0.02,
+        "core_prevalence": 0.7,
+        "seed_fraction": 0.3
+      },
+      "seed": 2,
+      "cls": "chaotic",
+      "score": 0.9035,
+      "ent": 0.7726,
+      "edge": 0.16467,
+      "struct": 0.2156,
+      "chroma": 0.2052,
+      "cover": 0.924,
+      "motion": 0.12042,
+      "alive": 0.952
+    },
+    {
+      "rule": "abiogenesis-stage0-soup",
+      "cfg": {
+        "amoeba_lifespan": 40
+      },
+      "seed": 1,
+      "cls": "chaotic",
+      "score": 0.8978,
+      "ent": 0.7376,
+      "edge": 0.21203,
+      "struct": 0.2375,
+      "chroma": 0.2452,
+      "cover": 1.0,
+      "motion": 0.09671,
+      "alive": 0.952
+    },
+    {
+      "rule": "abiogenesis-stage0-soup",
+      "cfg": {
+        "amoeba_lifespan": 60
+      },
+      "seed": 2,
+      "cls": "chaotic",
+      "score": 0.8977,
+      "ent": 0.7369,
+      "edge": 0.21358,
+      "struct": 0.2382,
+      "chroma": 0.2446,
+      "cover": 1.0,
+      "motion": 0.07184,
+      "alive": 0.952
+    },
+    {
+      "rule": "natural-selection",
+      "cfg": {},
+      "seed": 2,
+      "cls": "chaotic",
+      "score": 0.8975,
+      "ent": 0.7362,
+      "edge": 0.21106,
+      "struct": 0.2367,
+      "chroma": 0.2456,
+      "cover": 1.0,
+      "motion": 0.13817,
+      "alive": 0.952
+    },
+    {
+      "rule": "natural-selection",
+      "cfg": {},
+      "seed": 3,
+      "cls": "chaotic",
+      "score": 0.8974,
+      "ent": 0.7358,
+      "edge": 0.21118,
+      "struct": 0.237,
+      "chroma": 0.2462,
+      "cover": 1.0,
+      "motion": 0.13805,
+      "alive": 0.952
+    },
+    {
+      "rule": "abiogenesis-rna-world",
+      "cfg": {
+        "error_rate": 0.06,
+        "superiority": 5
+      },
+      "seed": 1,
+      "cls": "chaotic",
+      "score": 0.8941,
+      "ent": 0.7758,
+      "edge": 0.17114,
+      "struct": 0.2173,
+      "chroma": 0.1619,
+      "cover": 0.857,
+      "motion": 0.1675,
+      "alive": 0.952
+    },
+    {
+      "rule": "abiogenesis-rna-world",
+      "cfg": {
+        "error_rate": 0.06,
+        "superiority": 5
+      },
+      "seed": 2,
+      "cls": "chaotic",
+      "score": 0.8932,
+      "ent": 0.7728,
+      "edge": 0.17119,
+      "struct": 0.217,
+      "chroma": 0.1621,
+      "cover": 0.857,
+      "motion": 0.16912,
+      "alive": 0.952
+    },
+    {
+      "rule": "abiogenesis-genetic-code",
+      "cfg": {
+        "strand_mutation": 0.08,
+        "code_mutation": 0.02,
+        "seed_fraction": 0.2
+      },
+      "seed": 1,
+      "cls": "chaotic",
+      "score": 0.8697,
+      "ent": 0.6923,
+      "edge": 0.14575,
+      "struct": 0.2021,
+      "chroma": 0.2585,
+      "cover": 0.939,
+      "motion": 0.1076,
+      "alive": 0.952
+    },
+    {
+      "rule": "abiogenesis-genetic-code",
+      "cfg": {
+        "strand_mutation": 0.08,
+        "code_mutation": 0.02,
+        "seed_fraction": 0.2
+      },
+      "seed": 2,
+      "cls": "chaotic",
+      "score": 0.8687,
+      "ent": 0.69,
+      "edge": 0.14438,
+      "struct": 0.2016,
+      "chroma": 0.258,
+      "cover": 0.939,
+      "motion": 0.10591,
+      "alive": 0.952
+    },
+    {
+      "rule": "abiogenesis-coacervate",
+      "cfg": {
+        "kappa": 0.5,
+        "mean_composition": 0.0,
+        "noise": 0.3
+      },
+      "seed": 1,
+      "cls": "chaotic",
+      "score": 0.8486,
+      "ent": 0.7949,
+      "edge": 0.10251,
+      "struct": 0.2418,
+      "chroma": 0.0996,
+      "cover": 1.0,
+      "motion": 0.00997,
+      "alive": 0.952
+    },
+    {
+      "rule": "abiogenesis-coacervate",
+      "cfg": {
+        "kappa": 0.5,
+        "mean_composition": 0.0,
+        "noise": 0.2
+      },
+      "seed": 1,
+      "cls": "chaotic",
+      "score": 0.8481,
+      "ent": 0.7954,
+      "edge": 0.10365,
+      "struct": 0.2416,
+      "chroma": 0.0997,
+      "cover": 1.0,
+      "motion": 0.00973,
+      "alive": 0.952
+    },
+    {
+      "rule": "abiogenesis-stage3-vesicles",
+      "cfg": {
+        "cmc_threshold": 0.2,
+        "kappa_bend": 0.015,
+        "F": 0.025,
+        "k": 0.055
+      },
+      "seed": 2,
+      "cls": "chaotic",
+      "score": 0.8357,
+      "ent": 0.5084,
+      "edge": 0.09147,
+      "struct": 0.2821,
+      "chroma": 0.2299,
+      "cover": 1.0,
+      "motion": 0.07065,
+      "alive": 0.952
+    },
+    {
+      "rule": "abiogenesis-stage3-vesicles",
+      "cfg": {
+        "cmc_threshold": 0.2,
+        "kappa_bend": 0.04,
+        "F": 0.025,
+        "k": 0.055
+      },
+      "seed": 2,
+      "cls": "chaotic",
+      "score": 0.8356,
+      "ent": 0.5081,
+      "edge": 0.08992,
+      "struct": 0.2823,
+      "chroma": 0.2297,
+      "cover": 1.0,
+      "motion": 0.06744,
+      "alive": 0.952
+    },
+    {
+      "rule": "abiogenesis-stage4-selection",
+      "cfg": {
+        "n_species": 6,
+        "mutation_rate": 0.005,
+        "dynamics": "proxy"
+      },
+      "seed": 1,
+      "cls": "chaotic",
+      "score": 0.8062,
+      "ent": 0.4834,
+      "edge": 0.05415,
+      "struct": 0.2673,
+      "chroma": 0.1835,
+      "cover": 0.918,
+      "motion": 0.07604,
+      "alive": 0.952
+    },
+    {
+      "rule": "abiogenesis-stage4-selection",
+      "cfg": {
+        "n_species": 6,
+        "mutation_rate": 0.02,
+        "dynamics": "proxy"
+      },
+      "seed": 1,
+      "cls": "chaotic",
+      "score": 0.798,
+      "ent": 0.4656,
+      "edge": 0.05328,
+      "struct": 0.2672,
+      "chroma": 0.1867,
+      "cover": 0.919,
+      "motion": 0.07439,
+      "alive": 0.952
+    },
+    {
+      "rule": "abiogenesis-homochirality",
+      "cfg": {
+        "k_auto": 0.5,
+        "k_cross": 3.0,
+        "noise": 0.03
+      },
+      "seed": 2,
+      "cls": "chaotic",
+      "score": 0.7577,
+      "ent": 0.5914,
+      "edge": 0.05603,
+      "struct": 0.1593,
+      "chroma": 0.2289,
+      "cover": 1.0,
+      "motion": 0.00636,
+      "alive": 0.952
+    },
+    {
+      "rule": "abiogenesis-homochirality",
+      "cfg": {
+        "k_auto": 0.5,
+        "k_cross": 3.0,
+        "noise": 0.01
+      },
+      "seed": 2,
+      "cls": "chaotic",
+      "score": 0.7568,
+      "ent": 0.5908,
+      "edge": 0.0558,
+      "struct": 0.1593,
+      "chroma": 0.2289,
+      "cover": 1.0,
+      "motion": 0.00638,
+      "alive": 0.952
+    },
+    {
+      "rule": "wolfram1d",
+      "cfg": {
+        "rule_number": 75
+      },
+      "seed": 1,
+      "cls": "chaotic",
+      "score": 0.6406,
+      "ent": 0.2181,
+      "edge": 0.35121,
+      "struct": 0.447,
+      "chroma": 0.0,
+      "cover": 1.0,
+      "motion": 0.42641,
+      "alive": 0.952
+    },
+    {
+      "rule": "wolfram1d",
+      "cfg": {
+        "rule_number": 101
+      },
+      "seed": 2,
+      "cls": "chaotic",
+      "score": 0.6406,
+      "ent": 0.2181,
+      "edge": 0.35242,
+      "struct": 0.447,
+      "chroma": 0.0,
+      "cover": 1.0,
+      "motion": 0.42765,
+      "alive": 0.952
+    },
+    {
+      "rule": "conway",
+      "cfg": {
+        "initial_density": 0.55
+      },
+      "seed": 2,
+      "cls": "chaotic",
+      "score": 0.6055,
+      "ent": 0.0886,
+      "edge": 0.09229,
+      "struct": 0.2257,
+      "chroma": 0.0,
+      "cover": 1.0,
+      "motion": 0.08742,
+      "alive": 0.952
+    },
+    {
+      "rule": "conway",
+      "cfg": {
+        "initial_density": 0.45
+      },
+      "seed": 1,
+      "cls": "chaotic",
+      "score": 0.6054,
+      "ent": 0.0882,
+      "edge": 0.09246,
+      "struct": 0.2253,
+      "chroma": 0.0,
+      "cover": 1.0,
+      "motion": 0.08352,
+      "alive": 0.952
+    },
+    {
+      "rule": "abiogenesis-stage1-grayscott",
+      "cfg": {
+        "F": 0.038,
+        "k": 0.063
+      },
+      "seed": 2,
+      "cls": "chaotic",
+      "score": 0.5785,
+      "ent": 0.5656,
+      "edge": 0.03097,
+      "struct": 0.089,
+      "chroma": 0.1321,
+      "cover": 1.0,
+      "motion": 0.00967,
+      "alive": 0.952
+    },
+    {
+      "rule": "abiogenesis-stage1-grayscott",
+      "cfg": {
+        "F": 0.034,
+        "k": 0.061
+      },
+      "seed": 1,
+      "cls": "chaotic",
+      "score": 0.5767,
+      "ent": 0.5628,
+      "edge": 0.03443,
+      "struct": 0.0848,
+      "chroma": 0.1293,
+      "cover": 1.0,
+      "motion": 0.00767,
+      "alive": 0.952
+    }
+  ]
+}

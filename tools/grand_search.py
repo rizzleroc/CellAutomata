@@ -344,7 +344,7 @@ def render_hero(rec, out, size=1080, dur=11, fps=30):
     crisp = rule in CRISP
     eng = build_engine(rule, cfg, grid, rec["seed"]); rl = eng.rule
     # warmup so we open on a mature pattern
-    warm = grid if rule == "wolfram1d" else 60
+    warm = grid if rule == "wolfram1d" else 90 if rule == "conway" else 60
     for _ in range(warm):
         eng.step()
     N = dur * fps
@@ -418,42 +418,69 @@ def add_bed(silent, final):
                     "-movflags", "+faststart", final], check=True)
 
 
-def render():
-    data = curate()
-    per_rule = data["per_rule"]; global_top = data["global_top"]
+def _hero_name(i, rule):
+    nm = rule.replace("abiogenesis-", "").replace("stage", "s")
+    return f"media/grand/hero_{i:02d}_{nm}.mp4"
+
+
+def render_one_hero(idx):
+    """Render per_rule[idx] champion BIG (parallelisable)."""
+    per_rule = json.load(open(TOP))["per_rule"]
+    if idx >= len(per_rule):
+        print(f"no hero {idx} (only {len(per_rule)})"); return
+    r = per_rule[idx]
     os.makedirs("media/grand", exist_ok=True)
-    # 1) everything wall (one champion per rule)
+    render_hero(r, _hero_name(idx, r["rule"]))
+
+
+def render_wall_cmd():
+    per_rule = json.load(open(TOP))["per_rule"]
+    os.makedirs("media/grand", exist_ok=True)
     wall_silent = "/tmp/grand_wall.mp4"
     render_wall(per_rule, wall_silent)
     add_bed(wall_silent, "media/grand/everything_wall.mp4")
-    # 2) per-rule heroes (big)
-    heroes = []
-    for r in per_rule:
-        nm = r["rule"].replace("abiogenesis-", "").replace("stage", "s")
-        o = f"media/grand/hero_{nm}.mp4"
-        render_hero(r, o); heroes.append(os.path.abspath(o))
-    # 3) reel from the global top (diverse)
-    reel_clips = []
-    for i, r in enumerate(global_top[:10]):
-        nm = r["rule"].replace("abiogenesis-", "").replace("stage", "s")
-        o = f"/tmp/grand_reel_{i:02d}_{nm}.mp4"
-        render_hero(r, o, dur=8); reel_clips.append(os.path.abspath(o))
+    print(f"DONE wall -> media/grand/everything_wall.mp4 "
+          f"({os.path.getsize('media/grand/everything_wall.mp4')/1e6:.1f} MB)")
+
+
+def assemble():
+    """Concat the rendered heroes into a reel (trim each), add bed, make a GIF."""
+    heroes = sorted(glob.glob("media/grand/hero_*.mp4"))
+    if not heroes:
+        print("no heroes to assemble"); return
+    # trim each hero to a 7s reel clip so the reel stays watchable
+    clips = []
+    for h in heroes:
+        c = f"/tmp/reel_{os.path.basename(h)}"
+        subprocess.run([FF, "-y", "-hide_banner", "-loglevel", "error", "-i", h,
+                        "-t", "7", "-c", "copy", c], check=True)
+        clips.append(os.path.abspath(c))
     lst = "/tmp/grand_reel.txt"
-    open(lst, "w").write("".join(f"file '{c}'\n" for c in reel_clips))
+    open(lst, "w").write("".join(f"file '{c}'\n" for c in clips))
     reel_silent = "/tmp/grand_reel_silent.mp4"
     subprocess.run([FF, "-y", "-hide_banner", "-loglevel", "error", "-f", "concat", "-safe", "0",
                     "-i", lst, "-c", "copy", reel_silent], check=True)
     add_bed(reel_silent, "media/grand/grand_reel.mp4")
-    # 4) GIF from the top global champion
-    if reel_clips:
-        subprocess.run([FF, "-y", "-hide_banner", "-loglevel", "error", "-i", reel_clips[0],
-                        "-vf", "fps=12,scale=460:-1:flags=lanczos,palettegen=max_colors=96:stats_mode=diff",
-                        "/tmp/grand_pal.png"], check=True)
-        subprocess.run([FF, "-y", "-hide_banner", "-loglevel", "error", "-i", reel_clips[0],
-                        "-i", "/tmp/grand_pal.png",
-                        "-lavfi", "fps=12,scale=460:-1:flags=lanczos[x];[x][1:v]paletteuse=dither=bayer:bayer_scale=4",
-                        "-loop", "0", "media/grand/grand_hero.gif"], check=True)
-    print("DONE — everything wall + per-rule heroes + reel + gif in media/grand/")
+    # GIF from the top-scoring hero (first in sorted per_rule order = hero_00)
+    top_hero = heroes[0]
+    subprocess.run([FF, "-y", "-hide_banner", "-loglevel", "error", "-i", top_hero,
+                    "-vf", "fps=12,scale=460:-1:flags=lanczos,palettegen=max_colors=96:stats_mode=diff",
+                    "/tmp/grand_pal.png"], check=True)
+    subprocess.run([FF, "-y", "-hide_banner", "-loglevel", "error", "-i", top_hero,
+                    "-i", "/tmp/grand_pal.png",
+                    "-lavfi", "fps=12,scale=460:-1:flags=lanczos[x];[x][1:v]paletteuse=dither=bayer:bayer_scale=4",
+                    "-loop", "0", "media/grand/grand_hero.gif"], check=True)
+    print(f"DONE reel ({os.path.getsize('media/grand/grand_reel.mp4')/1e6:.1f} MB) + gif "
+          f"from {len(heroes)} heroes")
+
+
+def render():
+    """Sequential fallback: wall + all heroes + reel + gif."""
+    data = curate()
+    render_wall_cmd()
+    for i in range(len(data["per_rule"])):
+        render_one_hero(i)
+    assemble()
 
 
 def main():
@@ -461,15 +488,24 @@ def main():
     ap.add_argument("--worker", default="")
     ap.add_argument("--render", action="store_true")
     ap.add_argument("--curate", action="store_true")
+    ap.add_argument("--wall", action="store_true")
+    ap.add_argument("--hero", type=int, default=-1)
+    ap.add_argument("--assemble", action="store_true")
     a = ap.parse_args()
     if a.render:
         render()
     elif a.curate:
         curate()
+    elif a.wall:
+        render_wall_cmd()
+    elif a.hero >= 0:
+        render_one_hero(a.hero)
+    elif a.assemble:
+        assemble()
     elif a.worker:
         sh, ns = (int(x) for x in a.worker.split("/")); worker(sh, ns)
     else:
-        ap.error("need --worker i/N, --curate, or --render")
+        ap.error("need --worker i/N, --curate, --wall, --hero N, --assemble, or --render")
 
 
 if __name__ == "__main__":
