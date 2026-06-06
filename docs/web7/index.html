@@ -139,14 +139,31 @@
       </div>
     </main>
 
-    <!-- RIGHT · the specimen key (named apparatus parts) -->
-    <aside class="key" aria-label="Specimen key">
-      <div class="key-head">
-        <span class="key-kicker">Specimen key</span>
-        <span class="key-count" id="partCount">—</span>
+    <!-- RIGHT · tabbed rail — live experiment Parameters | the specimen key -->
+    <aside class="key" aria-label="Instrument controls">
+      <div class="rail-tabs" role="tablist" aria-label="Right panel">
+        <button id="tabParams" class="rail-tab" role="tab" type="button"
+                aria-selected="true" aria-controls="paramPanel">Parameters</button>
+        <button id="tabParts" class="rail-tab" role="tab" type="button"
+                aria-selected="false" aria-controls="partsPanel" tabindex="-1">Apparatus</button>
       </div>
-      <div class="key-list" id="partsList"></div>
-      <p class="key-foot">Named parts of the apparatus. Hover to illuminate · select to veil.</p>
+
+      <div id="paramPanel" class="rail-body" role="tabpanel" aria-labelledby="tabParams">
+        <div id="paramList" class="param-list"></div>
+        <div class="param-actions">
+          <button id="stepBtn" class="ctl" type="button" title="Advance one step">Step</button>
+          <button id="resetBtn" class="ctl" type="button" title="Re-seed the experiment">Reset</button>
+        </div>
+      </div>
+
+      <div id="partsPanel" class="rail-body" role="tabpanel" aria-labelledby="tabParts" hidden>
+        <div class="key-head">
+          <span class="key-kicker">Specimen key</span>
+          <span class="key-count" id="partCount">—</span>
+        </div>
+        <div class="key-list" id="partsList"></div>
+        <p class="key-foot">Named parts of the apparatus. Hover to illuminate · select to veil.</p>
+      </div>
     </aside>
 
   </div>

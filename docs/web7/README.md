@@ -76,9 +76,20 @@ from web6 without change** — web7 is a presentation layer over a frozen engine
   with corner **registration ticks**, a `LIVE · SEM` badge with a recording dot, a
   `50 µm` **scale bar**, and an italic caption. A stage with no mapped rule shows a
   tasteful **"specimen pending"** state instead of crashing.
-- **Specimen key** (right) — the named apparatus parts as a monospace list. Hover
-  or focus illuminates a part (emissive lift); selecting it veils that part
-  (toggles `mesh.visible`), with `aria-pressed` reflecting the state.
+- **Right rail — tabbed: Parameters | Apparatus** (`role="tablist"`).
+  - **Parameters** — the live experiment's *own* tunable knobs, read straight from
+    the running rule's `params` schema (the same controls web2/web3 exposed):
+    Gray–Scott feed-rate **F** / kill-rate **k** / Pearson **preset**, soup
+    diffusion/evaporation/drift, RAF catalysis/decay, vent updraft/source, LIFE
+    mutation rate, … — plus two global controls (**Speed** in steps · s⁻¹ and SEM
+    **Palette**: warm-sepia / cool-mono) and **Step** / **Reset** transport. Every
+    control is genuinely wired — PDE rules read `params.X.value` live each step so a
+    slider takes effect mid-run, and `rule.onParamChange()` handles cascades (a
+    preset setting F and k re-syncs both sliders). Per-knob `controlConsequence`
+    text is surfaced as the control's tooltip.
+  - **Specimen key** — the named apparatus parts as a monospace list. Hover or
+    focus illuminates a part (emissive lift); selecting it veils that part
+    (toggles `mesh.visible`), with `aria-pressed` reflecting the state.
 - **Self-hosted brand fonts** — Italiana, Crimson Pro (regular + italic), and IBM
   Plex Mono (regular + bold) are shipped in `assets/fonts/` and declared via
   `@font-face` with `font-display: swap`. The three hero faces are `<link

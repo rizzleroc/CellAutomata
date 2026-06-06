@@ -94,5 +94,13 @@ assert(/viewport-hint/.test(html) && /viewport-hint/.test(css), "missing the dra
 assert(/THREE\.Spherical/.test(main), "no keyboard orbit for the apparatus");
 assert(/font-display:\s*optional/.test(css), "the didone display face should be font-display: optional");
 
+// 9. Live-experiment Parameters panel (each stage's real, wired knobs). -------
+assert(/id="paramList"/.test(html) && /buildParamPanel/.test(main), "missing the live-experiment parameter panel");
+assert(/class="rail-tabs"/.test(html) && /\.rail-tab\b/.test(css), "missing the right-rail Parameters|Apparatus tabs");
+assert(/rule\.params/.test(main), "parameter panel not wired to the rule's own params schema");
+assert(/onParamChange/.test(main), "parameter changes don't invoke the rule's onParamChange hook");
+assert(/paletteNames/.test(main), "no SEM palette control wired");
+assert(/id="resetBtn"/.test(html) && /id="stepBtn"/.test(html), "missing the Reset/Step experiment transport");
+
 console.log(`\n${checks} checks passed, ${failures} failure(s).`);
 process.exit(failures === 0 ? 0 : 1);

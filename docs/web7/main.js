@@ -74,6 +74,8 @@ let expRetry = 0;                       // poll counter while the classic exp sc
 let apparatusRunning = false;           // single source of truth for Run/Stop
 const EXP_STEPS_PER_SEC = 30;           // == web3 default speed
 const EXP_PALETTE = 'warm-sepia';       // == web3 default + the warm SEM substrate
+let expPalette = EXP_PALETTE;           // live, tunable via the Parameters panel
+let expSpeedOverride = 0;               // 0 → use the rule's own cadence
 
 // web4/web6 stage id → web3 rule id (registered key). 'natural-selection' is
 // hyphenated (the registered key) though its file is natural_selection.js.
@@ -106,6 +108,7 @@ function plateOf(meta) {
 // The plate's resting state. `failed` distinguishes a true load failure (the
 // live feed never initialised) from a stage that simply has no mapped rule.
 function showExpEmpty(failed) {
+  buildParamPanel(null);                 // nothing to tune when there's no live rule
   expEmpty.hidden = false;
   expCanvas.style.display = 'none';
   expCaption.textContent = '';
@@ -163,6 +166,7 @@ function selectExperiment(m) {
   expImageData = expCtx.createImageData(expRule.width, expRule.height);
   expHeightBuf = new Float32Array(expRule.width * expRule.height);
   expCaption.textContent = plateOf(m).name;
+  buildParamPanel(expRule);                            // surface this stage's own tunable knobs
   renderExperimentFrame();                             // paint one frame immediately (even if paused)
 }
 
@@ -176,7 +180,7 @@ function renderExperimentFrame() {
   }
   if (window.SEM && typeof expRule.renderHeight === 'function') {
     expRule.renderHeight(expHeightBuf);
-    SEM.render(expHeightBuf, expRule.width, expRule.height, expImageData.data, { palette: EXP_PALETTE });
+    SEM.render(expHeightBuf, expRule.width, expRule.height, expImageData.data, { palette: expPalette });
   } else {
     expRule.render(expImageData.data);                 // defensive fallback to rule's own RGBA
   }
@@ -186,7 +190,7 @@ function renderExperimentFrame() {
 // Fixed-timestep loop (structural copy of web3 tick(), with a safety cap).
 function expTick(now) {
   if (!expRunning || !expRule) { expRaf = 0; return; }
-  const sps = expRule.stepsPerSec || EXP_STEPS_PER_SEC;
+  const sps = expSpeedOverride > 0 ? expSpeedOverride : (expRule.stepsPerSec || EXP_STEPS_PER_SEC);
   const interval = 1000 / sps;
   if (!expLastStep) expLastStep = now;
   let advanced = false, safety = 4;
@@ -312,6 +316,93 @@ function highlight(mesh, on) {
     mesh.userData.__emis = undefined;
   }
 }
+
+// ── Live-experiment parameter panel ─────────────────────────────────────────
+// Reads the running rule's OWN params schema ({label,min,max,step,value} or
+// {type:'enum',options}) — the same knobs web2/web3 exposed — plus two global
+// controls (simulation speed, SEM palette). Every control is genuinely wired:
+// PDE rules read params.X.value live each step(), so a slider takes effect
+// mid-run; rule.onParamChange(key) handles side-effects (e.g. a Gray–Scott
+// preset setting F and k). No fabricated/disconnected sliders.
+const paramList = $('paramList');
+let paramRefs = {};   // key → {input,val,fmt} so a preset change can re-sync F/k sliders
+
+function paramHead(label, valText) {
+  const row = document.createElement('div'); row.className = 'param-row';
+  const head = document.createElement('div'); head.className = 'p-head';
+  const l = document.createElement('span'); l.className = 'p-label'; l.textContent = label;
+  const val = document.createElement('span'); val.className = 'p-val'; val.textContent = valText || '';
+  head.append(l, val); row.appendChild(head);
+  return { row, val };
+}
+function addSlider(label, min, max, step, value, fmt, onInput, tip) {
+  const { row, val } = paramHead(label, fmt(value));
+  const r = document.createElement('input');
+  r.type = 'range'; r.min = min; r.max = max; r.step = step; r.value = value;
+  r.setAttribute('aria-label', label); if (tip) r.title = tip;
+  r.oninput = () => { const v = parseFloat(r.value); val.textContent = fmt(v); onInput(v); };
+  row.appendChild(r); paramList.appendChild(row);
+  return { input: r, val, fmt };
+}
+function addSelect(label, options, value, onChange, tip) {
+  const { row } = paramHead(label, '');
+  const s = document.createElement('select');
+  s.setAttribute('aria-label', label); if (tip) s.title = tip;
+  for (const o of options) {
+    const opt = document.createElement('option'); opt.value = o; opt.textContent = o || '—';
+    if (o === value) opt.selected = true; s.appendChild(opt);
+  }
+  s.onchange = () => onChange(s.value);
+  row.appendChild(s); paramList.appendChild(row);
+}
+function buildParamPanel(rule) {
+  if (!paramList) return;
+  paramList.innerHTML = ''; paramRefs = {};
+  if (!rule) { paramList.innerHTML = '<div class="param-empty">No live experiment to tune on this plate.</div>'; return; }
+  // Global — simulation speed (drives the fixed-timestep loop)
+  expSpeedOverride = rule.stepsPerSec || EXP_STEPS_PER_SEC;
+  addSlider('Speed', 1, 60, 1, expSpeedOverride, (v) => `${v | 0} s⁻¹`, (v) => { expSpeedOverride = v; });
+  // Global — SEM tone-map palette (irrelevant to the photoreal LIFE feed)
+  if (!rule.hiRes && window.SEM && typeof SEM.paletteNames === 'function') {
+    addSelect('Palette', SEM.paletteNames(), expPalette, (v) => { expPalette = v; renderExperimentFrame(); });
+  }
+  // Per-stage scientific knobs, straight from the rule's own params schema
+  const P = rule.params || {};
+  for (const key of Object.keys(P)) {
+    const p = P[key];
+    const tip = (rule.controlConsequence && rule.controlConsequence[key]) || '';
+    if (p.type === 'enum') {
+      addSelect(p.label || key, p.options, p.value, (v) => {
+        p.value = v; if (rule.onParamChange) rule.onParamChange(key); syncParams(rule); renderExperimentFrame();
+      }, tip);
+    } else {
+      const dec = (p.step && p.step < 1) ? (String(p.step).split('.')[1] || '').length : 0;
+      const fmt = (v) => Number(v).toFixed(dec);
+      paramRefs[key] = addSlider(p.label || key, p.min, p.max, p.step, p.value, fmt, (v) => {
+        p.value = v; if (rule.onParamChange) rule.onParamChange(key); syncParams(rule); renderExperimentFrame();
+      }, tip);
+    }
+  }
+}
+// Re-sync slider positions when one change cascades to others (preset → F, k).
+function syncParams(rule) {
+  const P = rule.params || {};
+  for (const key of Object.keys(paramRefs)) {
+    const ref = paramRefs[key];
+    if (P[key] && ref) { ref.input.value = P[key].value; ref.val.textContent = ref.fmt(P[key].value); }
+  }
+}
+
+// Right-rail tabs (Parameters | Apparatus) + experiment transport.
+function setRailTab(showParams) {
+  $('tabParams').setAttribute('aria-selected', String(showParams)); $('tabParams').tabIndex = showParams ? 0 : -1;
+  $('tabParts').setAttribute('aria-selected', String(!showParams)); $('tabParts').tabIndex = showParams ? -1 : 0;
+  $('paramPanel').hidden = !showParams; $('partsPanel').hidden = showParams;
+}
+$('tabParams').onclick = () => setRailTab(true);
+$('tabParts').onclick = () => setRailTab(false);
+$('resetBtn').onclick = () => { if (expRule) { expRule.reset(); renderExperimentFrame(); announce('Specimen reset.'); } };
+$('stepBtn').onclick = () => { if (expRule) { expRule.step(); renderExperimentFrame(); } };
 
 // ── Run + explode controls ──────────────────────────────────────────────────
 // One control drives BOTH the apparatus animation AND the live SEM sim;
