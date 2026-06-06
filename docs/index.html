@@ -1,19 +1,144 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <meta http-equiv="refresh" content="0; url=web6/" />
-  <link rel="canonical" href="web6/" />
-  <title>cellauto — the lab</title>
-  <style>
-    html, body { background: #0a0e16; color: #8c8a82;
-      font-family: "IBM Plex Mono", Consolas, monospace; margin: 0;
-      height: 100%; display: flex; align-items: center; justify-content: center; }
-    a { color: #39d4c8; text-decoration: none; }
-  </style>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="dark">
+<meta name="theme-color" content="#07090d">
+<meta name="description" content="cellauto — an origin-of-life instrument. Thirteen abiogenesis stages, each a photoreal interactive experiment beside its live SEM micrograph, in the Catalytic Silence design language.">
+<title>cellauto — an origin-of-life instrument</title>
+<link rel="preload" href="web7/assets/fonts/Italiana-Regular.ttf" as="font" type="font/ttf" crossorigin>
+<link rel="preload" href="web7/assets/fonts/CrimsonPro-Regular.ttf" as="font" type="font/ttf" crossorigin>
+<link rel="preload" href="web7/assets/fonts/IBMPlexMono-Regular.ttf" as="font" type="font/ttf" crossorigin>
+<link rel="stylesheet" href="hub.css">
 </head>
 <body>
-  <p>cellauto · web 6.0 — <a href="web6/">enter the lab</a></p>
+<a class="skip-link" href="#lab">Skip to the lab</a>
+
+<header class="register">
+  <div class="brand">
+    <span class="brand-word">cellauto</span>
+    <span class="brand-sub">an origin-of-life instrument</span>
+  </div>
+  <nav class="nav" aria-label="Sections">
+    <a href="web7/">Lab</a>
+    <a href="#plates">Plates</a>
+    <a href="#about">About</a>
+    <a href="https://github.com/rizzleroc/CellAutomata">GitHub</a>
+  </nav>
+</header>
+
+<main>
+  <!-- ── Hero ──────────────────────────────────────────────────────────── -->
+  <section class="hero" id="lab">
+    <div class="wrap">
+      <div class="hero-kicker">Catalytic Silence · live instrument</div>
+      <h1 class="hero-title">cellauto</h1>
+      <p class="hero-lede">From a reducing atmosphere to the first cell — thirteen stages of abiogenesis, each a real experiment you can run beside the micrograph it produces.</p>
+      <div class="hero-actions">
+        <a class="btn btn-primary" href="web7/">▶ Enter the lab</a>
+        <a class="btn btn-ghost" href="#plates">View the plates</a>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── The thirteen stages ───────────────────────────────────────────── -->
+  <section aria-labelledby="stages-h">
+    <div class="wrap">
+      <div class="kicker">The pipeline</div>
+      <h2 class="h2" id="stages-h">Thirteen stages, one apparatus</h2>
+      <p class="sub">Each plate is a working experiment — a photoreal 3-D apparatus on the left, its live electron-micrograph on the right. Open any of them in the lab.</p>
+      <div class="stages">
+        <a class="stage-cell" href="web7/"><span class="num">0</span><span class="nm">Primordial soup</span></a>
+        <a class="stage-cell" href="web7/"><span class="num">I</span><span class="nm">Reaction–diffusion</span></a>
+        <a class="stage-cell" href="web7/"><span class="num">II</span><span class="nm">Autocatalytic sets</span></a>
+        <a class="stage-cell" href="web7/"><span class="num">III</span><span class="nm">Vesicles</span></a>
+        <a class="stage-cell" href="web7/"><span class="num">IV</span><span class="nm">Hydrothermal vent</span></a>
+        <a class="stage-cell" href="web7/"><span class="num">V</span><span class="nm">Mineral catalysis</span></a>
+        <a class="stage-cell" href="web7/"><span class="num">VI</span><span class="nm">Homochirality</span></a>
+        <a class="stage-cell" href="web7/"><span class="num">VII</span><span class="nm">RNA world</span></a>
+        <a class="stage-cell" href="web7/"><span class="num">VIII</span><span class="nm">Genetic code</span></a>
+        <a class="stage-cell" href="web7/"><span class="num">IX</span><span class="nm">Coacervates</span></a>
+        <a class="stage-cell" href="web7/"><span class="num">X</span><span class="nm">Protocell selection</span></a>
+        <a class="stage-cell" href="web7/"><span class="num">XI</span><span class="nm">LUCA</span></a>
+        <a class="stage-cell" href="web7/"><span class="num">✦</span><span class="nm">Capstone · digital life</span></a>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── The plates (gallery) ──────────────────────────────────────────── -->
+  <section id="plates" aria-labelledby="plates-h">
+    <div class="wrap">
+      <div class="kicker">The catalogue</div>
+      <h2 class="h2" id="plates-h">The plates</h2>
+      <p class="sub">Rendered specimens from the pipeline — the look each stage's live feed reaches toward. Select any plate for the full image.</p>
+
+      <a class="feature" href="generated/cellauto_twelve_tableaux.png">
+        <img src="generated/cellauto_twelve_tableaux.png" alt="Twelve tableaux — every origin-of-life stage rendered as one plate" loading="lazy">
+        <figcaption><div class="num">Plate · index</div><div class="nm" style="font-family:var(--font-display);font-size:24px">The twelve tableaux</div></figcaption>
+      </a>
+
+      <div class="gallery">
+        <a class="plate" href="generated/stage0_soup.png"><img src="generated/stage0_soup.png" alt="Primordial soup specimen" loading="lazy"><figcaption><div class="num">Stage 0</div><div class="nm">Primordial soup</div><div class="cap">Miller–Urey spark discharge in a reducing atmosphere.</div></figcaption></a>
+        <a class="plate" href="generated/stage1_reaction_diffusion.png"><img src="generated/stage1_reaction_diffusion.png" alt="Reaction–diffusion specimen" loading="lazy"><figcaption><div class="num">Stage I</div><div class="nm">Reaction–diffusion</div><div class="cap">Turing patterns: spots that grow, divide, replicate.</div></figcaption></a>
+        <a class="plate" href="generated/stage2_autocatalytic.png"><img src="generated/stage2_autocatalytic.png" alt="Autocatalytic sets specimen" loading="lazy"><figcaption><div class="num">Stage II</div><div class="nm">Autocatalytic sets</div><div class="cap">A reaction network that makes its own catalysts.</div></figcaption></a>
+        <a class="plate" href="generated/stage3_vesicles.png"><img src="generated/stage3_vesicles.png" alt="Vesicles specimen" loading="lazy"><figcaption><div class="num">Stage III</div><div class="nm">Vesicles</div><div class="cap">Lipid bilayers close into the first compartments.</div></figcaption></a>
+        <a class="plate" href="generated/stage4_selection.png"><img src="generated/stage4_selection.png" alt="Protocell selection specimen" loading="lazy"><figcaption><div class="num">Stage X</div><div class="nm">Protocell selection</div><div class="cap">Differential survival across a protocell array.</div></figcaption></a>
+        <a class="plate" href="generated/stage7_genetic_code_plate.png"><img src="generated/stage7_genetic_code_plate.png" alt="Genetic code specimen" loading="lazy"><figcaption><div class="num">Stage VIII</div><div class="nm">Genetic code</div><div class="cap">Codons resolve to amino acids; translation begins.</div></figcaption></a>
+        <a class="plate" href="generated/stage11_luca_plate.png"><img src="generated/stage11_luca_plate.png" alt="LUCA specimen" loading="lazy"><figcaption><div class="num">Stage XI</div><div class="nm">LUCA</div><div class="cap">The last universal common ancestor, distilled.</div></figcaption></a>
+        <a class="plate" href="generated/stage13_life.png"><img src="generated/stage13_life.png" alt="Digital life specimen" loading="lazy"><figcaption><div class="num">Capstone</div><div class="nm">Digital life</div><div class="cap">Self-replicating virtual-CPU organisms.</div></figcaption></a>
+        <a class="plate" href="generated/sem_stage1.png"><img src="generated/sem_stage1.png" alt="Live SEM micrograph — reaction–diffusion" loading="lazy"><figcaption><div class="num">Live · SEM</div><div class="nm">Reaction–diffusion</div><div class="cap">The live field under the depth-shaded electron beam.</div></figcaption></a>
+        <a class="plate" href="generated/sem_stage3.png"><img src="generated/sem_stage3.png" alt="Live SEM micrograph — vesicles" loading="lazy"><figcaption><div class="num">Live · SEM</div><div class="nm">Vesicles</div><div class="cap">The vesicle field as the instrument renders it.</div></figcaption></a>
+        <a class="plate" href="generated/pipeline_poster.png"><img src="generated/pipeline_poster.png" alt="The pipeline poster" loading="lazy"><figcaption><div class="num">Plate · pipeline</div><div class="nm">The whole pipeline</div><div class="cap">All stages as one continuous apparatus.</div></figcaption></a>
+        <a class="plate" href="generated/release_poster_v3_4.png"><img src="generated/release_poster_v3_4.png" alt="Release plate" loading="lazy"><figcaption><div class="num">Plate · release</div><div class="nm">Catalytic Silence</div><div class="cap">The release plate for the visual identity.</div></figcaption></a>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── About ─────────────────────────────────────────────────────────── -->
+  <section id="about" aria-labelledby="about-h">
+    <div class="wrap">
+      <div class="kicker">The discipline</div>
+      <h2 class="h2" id="about-h">A catalogue from a discipline that does not yet exist</h2>
+      <div class="prose">
+        <p>cellauto documents the chemistry that becomes a thing that becomes itself. Each of the thirteen
+          stages is a real cellular-automaton or reaction simulation — Gray–Scott reaction–diffusion,
+          autocatalytic (RAF) sets, lipid vesicles, the RNA world, the genetic code, protocell selection,
+          and a digital-life capstone of self-replicating virtual-CPU organisms — rendered both as a
+          photoreal laboratory apparatus and as the live electron-micrograph it would produce.</p>
+        <p class="philosophy">“The aesthetic of the scientific plate held a moment too long — the moment
+          when systematic notation tips into devotion. Colour is information; abundance is poverty.”</p>
+        <p>The interface is built in <em>Catalytic Silence</em>: a deep obsidian ground, a luminous teal and
+          a counterpoint magenta spent only as events, museum typography, and the composition of the vitrine
+          rather than the dashboard.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── Ecosystem links ───────────────────────────────────────────────── -->
+  <section id="ecosystem" aria-labelledby="eco-h">
+    <div class="wrap">
+      <div class="kicker">The ecosystem</div>
+      <h2 class="h2" id="eco-h">Enter, read, or build</h2>
+      <div class="links">
+        <a class="card" href="web7/"><div class="ct">The lab</div><div class="cd">Thirteen interactive experiments beside their live micrographs, with per-stage parameter controls.</div><span class="cgo">Enter →</span></a>
+        <a class="card" href="https://github.com/rizzleroc/CellAutomata"><div class="ct">The desktop app</div><div class="cd">The full Python simulator — install, run headless, export GIFs. Source on GitHub.</div><span class="cgo">Source →</span></a>
+        <a class="card" href="https://github.com/rizzleroc/CellAutomata/blob/main/docs/design/catalytic-silence.md"><div class="ct">Design philosophy</div><div class="cd">Catalytic Silence — the visual movement behind every plate and panel.</div><span class="cgo">Read →</span></a>
+        <a class="card" href="https://github.com/rizzleroc/CellAutomata/blob/main/docs/science.md"><div class="ct">The science</div><div class="cd">The chemistry and the citations behind each origin-of-life stage.</div><span class="cgo">Read →</span></a>
+        <a class="card" href="https://github.com/rizzleroc/CellAutomata/blob/main/docs/ROADMAP.md"><div class="ct">Roadmap</div><div class="cd">Where the instrument has been and where it is going.</div><span class="cgo">Read →</span></a>
+        <a class="card" href="web3/"><div class="ct">Prior views</div><div class="cd">Earlier per-stage plate clients — the lineage that led here.</div><span class="cgo">Open →</span></a>
+      </div>
+    </div>
+  </section>
+</main>
+
+<footer class="foot">
+  <div class="wrap">
+    <span class="cat">cat. — Catalytic Silence · cellauto</span>
+    <span class="links-inline">
+      <a href="web7/">Lab</a><a href="#plates">Plates</a><a href="https://github.com/rizzleroc/CellAutomata">GitHub</a>
+    </span>
+  </div>
+</footer>
 </body>
 </html>
