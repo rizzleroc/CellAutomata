@@ -1,0 +1,135 @@
+/* ============================================================================
+   cellauto · ecosystem hub — "Catalytic Silence"
+   The front door: a catalogue page that opens onto the instrument, the plates,
+   and the discipline behind them. Same grammar as web7/styles.css.
+   ========================================================================== */
+
+@font-face { font-family: "Italiana"; src: url("web7/assets/fonts/Italiana-Regular.ttf") format("truetype");
+  font-weight: 400; font-display: optional; }
+@font-face { font-family: "Crimson Pro"; src: url("web7/assets/fonts/CrimsonPro-Regular.ttf") format("truetype");
+  font-weight: 400; font-style: normal; font-display: swap; }
+@font-face { font-family: "Crimson Pro"; src: url("web7/assets/fonts/CrimsonPro-Italic.ttf") format("truetype");
+  font-weight: 400; font-style: italic; font-display: swap; }
+@font-face { font-family: "IBM Plex Mono"; src: url("web7/assets/fonts/IBMPlexMono-Regular.ttf") format("truetype");
+  font-weight: 400; font-display: swap; }
+
+:root {
+  --obsidian: #07090d; --obsidian-2: #0a0e15; --obsidian-3: #0d131c;
+  --ink: #ece7da; --ink-soft: #cbc5b6; --muted: #9a9280; --muted-dim: #8a8474;
+  --teal: #3fe0d0; --magenta: #d77bff;
+  --teal-line: rgba(63,224,208,.18); --teal-glow: rgba(63,224,208,.38);
+  --hair: rgba(236,231,218,.08); --hair-soft: rgba(236,231,218,.045);
+  --font-display: "Italiana","Didot","Bodoni MT","Hoefler Text",Georgia,"Times New Roman",serif;
+  --font-read: "Crimson Pro","Crimson Text",Georgia,serif;
+  --font-mono: "IBM Plex Mono",ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+  --s2: 8px; --s3: 12px; --s4: 16px; --s5: 24px; --s6: 32px; --s7: 48px; --s8: 64px;
+  --ease: cubic-bezier(.22,.61,.36,1); --med: 400ms; --slow: 720ms;
+  --max: 1200px;
+}
+* { box-sizing: border-box; }
+html { background: var(--obsidian); scroll-behavior: smooth; }
+body { margin: 0; background:
+    radial-gradient(120% 70% at 50% -10%, rgba(63,224,208,.02), transparent 60%), var(--obsidian);
+  color: var(--ink); font-family: var(--font-read); font-size: 17px; line-height: 1.6;
+  -webkit-font-smoothing: antialiased; text-rendering: optimizeLegibility; font-variant-numeric: lining-nums; }
+a { color: var(--teal); text-decoration: none; }
+img { display: block; max-width: 100%; }
+:focus-visible { outline: 2px solid var(--teal); outline-offset: 3px; border-radius: 3px; }
+.sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+.skip-link { position: fixed; top: -100px; left: var(--s4); z-index: 99; background: var(--obsidian-3);
+  color: var(--ink); border: 1px solid var(--teal-line); padding: var(--s2) var(--s4); border-radius: 8px;
+  font-family: var(--font-mono); font-size: 12px; transition: top var(--med) var(--ease); }
+.skip-link:focus { top: var(--s4); }
+.wrap { max-width: var(--max); margin: 0 auto; padding: 0 var(--s6); }
+
+/* ── Register / nav ──────────────────────────────────────────────────────── */
+.register { position: sticky; top: 0; z-index: 10; display: flex; align-items: center; justify-content: space-between;
+  padding: var(--s4) var(--s6); border-bottom: 1px solid var(--hair);
+  background: rgba(7,9,13,.82); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); }
+.brand { display: flex; align-items: baseline; gap: var(--s3); }
+.brand-word { font-family: var(--font-display); font-size: 22px; letter-spacing: .14em; }
+.brand-sub { font-style: italic; font-size: 13px; color: var(--muted); }
+.nav { display: flex; gap: var(--s5); font-family: var(--font-mono); font-size: 11px; letter-spacing: .18em; text-transform: uppercase; }
+.nav a { color: var(--muted); transition: color var(--med) var(--ease); }
+.nav a:hover { color: var(--ink); }
+
+/* ── Hero ────────────────────────────────────────────────────────────────── */
+.hero { position: relative; padding: clamp(64px,12vh,140px) 0 var(--s8); border-bottom: 1px solid var(--hair); overflow: hidden; }
+.hero::after { content: ""; position: absolute; inset: 0; z-index: -1;
+  background: radial-gradient(80% 60% at 70% 30%, rgba(215,123,255,.05), transparent 60%); pointer-events: none; }
+.hero-kicker { font-family: var(--font-mono); font-size: 11px; letter-spacing: .3em; text-transform: uppercase; color: var(--teal); }
+.hero-title { font-family: var(--font-display); font-weight: 400; font-size: clamp(52px,11vw,128px);
+  letter-spacing: .04em; line-height: .98; margin: var(--s4) 0 0; }
+.hero-lede { font-style: italic; font-size: clamp(18px,2.4vw,24px); color: var(--ink-soft); max-width: 30ch; margin: var(--s5) 0 0; }
+.hero-actions { display: flex; flex-wrap: wrap; gap: var(--s4); margin-top: var(--s7); }
+.btn { display: inline-flex; align-items: center; gap: var(--s2); font-family: var(--font-mono); font-size: 12px;
+  letter-spacing: .14em; text-transform: uppercase; padding: 14px 24px; border-radius: 10px; transition: all var(--med) var(--ease); }
+.btn-primary { background: rgba(63,224,208,.08); border: 1px solid var(--teal-line); color: var(--ink); }
+.btn-primary:hover { background: rgba(63,224,208,.14); border-color: var(--teal); box-shadow: 0 0 30px -8px var(--teal-glow); }
+.btn-ghost { border: 1px solid var(--hair); color: var(--muted); }
+.btn-ghost:hover { color: var(--ink); border-color: var(--teal-line); }
+
+/* ── Section scaffold ────────────────────────────────────────────────────── */
+section { padding: var(--s8) 0; border-bottom: 1px solid var(--hair); }
+.kicker { font-family: var(--font-mono); font-size: 11px; letter-spacing: .26em; text-transform: uppercase; color: var(--teal); }
+.h2 { font-family: var(--font-display); font-weight: 400; font-size: clamp(30px,5vw,46px); letter-spacing: .02em; margin: var(--s3) 0 var(--s2); }
+.sub { font-style: italic; color: var(--muted); max-width: 60ch; margin: 0 0 var(--s6); }
+
+/* ── Stage index strip ───────────────────────────────────────────────────── */
+.stages { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px,1fr)); gap: 1px;
+  background: var(--hair); border: 1px solid var(--hair); border-radius: 12px; overflow: hidden; }
+.stage-cell { background: var(--obsidian-2); padding: var(--s4); display: flex; flex-direction: column; gap: 4px;
+  transition: background var(--med) var(--ease); }
+.stage-cell:hover { background: var(--obsidian-3); }
+.stage-cell .num { font-family: var(--font-mono); font-size: 11px; color: var(--teal); letter-spacing: .08em; }
+.stage-cell .nm { font-size: 15px; color: var(--ink-soft); line-height: 1.2; }
+
+/* ── Plates gallery ──────────────────────────────────────────────────────── */
+.feature { display: block; border: 1px solid var(--hair); border-radius: 12px; overflow: hidden; margin-bottom: var(--s6);
+  position: relative; background: var(--obsidian-2); }
+.feature img { width: 100%; height: auto; transition: transform var(--slow) var(--ease), opacity var(--slow) var(--ease); }
+.feature:hover img { transform: scale(1.015); }
+.feature figcaption { position: absolute; left: 0; right: 0; bottom: 0; padding: var(--s5);
+  background: linear-gradient(to top, rgba(7,9,13,.9), transparent); }
+.gallery { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px,1fr)); gap: var(--s5); }
+.plate { display: block; border: 1px solid var(--hair); border-radius: 10px; overflow: hidden; background: var(--obsidian-2);
+  transition: border-color var(--med) var(--ease), box-shadow var(--med) var(--ease); }
+.plate:hover { border-color: var(--teal-line); box-shadow: 0 0 40px -16px var(--teal-glow); }
+.plate img { width: 100%; aspect-ratio: 16/10; object-fit: cover; }
+.plate figcaption { padding: var(--s3) var(--s4) var(--s4); }
+.plate .num { font-family: var(--font-mono); font-size: 10px; letter-spacing: .12em; text-transform: uppercase; color: var(--teal); }
+.plate .nm { font-family: var(--font-display); font-size: 19px; letter-spacing: .02em; margin-top: 4px; }
+.plate .cap { font-style: italic; font-size: 13px; color: var(--muted); margin-top: 6px; line-height: 1.45; }
+
+/* ── About / prose ───────────────────────────────────────────────────────── */
+.prose { max-width: 68ch; }
+.prose p { margin: 0 0 var(--s4); color: var(--ink-soft); }
+.prose em { color: var(--ink); }
+.philosophy { border-left: 1px solid var(--teal-line); padding-left: var(--s5); font-style: italic; color: var(--ink-soft); }
+
+/* ── Ecosystem links ─────────────────────────────────────────────────────── */
+.links { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px,1fr)); gap: var(--s4); }
+.card { display: block; border: 1px solid var(--hair); border-radius: 10px; padding: var(--s5);
+  background: var(--obsidian-2); transition: border-color var(--med) var(--ease), background var(--med) var(--ease); }
+.card:hover { border-color: var(--teal-line); background: var(--obsidian-3); }
+.card .ct { font-family: var(--font-display); font-size: 21px; color: var(--ink); letter-spacing: .02em; }
+.card .cd { font-size: 14px; color: var(--muted); margin-top: 6px; line-height: 1.5; }
+.card .cgo { font-family: var(--font-mono); font-size: 10px; letter-spacing: .18em; text-transform: uppercase; color: var(--teal); margin-top: var(--s3); display: inline-block; }
+
+/* ── Footer ──────────────────────────────────────────────────────────────── */
+.foot { padding: var(--s7) 0 var(--s8); border-bottom: 0; }
+.foot .wrap { display: flex; flex-wrap: wrap; gap: var(--s4); align-items: baseline; justify-content: space-between; }
+.foot .cat { font-family: var(--font-mono); font-size: 10px; letter-spacing: .22em; text-transform: uppercase; color: var(--muted-dim); }
+.foot .links-inline { display: flex; gap: var(--s5); font-family: var(--font-mono); font-size: 11px; letter-spacing: .1em; }
+.foot .links-inline a { color: var(--muted); } .foot .links-inline a:hover { color: var(--ink); }
+
+@media (max-width: 720px) {
+  .wrap { padding: 0 var(--s5); }
+  .register { padding: var(--s3) var(--s5); flex-wrap: wrap; gap: var(--s3); }
+  .nav { gap: var(--s4); } .brand-sub { display: none; }
+}
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  *, *::before, *::after { transition-duration: .001ms !important; animation-duration: .001ms !important; }
+}
+@media (forced-colors: active) { .plate, .card, .feature, .stage-cell, .btn { border-color: CanvasText; } }

@@ -102,5 +102,22 @@ assert(/onParamChange/.test(main), "parameter changes don't invoke the rule's on
 assert(/paletteNames/.test(main), "no SEM palette control wired");
 assert(/id="resetBtn"/.test(html) && /id="stepBtn"/.test(html), "missing the Reset/Step experiment transport");
 
+// 10. Ecosystem hub — the site front door (docs/index.html). ------------------
+assert(exists("../index.html"), "missing the ecosystem hub at docs/index.html");
+assert(exists("../hub.css"), "missing docs/hub.css");
+const hub = exists("../index.html") ? read("../index.html") : "";
+assert(/href="web7\/"/.test(hub), "hub does not link into the lab (web7/)");
+assert(/id="plates"/.test(hub) && /id="about"/.test(hub), "hub missing plates/about sections");
+assert(/hub\.css/.test(hub), "hub does not link hub.css");
+assert(/Catalytic Silence/i.test(hub), "hub missing the Catalytic Silence framing");
+// every gallery image the hub references must exist on disk
+const hubImgs = [...hub.matchAll(/(?:src|href)="(generated\/[^"]+\.png)"/g)].map((m) => m[1]);
+assert(hubImgs.length >= 8, `hub gallery references too few plates (${hubImgs.length})`);
+for (const rel of new Set(hubImgs)) assert(exists("../" + rel), `hub references missing image ${rel}`);
+// the hub self-hosts the brand fonts (no runtime CDN)
+const hubcss = exists("../hub.css") ? read("../hub.css") : "";
+assert(/@font-face[\s\S]*Italiana/.test(hubcss), "hub.css does not @font-face the brand fonts");
+assert(!/googleapis|jsdelivr|fonts\.gstatic/i.test(hubcss), "hub.css must not pull fonts from a CDN");
+
 console.log(`\n${checks} checks passed, ${failures} failure(s).`);
 process.exit(failures === 0 ? 0 : 1);
