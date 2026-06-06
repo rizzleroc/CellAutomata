@@ -221,9 +221,13 @@ export function buildMillerUrey() {
   const boilFlask = new THREE.Mesh(new THREE.SphereGeometry(0.95, 48, 36), glass());
   boilFlask.name = 'boiling-flask'; boilFlask.position.copy(boilC); boilFlask.castShadow = true;
   group.add(boilFlask);
+  // Boiling water — saturated and bodied (lower transmission + volume
+  // attenuation) so the liquid unmistakably reads as water, not empty glass.
   const water = new THREE.Mesh(new THREE.SphereGeometry(0.9, 40, 28),
-    new THREE.MeshPhysicalMaterial({ color: 0xcfe6ee, roughness: 0.1, transmission: 0.85, thickness: 1.0, ior: 1.33, transparent: true }));
-  water.name = 'boiling-water'; water.position.copy(boilC); water.scale.y = 0.55; water.position.y = boilC.y - 0.42;
+    new THREE.MeshPhysicalMaterial({ color: 0x6fb8d6, roughness: 0.08, transmission: 0.6,
+      thickness: 1.4, ior: 1.33, transparent: true,
+      attenuationColor: new THREE.Color(0x2f6f86), attenuationDistance: 1.4 }));
+  water.name = 'boiling-water'; water.position.copy(boilC); water.scale.y = 0.62; water.position.y = boilC.y - 0.38;
   group.add(water);
   const mantle = new THREE.Mesh(new THREE.CylinderGeometry(0.95, 1.05, 0.85, 40), ceramic());
   mantle.name = 'heating-mantle'; mantle.position.set(boilC.x, 0.1, 0); mantle.castShadow = true; mantle.receiveShadow = true;
@@ -263,10 +267,10 @@ export function buildMillerUrey() {
 
   // ── Animation state ───────────────────────────────────────────────────────
   // bubbles in the boiling flask
-  const bubbleGeo = new THREE.SphereGeometry(0.04, 8, 8);
-  const bubbleMat = new THREE.MeshStandardMaterial({ color: 0xffffff, transparent: true, opacity: 0.5, roughness: 0.2 });
+  const bubbleGeo = new THREE.SphereGeometry(0.05, 8, 8);
+  const bubbleMat = new THREE.MeshStandardMaterial({ color: 0xeaf6fb, transparent: true, opacity: 0.62, roughness: 0.2 });
   const bubbles = [];
-  for (let i = 0; i < 24; i++) {
+  for (let i = 0; i < 36; i++) {
     const b = new THREE.Mesh(bubbleGeo, bubbleMat);
     b.userData.reset = () => {
       b.position.set(boilC.x + (Math.random() - 0.5) * 1.1, boilC.y - 0.7, (Math.random() - 0.5) * 1.1);
@@ -341,6 +345,8 @@ export function buildMillerUrey() {
       b.position.y += b.userData.v * dt;
       if (b.position.y > boilC.y + 0.2) b.userData.reset();
     }
+    // boiling water: a gentle surface shimmer so the liquid reads as alive
+    if (running) water.scale.x = water.scale.z = 1 + Math.sin(t * 6) * 0.006;
     // condensate drops
     for (const d of drops) {
       if (!running) { d.visible = false; continue; }
