@@ -131,9 +131,9 @@
             // membrane in proportion to the local proton gradient × the PMF knob.
             if (mineral[ic] > 0) {
               const gx = Math.abs(Hp[y*W+xp] - Hp[y*W+xm]) * 0.5;   // local |∇pH| across the wall
-              v += pmf * gx * feed * 8.0 * mineral[ic];
+              v += pmf * gx * feed * 20.0 * mineral[ic];            // fix carbon at the membrane
             }
-            if (mineral[ic] >= 1) v *= 0.6;   // dense wall core is largely impermeable
+            if (mineral[ic] >= 1) v *= 0.82;   // dense wall core is semi-permeable (lets the plume show)
             if (v < 0) v = 0; else if (v > 1) v = 1;
             An[ic] = v;
           }
@@ -168,7 +168,7 @@
       // raised plume on top.
       renderHeight(out) {
         for (let i = 0; i < W * H; i++) {
-          out[i] = Math.min(1, mineral[i] * 0.55 + A[i] * 0.85);
+          out[i] = Math.min(1, mineral[i] * 0.35 + A[i] * 1.10);   // acetate reads ABOVE the walls so the PMF effect shows in SEM
         }
       },
 
