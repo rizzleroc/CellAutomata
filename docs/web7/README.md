@@ -16,7 +16,8 @@ near-microscopic sizes for plate numbers, specimen identifiers and scale-bar
 metadata. The composition follows the logic of the vitrine and the scientific
 journal: one dominant specimen given the dignity of breath, framed by deep
 negative space and held together by the geometry of the page rather than by
-ornament. The engine underneath is unchanged; only the room around it is new.
+ornament. The shell is new; the experiment engine (reused from web6) has since
+been deepened — see [`PUNCHLIST.md`](PUNCHLIST.md).
 
 Design language: [`../design/catalytic-silence.md`](../design/catalytic-silence.md)
 · [`../design/UX_SPEC_WEB7.md`](../design/UX_SPEC_WEB7.md).
@@ -33,10 +34,12 @@ python3 -m http.server -d docs   # then visit /web7/
 **All 13 stages are built** — Stage 0 + the 11-stage pipeline + the stromatolite
 capstone — each a photoreal apparatus you can orbit, take apart (exploded-view
 slider), and *run*. Every apparatus exposes named parts and an anim contract;
-beside it the **same web3 physics + SEM pipeline** runs the matching
-origin-of-life simulation in real time. The apparatus modules, the
-`experiment/` physics, and the camera/run/explode semantics are **carried over
-from web6 without change** — web7 is a presentation layer over a frozen engine.
+beside it the web3 physics + SEM pipeline runs the matching
+origin-of-life simulation in real time. The apparatus modules and the
+camera/run/explode semantics are carried over from web6; the `experiment/`
+rules began as web6's copies but have since been **deepened in web7** — real
+per-stage controls, a genuine mineral-catalysis model, and a proton-gradient
+vent (see [`PUNCHLIST.md`](PUNCHLIST.md) for the full audit).
 
 | # | Stage | Apparatus |
 |---|---|---|
@@ -80,13 +83,16 @@ from web6 without change** — web7 is a presentation layer over a frozen engine
   - **Parameters** — the live experiment's *own* tunable knobs, read straight from
     the running rule's `params` schema (the same controls web2/web3 exposed):
     Gray–Scott feed-rate **F** / kill-rate **k** / Pearson **preset**, soup
-    diffusion/evaporation/drift, RAF catalysis/decay, vent updraft/source, LIFE
-    mutation rate, … — plus two global controls (**Speed** in steps · s⁻¹ and SEM
-    **Palette**: warm-sepia / cool-mono) and **Step** / **Reset** transport. Every
-    control is genuinely wired — PDE rules read `params.X.value` live each step so a
-    slider takes effect mid-run, and `rule.onParamChange()` handles cascades (a
-    preset setting F and k re-syncs both sliders). Per-knob `controlConsequence`
-    text is surfaced as the control's tooltip.
+    gas-density/spark/reducing, RAF catalysis/decay, vent **proton-motive force**,
+    mineral **clay catalysis** (k_clay/k_bulk), LIFE mutation rate, … — plus a
+    per-stage **Regime** picker that applies each rule's named presets (e.g.
+    minerals' "surface catalysis" vs its "no catalysis" control), two global
+    controls (**Speed** in steps · s⁻¹ and SEM **Palette**), and **Step** /
+    **Reset** transport. Every control is genuinely wired — PDE rules read
+    `params.X.value` live each step so a slider takes effect mid-run, and
+    `rule.onParamChange()` handles cascades. Per-knob `controlConsequence` text is
+    surfaced as the control's tooltip; the Regime picker shows each preset's hint.
+    On narrow screens the rail becomes a slide-in drawer so **no control is lost**.
   - **Specimen key** — the named apparatus parts as a monospace list. Hover or
     focus illuminates a part (emissive lift); selecting it veils that part
     (toggles `mesh.visible`), with `aria-pressed` reflecting the state.
@@ -104,15 +110,19 @@ from web6 without change** — web7 is a presentation layer over a frozen engine
   `prefers-reduced-motion` block that freezes the breath, the caption rise and all
   transitions (honoured in CSS **and** in the controller); and a `forced-colors`
   fallback that keeps the structure legible.
-- **Responsive** — three-column vitrine on the desktop; the specimen key drops at
-  ≤1180px and the stage index at ≤860px, where the page goes to a single scrolling
-  column with the panes stacked and the instrument bar made sticky.
+- **Responsive** — three-column vitrine on the desktop; at ≤1180px the control
+  rail (Parameters + specimen key) becomes a slide-in **drawer** opened from a
+  `⚙ Controls` launcher (so no control is lost — UX_SPEC §4.2), and the stage
+  index drops at ≤860px, where the page goes to a single scrolling column with the
+  panes stacked and the instrument bar made sticky.
 
 ### Live SEM experiment (the engine, reused)
 
 Beside the apparatus the **same web3 physics + SEM depth-shading pipeline** runs
-the matching simulation. `experiment/` holds **byte-identical copies of the web3
-engine** — `viridis.js`, `sem.js`, `sprites.js`, and the mapped rule files —
+the matching simulation. `experiment/` holds the web3 SEM engine (`viridis.js`,
+`sem.js`, `sprites.js`) plus the mapped rule files — several of which web7 has
+since extended (real controls, `minerals.js`, the proton-gradient `vents.js`;
+see [`PUNCHLIST.md`](PUNCHLIST.md)) —
 loaded as **classic `<script>` tags before the ES-module `main.js`**, so
 `window.SEM`, `window.CA.RULES`, and the bare `VIRIDIS_LUT` global all exist when
 `main.js` runs (the globals bridge the module / classic-script worlds, with no

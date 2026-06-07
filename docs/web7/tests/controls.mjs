@@ -94,6 +94,22 @@ if (minerals) {
   }
 }
 
+// ── 3. Vents chemiosmosis is real (proton gradient drives synthesis) ────────
+const vents = RULES.vents && RULES.vents();
+ok(!!(vents && vents.params && vents.params.pmf), 'vents exposes a proton-motive-force (pmf) control');
+if (vents && vents.params && vents.params.pmf) {
+  const sigmaA = (pmf) => {
+    vents.params.pmf.value = pmf;
+    vents.reset();
+    for (let i = 0; i < 250; i++) vents.step();
+    const m = vents.population().match(/ΣA\s+(\d+)/);
+    return m ? +m[1] : -1;
+  };
+  const on = sigmaA(0.6), off = sigmaA(0.0);
+  ok(on > 20, `vents: a proton gradient must fix acetate (ΣA=${on} at PMF 0.6)`);
+  ok(off === 0, `vents: no gradient → no carbon fixation (ΣA=${off} at PMF 0)`);
+}
+
 // ── Report ──────────────────────────────────────────────────────────────────
 if (fails.length) console.error('\n' + fails.map((f) => '  ✗ ' + f).join('\n'));
 console.log(`\n${pass} checks passed, ${fails.length} failure(s).`);
