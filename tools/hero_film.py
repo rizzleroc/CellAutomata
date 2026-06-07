@@ -30,6 +30,7 @@ import os
 import subprocess
 import sys
 import tempfile
+import time
 from pathlib import Path
 
 import numpy as np
@@ -297,6 +298,7 @@ def sim_beat(tmp, idx, dur, cap, rule_name, cfg, seed, warmup, framefn,
              crf, preset, fin, fout, grid=280, steps_per=6, scatter=False):
     """Render a live sim beat: step the rule, recolour each frame through the
     brand ramp + SEM post, frame the specimen on obsidian, overlay the caption."""
+    print(f"[beat {idx}] sim {rule_name} grid={grid} frames={int(dur * FPS)}", flush=True)
     rule = REGISTRY[rule_name](**cfg)
     eng = Engine(width=grid, height=grid, rule=rule, seed=seed)
     if scatter:
@@ -305,9 +307,18 @@ def sim_beat(tmp, idx, dur, cap, rule_name, cfg, seed, warmup, framefn,
         eng.step()
     fdir = Path(tmp) / f"sim_{idx:02d}"
     fdir.mkdir(parents=True, exist_ok=True)
+    frozen = False
     for fi in range(int(dur * FPS)):
-        for _ in range(steps_per):
-            eng.step()
+        if not frozen:
+            t0 = time.time()
+            for _ in range(steps_per):
+                eng.step()
+            # Safety: some rules (e.g. stage-4 selection at large grids) enter a
+            # regime where a single step costs seconds. Freeze the field rather
+            # than hang the whole render — the beat finishes on its last state.
+            if time.time() - t0 > 1.5:
+                frozen = True
+                sys.stderr.write(f"[beat {idx}] sim froze at frame {fi} (slow step)\n")
         on_obsidian(framefn(eng)).save(fdir / f"f_{fi:05d}.png")
     capp = Path(tmp) / f"cap_{idx:02d}.png"
     caption_overlay(capp, *cap)
@@ -400,7 +411,7 @@ def main():
     test = args.test
     crf = 30 if test else 21
     preset = "veryfast" if test else "medium"
-    grid = 120 if test else 280
+    grid = 120 if test else 240
     f = 0.45 if test else 1.0      # duration scale for the test pass
 
     tmp = tempfile.mkdtemp(prefix="herobeats_")
@@ -445,8 +456,9 @@ def main():
                  ("S T A G E   4   ·   S E L E C T I O N", "Chemistry That Competes",
                   "Bounded chemistry begins to copy, and to win.", "EIGEN · SCHUSTER  1977"),
                  "abiogenesis-stage4-selection", {}, seed=4,
-                 warmup=40 if not test else 15, framefn=frame_lum(0.80, 0.95),
-                 crf=crf, preset=preset, fin=False, fout=False, grid=grid, steps_per=4), d4)
+                 warmup=30 if not test else 15, framefn=frame_lum(0.80, 0.95),
+                 crf=crf, preset=preset, fin=False, fout=False,
+                 grid=min(grid, 150), steps_per=2), d4)
     # 5 — the whole arc (pipeline panorama, cover pan)
     d5 = 11 * f
     add(plate_beat(tmp, 5, d5, GEN / "pipeline_poster.png",
