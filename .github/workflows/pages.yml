@@ -50,6 +50,8 @@ jobs:
         run: node docs/web7/tests/runtime.mjs   # three already installed above
       - name: Web7 apparatus animation verification
         run: node docs/web7/tests/anim.mjs      # proves each experiment visibly runs
+      - name: Web7 controls-contract tests
+        run: node docs/web7/tests/controls.mjs  # presets wired to real params + minerals localises (REV-18)
 
   build:
     needs: test

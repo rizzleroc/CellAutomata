@@ -81,7 +81,7 @@ let expSpeedOverride = 0;               // 0 → use the rule's own cadence
 // hyphenated (the registered key) though its file is natural_selection.js.
 const STAGE_MAP = {
   'stage0-miller-urey': 'soup',  'stage1-grayscott': 'grayscott', 'stage2-raf': 'raf',
-  'stage3-vesicles': 'vesicles', 'stage4-vent': 'vents',          'stage5-minerals': 'grayscott',
+  'stage3-vesicles': 'vesicles', 'stage4-vent': 'vents',          'stage5-minerals': 'minerals',
   'stage6-chirality': 'chirality', 'stage7-rna': 'rna',           'stage8-code': 'code',
   'stage9-coacervate': 'coacervate', 'stage10-selection': 'natural-selection',
   'stage11-luca': 'luca',        'capstone-stromatolite': 'life',
