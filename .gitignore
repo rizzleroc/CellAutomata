@@ -34,3 +34,7 @@ discovery/animhunt/
 *.zip
 discovery/colony/
 discovery/grand/
+
+# Grand search: ignore large raw renders, keep delivery-sized copies
+media/grand/*.mp4
+media/grand/*.gif
