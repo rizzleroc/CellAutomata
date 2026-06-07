@@ -38,3 +38,7 @@ discovery/grand/
 # Grand search: ignore large raw renders, keep delivery-sized copies
 media/grand/*.mp4
 media/grand/*.gif
+
+# Hero film: ignore the quality master (delivered as .zip); the web-optimized
+# copy lives in docs/ and is tracked.
+media/hero/*.mp4
