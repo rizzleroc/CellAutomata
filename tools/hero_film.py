@@ -158,7 +158,7 @@ def frame_plate(plate, mode: str) -> Image.Image:
         # strong edge vignette -> blends any light "paper" border into obsidian
         yy, xx = np.mgrid[0:H, 0:W].astype(np.float32)
         r = np.sqrt(((xx - W / 2) / (W / 2)) ** 2 + ((yy - H / 2) / (H / 2)) ** 2)
-        vig = np.clip(1.0 - 0.85 * np.clip((r - 0.55) / 0.45, 0, 1) ** 1.7, 0.0, 1.0)
+        vig = np.clip(1.0 - 0.92 * np.clip((r - 0.50) / 0.50, 0, 1) ** 1.6, 0.0, 1.0)
         arr = arr * vig[:, :, None] + np.array(OBSIDIAN, np.float32) * (1 - vig)[:, :, None]
         canvas = Image.blend(Image.fromarray(arr.astype(np.uint8), "RGB"),
                              Image.new("RGB", (W, H), OBSIDIAN), 0.08)
@@ -398,8 +398,8 @@ def main():
     args = ap.parse_args()
 
     test = args.test
-    crf = 30 if test else 19
-    preset = "veryfast" if test else "slow"
+    crf = 30 if test else 21
+    preset = "veryfast" if test else "medium"
     grid = 120 if test else 280
     f = 0.45 if test else 1.0      # duration scale for the test pass
 
