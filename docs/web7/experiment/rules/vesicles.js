@@ -77,15 +77,16 @@
       label: "Vesicles · Helfrich lipid bilayer",
       formula: "∂φ/∂t = D ∇²φ − γ φ(1−φ)(½−φ) − κ (∇²)²φ + noise   (Helfrich curvature).",
       shortCaption: "STAGE 3 · VESICLES",
-      whatThisIs: "True membrane compartments. Lipid molecules spontaneously assemble into " +
-                  "closed bilayer spheres — the kind of compartment modern cells have. " +
+      whatThisIs: "Membrane compartments. Lipid molecules spontaneously assemble into " +
+                  "closed bilayer domains — the kind of boundary modern cells have. " +
                   "Distinct from coacervate's liquid-liquid droplets: a vesicle has an actual " +
-                  "membrane, and the membrane is selectively permeable.",
+                  "curvature-stabilised membrane that closes into rounded compartments. (This " +
+                  "model captures the bending-energy self-assembly, not active permeability.)",
       aboutStage: "The building block here is the protocell boundary itself. Unlike the membrane-less " +
-                  "coacervate, this is a real closed lipid bilayer enclosing a lumen — a persistent " +
-                  "inside versus outside. It matters as the true compartment a cell needs to hold its " +
-                  "chemistry together and meter what crosses. The flow follows Helfrich (1973) bending " +
-                  "energy; raise the bending modulus κ_b for fewer, larger, rounder vesicles.",
+                  "coacervate, this is a closed, curvature-stabilised lipid domain — a persistent " +
+                  "inside versus outside. It matters as the compartment boundary a cell needs to hold " +
+                  "its chemistry together. The flow follows Helfrich (1973) bending energy; raise the " +
+                  "bending modulus κ_b for fewer, larger, rounder vesicles.",
       paletteBg: [10, 14, 22],
       paletteFg: [230, 224, 208],
       width: W,
