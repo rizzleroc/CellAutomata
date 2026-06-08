@@ -15,9 +15,9 @@ Proven recipe (the leaf pilot that rendered cleanly):
 | # | Clip | Status | URL |
 |---|------|--------|-----|
 | 1 | Leaf (veins) | ✅ done | https://s.asim.sh/videos/b59ffb89-b432-46c4-acab-f9c286f906c2.mp4 |
-| 2 | Leopard (spots) | ⏳ queued | — |
-| 3 | Zebra (stripes) | ⏳ queued | — |
-| 4 | Luna Moth (eyespots) | ⏳ queued | — |
+| 2 | Leopard (spots) | ✅ done | https://s.asim.sh/videos/c38f6db3-8f0a-42e1-a8a0-9c8e0acd0d8c.mp4 |
+| 3 | Zebra (stripes) | ✅ done | https://s.asim.sh/videos/7a06ba49-a0fd-4f6e-928d-1242c6548239.mp4 |
+| 4 | Luna Moth (eyespots) | ⏳ rendering | — |
 | 5 | Pufferfish (reticulation) | ⏳ queued | — |
 | 6 | Cone Shell (Rule 30 CA) | ⏳ queued | — |
 
