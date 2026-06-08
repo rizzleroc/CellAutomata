@@ -60,6 +60,8 @@ jobs:
         run: node docs/web8/tests/runtime.mjs   # three already installed above
       - name: Web8 apparatus animation verification
         run: node docs/web8/tests/anim.mjs
+      - name: Web8 controls-contract tests
+        run: node docs/web8/tests/controls.mjs  # presets wired + minerals localises + vents PMF (web8 parity)
 
   build:
     needs: test
