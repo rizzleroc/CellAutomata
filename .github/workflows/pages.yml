@@ -50,6 +50,14 @@ jobs:
         run: node docs/web7/tests/runtime.mjs   # three already installed above
       - name: Web7 apparatus animation verification
         run: node docs/web7/tests/anim.mjs      # proves each experiment visibly runs
+      - name: Web8 guided-lab smoke tests
+        run: node docs/web8/tests/smoke.mjs
+      - name: Web8 design-contract tests
+        run: node docs/web8/tests/design.mjs
+      - name: Web8 apparatus runtime verification
+        run: node docs/web8/tests/runtime.mjs   # three already installed above
+      - name: Web8 apparatus animation verification
+        run: node docs/web8/tests/anim.mjs
 
   build:
     needs: test

@@ -1,0 +1,22 @@
+/* web8 — living amoeba guide overlay (V0).
+   The guide sits over the specimen and must never intercept pointer events or
+   hide the apparatus / micrograph chrome. Motion is handled in guide.js and is
+   gated on prefers-reduced-motion. */
+
+.amoeba-guide {
+  position: absolute;
+  left: 18px;
+  bottom: 18px;
+  z-index: 40;
+  pointer-events: none;
+  filter: drop-shadow(0 6px 18px rgba(0, 0, 0, 0.55));
+}
+
+@media (max-width: 860px) {
+  .amoeba-guide {
+    left: 10px;
+    bottom: 10px;
+    transform: scale(0.78);
+    transform-origin: left bottom;
+  }
+}
