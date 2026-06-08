@@ -33,6 +33,12 @@ Proven recipe (the leaf pilot that rendered cleanly):
 
 **6 · Cone Shell** — `Vertical 9:16, locked static camera, pure solid black background. A textile cone shell with intricate brown-and-white triangular tent markings fills the frame. Time runs in reverse: the triangular tent markings resolve row by row into a one-dimensional cellular-automaton spacetime diagram of flickering black-and-white cells, then scatter into a smooth parchment haze. Backward-drifting particles, hypnotic, scientific, elegant, slow motion. No text, no captions, no words on screen, no people.`
 
+## ⚠️ Constraint learned: the ASIM app is single-stream
+While a clip is "Creating…", the prompt textarea is removed, so a second
+`generate_video` fails with `Editable textarea not found`. Clips therefore
+**cannot be batched** — each must be submitted only after the previous one has
+*fully finished rendering* (~8–10 min). Submit → wait for complete → submit next.
+
 ## Fire sequence (per clip, when MCP is connected)
 ```
 whipgen_asim_generate_video(simId="343003", prompt=<above>, orientation="portrait", noRef=true, studio=true, async=true)  -> jobId
