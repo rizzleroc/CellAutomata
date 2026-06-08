@@ -34,6 +34,7 @@ discovery/animhunt/
 *.zip
 discovery/colony/
 discovery/grand/
+discovery/needle_src/
 
 # Grand search: ignore large raw renders, keep delivery-sized copies
 media/grand/*.mp4
