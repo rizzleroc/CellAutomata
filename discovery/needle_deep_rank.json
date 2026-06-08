@@ -1,0 +1,706 @@
+{
+  "ranked": [
+    {
+      "id": "need_plasma7",
+      "regime": "plasma",
+      "grid": 460,
+      "n1": 48,
+      "n2": 7,
+      "octs": 1,
+      "score": 0.1531
+    },
+    {
+      "id": "need_coral7",
+      "regime": "coral",
+      "grid": 460,
+      "n1": 40,
+      "n2": 7,
+      "octs": 1,
+      "score": 0.1373
+    },
+    {
+      "id": "need_plasma11",
+      "regime": "plasma",
+      "grid": 460,
+      "n1": 40,
+      "n2": 7,
+      "octs": 2,
+      "score": 0.1324
+    },
+    {
+      "id": "need_plasma17",
+      "regime": "plasma",
+      "grid": 460,
+      "n1": 40,
+      "n2": 7,
+      "octs": 1,
+      "score": 0.1324
+    },
+    {
+      "id": "need_coral11",
+      "regime": "coral",
+      "grid": 460,
+      "n1": 28,
+      "n2": 7,
+      "octs": 1,
+      "score": 0.1302
+    },
+    {
+      "id": "need_coral17",
+      "regime": "coral",
+      "grid": 460,
+      "n1": 48,
+      "n2": 7,
+      "octs": 1,
+      "score": 0.1301
+    },
+    {
+      "id": "need_coral1",
+      "regime": "coral",
+      "grid": 460,
+      "n1": 40,
+      "n2": 6,
+      "octs": 1,
+      "score": 0.1287
+    },
+    {
+      "id": "need_maze1",
+      "regime": "maze",
+      "grid": 460,
+      "n1": 48,
+      "n2": 7,
+      "octs": 1,
+      "score": 0.1247
+    },
+    {
+      "id": "need_maze11",
+      "regime": "maze",
+      "grid": 460,
+      "n1": 40,
+      "n2": 7,
+      "octs": 1,
+      "score": 0.1142
+    },
+    {
+      "id": "need_plasma1",
+      "regime": "plasma",
+      "grid": 460,
+      "n1": 10,
+      "n2": 7,
+      "octs": 2,
+      "score": 0.1118
+    },
+    {
+      "id": "need_maze17",
+      "regime": "maze",
+      "grid": 460,
+      "n1": 40,
+      "n2": 6,
+      "octs": 1,
+      "score": 0.1092
+    },
+    {
+      "id": "need_maze7",
+      "regime": "maze",
+      "grid": 460,
+      "n1": 32,
+      "n2": 6,
+      "octs": 1,
+      "score": 0.1091
+    },
+    {
+      "id": "mand_13",
+      "regime": "coral",
+      "grid": 360,
+      "n1": 48,
+      "n2": 7,
+      "octs": 1,
+      "score": 0.0994
+    },
+    {
+      "id": "mand_14",
+      "regime": "plasma",
+      "grid": 360,
+      "n1": 28,
+      "n2": 3,
+      "octs": 2,
+      "score": 0.0946
+    },
+    {
+      "id": "mand_06",
+      "regime": "plasma",
+      "grid": 360,
+      "n1": 40,
+      "n2": 6,
+      "octs": 2,
+      "score": 0.0933
+    },
+    {
+      "id": "mand_05",
+      "regime": "coral",
+      "grid": 360,
+      "n1": 48,
+      "n2": 6,
+      "octs": 1,
+      "score": 0.0877
+    },
+    {
+      "id": "mand_15",
+      "regime": "stripes",
+      "grid": 360,
+      "n1": 48,
+      "n2": 7,
+      "octs": 1,
+      "score": 0.0854
+    },
+    {
+      "id": "need_turbulence17",
+      "regime": "turbulence",
+      "grid": 460,
+      "n1": 12,
+      "n2": 7,
+      "octs": 1,
+      "score": 0.0848
+    },
+    {
+      "id": "need_turbulence11",
+      "regime": "turbulence",
+      "grid": 460,
+      "n1": 48,
+      "n2": 7,
+      "octs": 1,
+      "score": 0.0835
+    },
+    {
+      "id": "need_worm11",
+      "regime": "worm",
+      "grid": 460,
+      "n1": 40,
+      "n2": 6,
+      "octs": 2,
+      "score": 0.0834
+    },
+    {
+      "id": "need_turbulence7",
+      "regime": "turbulence",
+      "grid": 460,
+      "n1": 10,
+      "n2": 7,
+      "octs": 2,
+      "score": 0.0829
+    },
+    {
+      "id": "mand_10",
+      "regime": "maze",
+      "grid": 360,
+      "n1": 48,
+      "n2": 7,
+      "octs": 2,
+      "score": 0.081
+    },
+    {
+      "id": "need_turbulence1",
+      "regime": "turbulence",
+      "grid": 460,
+      "n1": 24,
+      "n2": 6,
+      "octs": 1,
+      "score": 0.0794
+    },
+    {
+      "id": "need_worm17",
+      "regime": "worm",
+      "grid": 460,
+      "n1": 28,
+      "n2": 6,
+      "octs": 3,
+      "score": 0.0794
+    },
+    {
+      "id": "need_worm7",
+      "regime": "worm",
+      "grid": 460,
+      "n1": 40,
+      "n2": 7,
+      "octs": 2,
+      "score": 0.0789
+    },
+    {
+      "id": "mand_02",
+      "regime": "maze",
+      "grid": 360,
+      "n1": 28,
+      "n2": 6,
+      "octs": 1,
+      "score": 0.0779
+    },
+    {
+      "id": "mand_07",
+      "regime": "stripes",
+      "grid": 360,
+      "n1": 48,
+      "n2": 7,
+      "octs": 1,
+      "score": 0.0746
+    },
+    {
+      "id": "anim_015",
+      "regime": "gs",
+      "grid": 240,
+      "n1": 28,
+      "n2": 6,
+      "octs": 2,
+      "score": 0.0591
+    },
+    {
+      "id": "mand_11",
+      "regime": "turbulence",
+      "grid": 360,
+      "n1": 20,
+      "n2": 7,
+      "octs": 1,
+      "score": 0.0541
+    },
+    {
+      "id": "mand_08",
+      "regime": "chaos",
+      "grid": 360,
+      "n1": 20,
+      "n2": 6,
+      "octs": 2,
+      "score": 0.054
+    },
+    {
+      "id": "need_worm1",
+      "regime": "worm",
+      "grid": 460,
+      "n1": 24,
+      "n2": 5,
+      "octs": 3,
+      "score": 0.0528
+    },
+    {
+      "id": "anim_011",
+      "regime": "gs",
+      "grid": 240,
+      "n1": 20,
+      "n2": 6,
+      "octs": 3,
+      "score": 0.052
+    },
+    {
+      "id": "anim_025",
+      "regime": "gs",
+      "grid": 240,
+      "n1": 48,
+      "n2": 5,
+      "octs": 2,
+      "score": 0.0519
+    },
+    {
+      "id": "mand_00",
+      "regime": "chaos",
+      "grid": 360,
+      "n1": 48,
+      "n2": 5,
+      "octs": 3,
+      "score": 0.0516
+    },
+    {
+      "id": "anim_021",
+      "regime": "gs",
+      "grid": 240,
+      "n1": 48,
+      "n2": 3,
+      "octs": 2,
+      "score": 0.0509
+    },
+    {
+      "id": "mand_12",
+      "regime": "worm",
+      "grid": 360,
+      "n1": 28,
+      "n2": 3,
+      "octs": 2,
+      "score": 0.0508
+    },
+    {
+      "id": "mand_03",
+      "regime": "turbulence",
+      "grid": 360,
+      "n1": 40,
+      "n2": 6,
+      "octs": 2,
+      "score": 0.0478
+    },
+    {
+      "id": "anim_029",
+      "regime": "gs",
+      "grid": 240,
+      "n1": 48,
+      "n2": 5,
+      "octs": 1,
+      "score": 0.0477
+    },
+    {
+      "id": "anim_010",
+      "regime": "gs",
+      "grid": 240,
+      "n1": 28,
+      "n2": 6,
+      "octs": 3,
+      "score": 0.0474
+    },
+    {
+      "id": "anim_023",
+      "regime": "gs",
+      "grid": 240,
+      "n1": 16,
+      "n2": 5,
+      "octs": 2,
+      "score": 0.0456
+    },
+    {
+      "id": "anim_039",
+      "regime": "gs",
+      "grid": 240,
+      "n1": 12,
+      "n2": 6,
+      "octs": 2,
+      "score": 0.0423
+    },
+    {
+      "id": "mand_04",
+      "regime": "worm",
+      "grid": 360,
+      "n1": 20,
+      "n2": 3,
+      "octs": 3,
+      "score": 0.0411
+    },
+    {
+      "id": "anim_008",
+      "regime": "gs",
+      "grid": 240,
+      "n1": 40,
+      "n2": 3,
+      "octs": 2,
+      "score": 0.0405
+    },
+    {
+      "id": "mand_09",
+      "regime": "labyrinth",
+      "grid": 360,
+      "n1": 48,
+      "n2": 6,
+      "octs": 1,
+      "score": 0.0399
+    },
+    {
+      "id": "anim_009",
+      "regime": "gs",
+      "grid": 240,
+      "n1": 48,
+      "n2": 7,
+      "octs": 1,
+      "score": 0.0396
+    },
+    {
+      "id": "anim_006",
+      "regime": "gs",
+      "grid": 240,
+      "n1": 48,
+      "n2": 5,
+      "octs": 2,
+      "score": 0.0392
+    },
+    {
+      "id": "anim_038",
+      "regime": "gs",
+      "grid": 240,
+      "n1": 48,
+      "n2": 7,
+      "octs": 1,
+      "score": 0.039
+    },
+    {
+      "id": "mand_01",
+      "regime": "labyrinth",
+      "grid": 360,
+      "n1": 28,
+      "n2": 7,
+      "octs": 1,
+      "score": 0.0382
+    },
+    {
+      "id": "anim_007",
+      "regime": "gs",
+      "grid": 240,
+      "n1": 48,
+      "n2": 7,
+      "octs": 3,
+      "score": 0.0382
+    },
+    {
+      "id": "anim_012",
+      "regime": "gs",
+      "grid": 240,
+      "n1": 40,
+      "n2": 7,
+      "octs": 3,
+      "score": 0.032
+    },
+    {
+      "id": "anim_005",
+      "regime": "gs",
+      "grid": 240,
+      "n1": 48,
+      "n2": 7,
+      "octs": 2,
+      "score": 0.0271
+    },
+    {
+      "id": "anim_004",
+      "regime": "gs",
+      "grid": 240,
+      "n1": 48,
+      "n2": 7,
+      "octs": 2,
+      "score": 0.0257
+    },
+    {
+      "id": "anim_002",
+      "regime": "gs",
+      "grid": 240,
+      "n1": 40,
+      "n2": 3,
+      "octs": 2,
+      "score": 0.0255
+    },
+    {
+      "id": "anim_031",
+      "regime": "gs",
+      "grid": 240,
+      "n1": 48,
+      "n2": 7,
+      "octs": 4,
+      "score": 0.023
+    },
+    {
+      "id": "anim_013",
+      "regime": "gs",
+      "grid": 240,
+      "n1": 12,
+      "n2": 6,
+      "octs": 3,
+      "score": 0.0229
+    },
+    {
+      "id": "anim_003",
+      "regime": "gs",
+      "grid": 240,
+      "n1": 32,
+      "n2": 5,
+      "octs": 2,
+      "score": 0.0218
+    },
+    {
+      "id": "anim_027",
+      "regime": "gs",
+      "grid": 240,
+      "n1": 12,
+      "n2": 7,
+      "octs": 2,
+      "score": 0.0213
+    },
+    {
+      "id": "anim_018",
+      "regime": "gs",
+      "grid": 240,
+      "n1": 48,
+      "n2": 3,
+      "octs": 1,
+      "score": 0.0205
+    },
+    {
+      "id": "anim_034",
+      "regime": "gs",
+      "grid": 240,
+      "n1": 48,
+      "n2": 3,
+      "octs": 1,
+      "score": 0.0205
+    },
+    {
+      "id": "anim_019",
+      "regime": "gs",
+      "grid": 240,
+      "n1": 20,
+      "n2": 5,
+      "octs": 1,
+      "score": 0.0188
+    },
+    {
+      "id": "anim_035",
+      "regime": "gs",
+      "grid": 240,
+      "n1": 20,
+      "n2": 5,
+      "octs": 1,
+      "score": 0.0188
+    },
+    {
+      "id": "anim_014",
+      "regime": "gs",
+      "grid": 240,
+      "n1": 12,
+      "n2": 7,
+      "octs": 2,
+      "score": 0.0107
+    },
+    {
+      "id": "anim_022",
+      "regime": "gs",
+      "grid": 240,
+      "n1": 48,
+      "n2": 3,
+      "octs": 2,
+      "score": 0.0059
+    },
+    {
+      "id": "anim_020",
+      "regime": "gs",
+      "grid": 240,
+      "n1": 20,
+      "n2": 3,
+      "octs": 3,
+      "score": 0.0033
+    },
+    {
+      "id": "anim_024",
+      "regime": "gs",
+      "grid": 240,
+      "n1": 48,
+      "n2": 3,
+      "octs": 1,
+      "score": 0.0013
+    },
+    {
+      "id": "anim_016",
+      "regime": "gs",
+      "grid": 240,
+      "n1": 40,
+      "n2": 3,
+      "octs": 2,
+      "score": 0.001
+    },
+    {
+      "id": "anim_026",
+      "regime": "gs",
+      "grid": 240,
+      "n1": 48,
+      "n2": 3,
+      "octs": 1,
+      "score": 0.001
+    },
+    {
+      "id": "anim_032",
+      "regime": "gs",
+      "grid": 240,
+      "n1": 40,
+      "n2": 3,
+      "octs": 2,
+      "score": 0.001
+    },
+    {
+      "id": "anim_040",
+      "regime": "gs",
+      "grid": 240,
+      "n1": 32,
+      "n2": 3,
+      "octs": 2,
+      "score": 0.0004
+    },
+    {
+      "id": "anim_028",
+      "regime": "gs",
+      "grid": 240,
+      "n1": 10,
+      "n2": 5,
+      "octs": 1,
+      "score": 0.0003
+    },
+    {
+      "id": "anim_030",
+      "regime": "gs",
+      "grid": 240,
+      "n1": 48,
+      "n2": 7,
+      "octs": 3,
+      "score": 0.0001
+    },
+    {
+      "id": "anim_000",
+      "regime": "gs",
+      "grid": 240,
+      "n1": 8,
+      "n2": 3,
+      "octs": 1,
+      "score": 0.0
+    },
+    {
+      "id": "anim_001",
+      "regime": "gs",
+      "grid": 240,
+      "n1": 8,
+      "n2": 3,
+      "octs": 1,
+      "score": 0.0
+    },
+    {
+      "id": "anim_017",
+      "regime": "gs",
+      "grid": 240,
+      "n1": 10,
+      "n2": 5,
+      "octs": 4,
+      "score": 0.0
+    },
+    {
+      "id": "anim_033",
+      "regime": "gs",
+      "grid": 240,
+      "n1": 10,
+      "n2": 5,
+      "octs": 4,
+      "score": 0.0
+    },
+    {
+      "id": "anim_036",
+      "regime": "gs",
+      "grid": 240,
+      "n1": 8,
+      "n2": 3,
+      "octs": 1,
+      "score": 0.0
+    },
+    {
+      "id": "anim_037",
+      "regime": "gs",
+      "grid": 240,
+      "n1": 8,
+      "n2": 3,
+      "octs": 1,
+      "score": 0.0
+    },
+    {
+      "id": "anim_041",
+      "regime": "gs",
+      "grid": 240,
+      "n1": 8,
+      "n2": 3,
+      "octs": 1,
+      "score": 0.0
+    }
+  ]
+}
