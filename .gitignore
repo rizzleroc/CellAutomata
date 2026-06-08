@@ -44,3 +44,6 @@ media/grand/*.gif
 # Hero film: ignore the quality master (delivered as .zip); the web-optimized
 # copy lives in docs/ and is tracked.
 media/hero/*.mp4
+
+media/schedule/**/*.mp4
+media/schedule/_*.mp4
