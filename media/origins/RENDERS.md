@@ -19,7 +19,9 @@ Proven recipe (the leaf pilot that rendered cleanly):
 | 3 | Zebra (stripes) | ✅ done | https://s.asim.sh/videos/7a06ba49-a0fd-4f6e-928d-1242c6548239.mp4 |
 | 4 | Luna Moth (eyespots) | ✅ done | https://s.asim.sh/videos/f3695bdf-1e03-4ca3-b76e-a3ff2f51d9fe.mp4 |
 | 5 | Pufferfish (reticulation) | ✅ done | https://s.asim.sh/videos/179f34ce-dc34-4eba-a28d-197e137dab32.mp4 |
-| 6 | Cone Shell (Rule 30 CA) | ⏳ rendering | — |
+| 6 | Cone Shell (Rule 30 CA) | ✅ done | https://s.asim.sh/videos/89a48df7-324c-4ca1-817a-3ae61bfba967.mp4 |
+
+**v1 (text-to-video) complete — all 6 rendered.**
 
 ## Staged prompts (ready to fire)
 
