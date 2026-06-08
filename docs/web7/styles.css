@@ -306,6 +306,7 @@ body {
   position: absolute; inset: 0; z-index: 3; display: flex; flex-direction: column;
   align-items: center; justify-content: center; gap: var(--s2); text-align: center; padding: 0 var(--s6);
 }
+.plate-empty[hidden] { display: none; }   /* the `hidden` attr must beat display:flex, else the empty-state overlays a live micrograph (#52) */
 .plate-empty .empty-mark { color: var(--teal); opacity: .5; font-size: 18px; }
 .plate-empty .empty-line { font-family: var(--font-display); font-size: 19px; letter-spacing: .08em; color: var(--ink-soft); }
 .plate-empty .empty-sub { font-style: italic; font-size: 12.5px; color: var(--muted-dim); }
