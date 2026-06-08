@@ -13,6 +13,11 @@ it can be built; nothing here ships yet. It reuses the web7 lab architecture
 (the Parameters panel, the **Regime** preset picker, `controlConsequence`
 tooltips, the photoreal cell renderer) added in PR #50.
 
+**Animated preview:** [`design/ontogeny_preview.png`](design/ontogeny_preview.png)
+— a looping render of the core sequence (gametes → fertilisation → cleavage →
+the twinning split → multiples 1/2/3/5), produced headlessly by
+[`../tools/ontogeny_preview.mjs`](../tools/ontogeny_preview.mjs) (zero deps).
+
 ---
 
 ## 1. Why — the narrative bridge
