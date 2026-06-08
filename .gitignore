@@ -47,3 +47,8 @@ media/hero/*.mp4
 
 media/schedule/**/*.mp4
 media/schedule/_*.mp4
+
+# Origins (reverse-morphogenesis) series: ignore generated masters + retrieved frames.
+media/origins/**/*.mp4
+media/origins/**/*.png
+media/origins/**/*.jpg
