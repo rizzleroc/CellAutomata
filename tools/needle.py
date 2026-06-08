@@ -272,7 +272,7 @@ def _reel(parts, out, total):
     silent = f"{tmp}/silent.mp4"
     subprocess.run([FF, "-y", "-hide_banner", "-loglevel", "error", "-f", "concat", "-safe", "0",
                     "-i", lst, "-c", "copy", silent], check=True)
-    af = (f"[0:a][1:a]amix=inputs=2,volume=0.16,lowpass=f=420,"
+    af = (f"[1:a][2:a]amix=inputs=2,volume=0.16,lowpass=f=420,"
           f"afade=t=in:st=0:d=1.5,afade=t=out:st={total-2:.1f}:d=2[a]")
     subprocess.run([FF, "-y", "-hide_banner", "-loglevel", "error", "-i", silent,
                     "-f", "lavfi", "-t", str(total), "-i", "sine=frequency=98:sample_rate=44100",
