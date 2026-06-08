@@ -58,6 +58,7 @@ assert(/class="plate"/.test(html), "missing the SEM plate frame");
 assert(/plate-badge/.test(html) && /LIVE\s*·\s*SEM/.test(html), "missing the LIVE · SEM plate badge");
 assert(/plate-scale/.test(html), "missing the scale bar");
 assert(/id="expEmpty"/.test(html) && /specimen pending/.test(html), "missing the tasteful empty/pending state");
+assert(/\.plate-empty\[hidden\]\s*\{[^}]*display:\s*none/.test(css), ".plate-empty[hidden] must set display:none, else the empty-state overlays a live micrograph (#52)");
 
 // 5. Accessibility scaffolding (the AAA bar). ---------------------------------
 assert(/class="skip-link"/.test(html), "missing skip-link");

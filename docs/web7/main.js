@@ -81,7 +81,7 @@ let expSpeedOverride = 0;               // 0 → use the rule's own cadence
 // hyphenated (the registered key) though its file is natural_selection.js.
 const STAGE_MAP = {
   'stage0-miller-urey': 'soup',  'stage1-grayscott': 'grayscott', 'stage2-raf': 'raf',
-  'stage3-vesicles': 'vesicles', 'stage4-vent': 'vents',          'stage5-minerals': 'grayscott',
+  'stage3-vesicles': 'vesicles', 'stage4-vent': 'vents',          'stage5-minerals': 'minerals',
   'stage6-chirality': 'chirality', 'stage7-rna': 'rna',           'stage8-code': 'code',
   'stage9-coacervate': 'coacervate', 'stage10-selection': 'natural-selection',
   'stage11-luca': 'luca',        'capstone-stromatolite': 'life',
@@ -319,13 +319,15 @@ function highlight(mesh, on) {
 
 // ── Live-experiment parameter panel ─────────────────────────────────────────
 // Reads the running rule's OWN params schema ({label,min,max,step,value} or
-// {type:'enum',options}) — the same knobs web2/web3 exposed — plus two global
-// controls (simulation speed, SEM palette). Every control is genuinely wired:
+// {type:'enum',options}) — the same knobs web2/web3 exposed — its curated named
+// regimes (rule.presets), plus two global controls (speed, SEM palette). Every
+// control is genuinely wired:
 // PDE rules read params.X.value live each step(), so a slider takes effect
 // mid-run; rule.onParamChange(key) handles side-effects (e.g. a Gray–Scott
 // preset setting F and k). No fabricated/disconnected sliders.
 const paramList = $('paramList');
 let paramRefs = {};   // key → {input,val,fmt} so a preset change can re-sync F/k sliders
+let regimeRef = null; // the "Regime" preset <select>, so a manual slider edit drops back to "custom"
 
 function paramHead(label, valText) {
   const row = document.createElement('div'); row.className = 'param-row';
@@ -355,10 +357,50 @@ function addSelect(label, options, value, onChange, tip) {
   s.onchange = () => onChange(s.value);
   row.appendChild(s); paramList.appendChild(row);
 }
+// A rule's curated named regimes (rule.presets: [{label, hint, values:{key:val}, reseed?}]).
+// web2/web3 authored these per stage but the panel never surfaced them — every rule but
+// Gray–Scott (which re-encodes its own as an enum param) shipped them as dead data. Wire
+// them as a first-class "Regime" picker: applying one writes the underlying params (firing
+// onParamChange cascades), optionally re-seeds, re-syncs the sliders, and shows its hint.
+function applyPreset(rule, p) {
+  const vals = (p && p.values) || {};
+  for (const k of Object.keys(vals)) {
+    if (rule.params && rule.params[k]) {
+      rule.params[k].value = vals[k];
+      if (rule.onParamChange) rule.onParamChange(k);
+    }
+  }
+  if (p && p.reseed && typeof rule.reset === 'function') rule.reset();
+  syncParams(rule);
+  renderExperimentFrame();
+}
+function addPresetPicker(rule) {
+  const presets = Array.isArray(rule.presets) ? rule.presets : null;
+  if (!presets || !presets.length) return;
+  const { row } = paramHead('Regime', '');
+  const s = document.createElement('select');
+  s.setAttribute('aria-label', 'Experiment regime preset');
+  const blank = document.createElement('option'); blank.value = ''; blank.textContent = 'custom'; s.appendChild(blank);
+  presets.forEach((p, i) => {
+    const o = document.createElement('option'); o.value = String(i); o.textContent = p.label || `regime ${i + 1}`; s.appendChild(o);
+  });
+  const hint = document.createElement('p'); hint.className = 'param-hint';
+  s.onchange = () => {
+    const p = presets[+s.value];
+    if (!p) { hint.textContent = ''; return; }
+    applyPreset(rule, p);
+    hint.textContent = p.hint || '';
+    announce((p.label || 'Regime') + ' regime applied.');
+  };
+  row.appendChild(s); paramList.appendChild(row); paramList.appendChild(hint);
+  regimeRef = s;
+}
 function buildParamPanel(rule) {
   if (!paramList) return;
-  paramList.innerHTML = ''; paramRefs = {};
+  paramList.innerHTML = ''; paramRefs = {}; regimeRef = null;
   if (!rule) { paramList.innerHTML = '<div class="param-empty">No live experiment to tune on this plate.</div>'; return; }
+  // Named scientific regimes (rule.presets) — the most prominent, stage-specific control.
+  addPresetPicker(rule);
   // Global — simulation speed (drives the fixed-timestep loop)
   expSpeedOverride = rule.stepsPerSec || EXP_STEPS_PER_SEC;
   addSlider('Speed', 1, 60, 1, expSpeedOverride, (v) => `${v | 0} s⁻¹`, (v) => { expSpeedOverride = v; });
@@ -374,12 +416,14 @@ function buildParamPanel(rule) {
     if (p.type === 'enum') {
       addSelect(p.label || key, p.options, p.value, (v) => {
         p.value = v; if (rule.onParamChange) rule.onParamChange(key); syncParams(rule); renderExperimentFrame();
+        if (regimeRef) regimeRef.value = '';
       }, tip);
     } else {
       const dec = (p.step && p.step < 1) ? (String(p.step).split('.')[1] || '').length : 0;
       const fmt = (v) => Number(v).toFixed(dec);
       paramRefs[key] = addSlider(p.label || key, p.min, p.max, p.step, p.value, fmt, (v) => {
         p.value = v; if (rule.onParamChange) rule.onParamChange(key); syncParams(rule); renderExperimentFrame();
+        if (regimeRef) regimeRef.value = '';   // a hand-tuned knob drops us out of the named regime
       }, tip);
     }
   }
@@ -403,6 +447,26 @@ $('tabParams').onclick = () => setRailTab(true);
 $('tabParts').onclick = () => setRailTab(false);
 $('resetBtn').onclick = () => { if (expRule) { expRule.reset(); renderExperimentFrame(); announce('Specimen reset.'); } };
 $('stepBtn').onclick = () => { if (expRule) { expRule.step(); renderExperimentFrame(); } };
+
+// ── Narrow-screen controls drawer ────────────────────────────────────────────
+// ≤1180px the rail is off-canvas (styles.css); without a launcher the Parameters
+// and Apparatus panels would be unreachable — the pre-existing `.key{display:none}`
+// hid every control on phones/tablets/small laptops. Keep them one tap away.
+const railEl = $('rail'), keyToggle = $('keyToggle'), keyScrim = $('keyScrim'), keyClose = $('keyClose');
+function setKeyOpen(open) {
+  if (!railEl) return;
+  railEl.classList.toggle('open', open);
+  if (keyScrim) keyScrim.classList.toggle('open', open);
+  if (keyToggle) keyToggle.setAttribute('aria-expanded', String(open));
+  if (open) { const t = $('tabParams'); if (t) t.focus(); }   // move focus into the drawer
+  else if (keyToggle) keyToggle.focus();                      // return focus to the launcher
+}
+if (keyToggle) keyToggle.onclick = () => setKeyOpen(!railEl.classList.contains('open'));
+if (keyClose) keyClose.onclick = () => setKeyOpen(false);
+if (keyScrim) keyScrim.onclick = () => setKeyOpen(false);
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape' && railEl && railEl.classList.contains('open')) setKeyOpen(false);
+});
 
 // ── Run + explode controls ──────────────────────────────────────────────────
 // One control drives BOTH the apparatus animation AND the live SEM sim;

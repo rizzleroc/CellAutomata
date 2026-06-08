@@ -35,6 +35,8 @@
   <!-- decorative film: a whisper of grain + a held breath of vignette -->
   <div class="grain" aria-hidden="true"></div>
   <div class="vignette" aria-hidden="true"></div>
+  <!-- scrim behind the controls drawer on narrow screens (≤1180px): tap to dismiss -->
+  <div class="key-scrim" id="keyScrim" aria-hidden="true"></div>
 
   <!-- visually-hidden live region: announces meaningful state, never the per-frame telemetry -->
   <div class="sr-only" aria-live="polite" id="srStatus"></div>
@@ -136,16 +138,21 @@
           <button data-view="split" type="button" role="radio" aria-checked="true"  tabindex="0"  title="Apparatus and micrograph">Split</button>
           <button data-view="exp"   type="button" role="radio" aria-checked="false" tabindex="-1" title="Live micrograph only">Micrograph</button>
         </div>
+
+        <!-- narrow-screen launcher for the controls/parts rail (hidden ≥1180px) -->
+        <button id="keyToggle" class="key-toggle" type="button" aria-expanded="false" aria-controls="rail"
+                title="Show experiment controls">⚙ Controls</button>
       </div>
     </main>
 
     <!-- RIGHT · tabbed rail — live experiment Parameters | the specimen key -->
-    <aside class="key" aria-label="Instrument controls">
+    <aside class="key" id="rail" aria-label="Instrument controls">
       <div class="rail-tabs" role="tablist" aria-label="Right panel">
         <button id="tabParams" class="rail-tab" role="tab" type="button"
                 aria-selected="true" aria-controls="paramPanel">Parameters</button>
         <button id="tabParts" class="rail-tab" role="tab" type="button"
                 aria-selected="false" aria-controls="partsPanel" tabindex="-1">Apparatus</button>
+        <button id="keyClose" class="key-close" type="button" aria-label="Close controls" title="Close">✕</button>
       </div>
 
       <div id="paramPanel" class="rail-body" role="tabpanel" aria-labelledby="tabParams">
@@ -182,6 +189,7 @@
 <script src="./experiment/rules/raf.js"></script>
 <script src="./experiment/rules/vesicles.js"></script>
 <script src="./experiment/rules/vents.js"></script>
+<script src="./experiment/rules/minerals.js"></script>
 <script src="./experiment/rules/chirality.js"></script>
 <script src="./experiment/rules/rna.js"></script>
 <script src="./experiment/rules/code.js"></script>
