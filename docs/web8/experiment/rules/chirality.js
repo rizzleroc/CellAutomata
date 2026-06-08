@@ -54,7 +54,7 @@
 
       params: {
         alpha:     { label: "α — autocatalytic growth", min: 0.01, max: 0.30, step: 0.005, value: 0.12 },
-        beta:      { label: "β — mutual inhibition",    min: 0.05, max: 1.50, step: 0.01,  value: 0.50 },
+        beta:      { label: "β — mutual inhibition",    min: 0.00, max: 1.50, step: 0.01,  value: 0.50 },
         diffusion: { label: "diffusion D",              min: 0.00, max: 0.30, step: 0.01,  value: 0.10 },
         noise:     { label: "symmetry-breaking noise",  min: 0.00, max: 0.05, step: 0.001, value: 0.005 },
       },

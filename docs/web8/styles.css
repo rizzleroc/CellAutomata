@@ -306,6 +306,7 @@ body {
   position: absolute; inset: 0; z-index: 3; display: flex; flex-direction: column;
   align-items: center; justify-content: center; gap: var(--s2); text-align: center; padding: 0 var(--s6);
 }
+.plate-empty[hidden] { display: none; }   /* the `hidden` attr must beat display:flex, else the empty-state overlays a live micrograph (#52) */
 .plate-empty .empty-mark { color: var(--teal); opacity: .5; font-size: 18px; }
 .plate-empty .empty-line { font-family: var(--font-display); font-size: 19px; letter-spacing: .08em; color: var(--ink-soft); }
 .plate-empty .empty-sub { font-style: italic; font-size: 12.5px; color: var(--muted-dim); }
@@ -393,6 +394,16 @@ body {
 /* ── RIGHT · the specimen key ────────────────────────────────────────────── */
 .key { display: flex; flex-direction: column; min-height: 0;
   border-left: 1px solid var(--hair); }
+/* Narrow-screen controls-drawer affordances — hidden on the desktop vitrine. */
+.key-toggle { display: none; align-items: center; gap: var(--s2);
+  background: rgba(63,224,208,.06); border: 1px solid var(--teal-line); color: var(--ink-soft);
+  font-family: var(--font-mono); font-size: 11px; letter-spacing: .1em; text-transform: uppercase;
+  padding: 12px 16px; border-radius: 8px; cursor: pointer; }
+.key-toggle:hover { border-color: var(--teal); color: var(--ink); }
+.key-close { display: none; margin-left: auto; background: transparent; border: 0;
+  color: var(--muted); font-size: 16px; line-height: 1; cursor: pointer; padding: 0 var(--s2); }
+.key-close:hover { color: var(--ink); }
+.key-scrim { display: none; }
 .key-head { display: flex; align-items: baseline; justify-content: space-between; padding: var(--s6) var(--s5) var(--s4); }
 .key-count { font-family: var(--font-mono); font-size: 10px; color: var(--muted-dim); letter-spacing: .12em; }
 .key-list { flex: 1 1 auto; overflow-y: auto; padding: var(--s2) var(--s3) var(--s4); }
@@ -436,6 +447,9 @@ body {
 .param-row select { width: 100%; font-family: var(--font-mono); font-size: 11px; color: var(--ink);
   background: var(--obsidian-3); border: 1px solid var(--teal-line); border-radius: 7px; padding: 8px 10px; }
 .param-empty { font-style: italic; font-size: 12.5px; color: var(--muted-dim); padding: var(--s3) 0; }
+/* Regime preset description — the named-regime hint surfaced under the picker. */
+.param-hint:not(:empty) { font-style: italic; font-size: 12px; line-height: 1.45; color: var(--muted);
+  margin: -3px 0 var(--s5); padding: 0 0 0 1px; }
 .param-actions { flex: 0 0 auto; display: flex; gap: var(--s2); padding: var(--s4) var(--s5) var(--s5); border-top: 1px solid var(--hair-soft); }
 .ctl { flex: 1; background: rgba(63,224,208,.06); border: 1px solid var(--teal-line); color: var(--ink);
   font-family: var(--font-mono); font-size: 10px; letter-spacing: .14em; text-transform: uppercase;
@@ -485,8 +499,19 @@ body {
 /* ── Responsive — the vitrine adapts, the specimen stays the subject ─────── */
 @media (max-width: 1180px) {
   :root { --col-index: 232px; --col-key: 0px; }
-  .key { display: none; }
   .body { grid-template-columns: var(--col-index) minmax(0,1fr); }
+  /* The rail leaves the grid and becomes a right-hand drawer so Parameters AND the
+     specimen key stay reachable (UX_SPEC §4.2 — collapse "without losing any control"). */
+  .key { position: fixed; top: 0; right: 0; z-index: 60; height: 100dvh; width: min(360px, 88vw);
+    background: var(--obsidian-2); box-shadow: -24px 0 60px rgba(0,0,0,.55);
+    transform: translateX(101%); transition: transform var(--med) var(--ease); will-change: transform; }
+  .key.open { transform: none; }
+  .key-toggle { display: inline-flex; }
+  .key-close { display: inline-flex; }
+  .key-scrim { display: block; position: fixed; inset: 0; z-index: 55;
+    background: rgba(4,6,10,.55); opacity: 0; pointer-events: none;
+    transition: opacity var(--med) var(--ease); }
+  .key-scrim.open { opacity: 1; pointer-events: auto; }
   .caption { max-width: 60%; }
   .vitrine[data-view="split"] .caption { max-width: 46%; }   /* don't let the wall-label cover the micrograph */
 }
