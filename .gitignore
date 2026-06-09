@@ -55,3 +55,6 @@ media/origins/**/*.jpg
 
 # LIVE SEM FEED render master
 media/sem/*.mp4
+
+# Live-simulation + SEM render masters (delivered via chat, not tracked)
+media/sim/
