@@ -17,7 +17,7 @@ from PIL import Image, ImageDraw, ImageFont
 import imageio_ffmpeg
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-from cellauto.rules.abiogenesis.pipeline import STAGE_CLASSES, STAGE_INFO
+from cellauto.rules.abiogenesis.pipeline import STAGE_CLASSES, STAGE_INFO, AbiogenesisExtendedPipelineRule
 
 FF = imageio_ffmpeg.get_ffmpeg_exe()
 OUT = "media/sim"
@@ -26,15 +26,17 @@ FIELD = 1000
 FX, FY = (W - FIELD) // 2, 300
 FPS = 30
 GRID = 180
-CAPS = 200                                # captured frames per stage  (~6.6s)
+EXTENDED = True                           # True = full 12-stage arc (Soup..LUCA); False = canonical 5
+CAPS = 150                                # captured frames per stage  (~5s)
 BG = (8, 10, 16)
 TEAL = (60, 212, 200)
 CREAM = (233, 226, 208)
 DIM = (124, 134, 150)
 
-# steps advanced per captured frame, per stage index (paces development so the
-# pattern actually forms within the filmed window).
-SPS = {0: 2, 1: 8, 2: 4, 3: 4, 4: 3}
+# steps advanced per captured frame, per stage index — paced from the validation
+# growth curves so each pattern fully forms within its filmed window.
+SPS_CANON = {0: 2, 1: 8, 2: 4, 3: 4, 4: 3}
+SPS_EXT = {0: 2, 1: 4, 2: 8, 3: 3, 4: 5, 5: 4, 6: 2, 7: 6, 8: 5, 9: 5, 10: 3, 11: 6}
 
 
 def _font(sz, kind="sans", bold=True):
@@ -121,14 +123,19 @@ def render():
         pix_fmt_in="rgb24", pix_fmt_out="yuv420p", macro_block_size=8,
         output_params=["-crf", "19", "-preset", "medium"])
     wr.send(None)
-    for si, (Cls, info) in enumerate(zip(STAGE_CLASSES, STAGE_INFO)):
+    if EXTENDED:
+        ep = AbiogenesisExtendedPipelineRule()
+        roster = list(zip(ep.stage_classes, ep.stage_infos)); sps_map = SPS_EXT
+    else:
+        roster = list(zip(STAGE_CLASSES, STAGE_INFO)); sps_map = SPS_CANON
+    for si, (Cls, info) in enumerate(roster):
         rule = Cls()
         if hasattr(rule, "rng"):
             import random
             rule.rng = random.Random(7)
         state = rule.init_state(GRID, GRID)
         discrete = getattr(rule, "renderer_kind", "field") == "discrete"
-        sps = SPS.get(si, 4)
+        sps = sps_map.get(si, 4)
         step = 0
         for fi in range(CAPS):
             for _ in range(sps):
@@ -138,8 +145,8 @@ def render():
         print(f"  stage {si} {info.title:22s} {CAPS} frames, {step} steps")
     wr.close()
 
-    dur = (len(STAGE_CLASSES) * CAPS) / FPS
-    out = f"{OUT}/abiogenesis_live.mp4"
+    dur = (len(roster) * CAPS) / FPS
+    out = f"{OUT}/abiogenesis_live_{'12stage' if EXTENDED else '5stage'}.mp4"
     af = (f"[1:a][2:a]amix=inputs=2,volume=0.12,lowpass=f=460,"
           f"afade=t=in:st=0:d=2,afade=t=out:st={dur-2.2:.1f}:d=2.2[a]")
     subprocess.run([FF, "-y", "-hide_banner", "-loglevel", "error", "-i", silent,
@@ -148,7 +155,7 @@ def render():
                     "-filter_complex", af, "-map", "0:v", "-map", "[a]",
                     "-c:v", "copy", "-c:a", "aac", "-b:a", "144k", "-shortest",
                     "-movflags", "+faststart", out], check=True)
-    print(f"-> {out}  ({os.path.getsize(out)/1e6:.1f} MB, {dur:.0f}s, {len(STAGE_CLASSES)} stages live, grid {GRID})")
+    print(f"-> {out}  ({os.path.getsize(out)/1e6:.1f} MB, {dur:.0f}s, {len(roster)} stages live, grid {GRID})")
 
 
 if __name__ == "__main__":
