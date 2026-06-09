@@ -13,7 +13,7 @@ a reaction-diffusion dissolve. A descending drone underscores the un-making.
 from __future__ import annotations
 import math, os, subprocess
 import numpy as np
-from PIL import Image, ImageDraw, ImageFont
+from PIL import Image, ImageDraw, ImageFont, ImageFilter
 import imageio_ffmpeg
 
 FF = imageio_ffmpeg.get_ffmpeg_exe()
@@ -97,8 +97,25 @@ STAGES = [
 ]
 
 
+def _knockout_bg(im):
+    """Some SEM stills were saved on a light transparency-checkerboard. The grid
+    is purely achromatic (R=G=B) while every subject is warm sepia/amber, so we
+    key the bright low-saturation background to instrument black, feathered."""
+    arr = np.asarray(im, np.float32)
+    corners = np.concatenate([arr[:30, :30], arr[:30, -30:], arr[-30:, :30], arr[-30:, -30:]]).reshape(-1, 3)
+    if corners.mean() <= 100:
+        return im                                   # already on a dark background
+    lum = arr @ np.array([0.299, 0.587, 0.114], np.float32)
+    sat = arr.max(2) - arr.min(2)
+    bg = ((sat < 16) & (lum > 145)).astype(np.float32)
+    bgm = np.asarray(Image.fromarray((bg * 255).astype(np.uint8)).filter(ImageFilter.GaussianBlur(2.2)), np.float32) / 255
+    keep = (1 - bgm)[..., None]
+    out = arr * keep + np.array(BG, np.float32) * (1 - keep)
+    return Image.fromarray(np.clip(out, 0, 255).astype(np.uint8))
+
+
 def _cover(path, w, h, up=1.18):
-    im = Image.open(path).convert("RGB")
+    im = _knockout_bg(Image.open(path).convert("RGB"))
     tw, th = int(w * up), int(h * up)
     s = max(tw / im.width, th / im.height)
     im = im.resize((int(im.width * s) + 1, int(im.height * s) + 1), Image.LANCZOS)

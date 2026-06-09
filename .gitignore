@@ -52,3 +52,6 @@ media/schedule/_*.mp4
 media/origins/**/*.mp4
 media/origins/**/*.png
 media/origins/**/*.jpg
+
+# LIVE SEM FEED render master
+media/sem/*.mp4
