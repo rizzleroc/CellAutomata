@@ -64,7 +64,7 @@
 
   // ── Persistent scratch buffers (sized lazily per grid) ──────────────────
   let _w = 0, _h = 0;
-  let _blurA, _blurB, _noise;
+  let _blurA, _blurB, _noise, _hi;
 
   function ensureScratch(w, h) {
     if (w === _w && h === _h) return;
@@ -72,6 +72,7 @@
     _blurA = new Float32Array(w * h);
     _blurB = new Float32Array(w * h);
     _noise = new Float32Array(w * h);
+    _hi    = new Float32Array(w * h);
     // Pre-bake a single-octave value-noise field (stays stable across
     // frames — the SEM substrate doesn't crawl).  Smoothed once with a
     // 3×3 box filter.
@@ -86,6 +87,28 @@
           raw[y *w + xm] + raw[y *w + x] + raw[y *w + xp] +
           raw[yp*w + xm] + raw[yp*w + x] + raw[yp*w + xp]
         ) * (1/9) - 0.5;     // centred ±0.5
+      }
+    }
+  }
+
+  // Bilinear upsample of a single-channel field (sw×sh → dw×dh) into dst.
+  // Lets us SHADE at a higher resolution than the sim grid, so specular
+  // highlights and relief edges read crisp instead of blocky.
+  function upsample(src, sw, sh, dst, dw, dh) {
+    const fx = sw / dw, fy = sh / dh;
+    for (let y = 0; y < dh; y++) {
+      const syf = (y + 0.5) * fy - 0.5;
+      let y0 = Math.floor(syf); const ty = syf - y0;
+      let y1 = y0 + 1;
+      y0 = (y0 % sh + sh) % sh; y1 = (y1 % sh + sh) % sh;
+      const r0 = y0 * sw, r1 = y1 * sw, ro = y * dw;
+      for (let x = 0; x < dw; x++) {
+        const sxf = (x + 0.5) * fx - 0.5;
+        let x0 = Math.floor(sxf); const tx = sxf - x0;
+        let x1 = x0 + 1;
+        x0 = (x0 % sw + sw) % sw; x1 = (x1 % sw + sw) % sw;
+        const a = src[r0 + x0], b = src[r0 + x1], c = src[r1 + x0], d = src[r1 + x1];
+        dst[ro + x] = (a*(1-tx) + b*tx)*(1-ty) + (c*(1-tx) + d*tx)*ty;
       }
     }
   }
@@ -113,16 +136,29 @@
   }
 
   // ── Main render ─────────────────────────────────────────────────────────
-  function render(height, w, h, pixels, opts) {
+  // height : Float32Array of the sim field (sw×sh, values ~[0,1]).
+  // pixels : RGBA8 buffer of (sw·scale)×(sh·scale).  opts.scale (1–4) renders
+  //          the depth-shade supersampled for a crisp, dimensional micrograph.
+  function render(height, sw, sh, pixels, opts) {
     opts = opts || {};
+    const S = Math.max(1, Math.min(4, opts.scale | 0 || 1));
+    const w = sw * S, h = sh * S;
     ensureScratch(w, h);
     const palette = PALETTES[opts.palette] || PALETTES["warm-sepia"];
-    const ambient = 0.20;
-    const specWeight = 0.30;
-    const aoStrength = 0.08;
-    const noiseGain = 0.06;
-    const heightGain = 6.0;     // amplifies subtle field gradients
-    // Light direction L = (0.4, 0.3, 0.85) normalised.
+
+    // Shading constants — bolder than the v4.0 port: deeper relief, tighter
+    // specular, stronger cavity AO, plus a cool rim light for edge definition.
+    const ambient    = 0.17;
+    const specWeight = 0.38;
+    const specExp    = 56;
+    const aoStrength = 0.17;
+    const rimWeight  = 0.16;
+    const noiseGain  = 0.045;
+    // Relief is computed on the supersampled field, so scale the gain by S to
+    // keep grid-feature relief constant (and ~2.4× bolder than the old 6.0).
+    const heightGain = (opts.relief || 14.0) * S;
+
+    // Key light L = (0.4, 0.3, 0.85) normalised.
     const Lx = 0.4, Ly = 0.3, Lz = 0.85;
     const Lmag = Math.sqrt(Lx*Lx + Ly*Ly + Lz*Lz);
     const lx = Lx/Lmag, ly = Ly/Lmag, lz = Lz/Lmag;
@@ -130,8 +166,16 @@
     const Hx = lx, Hy = ly, Hz = lz + 1;
     const Hmag = Math.sqrt(Hx*Hx + Hy*Hy + Hz*Hz);
     const hx = Hx/Hmag, hy = Hy/Hmag, hz = Hz/Hmag;
+    // Rim light from the opposite-ish side, low — catches ridge edges.
+    const Rx = -0.5, Ry = -0.35, Rz = 0.5;
+    const Rmag = Math.sqrt(Rx*Rx + Ry*Ry + Rz*Rz);
+    const rx = Rx/Rmag, ry = Ry/Rmag, rz = Rz/Rmag;
 
-    const smoothed = blur(h, w, height);
+    // Upsample the field to shading resolution, then smooth.
+    let field;
+    if (S > 1) { upsample(height, sw, sh, _hi, w, h); field = _hi; }
+    else { field = height; }
+    const smoothed = blur(h, w, field);
 
     for (let y = 0; y < h; y++) {
       const ym = (y - 1 + h) % h, yp = (y + 1) % h;
@@ -143,34 +187,36 @@
         const dx = (smoothed[y *w + xp] - smoothed[y *w + xm]) * heightGain;
         const dy = (smoothed[yp*w + x ] - smoothed[ym*w + x ]) * heightGain;
         // Normal = normalise((-dx, -dy, 1)).
-        const nz = 1;
         const nmag = Math.sqrt(dx*dx + dy*dy + 1);
-        const nx = -dx / nmag, ny = -dy / nmag, nzn = nz / nmag;
+        const nx = -dx / nmag, ny = -dy / nmag, nzn = 1 / nmag;
 
-        // Lambertian shading.
+        // Lambertian (key).
         let lamb = nx*lx + ny*ly + nzn*lz;
         if (lamb < 0) lamb = 0;
 
-        // Specular highlight (Blinn-Phong, exponent 32).
+        // Specular (Blinn-Phong).
         let spec = nx*hx + ny*hy + nzn*hz;
         if (spec < 0) spec = 0;
-        spec = Math.pow(spec, 32) * specWeight;
+        spec = Math.pow(spec, specExp) * specWeight;
 
-        // Ambient occlusion via laplacian of the smoothed field.  Convex
-        // (positive lap) gets brighter; concave (negative lap → creases)
-        // gets darker.  Subtract max(0, -lap) to specifically dim creases.
+        // Rim light — only on faces angled toward the rim direction.
+        let rim = nx*rx + ny*ry + nzn*rz;
+        if (rim < 0) rim = 0;
+        rim = rim * rim * rimWeight;
+
+        // Cavity AO via laplacian of the smoothed field; darken creases.
         const lap = smoothed[y*w + xm] + smoothed[y*w + xp]
                   + smoothed[ym*w + x] + smoothed[yp*w + x]
                   - 4 * smoothed[ic];
         const ao = Math.max(0, -lap) * aoStrength;
 
-        // Noise overlay (stable, pre-baked).
+        // Stable pre-baked substrate noise.
         const noise = _noise[ic] * noiseGain;
 
-        // Final intensity, biased by the underlying scalar so that
-        // "empty substrate" stays dim and "active chemistry" lights up.
-        const presence = 0.4 + 0.6 * Math.min(1, Math.max(0, smoothed[ic]));
-        let intensity = (ambient + lamb + spec - ao + noise) * presence;
+        // Bias by the scalar so empty substrate stays dim, chemistry lights up.
+        const v = smoothed[ic] < 0 ? 0 : (smoothed[ic] > 1 ? 1 : smoothed[ic]);
+        const presence = 0.34 + 0.66 * v;
+        let intensity = (ambient + lamb + spec + rim - ao + noise) * presence;
         if (intensity < 0) intensity = 0;
         if (intensity > 1) intensity = 1;
 

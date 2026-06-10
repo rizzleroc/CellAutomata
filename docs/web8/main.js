@@ -68,12 +68,13 @@ const expCanvas  = $('expCanvas');
 const expCtx     = expCanvas.getContext('2d');
 const expCaption = $('expCaption');
 const expEmpty   = $('expEmpty');
-let expRule = null, expImageData = null, expHeightBuf = null;
+let expRule = null, expImageData = null, expHeightBuf = null, expSemScale = 1;
 let expRunning = false, expRaf = 0, expLastStep = 0;
 let expRetry = 0;                       // poll counter while the classic exp scripts wire up
 let apparatusRunning = false;           // single source of truth for Run/Stop
 const EXP_STEPS_PER_SEC = 30;           // == web3 default speed
 const EXP_PALETTE = 'warm-sepia';       // == web3 default + the warm SEM substrate
+const SEM_SCALE = 3;                    // supersample factor for the SEM micrograph (crisp hi-res relief)
 let expPalette = EXP_PALETTE;           // live, tunable via the Parameters panel
 let expSpeedOverride = 0;               // 0 → use the rule's own cadence
 
@@ -156,14 +157,17 @@ function selectExperiment(m) {
   expCanvas.style.display = '';
   expRule = rule;
   expRule.reset();
-  expCanvas.classList.toggle('smooth', !!expRule.hiRes);  // LIFE scales smooth; grids stay crisp/pixelated
+  // The SEM micrograph is depth-shaded supersampled (crisp hi-res relief), so
+  // its canvas scales smoothly; raw discrete grids without SEM stay pixelated.
+  expSemScale = (!expRule.hiRes && typeof expRule.renderHeight === 'function') ? SEM_SCALE : 1;
+  expCanvas.classList.toggle('smooth', !!expRule.hiRes || expSemScale > 1);
   if (expRule.hiRes) {
     expCanvas.width = 720; expCanvas.height = 720;
   } else {
-    expCanvas.width  = expRule.width;
-    expCanvas.height = expRule.height;
+    expCanvas.width  = expRule.width  * expSemScale;
+    expCanvas.height = expRule.height * expSemScale;
   }
-  expImageData = expCtx.createImageData(expRule.width, expRule.height);
+  expImageData = expCtx.createImageData(expRule.width * expSemScale, expRule.height * expSemScale);
   expHeightBuf = new Float32Array(expRule.width * expRule.height);
   expCaption.textContent = plateOf(m).name;
   buildParamPanel(expRule);                            // surface this stage's own tunable knobs
@@ -180,7 +184,7 @@ function renderExperimentFrame() {
   }
   if (window.SEM && typeof expRule.renderHeight === 'function') {
     expRule.renderHeight(expHeightBuf);
-    SEM.render(expHeightBuf, expRule.width, expRule.height, expImageData.data, { palette: expPalette });
+    SEM.render(expHeightBuf, expRule.width, expRule.height, expImageData.data, { palette: expPalette, scale: expSemScale });
   } else {
     expRule.render(expImageData.data);                 // defensive fallback to rule's own RGBA
   }
