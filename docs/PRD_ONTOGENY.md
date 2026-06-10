@@ -8,10 +8,12 @@ biological **conditions that produce singletons, identical/fraternal twins,
 triplets, quintuplets, and the rarer outcomes** (conjoined, vanishing twin,
 triploidy, chimerism, aneuploidy).
 
-Status: **PROPOSED / documented capability.** This PRD specifies the feature so
-it can be built; nothing here ships yet. It reuses the web7 lab architecture
-(the Parameters panel, the **Regime** preset picker, `controlConsequence`
-tooltips, the photoreal cell renderer) added in PR #50.
+Status: **P1 SHIPPED.** The core simulation is live at [`ontogeny/`](ontogeny/)
+(`docs/ontogeny/`): fertilisation + cleavage + the twinning split + every
+condition as a one-click scenario, a developmental timeline, and a live
+zygosity/chorionicity diagnosis — in the Catalytic Silence design language,
+engine-tested (`docs/ontogeny/tests/`). P2/P3 (deeper staged morphology + a 3D
+apparatus) remain future work; this PRD specifies the full vision.
 
 **Animated preview:** [`design/ontogeny_preview.png`](design/ontogeny_preview.png)
 — a looping render of the core sequence (gametes → fertilisation → cleavage →
