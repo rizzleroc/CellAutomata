@@ -62,6 +62,8 @@ jobs:
         run: node docs/web8/tests/anim.mjs
       - name: Web8 controls-contract tests
         run: node docs/web8/tests/controls.mjs  # presets wired + minerals localises + vents PMF (web8 parity)
+      - name: Web8 guide intent-parser tests
+        run: node docs/web8/tests/intents.mjs   # ask-the-amoeba request -> action mapping
 
   build:
     needs: test

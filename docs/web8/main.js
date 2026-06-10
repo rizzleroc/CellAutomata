@@ -254,6 +254,10 @@ function loadStage(m) {
   });
   const ss = $('stageSelect'); if (ss) ss.value = m.id;   // keep the mobile switcher in sync
   announce(`${m.label}. ${m.title}.`);
+  // web8: let the amoeba guide narrate this plate (guide.js listens on window).
+  window.dispatchEvent(new CustomEvent('web8:stage', {
+    detail: { id: m.id, label: m.label, title: m.title, blurb: m.blurb || '', hasExperiment },
+  }));
 }
 
 // Replay the caption-rise animation on each stage change (skipped under reduce-motion).
@@ -672,6 +676,40 @@ function disposeTree(obj) {
     });
   });
 }
+
+// ── web8 guide bridge ────────────────────────────────────────────────────────
+// A small, whitelisted control surface the amoeba guide (guide.js) drives. It
+// only calls the same controls a user can reach by hand, so it can't do anything
+// off-limits. Absent entirely if the engine never booted (guide degrades to
+// explain-only).
+window.WEB8 = {
+  stages: () => STAGES.map((s) => ({ id: s.id, label: s.label, title: s.title })),
+  state: () => ({
+    stage: currentMeta ? currentMeta.id : null,
+    label: currentMeta ? currentMeta.label : '',
+    running: apparatusRunning,
+    view: currentView(),
+    speed: expSpeedOverride || EXP_STEPS_PER_SEC,
+    hasExperiment: !!expRule,
+  }),
+  run: (on) => setRunning(!!on),
+  toggleRun: () => setRunning(!apparatusRunning),
+  step: () => { if (expRule) { expRule.step(); renderExperimentFrame(); announce('Stepped one frame.'); } },
+  reset: () => { if (expRule) { expRule.reset(); renderExperimentFrame(); announce('Specimen reset.'); } },
+  view: (v) => { if (['lab', 'split', 'exp'].includes(v)) setView(v); },
+  explode: (f) => { const x = Math.max(0, Math.min(1, +f || 0)); const ex = $('explode'); if (ex) ex.value = String(x); applyExplode(x); },
+  speed: (sps) => {
+    const v = Math.max(1, Math.min(60, Math.round(+sps || 0)));
+    expSpeedOverride = v;
+    try {
+      for (const row of document.querySelectorAll('#paramList .param-row')) {
+        if (/speed/i.test(row.textContent || '')) { const r = row.querySelector('input[type=range]'); if (r) r.value = String(v); }
+      }
+    } catch (e) { /* slider sync is best-effort */ }
+    return v;
+  },
+  loadStageById: (id) => { const m = STAGES.find((s) => s.id === id); if (m) { loadStage(m); return true; } return false; },
+};
 
 if (lab) {
   setView('split');      // normalize mode-label + aria-checked + roving tabindex through one path
