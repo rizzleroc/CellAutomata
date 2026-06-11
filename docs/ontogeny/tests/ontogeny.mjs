@@ -103,11 +103,10 @@ for (const preset of PRESETS) {
   ok(f('MCMA') < 0.10, `neutral MCMA ≈ 1-5% (got ${(f('MCMA') * 100).toFixed(1)}%)`);
   const lt = tally(11);
   ok((lt.t.MCMA + lt.t.conjoined) / lt.tw > 0.6, 'late split timing → mostly MCMA / conjoined');
-  // realistic spontaneous rate at the default hazard
-  let twins = 0, N = 60000;
-  for (let s = 1; s <= N; s++) if (conceive({ oocytes: 1, fertility: 1, zonaBlock: 1 }, s).n === 2) twins++;
-  const oneIn = N / twins;
-  ok(oneIn > 150 && oneIn < 400, `default MZ twin rate ≈ 1/250 (got 1/${Math.round(oneIn)})`);
+  // realistic spontaneous MZ rate at the default hazard (MZ only — age now adds DZ on top)
+  let mz = 0; const N = 60000;
+  for (let s = 1; s <= N; s++) if (conceive({ oocytes: 1, fertility: 1, zonaBlock: 1 }, s).zygosity === 'monozygotic') mz++;
+  ok(N / mz > 150 && N / mz < 400, `default MZ twin rate ≈ 1/250 (got 1/${Math.round(N / mz)})`);
 }
 
 // 7 · zona block failure → triploidy, non-viable ------------------------------
@@ -115,6 +114,17 @@ for (const preset of PRESETS) {
   const r = conceive({ oocytes: 1, zonaBlock: 0, _force: { fertilize: 1, splits: [] } }, 1);
   ok(r.flags.includes('triploidy') && !r.viable && r.babies[0].chromosomes === 69,
     'no zona block → 69 chromosomes, non-viable');
+}
+
+// 8 · maternal age — DZ twinning + aneuploidy rise with age; MZ is age-flat ----
+{
+  const rate = (age, pred) => { let c = 0; const N = 60000; for (let s = 1; s <= N; s++) if (pred(conceive({ age, fertility: 1, zonaBlock: 1 }, s))) c++; return c / N; };
+  const isDZ = (o) => o.zygosity === 'dizygotic', isMZ = (o) => o.zygosity === 'monozygotic', isTri = (o) => o.flags.includes('trisomy21');
+  const dzY = rate(22, isDZ), dzO = rate(40, isDZ), mzY = rate(22, isMZ), mzO = rate(40, isMZ), trY = rate(22, isTri), trO = rate(40, isTri);
+  ok(dzO > dzY * 2, `dizygotic twinning rises with age (1/${Math.round(1 / dzY)} → 1/${Math.round(1 / dzO)})`);
+  ok(Math.abs(mzO - mzY) < mzY * 0.35, `monozygotic twinning is ~age-independent (1/${Math.round(1 / mzY)} vs 1/${Math.round(1 / mzO)})`);
+  ok(trO > trY * 5, `trisomy risk climbs steeply with age (1/${Math.round(1 / trY)} → 1/${Math.round(1 / trO)})`);
+  ok(rate(30, isDZ) > rate(30, isMZ), 'at age 30, fraternal twins outnumber identical (as in reality)');
 }
 
 // ── report ────────────────────────────────────────────────────────────────────

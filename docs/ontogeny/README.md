@@ -30,7 +30,9 @@ stochastic and **calibrated to real data**: run it across many seeds and the
 monozygotic chorionicity distribution emerges at the real frequencies
 (~27% DCDA, ~68% MCDA, ~4% MCMA, <1% conjoined), with spontaneous MZ twins at
 ~1/270 (real ≈ 1/250). It is not scripted. Triploidy arises from both dispermy
-(zona-block failure) and digyny (a retained polar body). Dating is
+(zona-block failure) and digyny (a retained polar body). **Maternal age** raises
+spontaneous dizygotic twinning and aneuploidy (both climb with age) while
+monozygotic twinning stays ~constant — the real epidemiology. Dating is
 post-fertilisation days; "SEM" is the lab's depth-shade visual style, not a
 literal electron micrograph of a living embryo.
 
