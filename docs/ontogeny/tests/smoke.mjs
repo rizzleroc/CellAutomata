@@ -5,6 +5,7 @@ import { readFileSync } from 'node:fs';
 import { execFileSync } from 'node:child_process';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import vm from 'node:vm';
 
 const here = dirname(fileURLToPath(import.meta.url));
 const root = join(here, '..');
@@ -51,6 +52,30 @@ const r = sim.conceive(sim.getPreset('mz-mcda').params, 1);
 ok(r.n === 2 && r.choType === 'MCDA', 'engine yields MCDA identical twins for the flagship preset');
 const render = await import('../render.js');
 ok(typeof render.drawSpecimen === 'function' && typeof render.drawMembranes === 'function', 'render.js exports the draw fns');
+ok(typeof render.buildHeight === 'function', 'render.js exports buildHeight (the SEM height field)');
+
+// 6 · SEM pipeline — the SAME depth-shading engine the other labs use ----------
+ok(/src="\.\/sem\.js"/.test(html), 'index.html loads sem.js (the SEM engine) as a classic script');
+ok(/LIVE · SEM/.test(html), 'the plate carries the LIVE · SEM badge');
+{
+  const win = { Math, Date, console }; win.window = win;
+  vm.createContext(win);
+  vm.runInContext(readFileSync(join(root, 'sem.js'), 'utf8'), win, { filename: 'sem.js' });
+  const SEM = win.window.SEM;
+  ok(SEM && typeof SEM.render === 'function', 'sem.js wires window.SEM.render');
+  ok(SEM && SEM.paletteNames && SEM.paletteNames().includes('warm-sepia'), 'SEM ships the warm-sepia palette');
+  const o = sim.conceive(sim.getPreset('quints').params, 1);
+  const G = 72, hbuf = new Float32Array(G * G);
+  render.buildHeight(hbuf, G, { outcome: o, day: 3, time: 0 });
+  let hmax = 0; for (const v of hbuf) if (v > hmax) hmax = v;
+  ok(hmax > 0.4, `buildHeight raises real relief (peak ${hmax.toFixed(2)})`);
+  const px = new Uint8ClampedArray(G * G * 4);
+  SEM.render(hbuf, G, G, px, { palette: 'warm-sepia' });
+  let lit = 0, opaque = true;
+  for (let i = 0; i < G * G; i++) { if (px[i * 4] > 40 || px[i * 4 + 1] > 40) lit++; if (px[i * 4 + 3] !== 255) opaque = false; }
+  ok(lit > G * G * 0.05, `SEM micrograph is non-blank (${lit} lit px)`);
+  ok(opaque, 'SEM micrograph is fully opaque');
+}
 
 if (fails.length) console.error('\n' + fails.map((f) => '  ✗ ' + f).join('\n'));
 console.log(`\n${pass} checks passed, ${fails.length} failure(s).`);
