@@ -62,6 +62,10 @@ jobs:
         run: node docs/web8/tests/anim.mjs
       - name: Web8 controls-contract tests
         run: node docs/web8/tests/controls.mjs  # presets wired + minerals localises + vents PMF (web8 parity)
+      - name: Ontogeny engine + page tests
+        run: |
+          node docs/ontogeny/tests/ontogeny.mjs
+          node docs/ontogeny/tests/smoke.mjs
 
   build:
     needs: test
