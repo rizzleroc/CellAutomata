@@ -28,8 +28,8 @@ const PARAMS = [
   { key: 'oocytes', label: 'eggs ovulated', min: 1, max: 6, step: 1, fmt: (v) => `${v}` },
   { key: 'fertility', label: 'fertility', min: 0, max: 1, step: 0.05, fmt: (v) => v.toFixed(2) },
   { key: 'zonaBlock', label: 'zona block (vs polyspermy)', min: 0, max: 1, step: 0.02, fmt: (v) => v.toFixed(2) },
-  { key: 'splitHazard', label: 'split hazard · per day', min: 0, max: 0.05, step: 0.002, fmt: (v) => v.toFixed(3) },
-  { key: 'splitDayBias', label: 'split day (→ chorionicity)', min: 1, max: 14, step: 1, fmt: (v) => `day ${v}` },
+  { key: 'splitHazard', label: 'monozygotic split rate', min: 0, max: 0.05, step: 0.002, fmt: (v) => `${(v * 100).toFixed(1)}%` },
+  { key: 'splitDayBias', label: 'split timing (early ↔ late)', min: 1, max: 14, step: 1, fmt: (v) => (v <= 4 ? 'early' : v >= 9 ? 'late' : 'typical') },
   { key: 'nondisjunction', label: 'non-disjunction (aneuploidy)', min: 0, max: 0.05, step: 0.002, fmt: (v) => v.toFixed(3) },
 ];
 const ART = ['natural', 'ovulation-induction', 'ivf-2', 'ivf-3'];

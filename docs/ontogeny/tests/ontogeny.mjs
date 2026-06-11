@@ -81,19 +81,33 @@ for (const preset of PRESETS) {
   ok(more <= twins, 'higher-order from a single egg is rarer still');
 }
 
-// 6 · splitDayBias steers the chorionicity ------------------------------------
+// 6 · split timing steers chorionicity AND the neutral default reproduces the
+//     REAL monozygotic chorionicity frequencies (the calibration that matters) -
 {
-  const dominantCho = (bias) => {
-    const tally = {};
-    for (let s = 1; s <= 1500; s++) {
-      const r = conceive({ oocytes: 1, splitHazard: 0.6, splitDayBias: bias, fertility: 1, zonaBlock: 1 }, s);
-      if (r.zygosity === 'monozygotic' && r.choType) tally[r.choType] = (tally[r.choType] || 0) + 1;
+  const tally = (bias, n = 8000) => {
+    const t = { DCDA: 0, MCDA: 0, MCMA: 0, conjoined: 0 }; let tw = 0;
+    for (let s = 1; s <= n; s++) {
+      const r = conceive({ oocytes: 1, splitHazard: 0.5, splitDayBias: bias, fertility: 1, zonaBlock: 1 }, s);
+      if (r.zygosity === 'monozygotic' && r.choType) { tw++; t[r.choType]++; }
     }
-    return Object.entries(tally).sort((a, b) => b[1] - a[1])[0]?.[0];
+    return { t, tw };
   };
-  ok(dominantCho(2) === 'DCDA', 'splitDayBias ≈ 2 → mostly DCDA');
-  ok(dominantCho(6) === 'MCDA', 'splitDayBias ≈ 6 → mostly MCDA');
-  ok(dominantCho(11) === 'MCMA', 'splitDayBias ≈ 11 → mostly MCMA');
+  const dom = (bias) => { const { t } = tally(bias); return Object.entries(t).sort((a, b) => b[1] - a[1])[0][0]; };
+  ok(dom(2) === 'DCDA', 'early split timing → mostly DCDA');
+  ok(dom(6) === 'MCDA', 'neutral split timing → mostly MCDA');
+  // neutral default must reproduce real frequencies: ~25–30% DCDA, ~70% MCDA, ~1–5% MCMA
+  const { t, tw } = tally(6, 40000);
+  const f = (k) => t[k] / tw;
+  ok(f('DCDA') > 0.20 && f('DCDA') < 0.35, `neutral DCDA ≈ 25-30% (got ${(f('DCDA') * 100).toFixed(1)}%)`);
+  ok(f('MCDA') > 0.60 && f('MCDA') < 0.75, `neutral MCDA ≈ 70% (got ${(f('MCDA') * 100).toFixed(1)}%)`);
+  ok(f('MCMA') < 0.10, `neutral MCMA ≈ 1-5% (got ${(f('MCMA') * 100).toFixed(1)}%)`);
+  const lt = tally(11);
+  ok((lt.t.MCMA + lt.t.conjoined) / lt.tw > 0.6, 'late split timing → mostly MCMA / conjoined');
+  // realistic spontaneous rate at the default hazard
+  let twins = 0, N = 60000;
+  for (let s = 1; s <= N; s++) if (conceive({ oocytes: 1, fertility: 1, zonaBlock: 1 }, s).n === 2) twins++;
+  const oneIn = N / twins;
+  ok(oneIn > 150 && oneIn < 400, `default MZ twin rate ≈ 1/250 (got 1/${Math.round(oneIn)})`);
 }
 
 // 7 · zona block failure → triploidy, non-viable ------------------------------
