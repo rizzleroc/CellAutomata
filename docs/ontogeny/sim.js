@@ -31,6 +31,7 @@ export function chorionicityForSplitDay(d) {
 
 export const DEFAULTS = {
   oocytes: 1,          // eggs ovulated this cycle (the dizygotic / higher-order root)
+  age: 30,             // maternal age — drives spontaneous DZ twinning + aneuploidy risk
   spermMotility: 0.75, // race quality → fertilisation odds
   fertility: 0.9,      // per-oocyte fertilisation probability
   zonaBlock: 0.98,     // polyspermy block efficiency (low → triploidy)
@@ -60,6 +61,12 @@ function sampleSplitDay(rng, bias) {
   return 14;
 }
 
+// Maternal age — the dominant driver the model would otherwise miss. It raises
+// DIZYGOTIC twinning (age/FSH-driven polyovulation) and ANEUPLOIDY (trisomy risk
+// climbs steeply); MONOZYGOTIC twinning is ~age-independent and is left untouched.
+const dzPolyovulationProb = (age) => Math.min(0.08, 0.0125 * Math.exp(0.085 * (age - 25)));
+const ageTrisomyRisk = (age) => Math.min(0.06, Math.max(2e-4, 2.5e-6 * Math.exp(0.2 * age)));
+
 // ── the conception event — stochastic, returns the determined outcome ─────────
 // `params._force` (set by deterministic presets) bypasses the dice so a labelled
 // outcome is guaranteed; otherwise everything is rolled from the params + seed.
@@ -74,6 +81,7 @@ export function conceive(params = {}, seed = 1) {
     if (p.art === 'ovulation-induction') nOocytes += 1 + Math.floor(rng() * 2);
     else if (p.art === 'ivf-2') nOocytes = Math.max(nOocytes, 2);
     else if (p.art === 'ivf-3') nOocytes = Math.max(nOocytes, 3);
+    else if (nOocytes < 2 && rng() < dzPolyovulationProb(p.age)) nOocytes++;   // spontaneous, age-driven double ovulation → dizygotic
   }
 
   // 2 · fertilisation + ploidy hazards
@@ -87,7 +95,7 @@ export function conceive(params = {}, seed = 1) {
     if (blockFail) { z.chromosomes = 69; z.flags.push('triploidy'); z.viable = false; }
     // triploidy also arises from DIGYNY — a retained 2nd polar body — independent of the zona block
     if (!force && z.chromosomes === 46 && rng() < 0.0015) { z.chromosomes = 69; z.flags.push('triploidy'); z.viable = false; }
-    const ndj = force ? p.nondisjunction >= 0.999 : rng() < p.nondisjunction;
+    const ndj = force ? p.nondisjunction >= 0.999 : rng() < Math.max(p.nondisjunction, ageTrisomyRisk(p.age));
     if (ndj && z.chromosomes === 46) { z.chromosomes = 47; z.flags.push('trisomy21'); }
     zygotes.push(z);
   }

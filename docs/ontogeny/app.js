@@ -25,6 +25,7 @@ function dayAt(cf) {
 
 // ── parameter schema (the live, stochastic knobs) ─────────────────────────────
 const PARAMS = [
+  { key: 'age', label: 'maternal age', min: 18, max: 45, step: 1, fmt: (v) => `${v} yr` },
   { key: 'oocytes', label: 'eggs ovulated', min: 1, max: 6, step: 1, fmt: (v) => `${v}` },
   { key: 'fertility', label: 'fertility', min: 0, max: 1, step: 0.05, fmt: (v) => v.toFixed(2) },
   { key: 'zonaBlock', label: 'zona block (vs polyspermy)', min: 0, max: 1, step: 0.02, fmt: (v) => v.toFixed(2) },
