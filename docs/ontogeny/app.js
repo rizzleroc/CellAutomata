@@ -47,7 +47,7 @@ let params = { ...DEFAULTS };
 let presetId = null;
 let seed = 7;
 let outcome = conceive(params, seed);
-let chapterF = 1;            // start at fertilisation
+let chapterF = 0;            // start at the gametes — the sperm racing the egg
 let playing = false;
 let time = 0;
 const paramRefs = {};
@@ -165,7 +165,7 @@ function setPlaying(on) {
 $('playBtn').onclick = () => { if (chapterF >= LAST) chapterF = 0; setPlaying(!playing); };
 $('stepBtn').onclick = () => { setPlaying(false); chapterF = clamp(Math.floor(chapterF) + 1, 0, LAST); syncScrub(); updateChapterUI(); };
 $('resetBtn').onclick = () => { resetClock(); };
-function resetClock() { setPlaying(false); chapterF = 1; syncScrub(); updateChapterUI(); }
+function resetClock() { setPlaying(false); chapterF = 0; syncScrub(); updateChapterUI(); }
 $('scrub').oninput = () => { setPlaying(false); chapterF = parseFloat($('scrub').value) / 1000 * LAST; updateChapterUI(); };
 function syncScrub() { $('scrub').value = String(Math.round(chapterF / LAST * 1000)); }
 
