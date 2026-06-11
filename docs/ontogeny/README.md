@@ -26,8 +26,13 @@ docs/ontogeny/
 **REAL (mechanistic, in `sim.js`):** ovulation → fertilisation with the zona
 polyspermy block → the per-day **splitting hazard** whose *timing* sets the shared
 membranes. This is the part that *creates* the multiples, and it is genuinely
-stochastic: run it across many seeds and the outcome distribution emerges
-(Hellin's-rule rarity; the chorionicity-by-split-day table). It is not scripted.
+stochastic and **calibrated to real data**: run it across many seeds and the
+monozygotic chorionicity distribution emerges at the real frequencies
+(~27% DCDA, ~68% MCDA, ~4% MCMA, <1% conjoined), with spontaneous MZ twins at
+~1/270 (real ≈ 1/250). It is not scripted. Triploidy arises from both dispermy
+(zona-block failure) and digyny (a retained polar body). Dating is
+post-fertilisation days; "SEM" is the lab's depth-shade visual style, not a
+literal electron micrograph of a living embryo.
 
 - **Split day → membranes (the real twin rule):** days 1–3 → **DCDA**, 4–8 →
   **MCDA**, 8–13 → **MCMA**, 13+ → **conjoined**.

@@ -34,8 +34,8 @@ export const DEFAULTS = {
   spermMotility: 0.75, // race quality → fertilisation odds
   fertility: 0.9,      // per-oocyte fertilisation probability
   zonaBlock: 0.98,     // polyspermy block efficiency (low → triploidy)
-  splitHazard: 0.0,    // per-day probability a conceptus splits (monozygotic propensity)
-  splitDayBias: 5,     // WHEN splits cluster → DCDA / MCDA / MCMA / conjoined
+  splitHazard: 0.004,  // per-zygote monozygotic split probability (real spontaneous ≈ 1/250)
+  splitDayBias: 6,     // tilt the empirical split-day distribution earlier/later (6 = neutral)
   nondisjunction: 0.0, // meiotic error rate → aneuploidy / trisomy
   fusion: 0.0,         // two zygotes merge → chimerism
   vanish: 0.0,         // a conceptus is reabsorbed early → vanishing twin
@@ -47,8 +47,18 @@ const MULT = ['—', 'singleton', 'twins', 'triplets', 'quadruplets', 'quintuple
               'sextuplets', 'septuplets', 'octuplets', 'nonuplets'];
 export const multipleName = (n) => MULT[n] || `${n}-tuplets`;
 
-// Triangular bias so splits cluster near splitDayBias (used in free play).
-const biasWeight = (day, peak) => Math.max(0, 1 - Math.abs(day - peak) / 3.2);
+// Empirical monozygotic split-DAY distribution, bucketed to the real chorionicity
+// frequencies (~27% DCDA d1–3, ~68% MCDA d4–8, ~4.5% MCMA d9–13, ~0.5% conjoined
+// d14). A symmetric triangular hazard could NOT reproduce this — it dumped ~96%
+// into MCDA. `splitDayBias` tilts this distribution earlier/later for exploration.
+const SPLIT_DAY_PMF = [9, 9, 9, 13.6, 13.6, 13.6, 13.6, 13.6, 0.9, 0.9, 0.9, 0.9, 0.9, 0.5];
+function sampleSplitDay(rng, bias) {
+  let tot = 0; const w = new Array(14);
+  for (let d = 1; d <= 14; d++) { w[d - 1] = SPLIT_DAY_PMF[d - 1] * Math.exp(0.22 * (bias - 6) * (d - 7)); tot += w[d - 1]; }
+  let r = rng() * tot;
+  for (let d = 1; d <= 14; d++) { if ((r -= w[d - 1]) <= 0) return d; }
+  return 14;
+}
 
 // ── the conception event — stochastic, returns the determined outcome ─────────
 // `params._force` (set by deterministic presets) bypasses the dice so a labelled
@@ -73,8 +83,10 @@ export function conceive(params = {}, seed = 1) {
     const ok = force ? true : rng() < p.fertility * (0.55 + 0.45 * p.spermMotility);
     if (!ok) continue;
     const z = { id: i, chromosomes: 46, flags: [], viable: true };
-    const blockFail = force ? p.zonaBlock <= 1e-4 : rng() > p.zonaBlock;   // polyspermy
+    const blockFail = force ? p.zonaBlock <= 1e-4 : rng() > p.zonaBlock;   // dispermy (zona block fails)
     if (blockFail) { z.chromosomes = 69; z.flags.push('triploidy'); z.viable = false; }
+    // triploidy also arises from DIGYNY — a retained 2nd polar body — independent of the zona block
+    if (!force && z.chromosomes === 46 && rng() < 0.0015) { z.chromosomes = 69; z.flags.push('triploidy'); z.viable = false; }
     const ndj = force ? p.nondisjunction >= 0.999 : rng() < p.nondisjunction;
     if (ndj && z.chromosomes === 46) { z.chromosomes = 47; z.flags.push('trisomy21'); }
     zygotes.push(z);
@@ -95,18 +107,19 @@ export function conceive(params = {}, seed = 1) {
         lineage.push(mk(s.day, cho));
         splitEvents.push({ day: s.day, zygote: zi, cho });
       }
-    } else {
-      for (let day = 1; day <= 14; day++) {
-        const hz = p.splitHazard * biasWeight(day, p.splitDayBias);
-        if (hz <= 0) continue;
-        for (const b of [...lineage]) {
-          if (b.splits.length === 0 && rng() < hz) {
-            const cho = chorionicityForSplitDay(day);
-            b.splits.push(day); b.cho = cho;
-            lineage.push(mk(day, cho));
-            splitEvents.push({ day, zygote: zi, cho });
-          }
-        }
+    } else if (p.splitHazard > 0 && rng() < p.splitHazard) {
+      // monozygotic twinning: this zygote splits; the DAY (from the empirical
+      // distribution, tilted by splitDayBias) sets the chorionicity.
+      const day = sampleSplitDay(rng, p.splitDayBias);
+      const cho = chorionicityForSplitDay(day);
+      lineage[0].splits.push(day); lineage[0].cho = cho;
+      lineage.push(mk(day, cho));
+      splitEvents.push({ day, zygote: zi, cho });
+      if (rng() < p.splitHazard * 0.08) {        // rare: a daughter splits again → MZ triplets
+        const d2 = sampleSplitDay(rng, p.splitDayBias), c2 = chorionicityForSplitDay(d2);
+        lineage[1].splits.push(d2); lineage[1].cho = c2;
+        lineage.push(mk(d2, c2));
+        splitEvents.push({ day: d2, zygote: zi, cho: c2 });
       }
     }
     babies.push(...lineage);
@@ -241,7 +254,7 @@ export const PHASES = [
   { key: 'gastrulation',  day: 16,   t: 'Gastrulation',     d: 'The primitive streak lays down three germ layers — the body plan. After this an embryo can no longer split cleanly.' },
   { key: 'organogenesis', day: 22,   t: 'Organogenesis',    d: 'Neural tube closes; somites form; the heart beats (~day 22); limb buds appear.' },
   { key: 'fetal',         day: 56,   t: 'Fetal',            d: 'End of week 8: all major organs present — now a fetus. Growth and maturation follow.' },
-  { key: 'viability',     day: 168,  t: 'Viability',        d: '~24 weeks: lungs can, with help, support life outside the womb.' },
+  { key: 'viability',     day: 154,  t: 'Viability',        d: '~22 weeks post-fertilisation (≈24 weeks clinical): lungs can, with help, sustain life.' },
   { key: 'birth',         day: 266,  t: 'Birth',            d: '~38 weeks after fertilisation: parturition.' },
 ];
 export const LIFE_STAGES = [
