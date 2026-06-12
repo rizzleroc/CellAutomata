@@ -32,6 +32,7 @@ mito-switch) — on **all four axes**: simulation path, palette family, camera l
 | `noctiluca` | deep-sea bioluminescence — living light in black water | turbulent → worms → labyrinth → u-skate → negaton | cyan abyss → viridian → chartreuse-gold (non-inverted) | slow lateral submersible **drift** |
 | `argentum`  | scanning-electron-micrograph plate (the only colourless reel) | spots → mitosis → coral → labyrinth → coral → spots | pure false-grey + faint detector grain | stepped **magnification** zoom with dwell |
 | `terra`     | morphogenetic cartography — the field as living terrain | labyrinth → coral → spots → stripes → labyrinth | hypsometric satellite tint + contour isolines | steady diagonal **survey** pan |
+| `opalescence` | structural colour — a living iridescent membrane | spots → mitosis → coral → labyrinth → u-skate → coral | **no palette**: thin-film interference, hue from thickness × curvature, drifting | slow **orbital** push-in |
 
 Each compositor honours three modes so you can preview before a full encode (HANDOFF Lesson 8):
 

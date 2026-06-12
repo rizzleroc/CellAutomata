@@ -89,6 +89,7 @@ waypoints during the sim. That's the "odyssey." Order them so each transition is
 | `web8_noctiluca.mp4`          | deep-sea bioluminescence (living light) | cyan-abyss→viridian→chartreuse-gold (non-inverted) | slow lateral submersible drift | turbulent→worms→labyrinth→u-skate→negaton |
 | `web8_argentum.mp4`           | scanning-electron micrograph — the only colourless reel | pure false-grey + faint detector grain | stepped magnification zoom w/ dwell | spots→mitosis→coral→labyrinth→coral→spots |
 | `web8_terra.mp4`              | morphogenetic cartography (the field as terrain) | hypsometric satellite tint + contour isolines | steady diagonal survey pan | labyrinth→coral→spots→stripes→labyrinth |
+| `web8_opalescence.mp4`        | structural colour — a living iridescent membrane | none — thin-film interference (hue from thickness × curvature), drifting | slow orbital push-in | spots→mitosis→coral→labyrinth→u-skate→coral |
 
 **The differentiation rule:** every new reel must differ on *all four axes* —
 **(1) simulation path, (2) palette family, (3) camera motion language, (4) structural theme.**
@@ -201,6 +202,7 @@ tools/morphogenesis/
   noctiluca_gen.mjs  + noctiluca_film.py   → web8_noctiluca.mp4 (deep-sea bioluminescence)
   argentum_gen.mjs   + argentum_film.py    → web8_argentum.mp4  (grayscale SEM plate)
   terra_gen.mjs      + terra_film.py       → web8_terra.mp4     (topographic cartography)
+  opalescence_gen.mjs + opalescence_film.py → web8_opalescence.mp4 (thin-film iridescence)
   run_batch.sh       nohup chain: gen→film for each, sequentially, unattended
                      (compositors also take `test <f>` / `testc <f>` preview modes; gens take MORPH_NF)
 SOCIAL_MEDIA_HANDOFF.md   ← you are here (in docs/web8/)
