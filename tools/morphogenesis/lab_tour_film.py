@@ -49,41 +49,47 @@ def roman(n):
     for v,sym in ROMAN:
         while n>=v: s+=sym; n-=v
     return s
-# canonical lab order: id, plate name, one-line caption. Drop/reorder freely.
+# canonical lab order: id, plate name, caption, render mode ('w'=SEM relief, 'n'=native colour), base zoom.
+# SEM for the continuous-field chemistries; native colour (often zoomed to a cell mosaic) for the
+# agent/categorical sims where colour carries the meaning.
 STAGES=[
- ("soup","Miller–Urey","Lightning in a primordial sky forges the first organic molecules."),
- ("grayscott","Reaction–Diffusion","Bare chemistry self-organises into spots, stripes, and dividing forms."),
- ("raf","Autocatalytic Set","A closed web of reactions that collectively makes itself."),
- ("vesicles","Vesicles","Lipids fold into the first membranes — an inside and an outside."),
- ("vents","Alkaline Vents","Proton gradients at the sea floor drive the first metabolism."),
- ("minerals","Mineral Catalysis","Clay surfaces line monomers up into the first polymers."),
- ("chirality","Homochirality","Life commits to one handedness; the mirror form dies away."),
- ("rna","RNA World","A molecule that is both gene and enzyme begins to copy itself."),
- ("code","The Genetic Code","A mapping from nucleotide triplet to amino acid crystallises."),
- ("coacervate","Coacervates","Droplets concentrate the chemistry into the first protocells."),
- ("natural_selection","Natural Selection","Replicators compete, and the fitter lineages persist."),
- ("luca","LUCA","Every lineage converges on one last universal common ancestor."),
- ("life","Digital Life","Self-replicating code evolves, open-ended — life proper."),
+ ("soup","Miller–Urey","Lightning in a primordial sky forges the first organic molecules.","n",1.0),
+ ("grayscott","Reaction–Diffusion","Bare chemistry self-organises into spots, stripes, and dividing forms.","w",1.5),
+ ("raf","Autocatalytic Set","A closed web of reactions that collectively makes itself.","n",1.0),
+ ("vesicles","Vesicles","Lipids fold into the first membranes — an inside and an outside.","w",1.0),
+ ("vents","Alkaline Vents","Proton gradients at the sea floor drive the first metabolism.","n",1.0),
+ ("minerals","Mineral Catalysis","Clay surfaces line monomers up into the first polymers.","n",1.0),
+ ("chirality","Homochirality","Life commits to one handedness; the mirror form dies away.","n",1.0),
+ ("rna","RNA World","A molecule that is both gene and enzyme begins to copy itself.","n",1.3),
+ ("code","The Genetic Code","A mapping from nucleotide triplet to amino acid crystallises.","w",1.0),
+ ("coacervate","Coacervates","Droplets concentrate the chemistry into the first protocells.","n",1.8),
+ ("natural_selection","Natural Selection","Replicators compete, and the fitter lineages persist.","n",1.5),
+ ("luca","LUCA","Every lineage converges on one last universal common ancestor.","n",1.8),
+ ("life","Digital Life","Self-replicating code evolves, open-ended — life proper.","n",1.4),
 ]
 def meta(id): return json.load(open(f'/tmp/g_{id}_meta.json'))
-def read_sem(id, simf, m):
-    W0,H0,SC=m['W'],m['H'],m['SC']; pw,ph=W0*SC,H0*SC; fb=pw*ph*4
+def read_frame(id, simf, m, mode):
+    W0,H0,SC=m['W'],m['H'],m['SC']
+    pw,ph=(W0*SC,H0*SC) if mode=='w' else (W0,H0)
+    fb=pw*ph*4
     simf=max(0,min(m['frames']-1,int(simf)))
-    f=open(f'/tmp/g_{id}_w.bin','rb'); f.seek(simf*fb)
+    f=open(f'/tmp/g_{id}_{mode}.bin','rb'); f.seek(simf*fb)
     a=np.frombuffer(f.read(fb),np.uint8).reshape(ph,pw,4)[:,:,:3].astype(np.float32); f.close()
     return a, pw
 def vig(n):
     yy,xx=np.mgrid[0:n,0:n]; r=np.hypot((xx-n/2)/(n/2),(yy-n/2)/(n/2))
     return np.clip(1-0.42*np.clip(r-0.58,0,1)**1.7,0,1).astype(np.float32)[...,None]
 VIG=vig(WIN)
-def window_img(id, m, t):                                # t in 0..1 across the segment (Ken-Burns + sim time)
+def window_img(id, m, mode, base, t):                    # t in 0..1 across the segment (Ken-Burns + sim time)
     simf=t*(m['frames']-1)
-    a,pw=read_sem(id,simf,m)
-    zoom=1.0+0.10*t                                      # slow push-in
-    cs=int(pw/zoom); off=int((pw-cs)*0.5 + (pw-cs)*0.18*np.sin(t*np.pi))
+    a,pw=read_frame(id,simf,m,mode)
+    zoom=base*(1.0+0.08*t)                               # base crop × slow push-in
+    cs=int(round(pw/zoom)); cs=max(8,min(pw,cs))
+    off=int((pw-cs)*0.5 + (pw-cs)*0.18*np.sin(t*np.pi))
     x=max(0,min(pw-cs,off)); y=max(0,min(pw-cs,int((pw-cs)*0.5)))
     sub=a[y:y+cs,x:x+cs]
-    im=np.asarray(Image.fromarray(sub.astype(np.uint8)).resize((WIN,WIN),Image.LANCZOS),np.float32)
+    resample=Image.LANCZOS if mode=='w' else Image.NEAREST   # crisp cell-mosaic for native agent sims
+    im=np.asarray(Image.fromarray(sub.astype(np.uint8)).resize((WIN,WIN),resample),np.float32)
     return np.clip(im*VIG,0,255).astype(np.uint8)
 def reticle(d,x,y,n,a=1.0):
     for cx,cy in[(x,y),(x+n,y),(x,y+n),(x+n,y+n)]:
@@ -113,8 +119,8 @@ def compose_frame(f):
         text(cv,(W//2,1010),"thirteen stages, from chemistry to life",F_ital(46),AC,g)
         label(cv,(W//2,1360),"cellautomata · web8 · the origin-of-life lab",20,DIM,0.7*g)
         return cv
-    k,t,a=seg_at(f); id,name,cap=STAGES[k]; m=meta(id)
-    img=window_img(id,m,t)
+    k,t,a=seg_at(f); id,name,cap,mode,zoom=STAGES[k]; m=meta(id)
+    img=window_img(id,m,mode,zoom,t)
     win=Image.fromarray(img);
     if a<1: win=Image.blend(Image.new("RGB",(WIN,WIN),BG),win,a)
     cv.paste(win,(WX,WY)); reticle(d,WX,WY,WIN,a)
