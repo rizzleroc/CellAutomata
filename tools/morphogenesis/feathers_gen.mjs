@@ -9,12 +9,12 @@ gs=gs.replace('const W = 220;','const W = 1000;').replace('const H = 220;','cons
 function mul(a){return function(){a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296;};}
 const g=CA.RULES.grayscott(); const W=g.width,H=g.height; const h=new Float32Array(W*H); const u16=new Uint16Array(W*H);
 function setF(F,k){g.params.F.value=F;g.params.k.value=k;}
-const WP=[
+const WP=[                          // directional filaments = barbs (worms/stripes, not maze)
  ['worms',0.030,0.056],
- ['labyrinth',0.039,0.058],
  ['stripes',0.042,0.060],
  ['worms',0.032,0.057],
- ['labyrinth',0.039,0.058]
+ ['stripes',0.041,0.0595],
+ ['worms',0.030,0.056]
 ];
 const NF=+(process.env.MORPH_NF||2880), SEG=WP.length-1;
 setF(WP[0][1],WP[0][2]); g.reset();

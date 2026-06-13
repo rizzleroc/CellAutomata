@@ -43,7 +43,8 @@ def ocelli(h01, strength=3.4):
     nz=1.0/strength; lx,ly,lz=-0.48,-0.55,0.66
     inv=1.0/np.sqrt(gx*gx+gy*gy+nz*nz)
     shade=np.clip((gx*lx+gy*ly+nz*lz)*inv,0,1)
-    idx=np.clip(h01*255,0,255).astype(np.int32)
+    he=np.clip(h01*2.6,0,1)                                       # gain so a dome spans the full eye ramp
+    idx=np.clip(he*255,0,255).astype(np.int32)
     col=LUT_EYE[idx]*(0.42+0.72*shade)[...,None]
     spec=np.clip(shade-0.80,0,1)*5.0*np.clip(h01-0.18,0,1)
     col+=spec[...,None]*np.array([120,235,210],np.float32)        # cyan-green structural glint
@@ -61,12 +62,12 @@ def cropresize(field,cs,ccx,ccy):
     im=Image.fromarray(sub,mode='F').resize((WIN,WIN),Image.LANCZOS)
     return np.asarray(im,np.float32)
 def camera(f,NF):
-    # Pull back to reveal the fan of eyes, gentle drift.
+    # Tight — each dome must fill enough pixels to read as a concentric eye. Slow push + drift among eyes.
     p=f/NF
-    cs=lerp(340,840,smooth5(p))
+    cs=lerp(300,200,smooth5(p))
     margin=(1000-cs)/2*0.82; env=np.sin(np.pi*p)**0.6
-    ccx=500+margin*0.5*np.sin(p*np.pi*1.6)*env
-    ccy=500+margin*0.5*np.cos(p*np.pi*1.3)*env
+    ccx=500+margin*0.55*np.sin(p*np.pi*1.6-np.pi/2)*env
+    ccy=500+margin*0.55*np.cos(p*np.pi*1.3)*env
     return cs,ccx,ccy
 def render_window(f,NF):
     field=readfield(f); cs,ccx,ccy=camera(f,NF)

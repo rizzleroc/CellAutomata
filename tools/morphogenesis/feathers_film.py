@@ -35,21 +35,20 @@ def make_lut(stops):
     xs=np.linspace(0,1,len(stops)); out=np.zeros((256,3),np.float32); t=np.linspace(0,1,256)
     for c in range(3): out[:,c]=np.interp(t,xs,[s[c] for s in stops])
     return out
-LUT_PLUME=make_lut([(14,18,28),(52,62,84),(116,128,148),(192,196,204),(228,214,214),(246,240,238)])
 TWO3=2.0943951; FOUR3=4.1887902
-def feather(h01, drift, strength=2.4):
+def feather(h01, drift, strength=2.8):
+    # Iridescent plumage (starling/grackle): hue from thickness+curvature is the base colour,
+    # seated on raking-lit barb relief so it always shimmers; gaps between barbs sink dark.
     gy,gx=np.gradient(h01); gm=np.sqrt(gx*gx+gy*gy)
     nz=1.0/strength; lx,ly,lz=-0.66,-0.30,0.52                     # low raking light = combed barbs
     inv=1.0/np.sqrt(gx*gx+gy*gy+nz*nz)
     shade=np.clip((gx*lx+gy*ly+nz*lz)*inv,0,1)
-    idx=np.clip(h01*255,0,255).astype(np.int32)
-    col=LUT_PLUME[idx]*(0.34+0.82*shade)[...,None]
-    phase=h01*14+gm*70+drift                                       # soft structural sheen
+    phase=h01*16+gm*82+drift
     ir=np.stack([0.5+0.5*np.cos(phase),0.5+0.5*np.cos(phase+TWO3),0.5+0.5*np.cos(phase+FOUR3)],axis=-1)
-    w=(0.30*np.clip(shade-0.45,0,1))[...,None]
-    col=col*(1-w)+(ir*150+95)*w                                    # pastel iridescence, only on lit crests
-    spec=np.clip(shade-0.82,0,1)*4.0*np.clip(h01-0.20,0,1)
-    col+=spec[...,None]*np.array([248,246,250],np.float32)
+    col=(ir*0.80+0.14)*255.0*(0.30+0.85*shade)[...,None]
+    col*=np.clip(0.20+h01*3.2,0,1)[...,None]
+    spec=np.clip(shade-0.80,0,1)*4.5*np.clip(h01-0.18,0,1)
+    col+=spec[...,None]*np.array([252,250,252],np.float32)
     return np.clip(col,0,255).astype(np.uint8)
 def vig(n):
     yy,xx=np.mgrid[0:n,0:n]; r=np.hypot((xx-n/2)/(n/2),(yy-n/2)/(n/2))
@@ -65,10 +64,10 @@ def cropresize(field,cs,ccx,ccy):
 def camera(f,NF):
     # Slow combing drift — predominantly along one axis, gentle zoom breath.
     p=f/NF
-    cs=lerp(600,500,0.5-0.5*np.cos(p*np.pi*2.0))
+    cs=lerp(300,230,0.5-0.5*np.cos(p*np.pi*2.0))                   # tight: large soft barb-ridges
     margin=(1000-cs)/2*0.82; env=np.sin(np.pi*p)**0.5
-    ccx=500+margin*0.88*np.sin(p*np.pi*1.1-np.pi/2)*env
-    ccy=500+margin*0.24*np.cos(p*np.pi*1.7)*env
+    ccx=500+margin*0.90*np.sin(p*np.pi*1.1-np.pi/2)*env            # combing drift along the barbs
+    ccy=500+margin*0.22*np.cos(p*np.pi*1.7)*env
     return cs,ccx,ccy
 def render_window(f,NF):
     field=readfield(f); cs,ccx,ccy=camera(f,NF)
