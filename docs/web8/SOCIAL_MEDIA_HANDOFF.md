@@ -90,6 +90,12 @@ waypoints during the sim. That's the "odyssey." Order them so each transition is
 | `web8_argentum.mp4`           | scanning-electron micrograph — the only colourless reel | pure false-grey + faint detector grain | stepped magnification zoom w/ dwell | spots→mitosis→coral→labyrinth→coral→spots |
 | `web8_terra.mp4`              | morphogenetic cartography (the field as terrain) | hypsometric satellite tint + contour isolines | steady diagonal survey pan | labyrinth→coral→spots→stripes→labyrinth |
 | `web8_opalescence.mp4`        | structural colour — a living iridescent membrane | none — thin-film interference (hue from thickness × curvature), drifting | slow orbital push-in | spots→mitosis→coral→labyrinth→u-skate→coral |
+| `web8_zebra.mp4`              | Turing's stripe — animal coat morphogenesis | bold black-&-cream hide | vertical scroll | stripes↔labyrinth |
+| `web8_cheetah.mp4`           | the predator's coat | golden hide, dark spots | prowling push-in | spots↔mitosis |
+| `web8_crystals.mp4`          | an amethyst geode (distinct from the ice cryst reel) | violet facets, extreme relief | orbiting zoom-in | labyrinth→stripes→coral→labyrinth |
+| `web8_peacock.mp4`           | iridescent ocelli (feather eyes) | concentric gold→emerald→blue→pupil by dome height | tight drift among eyes | spots↔mitosis |
+| `web8_feathers.mp4`          | iridescent plumage (starling/grackle) | structural-colour barbs under raking light | combing drift | worms↔stripes |
+| `web8_radiating.mp4`         | a chromatic mandala | screen-space radial hue rings flowing outward | centred gentle zoom | spots→mitosis→coral→mitosis→spots |
 
 **The differentiation rule:** every new reel must differ on *all four axes* —
 **(1) simulation path, (2) palette family, (3) camera motion language, (4) structural theme.**
@@ -203,6 +209,12 @@ tools/morphogenesis/
   argentum_gen.mjs   + argentum_film.py    → web8_argentum.mp4  (grayscale SEM plate)
   terra_gen.mjs      + terra_film.py       → web8_terra.mp4     (topographic cartography)
   opalescence_gen.mjs + opalescence_film.py → web8_opalescence.mp4 (thin-film iridescence)
+  zebra_gen.mjs      + zebra_film.py       → web8_zebra.mp4     (Turing stripe coat)
+  cheetah_gen.mjs    + cheetah_film.py     → web8_cheetah.mp4   (spots on a golden hide)
+  crystals_gen.mjs   + crystals_film.py    → web8_crystals.mp4  (amethyst geode)
+  peacock_gen.mjs    + peacock_film.py     → web8_peacock.mp4   (iridescent ocelli)
+  feathers_gen.mjs   + feathers_film.py    → web8_feathers.mp4  (iridescent plumage)
+  radiating_gen.mjs  + radiating_film.py   → web8_radiating.mp4 (chromatic mandala)
   run_batch.sh       nohup chain: gen→film for each, sequentially, unattended
                      (compositors also take `test <f>` / `testc <f>` preview modes; gens take MORPH_NF)
 SOCIAL_MEDIA_HANDOFF.md   ← you are here (in docs/web8/)

@@ -33,6 +33,12 @@ mito-switch) — on **all four axes**: simulation path, palette family, camera l
 | `argentum`  | scanning-electron-micrograph plate (the only colourless reel) | spots → mitosis → coral → labyrinth → coral → spots | pure false-grey + faint detector grain | stepped **magnification** zoom with dwell |
 | `terra`     | morphogenetic cartography — the field as living terrain | labyrinth → coral → spots → stripes → labyrinth | hypsometric satellite tint + contour isolines | steady diagonal **survey** pan |
 | `opalescence` | structural colour — a living iridescent membrane | spots → mitosis → coral → labyrinth → u-skate → coral | **no palette**: thin-film interference, hue from thickness × curvature, drifting | slow **orbital** push-in |
+| `zebra`     | Turing's stripe — animal coat morphogenesis | stripes ↔ labyrinth | bold black-&-cream hide | vertical **scroll** |
+| `cheetah`   | the predator's coat — dark spots on gold | spots ↔ mitosis | golden hide, dark spots | prowling **push-in** |
+| `crystals`  | an amethyst geode (distinct from the ice `cryst` reel) | labyrinth → stripes → coral → labyrinth | violet facets, extreme relief | orbiting **zoom-in** |
+| `peacock`   | iridescent ocelli (feather eyes) | spots ↔ mitosis | concentric gold→emerald→peacock-blue→pupil by dome height | tight **drift** among eyes |
+| `feathers`  | iridescent plumage (starling/grackle) | worms ↔ stripes | structural-colour barbs under raking light | combing **drift** |
+| `radiating` | a chromatic mandala | spots → mitosis → coral → mitosis → spots | screen-space radial hue rings flowing outward | centred gentle **zoom** |
 
 Each compositor honours three modes so you can preview before a full encode (HANDOFF Lesson 8):
 
