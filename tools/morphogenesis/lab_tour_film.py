@@ -62,7 +62,6 @@ STAGES=[
  ("chirality","Homochirality","Life commits to one handedness; the mirror form dies away.","n",1.0),
  ("rna","RNA World","A molecule that is both gene and enzyme begins to copy itself.","n",1.3),
  ("code","The Genetic Code","A mapping from nucleotide triplet to amino acid crystallises.","w",1.0),
- ("coacervate","Coacervates","Droplets concentrate the chemistry into the first protocells.","n",1.8),
  ("natural_selection","Natural Selection","Replicators compete, and the fitter lineages persist.","n",1.5),
  ("luca","LUCA","Every lineage converges on one last universal common ancestor.","n",1.8),
  ("life","Digital Life","Self-replicating code evolves, open-ended — life proper.","n",1.4),
@@ -102,7 +101,7 @@ def progress(cv,i,n):
         fill=AC if j==i else DIM
         d.ellipse([x-r,y-r,x+r,y+r],fill=(*fill,255 if j==i else 120))
 # ---- timeline ----
-TITLE=114; SEG=102; FADE=12
+TITLE=114; SEG=110; FADE=12
 NF=TITLE+SEG*len(STAGES)
 def seg_at(f):                                          # -> (stage_index, local_t, alpha) or (None,..) in title
     if f<TITLE: return None,0,0
