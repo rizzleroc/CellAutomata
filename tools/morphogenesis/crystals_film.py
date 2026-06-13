@@ -65,7 +65,7 @@ def cropresize(field,cs,ccx,ccy):
 def camera(f,NF):
     # Slow zoom into the geode with a gentle orbiting drift (light rakes the facets).
     p=f/NF
-    cs=lerp(800,300,smooth5(p))
+    cs=lerp(720,400,smooth5(p))                                   # facets fill the frame; not too deep
     margin=(1000-cs)/2*0.82; env=np.sin(np.pi*p)**0.6; ang=p*np.pi*1.5
     ccx=500+margin*0.42*np.cos(ang)*env
     ccy=500+margin*0.42*np.sin(ang)*env

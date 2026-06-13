@@ -36,7 +36,7 @@ def coat(h01, strength=4.0):
     nz=1.0/strength; lx,ly,lz=-0.48,-0.5,0.72
     inv=1.0/np.sqrt(gx*gx+gy*gy+nz*nz)
     shade=np.clip((gx*lx+gy*ly+nz*lz)*inv,0,1)
-    spot=np.clip((h01-0.18)/0.22,0,1); spot=spot*spot*(3-2*spot)   # solid spots, soft rim
+    spot=np.clip((h01-0.10)/0.16,0,1); spot=spot*spot*(3-2*spot)   # crisp solid dark spots on the hide
     bg=GOLD*(0.82+0.18*shade)[...,None]+GOLD2*(0.18-0.18*shade)[...,None]   # warm hide variation
     col=bg*(1-spot)[...,None]+SPOT*spot[...,None]
     col=col*(0.86+0.20*shade)[...,None]
@@ -56,7 +56,7 @@ def cropresize(field,cs,ccx,ccy):
 def camera(f,NF):
     # Prowl: slow zoom-in with a lazy horizontal sway, like stalking closer.
     p=f/NF
-    cs=lerp(740,500,smooth5(p))
+    cs=lerp(540,340,smooth5(p))                                   # tight enough that spots read discrete
     margin=(1000-cs)/2*0.82; env=np.sin(np.pi*p)**0.5
     ccx=500+margin*0.70*np.sin(p*np.pi*1.4-np.pi/2)*env
     ccy=500+margin*0.30*np.cos(p*np.pi*1.1)*env

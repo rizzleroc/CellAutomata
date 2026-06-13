@@ -11,17 +11,17 @@ function mul(a){return function(){a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15
 const g=CA.RULES.grayscott(); const W=g.width,H=g.height; const h=new Float32Array(W*H); const u16=new Uint16Array(W*H);
 function setF(F,k){g.params.F.value=F;g.params.k.value=k;}
 const WP=[
- ['mitosis',0.0367,0.0649],
- ['coral',0.0545,0.062],
  ['labyrinth',0.039,0.058],
  ['stripes',0.041,0.0595],
- ['coral',0.055,0.063]
+ ['labyrinth',0.040,0.059],
+ ['coral',0.0545,0.062],
+ ['labyrinth',0.039,0.058]
 ];
 const NF=+(process.env.MORPH_NF||2880), SEG=WP.length-1;
 setF(WP[0][1],WP[0][2]); g.reset();
-// A geode grows inward from scattered wall nuclei.
-const nuclei=[[200,210],[800,200],[210,790],[790,800],[500,150],[150,500],[850,500],[500,850],[500,500],[330,330],[670,670],[330,670],[670,330]];
-for(const [cx,cy] of nuclei) g.paint(cx,cy,14,'paint');
+// A druzy crystal field — many nucleation points so facets pack the whole plate.
+const rng=mul(60134277);
+for(let i=0;i<100;i++) g.paint((rng()*W)|0,(rng()*H)|0,6,'paint');
 const fd=fs.openSync('/tmp/crystals_field.bin','w'); const fk=[],names=[],pop=[]; const t0=Date.now();
 for(let f=0;f<NF;f++){
   const p=f/NF*SEG; const s=Math.min(SEG-1,Math.floor(p)); const t=p-s;
