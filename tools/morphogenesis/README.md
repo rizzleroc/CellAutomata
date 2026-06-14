@@ -69,6 +69,24 @@ node tools/morphogenesis/ontogeny_gen.mjs && python3 tools/morphogenesis/ontogen
 ONTO_NF=300 node tools/morphogenesis/ontogeny_gen.mjs && python3 tools/morphogenesis/ontogeny_film.py testc 150
 ```
 
+## Grand arc — `origins` (Conway → abiogenesis → ontogeny)
+
+`origin_film.py` stitches the whole story into one reel, as seventeen SEM specimen plates under
+one microscope, in three numbered acts: **Conway's Game of Life** (a new
+[`conway.js`](../../docs/web8/experiment/rules/conway.js) rule — life as a pure rule) → the
+**twelve-stage origin-of-life lab** (reusing the `gen.mjs` SEM/native plates) → **ontogeny**
+(the singleton specimen — life as a person). Each act gets its own accent (digital teal-green ·
+amber chemistry · ontogeny teal).
+
+```bash
+# sources:
+node tools/morphogenesis/gen.mjs conway 0 130 1 n
+for s in soup:n grayscott:w raf:n vesicles:w vents:n minerals:n chirality:n rna:n code:w natural_selection:n luca:n life:n; do
+  node tools/morphogenesis/gen.mjs ${s%:*} 200 130 1 ${s#*:}; done
+ONTO_PRESET=singleton node tools/morphogenesis/ontogeny_gen.mjs
+python3 tools/morphogenesis/origin_film.py     # -> /tmp/web8_origins.mp4
+```
+
 ## Requirements
 `node` (for the engine), `python3` with `numpy`, `Pillow`, `imageio_ffmpeg` (ffmpeg is bundled — no
 system ffmpeg needed). The fonts live in `docs/web8/assets/fonts/`.

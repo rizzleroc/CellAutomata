@@ -29,9 +29,10 @@ function dayAt(cf) {
   return lerp(a.day, b.life ? 266 : b.day, f);
 }
 
-// the showcased scenario: identical MCDA twins — the app's own opening default, seed 7,
-// so the embryo visibly SPLITS in two (~day 6) and the diagnosis reads monozygotic · MCDA.
-const outcome = conceive(getPreset('mz-mcda').params, 7);
+// the showcased scenario (ONTO_PRESET env to switch): default = identical MCDA twins, seed 7,
+// so the embryo visibly SPLITS in two (~day 6); 'singleton' = the plain origin of one life.
+const PRESET = process.env.ONTO_PRESET || 'mz-mcda';
+const outcome = conceive(getPreset(PRESET).params, 7);
 
 // per-chapter frame budgets (24fps) — linger on the visually rich phases & the split
 const BUD = [170,165,165,140,180,120,150,205,170,120,180, 84,84,84,84,84,98];  // 17 chapters
@@ -73,7 +74,7 @@ const meta = {
     chromosomes: [...new Set(outcome.babies.map(b => b.chromosomes))], diagnosis: outcome.diagnosis,
     flags: [...new Set(outcome.flags)],
   },
-  hint: getPreset('mz-mcda').hint, seed: 7, fr: [],
+  hint: getPreset(PRESET).hint, seed: 7, fr: [],
 };
 const t0 = Date.now();
 for (let f = 0; f < NF; f++) {
