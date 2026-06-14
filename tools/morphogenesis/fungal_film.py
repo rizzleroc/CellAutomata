@@ -39,8 +39,8 @@ def make_lut(stops):
     return out
 # Colour pushed into the LOW-MIDS (h01~0.2–0.45, where the GS field lives) so the WHOLE
 # field carries the phase, not just the rare bright peaks.
-LUT_SUBST=make_lut([(4,3,2),(14,10,7),(30,22,15),(58,44,30),(96,78,54),(154,132,100),(214,198,166)])  # dark loam → faint thread
-LUT_MYCEL=make_lut([(6,6,5),(18,16,13),(40,36,29),(82,76,62),(140,132,112),(200,194,174),(240,238,224)]) # cool ivory mycelium
+LUT_SUBST=make_lut([(5,4,3),(22,16,11),(52,40,28),(98,80,56),(152,130,98),(200,182,150),(230,216,186)])  # dark loam → emerging thread
+LUT_MYCEL=make_lut([(8,8,7),(36,34,28),(82,78,64),(142,136,116),(198,192,170),(228,224,206),(246,244,232)]) # ivory mycelium reads in the low-mids
 LUT_FRUIT=make_lut([(8,5,3),(30,17,9),(66,36,17),(112,66,30),(164,102,46),(210,154,82),(240,208,150)])    # earthy → amber → ochre cap
 LUT_FOXF =make_lut([(2,5,3),(6,22,11),(14,50,24),(30,92,44),(78,156,78),(156,216,124),(222,250,192)])    # foxfire green → pale glow
 PALS=[LUT_SUBST,LUT_MYCEL,LUT_FRUIT,LUT_FOXF]
@@ -55,13 +55,13 @@ def relief(h01, lut, strength=3.6):
     shade=np.clip((gx*lx+gy*ly+nz*lz)*inv,0,1)
     idx=np.clip((h01*255),0,255).astype(np.int32)
     base=lut[idx]
-    col=base*(0.40+0.72*shade)[...,None]            # warm ambient even in the deep soil
+    col=base*(0.46+0.66*shade)[...,None]            # warm ambient even in the deep soil
     spec=np.clip(shade-0.80,0,1)*5.0*np.clip(h01-0.30,0,1)
     col+=spec[...,None]*np.array([250,238,208],np.float32)   # moist bone sheen on hyphal crests
     return np.clip(col,0,255).astype(np.uint8)
 def vig(n):
     yy,xx=np.mgrid[0:n,0:n]; r=np.hypot((xx-n/2)/(n/2),(yy-n/2)/(n/2))
-    return np.clip(1-0.54*np.clip(r-0.48,0,1)**1.9,0,1).astype(np.float32)[...,None]
+    return np.clip(1-0.48*np.clip(r-0.50,0,1)**1.9,0,1).astype(np.float32)[...,None]
 VIG=vig(WIN)
 def lerp(a,b,t): return a+(b-a)*t
 def ease(z): return 0.5-0.5*np.cos(np.clip(z,0,1)*np.pi)
