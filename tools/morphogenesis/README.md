@@ -39,6 +39,7 @@ mito-switch) — on **all four axes**: simulation path, palette family, camera l
 | `peacock`   | iridescent ocelli (feather eyes) | spots ↔ mitosis | concentric gold→emerald→peacock-blue→pupil by dome height | tight **drift** among eyes |
 | `feathers`  | iridescent plumage (starling/grackle) | worms ↔ stripes | structural-colour barbs under raking light | combing **drift** |
 | `radiating` | a chromatic mandala | spots → mitosis → coral → mitosis → spots | screen-space radial hue rings flowing outward | centred gentle **zoom** |
+| `fungal`    | the mycelial life cycle — one spore to fruiting body | germination(coral) → hyphae(worms) → mycelium(labyrinth) → anastomosis → primordia(u-skate) → fruiting(mitosis) → sporulation(negatons) → humus | dark humus → ivory mycelium → amber fruiting → foxfire-green spores | travelling diagonal **push-in** to the fruiting climax, then ease back |
 
 Each compositor honours three modes so you can preview before a full encode (HANDOFF Lesson 8):
 
