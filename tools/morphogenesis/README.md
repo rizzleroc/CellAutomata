@@ -52,6 +52,23 @@ python3 tools/morphogenesis/terra_film.py             # full render           �
 Generators accept `MORPH_NF` to shrink the frame count for smoke tests:
 `MORPH_NF=600 node tools/morphogenesis/terra_gen.mjs`.
 
+## Companion reel — `ontogeny` (the *other* origin story)
+
+`ontogeny_gen.mjs` + `ontogeny_film.py` don't use Gray–Scott at all — they render the real
+**[`docs/ontogeny/`](../../docs/ontogeny/)** app (the human-development simulation) as a vertical
+reel, driving its own engine end to end: `sim.js` `conceive()` for the outcome, `render.js`
+`buildHeight()` for the specimen height field, and `sem.js` for the warm-sepia micrograph. The
+Python side rebuilds the app's **vitrine UI** — register · SEM stage (corner-mats · LIVE·SEM ·
+live count) · caption · diagnosis (verdict · membranes · stats · timeline) — at 1080×1920. The
+showcased scenario is the app's own default: identical **MCDA twins** (seed 7), so the embryo
+visibly *splits* mid-reel. Same two-stage contract:
+
+```bash
+node tools/morphogenesis/ontogeny_gen.mjs && python3 tools/morphogenesis/ontogeny_film.py
+# smoke (resample the whole timeline, then preview a vitrine frame):
+ONTO_NF=300 node tools/morphogenesis/ontogeny_gen.mjs && python3 tools/morphogenesis/ontogeny_film.py testc 150
+```
+
 ## Requirements
 `node` (for the engine), `python3` with `numpy`, `Pillow`, `imageio_ffmpeg` (ffmpeg is bundled — no
 system ffmpeg needed). The fonts live in `docs/web8/assets/fonts/`.
