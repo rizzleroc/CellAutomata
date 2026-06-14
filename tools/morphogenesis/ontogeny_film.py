@@ -172,7 +172,8 @@ def compose_frame(f):
     # caption
     kicker(cv,(W//2,1206),fr['capLabel'],22,TEAL,0.9)
     text(cv,(W//2,1262),fr['capTitle'],F_disp(56),INK,1.0)
-    wrapped(cv,(W//2,1306),fr['capBlurb'],F_read(30),MUT,0.95,940,38,anc="ma")
+    blurb=fr['capBlurb'].replace("→","->").replace("↔","<->")   # Crimson Pro lacks the arrow glyphs
+    wrapped(cv,(W//2,1306),blurb,F_read(30),MUT,0.95,940,38,anc="ma")
     # diagnosis
     layer(cv,lambda d:d.line([(60,1432),(1020,1432)],fill=(*HAIR,40),width=1))
     kicker(cv,(60,1464),"outcome · the diagnosis",20,INKS,0.9,anc="lm",maxw=520)
