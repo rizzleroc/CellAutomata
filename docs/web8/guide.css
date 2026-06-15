@@ -7,7 +7,7 @@
 .guide-root {
   position: absolute;
   left: 18px;
-  bottom: 18px;
+  bottom: 76px; /* clear the instrument (Run / Explode / View) bar at the foot */
   z-index: 40;
   width: min(330px, 46vw);
   display: flex;
@@ -148,11 +148,41 @@
 @media (max-width: 860px) {
   .guide-root {
     left: 10px;
-    bottom: 10px;
+    bottom: 64px;
     width: min(300px, 72vw);
   }
   .amoeba-guide {
     transform: scale(0.82);
     transform-origin: left bottom;
   }
+}
+
+/* minimise toggle — collapse to just the amoeba (click it to re-open) */
+.guide-min {
+  position: absolute;
+  top: 0;
+  right: 0;
+  pointer-events: auto;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  border: 1px solid #1f4f4c;
+  background: rgba(8, 11, 17, 0.92);
+  color: #8c8a82;
+  font-size: 14px;
+  line-height: 1;
+  cursor: pointer;
+  z-index: 2;
+}
+.guide-min:hover,
+.guide-min:focus-visible {
+  border-color: #39d4c8;
+  color: #e6e0d0;
+}
+.guide-root.collapsed {
+  width: auto;
+}
+.guide-root.collapsed .guide-bubble,
+.guide-root.collapsed .guide-controls {
+  display: none;
 }

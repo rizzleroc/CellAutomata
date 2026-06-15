@@ -166,12 +166,27 @@ function buildPanel(host) {
     chips.appendChild(b);
   }
 
-  cv.addEventListener('click', () => { inputEl?.focus(); say('Ask me to run it, change speed or view, switch stages, or explain what you’re seeing.', 'talking'); });
+  const min = document.createElement('button');
+  min.type = 'button';
+  min.className = 'guide-min';
+  min.textContent = '–';
+  min.setAttribute('aria-label', 'Minimise the guide');
+  min.addEventListener('click', () => {
+    const collapsed = root.classList.toggle('collapsed');
+    min.textContent = collapsed ? '+' : '–';
+    min.setAttribute('aria-label', collapsed ? 'Expand the guide' : 'Minimise the guide');
+  });
+
+  cv.addEventListener('click', () => {
+    if (root.classList.contains('collapsed')) { root.classList.remove('collapsed'); min.textContent = '–'; }
+    inputEl?.focus();
+  });
 
   controls.appendChild(form);
   controls.appendChild(chips);
   dock.appendChild(cv);
   dock.appendChild(controls);
+  root.appendChild(min);
   root.appendChild(bubble);
   root.appendChild(dock);
   host.appendChild(root);
@@ -254,7 +269,7 @@ function startGuide(cv) {
 
 // ── wiring ────────────────────────────────────────────────────────────────────
 function mount() {
-  const host = document.querySelector('.specimen') || document.body;
+  const host = document.querySelector('.panes') || document.querySelector('.specimen') || document.body;
   if (getComputedStyle(host).position === 'static') host.style.position = 'relative';
   const cv = buildPanel(host);
   startGuide(cv);
