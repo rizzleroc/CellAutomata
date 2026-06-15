@@ -65,7 +65,8 @@ function countLabel(o, day) {
 const hbuf = new Float32Array(BASE * BASE);
 const rgba = new Uint8ClampedArray(OUT * OUT * 4);
 const rgb = Buffer.alloc(OUT * OUT * 3);
-const fd = fs.openSync('/tmp/ontogeny_field.bin', 'w');
+const STEM = process.env.ONTO_OUT || '/tmp/ontogeny';
+const fd = fs.openSync(`${STEM}_field.bin`, 'w');
 const meta = {
   W: OUT, BASE, SCALE, NF, LAST,
   outcome: {
@@ -94,5 +95,5 @@ for (let f = 0; f < NF; f++) {
   if (f % 200 === 0) console.log('frame', f, '/', NF, ((Date.now() - t0) / 1000).toFixed(0) + 's', ch.t, 'day', Math.round(day), c.n, c.unit);
 }
 fs.closeSync(fd);
-fs.writeFileSync('/tmp/ontogeny_meta.json', JSON.stringify(meta));
+fs.writeFileSync(`${STEM}_meta.json`, JSON.stringify(meta));
 console.log('DONE', NF, 'frames', ((Date.now() - t0) / 1000).toFixed(0) + 's', '·', outcome.diagnosis);
