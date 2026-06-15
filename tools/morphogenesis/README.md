@@ -132,6 +132,8 @@ aurora-relief reel.
 node tools/morphogenesis/gs_sweep.mjs s11 0.030 0.050 0.052 0.059 8 8 100 2800
 # finalists -> reel:
 node tools/morphogenesis/gs_deepdive_gen.mjs && python3 tools/morphogenesis/gs_deepdive_film.py
+# premium cut — 8 best at 512², a slow eased descent into the texture + bloom glow:
+node tools/morphogenesis/gs_deepdive2_gen.mjs && python3 tools/morphogenesis/gs_deepdive2_film.py
 ```
 
 ## Requirements
