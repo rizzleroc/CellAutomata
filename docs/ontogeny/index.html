@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="color-scheme" content="dark">
+<meta name="theme-color" content="#07090d">
+<meta name="description" content="cellauto · ontogeny — a real, controllable simulation of the origin of an individual life: sperm + egg → zygote → development → birth, and the conditions that make identical/fraternal twins, triplets, quintuplets, and more.">
+<title>cellauto · ontogeny — the origin of a life</title>
+<link rel="stylesheet" href="./styles.css">
+</head>
+<body>
+<a class="skip-link" href="#specimen">Skip to the specimen</a>
+<noscript><div class="noscript-note">cellauto · ontogeny is a live simulation — please enable JavaScript.</div></noscript>
+
+<div class="vitrine">
+  <div class="grain" aria-hidden="true"></div>
+  <div class="vignette" aria-hidden="true"></div>
+  <div class="sr-only" aria-live="polite" id="srStatus"></div>
+
+  <!-- ── top register ── -->
+  <header class="register">
+    <div class="register-brand">
+      <span class="brand-mark" id="statusDot" title="idle" aria-hidden="true"></span>
+      <h1 class="brand-word">cellauto</h1>
+      <span class="brand-rule" aria-hidden="true"></span>
+      <span class="brand-sub">ontogeny · the origin of a life</span>
+      <a class="lab-link" href="../web7/" title="Back to the origin-of-life lab"
+         style="margin-left: 16px; color: var(--teal); text-decoration: none; font-family: var(--font-mono); font-size: 11px; letter-spacing: .12em;">↩ THE LAB</a>
+    </div>
+    <div class="register-meta" aria-hidden="true">
+      <span class="meta-day" id="metaDay">DAY 0</span>
+      <span class="meta-dot"></span>
+      <span class="meta-phase" id="metaPhase">FERTILISATION</span>
+      <span class="meta-dot"></span>
+      <span class="meta-cat">cat. — Ontogenesis</span>
+    </div>
+  </header>
+
+  <div class="body">
+
+    <!-- ── LEFT · conditions + parameters ── -->
+    <aside class="panel conditions" aria-label="Conditions and parameters">
+      <div class="panel-head"><span class="kicker">Conditions</span>
+        <span class="panel-meta" id="presetMeta">choose a scenario</span></div>
+      <div class="preset-list" id="presetList"><!-- injected --></div>
+      <p class="preset-hint" id="presetHint">Each scenario is a real way a life — or several — can begin. Pick one, or tune the parameters below and re-roll.</p>
+
+      <div class="panel-head"><span class="kicker">Parameters</span>
+        <span class="panel-meta">tune &amp; re-roll</span></div>
+      <div class="param-list" id="paramList"><!-- injected --></div>
+      <div class="panel-actions">
+        <button id="reseedBtn" class="ctl" type="button" title="Re-roll the dice with these parameters">↻ Re-roll</button>
+        <button id="randomBtn" class="ctl" type="button" title="Randomise the conditions">⚄ Surprise</button>
+      </div>
+    </aside>
+
+    <!-- ── CENTRE · the specimen ── -->
+    <main class="specimen" id="specimen" tabindex="-1" aria-labelledby="capTitle">
+      <section class="stage-wrap" aria-label="Developing specimen">
+        <canvas id="stage" class="stage" role="img" aria-label="The developing embryo"></canvas>
+        <div class="stage-mat" aria-hidden="true">
+          <span class="reg tl"></span><span class="reg tr"></span>
+          <span class="reg bl"></span><span class="reg br"></span>
+        </div>
+        <div class="stage-badge"><span class="rec" id="recDot"></span>LIVE · SEM</div>
+        <div class="stage-scale" id="stageScale" aria-hidden="true">day 0</div>
+      </section>
+
+      <div class="caption">
+        <div class="caption-label" id="capLabel">Stage</div>
+        <h2 class="caption-title" id="capTitle">Fertilisation</h2>
+        <p class="caption-blurb" id="capBlurb"></p>
+      </div>
+
+      <!-- transport -->
+      <div class="transport">
+        <button id="playBtn" class="play" type="button" aria-pressed="false">
+          <span class="play-ico" aria-hidden="true">▶</span><span class="play-lbl">Play life</span>
+        </button>
+        <button id="stepBtn" class="ctl" type="button" title="Step forward">Step ›</button>
+        <button id="resetBtn" class="ctl" type="button" title="Back to the gametes">⟲ Reset</button>
+        <input id="scrub" class="scrub" type="range" min="0" max="1000" value="0"
+               aria-label="Developmental timeline">
+      </div>
+    </main>
+
+    <!-- ── RIGHT · the diagnosis ── -->
+    <aside class="panel diagnosis" aria-label="Outcome">
+      <div class="panel-head"><span class="kicker">Outcome</span>
+        <span class="panel-meta" id="seedMeta">seed —</span></div>
+
+      <div class="verdict">
+        <div class="verdict-count" id="verdictCount">1</div>
+        <div class="verdict-of">
+          <div class="verdict-label" id="verdictLabel">singleton</div>
+          <div class="verdict-zyg" id="verdictZyg">—</div>
+        </div>
+      </div>
+
+      <figure class="membranes">
+        <canvas id="membranes" class="membranes-canvas" role="img" aria-label="Placentas and amniotic sacs diagram"></canvas>
+        <figcaption class="membranes-cap" id="membranesCap">membranes</figcaption>
+      </figure>
+
+      <dl class="stats">
+        <div><dt>Eggs ovulated</dt><dd id="statEggs">1</dd></div>
+        <div><dt>Placentas</dt><dd id="statPlacentas">1</dd></div>
+        <div><dt>Amniotic sacs</dt><dd id="statSacs">1</dd></div>
+        <div><dt>Chromosomes</dt><dd id="statChromo">46</dd></div>
+      </dl>
+
+      <div class="flags" id="flags" hidden></div>
+      <p class="diag-note" id="diagNote"></p>
+    </aside>
+
+  </div>
+</div>
+
+<!-- the SEM depth-shading engine (classic script, sets window.SEM) — same pipeline as the labs -->
+<script src="./sem.js"></script>
+<script type="module" src="./app.js"></script>
+</body>
+</html>
