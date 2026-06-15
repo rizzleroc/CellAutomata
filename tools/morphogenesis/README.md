@@ -118,6 +118,22 @@ node tools/morphogenesis/gen.mjs grayscott 220 130 1 w 0.062 0.0609             
 python3 tools/morphogenesis/wild_spectrum_film.py    # -> /tmp/web8_wild_spectrum.mp4
 ```
 
+## Deep dive — searching F/k space with an agent swarm
+
+`gs_sweep.mjs` combs a rectangle of Gray–Scott (F,k) space, scores each point for
+structure/complexity/motion, and emits a 6-up montage + ranked JSON for an agent to judge **by eye**.
+A swarm of agents (one per region) sweeps the whole plane in parallel; `gs_curate.mjs` re-renders the
+champions honestly (full SEM) to drop the per-tile-normalisation artefacts; `gs_deepdive_gen.mjs`
+matures the finalists and captures their living dynamics; `gs_deepdive_film.py` renders them as an
+aurora-relief reel.
+
+```bash
+# one region (each swarm agent runs one):
+node tools/morphogenesis/gs_sweep.mjs s11 0.030 0.050 0.052 0.059 8 8 100 2800
+# finalists -> reel:
+node tools/morphogenesis/gs_deepdive_gen.mjs && python3 tools/morphogenesis/gs_deepdive_film.py
+```
+
 ## Requirements
 `node` (for the engine), `python3` with `numpy`, `Pillow`, `imageio_ffmpeg` (ffmpeg is bundled — no
 system ffmpeg needed). The fonts live in `docs/web8/assets/fonts/`.
