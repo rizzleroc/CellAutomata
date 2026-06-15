@@ -52,8 +52,8 @@ LUT=make_lut([(6,5,20),(28,12,60),(74,18,104),(150,30,120),(214,64,84),(244,130,
 def relief(h01):
     gy,gx=np.gradient(h01); lx,ly,lz=-0.5,-0.55,0.66; nz=1/3.4
     inv=1.0/np.sqrt(gx*gx+gy*gy+nz*nz); shade=np.clip((gx*lx+gy*ly+nz*lz)*inv,0,1)
-    hs=np.clip(h01/0.42,0,1); idx=np.clip(hs*255,0,255).astype(np.int32); base=LUT[idx]
-    col=base*(0.30+0.80*shade)[...,None]
+    hs=np.clip(h01/0.40,0,1); idx=np.clip(hs*255,0,255).astype(np.int32); base=LUT[idx]
+    col=base*(0.36+0.78*shade)[...,None]
     spec=np.clip(shade-0.82,0,1)*5.0*np.clip(hs-0.25,0,1)
     col+=spec[...,None]*np.array([255,240,210],np.float32)
     return col   # float 0..255
@@ -64,7 +64,7 @@ VIG=vig(WIN)
 def ease(z): z=min(1,max(0,z)); return z*z*(3-2*z)
 def window(idx,lf,t):
     a=readfield(idx,lf)
-    z=ease(t); cs=int(round(R*(0.94-0.64*z))); cs=max(48,min(R,cs))    # slow dive: 0.94R -> 0.30R
+    z=ease(t); cs=int(round(R*(0.52-0.22*z))); cs=max(48,min(R,cs))    # macro dive: 0.52R -> 0.30R (always big crisp features)
     cxp=0.5+0.12*np.sin(t*np.pi-0.6); off=int((R-cs)*np.clip(cxp,0,1))
     x=max(0,min(R-cs,off)); y=max(0,min(R-cs,int((R-cs)*0.5)))
     h01=np.asarray(Image.fromarray(a[y:y+cs,x:x+cs],mode='F').resize((WIN,WIN),Image.LANCZOS),np.float32)

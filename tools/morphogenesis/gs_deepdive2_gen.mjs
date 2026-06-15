@@ -17,7 +17,7 @@ const PAT = [
   [0.0529, 0.0660, "Gliding Solitons",  "mobile worm-solitons weaving through the lattice"],
   [0.0620, 0.0609, "U-skate Crawlers",  "self-replicating spots that crawl and collide"],
   [0.0614, 0.0630, "Deep Labyrinth",    "the densest, most intricate maze the search found"],
-  [0.0700, 0.0520, "Negaton Holes",     "inverse spots — dark voids drifting in a bright sea"],
+  [0.0500, 0.0630, "Looped Coral",      "coral ridges that close into rare rings and eyes"],
 ];
 const u16 = new Uint16Array(R * R), h = new Float32Array(R * R);
 const fd = fs.openSync('/tmp/dd2_field.bin', 'w'); const t0 = Date.now();
