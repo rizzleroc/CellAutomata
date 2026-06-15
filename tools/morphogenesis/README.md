@@ -101,6 +101,23 @@ for p in mz-mcma conjoined triplets-2-1 quints triploidy trisomy chimerism vanis
 python3 tools/morphogenesis/wild_film.py        # -> /tmp/web8_wild_outcomes.mp4
 ```
 
+## Wild spectrum — `wild_spectrum_film.py`
+
+The *whole lab* driven to its extremes, one wild outcome per stage: Conway overpopulation collapse,
+Gray–Scott u-skate solitons, a Miller–Urey lightning storm, runaway autocatalysis, violent vesicle
+budding, a proton flood, runaway polymerisation, shattered chirality, the RNA & digital-life **error
+catastrophes**, a dissolving genetic code, boom-and-bust selection, a LUCA that never converges — and
+quintuplets as life's human extreme. Each plate is the **real** sim at wild parameters, fed in via a
+new `gen.mjs` `GEN_PARAMS` env (JSON of `{param:value}`):
+
+```bash
+GEN_PARAMS='{"mutation":0.3}'   node tools/morphogenesis/gen.mjs rna 120 130 3 n   # error catastrophe
+GEN_PARAMS='{"density":0.5}'    node tools/morphogenesis/gen.mjs conway 0 130 1 n  # overpopulation
+node tools/morphogenesis/gen.mjs grayscott 220 130 1 w 0.062 0.0609                # u-skate solitons
+# …then:
+python3 tools/morphogenesis/wild_spectrum_film.py    # -> /tmp/web8_wild_spectrum.mp4
+```
+
 ## Requirements
 `node` (for the engine), `python3` with `numpy`, `Pillow`, `imageio_ffmpeg` (ffmpeg is bundled — no
 system ffmpeg needed). The fonts live in `docs/web8/assets/fonts/`.

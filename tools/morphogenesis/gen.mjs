@@ -9,6 +9,7 @@ load(`docs/web8/experiment/rules/${ID}.js`);
 const key=ID.replace('natural_selection','natural-selection');
 const g=CA.RULES[key]();
 if(FF&&g.params&&g.params.F){g.params.F.value=+FF;} if(KK&&g.params&&g.params.k){g.params.k.value=+KK;}
+if(process.env.GEN_PARAMS){const o=JSON.parse(process.env.GEN_PARAMS); for(const pk in o){ if(g.params&&g.params[pk]){ g.params[pk].value=o[pk]; if(g.onParamChange){try{g.onParamChange(pk);}catch(e){}} } }}
 const W=g.width,H=g.height; g.reset();
 if(SCAT){function mul(a){return function(){a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296;};} const rng=mul(987654); for(let i=0;i<+SCAT;i++) g.paint((rng()*W)|0,(rng()*H)|0,5,'paint');}
 const pn=new Uint8ClampedArray(W*H*4);

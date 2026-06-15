@@ -14,6 +14,7 @@
     let nxt = new Uint8Array(N);
     let age = new Uint8Array(N);        // frames-alive, for a touch of height texture
     let generation = 0;
+    let dens = 0.30;
 
     function glider(x, y, o) {
       // four glider phases/orientations — a moving thing, so the field never dies
@@ -26,7 +27,7 @@
     }
     function seed() {
       cur.fill(0); nxt.fill(0); age.fill(0); generation = 0;
-      for (let i = 0; i < N; i++) if (Math.random() < 0.30) cur[i] = 1;   // primordial soup
+      for (let i = 0; i < N; i++) if (Math.random() < dens) cur[i] = 1;   // primordial soup
       for (let k = 0; k < 14; k++) glider((Math.random()*W)|0, (Math.random()*H)|0, (Math.random()*4)|0);
     }
 
@@ -39,7 +40,7 @@
       width: W, height: H,
       params: { density: { label: "soup density", min: 0.05, max: 0.6, step: 0.01, value: 0.30 } },
 
-      reset() { seed(); },
+      reset() { if (this.params && this.params.density) dens = this.params.density.value; seed(); },
       randomize() { seed(); },
       clear() { cur.fill(0); nxt.fill(0); age.fill(0); generation = 0; },
 
