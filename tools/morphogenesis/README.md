@@ -87,6 +87,20 @@ ONTO_PRESET=singleton node tools/morphogenesis/ontogeny_gen.mjs
 python3 tools/morphogenesis/origin_film.py     # -> /tmp/web8_origins.mp4
 ```
 
+## Wild outcomes gallery — `wild_film.py`
+
+`wild_film.py` is a gallery of the ontogeny engine's most dramatic *outcomes*, eight to a reel:
+identical MCMA, conjoined, 2+1 triplets, quintuplets, triploidy, trisomy 21, chimerism, the
+vanishing twin. Each plate develops the **real** specimen for that scenario (per-scenario bins via
+`ONTO_OUT`) under its verdict + the flags that make it wild (amber for non-viable/warn, magenta
+otherwise).
+
+```bash
+for p in mz-mcma conjoined triplets-2-1 quints triploidy trisomy chimerism vanishing; do
+  ONTO_PRESET=$p ONTO_OUT=/tmp/onto_$p ONTO_NF=240 node tools/morphogenesis/ontogeny_gen.mjs; done
+python3 tools/morphogenesis/wild_film.py        # -> /tmp/web8_wild_outcomes.mp4
+```
+
 ## Requirements
 `node` (for the engine), `python3` with `numpy`, `Pillow`, `imageio_ffmpeg` (ffmpeg is bundled — no
 system ffmpeg needed). The fonts live in `docs/web8/assets/fonts/`.
