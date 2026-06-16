@@ -122,9 +122,7 @@ class Engine:
             "width": self.width,
             "height": self.height,
             "step_count": self.step_count,
-            "rng_state": list(self.rule.rng.getstate())
-            if hasattr(self.rule, "rng")
-            else None,
+            "rng_state": list(self.rule.rng.getstate()) if hasattr(self.rule, "rng") else None,
             "state": self.rule.serialize_state(self.state),
         }
 
