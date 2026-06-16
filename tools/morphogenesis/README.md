@@ -149,6 +149,20 @@ ten real champions as a premium deep-dive reel.
 node tools/morphogenesis/gs_deepsearch_gen.mjs && python3 tools/morphogenesis/gs_deepsearch_film.py
 ```
 
+## Unique animations — `anim_probe.mjs` + `unique_anim_film.py`
+
+A 15-agent swarm probed **every** rule in the lab to find each one's single most *unique animation*
+(distinctive motion, not a static pattern). `anim_probe.mjs` runs any rule and emits a time-filmstrip
+(K snapshots) + a motion score so an agent can judge the dynamics by eye; `gen.mjs` gained a `GEN_OUT`
+env so several regimes of one rule (Gray–Scott chaos vs mitosis) can coexist; `unique_anim_film.py`
+plays the ten most distinct ones frame-by-frame (native colour — the motion is the star).
+
+```bash
+node tools/morphogenesis/anim_probe.mjs gsmito grayscott 200 900 6   # a time-filmstrip + motion score
+GEN_OUT=/tmp/g_gschaos node tools/morphogenesis/gen.mjs grayscott 100 130 3 n 0.026 0.051 60
+python3 tools/morphogenesis/unique_anim_film.py     # -> /tmp/web8_unique_animations.mp4
+```
+
 ## Requirements
 `node` (for the engine), `python3` with `numpy`, `Pillow`, `imageio_ffmpeg` (ffmpeg is bundled — no
 system ffmpeg needed). The fonts live in `docs/web8/assets/fonts/`.
