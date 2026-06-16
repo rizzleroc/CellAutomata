@@ -85,3 +85,47 @@ def test_load_rejects_unknown_rule(tmp_path: Path):
 
     with pytest.raises(ValueError, match="unknown rule"):
         Engine.load(path, REGISTRY)
+
+
+def test_rng_state_is_json_not_pickle(tmp_path: Path):
+    """SEC-001: the saved RNG state is a plain JSON list, never a pickled blob,
+    and it still round-trips back into a working engine."""
+    import json
+
+    engine = Engine(width=4, height=4, rule=NaturalSelectionRule(), seed=1)
+    engine.step()
+    path = tmp_path / "snap.json"
+    engine.save(path)
+
+    data = json.loads(path.read_text())
+    assert isinstance(data["rng_state"], list)  # not a base64 pickle str
+
+    loaded = Engine.load(path, REGISTRY)
+    assert loaded.step_count == engine.step_count
+
+
+def test_load_rejects_pickled_or_malformed_rng_state(tmp_path: Path):
+    """SEC-001 regression: a snapshot must never be unpickled. A legacy
+    base64/pickle rng_state (a str) — or any non-conforming shape — is rejected
+    with ValueError instead of being executed."""
+    import json
+
+    import pytest
+
+    engine = Engine(width=4, height=4, rule=NaturalSelectionRule(), seed=1)
+    engine.step()
+    path = tmp_path / "snap.json"
+    engine.save(path)
+    data = json.loads(path.read_text())
+
+    # The old (dangerous) shape: a base64-encoded pickle string.
+    data["rng_state"] = "gASVdummy-base64-pickle-payload"
+    path.write_text(json.dumps(data))
+    with pytest.raises(ValueError):
+        Engine.load(path, REGISTRY)
+
+    # A structurally wrong shape is rejected too.
+    data["rng_state"] = [1, "not-ints", None]
+    path.write_text(json.dumps(data))
+    with pytest.raises(ValueError):
+        Engine.load(path, REGISTRY)
