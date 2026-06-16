@@ -9,7 +9,9 @@ change, update this file in the *same* PR. (See "Maintaining this file".)
 CellAutomata is an origin-of-life **cellular-automata "lab"**. Two halves:
 
 - **Python engine** — `cellauto/` (rules, SEM renderer, CLI/GUI). Packaged via
-  `pyproject.toml`; entry `main.py`. Tested with pytest under `tests/`.
+  `pyproject.toml`; entry point is the `cellauto` console script (or
+  `python -m cellauto`) — `main.py` at the repo root is only a v1 deprecation
+  stub. Tested with pytest under `tests/`.
 - **Static web site** — `docs/`, deployed to **GitHub Pages**. The landing hub
   is `docs/index.html` (the "Catalytic Silence" ecosystem hub); it links into
   the clients below. Default live URL: `https://rizzleroc.github.io/CellAutomata/`.
@@ -92,8 +94,12 @@ pytest -q
   re-import with a fresh query: `await import('./sim.js?b=' + Date.now())`.
 - **Each client owns its copy** of `sem.js` (and other shared helpers). A fix in
   one is not a fix in all — propagate deliberately.
-- **web7 and web8 share the experiment rules** (`experiment/rules/*.js`). Changes
-  there land in both; the `controls.mjs` gate checks parity.
+- **web7 and web8 are *supposed* to share the experiment rules**
+  (`experiment/rules/*.js`), but parity is maintained **by hand-copy and is not
+  enforced** — no test diffs the two clients, and the per-client `sem.js` has
+  **already drifted** (web7 runs an older copy than web8/ontogeny, with
+  different shading constants). Propagate changes to both deliberately; a
+  parity gate is an open gap.
 
 ## Ontogeny engine — calibration (test-locked science)
 
@@ -126,6 +132,23 @@ them; track work against the linked issues.
    `grayscott.js:16-21`); **natural-selection** (only `amoebaLifespan`);
    **life** (the only stage with no regime picker). Guard a minimum control set
    per rule with a smoke test.
+3. **Test gates must verify the science — issue #67.** Several smoke gates pass
+   on blank/garbage output (ontogeny lights 100% of pixels from the `0.10`
+   substrate fill alone; the lab gate only checks opaque + >1 colour), and the
+   ontogeny "stochastic across seeds" test is dead (every preset sets `_force`).
+   Assert *structure* (specimen relief > substrate) and that the sim evolves.
+4. **CI & shared-code integrity — issue #68.** Headless `pytest` is red (a SEM
+   test pulls in `app.py` → `import tkinter`) but masked by the 80% coverage
+   gate; `pages.yml` skips the JS gate on root-only changes (`paths:["docs/**"]`);
+   there is **no** web7↔web8 parity gate and `sem.js` has already drifted.
+5. **Docs/repo drift — issue #69.** Stale version claims (PRD.md/README say
+   4.1.1 / "v4.0 alpha" / "12-stage"; reality is 4.2.0 / 13 stages), client
+   sprawl (web8 unlinked from the hub), a `railway.toml` healthcheck pointed at
+   an orphaned client, and duplicated committed assets.
+6. **Security audit tracker — issues #44 / #35–#43.** SEC-001 (pickle RCE in
+   `engine.py` snapshot load) is fixed; the input-validation Highs (snapshot
+   dims/arrays #36/#37, path traversal #38, image-decode #39, dep pinning #41,
+   resource bounds #42, CI scan #43) remain open — keep them on the radar.
 
 ## Maintaining this file
 
