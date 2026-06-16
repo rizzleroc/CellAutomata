@@ -136,6 +136,19 @@ node tools/morphogenesis/gs_deepdive_gen.mjs && python3 tools/morphogenesis/gs_d
 node tools/morphogenesis/gs_deepdive2_gen.mjs && python3 tools/morphogenesis/gs_deepdive2_film.py
 ```
 
+### Deeper search (motion-weighted)
+
+A second swarm pass adds a **sustained-motion** term to `gs_sweep.mjs` (favouring solitons / waves /
+chaos) over a finer 11×11 grid focused on the alive band (~1,900 points). It surfaced a fresh seam of
+**defect / hole / coexistence** regimes — and, honestly, also showed that the low-kill (k≈0.052)
+"spiral / target-wave" picks are *per-tile-normalisation artifacts* that saturate to a flat field at
+full resolution (caught by re-rendering). `gs_deepsearch_gen.mjs` + `gs_deepsearch_film.py` render the
+ten real champions as a premium deep-dive reel.
+
+```bash
+node tools/morphogenesis/gs_deepsearch_gen.mjs && python3 tools/morphogenesis/gs_deepsearch_film.py
+```
+
 ## Requirements
 `node` (for the engine), `python3` with `numpy`, `Pillow`, `imageio_ffmpeg` (ffmpeg is bundled — no
 system ffmpeg needed). The fonts live in `docs/web8/assets/fonts/`.
