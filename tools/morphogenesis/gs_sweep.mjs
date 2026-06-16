@@ -28,10 +28,14 @@ function run(F, k) {
   let varr = 0; for (const x of v) varr += (x - mean) ** 2; varr /= v.length; const std = Math.sqrt(varr);
   if (std < 0.015) return { F: +F.toFixed(4), k: +k.toFixed(4), score: 0, mean: +mean.toFixed(3), std: +std.toFixed(3), edge: 0, live: 0, v };
   let edge = 0; for (let y = 1; y < H - 1; y++) for (let x = 1; x < W - 1; x++) { const i = y * W + x; const gx = v[i + 1] - v[i - 1], gy = v[i + W] - v[i - W]; edge += Math.hypot(gx, gy); } edge /= ((W - 2) * (H - 2));
-  for (let s = 0; s < 6; s++) g.step(); const v2 = new Float32Array(W * H); g.renderHeight(v2);
-  let live = 0; for (let i = 0; i < v.length; i++) live += Math.abs(v2[i] - v[i]); live /= v.length;
+  // sustained motion over two windows (filters out transient settling — finds solitons/waves/chaos)
+  for (let s = 0; s < 14; s++) g.step(); const va = new Float32Array(W * H); g.renderHeight(va);
+  let m1 = 0; for (let i = 0; i < v.length; i++) m1 += Math.abs(va[i] - v[i]); m1 /= v.length;
+  for (let s = 0; s < 14; s++) g.step(); const vb = new Float32Array(W * H); g.renderHeight(vb);
+  let m2 = 0; for (let i = 0; i < va.length; i++) m2 += Math.abs(vb[i] - va[i]); m2 /= va.length;
+  const live = Math.min(m1, m2);
   let pen = 1; if (mean > 0.55) pen *= 0.4; if (mean < 0.02) pen *= 0.3;
-  const score = edge * (0.3 + std) * (0.5 + Math.min(1, live * 40)) * pen;
+  const score = edge * (0.3 + std) * (0.5 + Math.min(1.7, live * 55)) * pen;   // motion weighted heavily
   return { F: +F.toFixed(4), k: +k.toFixed(4), score: +score.toFixed(5), mean: +mean.toFixed(3), std: +std.toFixed(3), edge: +edge.toFixed(4), live: +live.toFixed(4), v };
 }
 // sweep
