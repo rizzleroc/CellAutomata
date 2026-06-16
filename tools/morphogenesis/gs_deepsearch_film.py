@@ -65,10 +65,11 @@ VIG=vig(WIN)
 def ease(z): z=min(1,max(0,z)); return z*z*(3-2*z)
 def window(idx,lf,t):
     a=readfield(idx,lf)
-    z=ease(t); cs=int(round(R*(0.52-0.22*z))); cs=max(48,min(R,cs))
-    cxp=0.5+0.12*np.sin(t*np.pi-0.6); off=int((R-cs)*np.clip(cxp,0,1))
-    x=max(0,min(R-cs,off)); y=max(0,min(R-cs,int((R-cs)*0.5)))
-    h01=np.asarray(Image.fromarray(a[y:y+cs,x:x+cs],mode='F').resize((WIN,WIN),Image.LANCZOS),np.float32)
+    z=ease(t); cs=R*(0.52-0.22*z); cs=max(48.0,min(float(R),cs))        # float crop size — no integer stepping
+    cxp=0.5+0.10*np.sin(t*np.pi-0.6); x0=(R-cs)*float(np.clip(cxp,0,1)); y0=(R-cs)*0.5
+    x0=max(0.0,min(R-cs,x0)); y0=max(0.0,min(R-cs,y0))
+    # sub-pixel crop+zoom in one LANCZOS pass via a float box → glass-smooth camera (no jitter)
+    h01=np.asarray(Image.fromarray(a,mode='F').resize((WIN,WIN),Image.LANCZOS,box=(x0,y0,x0+cs,y0+cs)),np.float32)
     col=relief(h01)
     bp=np.clip(col-165,0,255).astype(np.uint8)
     blur=np.asarray(Image.fromarray(bp).filter(ImageFilter.GaussianBlur(9)),np.float32)

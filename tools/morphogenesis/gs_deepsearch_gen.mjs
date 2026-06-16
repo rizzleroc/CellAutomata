@@ -7,7 +7,7 @@ import path from 'node:path';
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
 globalThis.window = globalThis; globalThis.CA = { RULES: {} };
 const ev = (0, eval);
-const R = 512, M = 170, STEPF = 1;
+const R = 512, M = 170, STEPF = 2;     // 2 steps/frame (20 substeps) -> visibly alive, still smooth
 let gs = fs.readFileSync(`${ROOT}/docs/web8/experiment/rules/grayscott.js`, 'utf8');
 gs = gs.replace('const W = 220;', `const W = ${R};`).replace('const H = 220;', `const H = ${R};`); ev(gs);
 // [F, k, name, caption, seedMode] — the swarm's REAL dynamic finds (the k~0.052 "spiral/wave"
@@ -30,7 +30,7 @@ const fd = fs.openSync('/tmp/ds_field.bin', 'w'); const t0 = Date.now();
 PAT.forEach(([F, k, name, cap, mode], idx) => {
   const g = CA.RULES.grayscott(); g.params.F.value = F; g.params.k.value = k; g.reset();
   let s_ = (1234567 ^ ((F * 1e4) | 0) ^ (((k * 1e4) | 0) << 8)) >>> 0; const rnd = () => { s_ = (s_ * 1664525 + 1013904223) >>> 0; return s_ / 4294967296; };
-  const nseed = mode === 'wave' ? 42 : 200, rad = mode === 'wave' ? 4 : 5, warm = mode === 'wave' ? 3600 : 4200;
+  const nseed = mode === 'wave' ? 42 : 200, rad = mode === 'wave' ? 4 : 5, warm = mode === 'wave' ? 3600 : 3000;  // less mature -> more ongoing motion
   for (let n = 0; n < nseed; n++) g.paint((rnd() * R) | 0, (rnd() * R) | 0, rad, 'paint');
   for (let s = 0; s < (warm / 10) | 0; s++) g.step();
   for (let f = 0; f < M; f++) {
