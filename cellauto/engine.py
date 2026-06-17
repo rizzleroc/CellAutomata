@@ -10,10 +10,8 @@ v2.0.x: this rebuild closes three Phase 2 P0 bugs:
 
 from __future__ import annotations
 
-import base64
 import json
 import logging
-import pickle
 import random
 import time
 from collections import deque
@@ -25,6 +23,41 @@ from typing import Any
 from cellauto.rules.base import Rule
 
 log = logging.getLogger(__name__)
+
+
+def _decode_rng_state(raw: Any) -> tuple:
+    """Validate and rebuild a ``random.Random`` state from JSON.
+
+    Snapshots are untrusted input (the save → share → load feature), so the RNG
+    state is accepted ONLY in the plain ``random.getstate()`` shape —
+    ``(int, sequence-of-ints, float | None)`` — and anything else is refused
+    rather than executed. Legacy base64/pickle snapshots (a ``str``) are
+    rejected outright. This is what keeps ``Engine.load`` from being an RCE sink
+    (SEC-001): nothing here ever unpickles.
+    """
+    if isinstance(raw, str):
+        raise ValueError(
+            "refusing to load a legacy pickled rng_state; re-save the snapshot "
+            "with this version (pickle loading was removed for security)"
+        )
+    if not isinstance(raw, (list, tuple)) or len(raw) != 3:
+        raise ValueError("invalid rng_state in snapshot: expected a 3-element sequence")
+    version, internal, gauss_next = raw
+    if not isinstance(version, int) or isinstance(version, bool):
+        raise ValueError("invalid rng_state in snapshot: version must be an int")
+    if not isinstance(internal, (list, tuple)) or not all(
+        isinstance(x, int) and not isinstance(x, bool) for x in internal
+    ):
+        raise ValueError("invalid rng_state in snapshot: internal state must be ints")
+    if gauss_next is not None and not isinstance(gauss_next, (int, float)):
+        raise ValueError("invalid rng_state in snapshot: gauss_next must be a number or null")
+    state = (version, tuple(internal), None if gauss_next is None else float(gauss_next))
+    try:
+        # Validate against the real RNG without disturbing any live instance.
+        random.Random().setstate(state)
+    except (ValueError, TypeError, OverflowError) as exc:
+        raise ValueError(f"invalid rng_state in snapshot: {exc}") from exc
+    return state
 
 
 @dataclass
@@ -76,8 +109,10 @@ class Engine:
     def to_dict(self) -> dict:
         """JSON-safe snapshot including RNG state and rule config.
 
-        rng_state is base64-encoded pickle (the only portable, lossless way to
-        round-trip a Python Random state without depending on the internals).
+        rng_state is the plain ``random.Random.getstate()`` tuple — (version,
+        internal-state ints, gauss_next) — serialised directly as JSON. No
+        pickle, so loading a snapshot can never execute code (see
+        ``_decode_rng_state``).
         """
         return {
             "version": 2,
@@ -87,9 +122,7 @@ class Engine:
             "width": self.width,
             "height": self.height,
             "step_count": self.step_count,
-            "rng_state": base64.b64encode(pickle.dumps(self.rule.rng.getstate())).decode("ascii")
-            if hasattr(self.rule, "rng")
-            else None,
+            "rng_state": list(self.rule.rng.getstate()) if hasattr(self.rule, "rng") else None,
             "state": self.rule.serialize_state(self.state),
         }
 
@@ -116,9 +149,10 @@ class Engine:
         )
         engine.step_count = data["step_count"]
         engine.state = rule.deserialize_state(data["state"])
-        # Restore RNG state precisely so load-then-step matches continuous runs.
-        if data.get("rng_state") and hasattr(rule, "rng"):
-            rng_state = pickle.loads(base64.b64decode(data["rng_state"].encode("ascii")))
-            rule.rng.setstate(rng_state)
+        # Restore the RNG precisely so load-then-step matches a continuous run.
+        # SECURITY (SEC-001): rng_state is validated JSON, never unpickled, so a
+        # crafted snapshot cannot execute code on load.
+        if data.get("rng_state") is not None and hasattr(rule, "rng"):
+            rule.rng.setstate(_decode_rng_state(data["rng_state"]))
         log.info("loaded snapshot from %s (rule=%s step=%d)", path, rule_name, engine.step_count)
         return engine
