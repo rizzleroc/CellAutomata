@@ -1,0 +1,26 @@
+cff-version: 1.2.0
+message: "If you use cellauto in your work, please cite it as below."
+title: "cellauto — an origin-of-life cellular-automata laboratory"
+abstract: >-
+  A scientifically-grounded abiogenesis sandbox: a coupled origin-of-life
+  pipeline (reaction-diffusion, autocatalytic RAF sets, lipid vesicles,
+  hydrothermal-vent thermodynamics, homochirality, the RNA world and its
+  error threshold, genetic-code coevolution, coacervates, protocell selection,
+  and a LUCA distillation) rendered as live SEM-style micrographs, with a
+  desktop (Tk) client and static web clients.
+type: software
+authors:
+  - name: "rizzleroc"
+    website: "https://github.com/rizzleroc"
+version: "4.2.0"
+license: MIT
+repository-code: "https://github.com/rizzleroc/CellAutomata"
+url: "https://rizzleroc.github.io/CellAutomata/"
+date-released: "2026-06-17"
+keywords:
+  - origin of life
+  - abiogenesis
+  - cellular automata
+  - artificial life
+  - reaction-diffusion
+  - scientific visualization
