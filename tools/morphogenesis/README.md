@@ -163,6 +163,40 @@ GEN_OUT=/tmp/g_gschaos node tools/morphogenesis/gen.mjs grayscott 100 130 3 n 0.
 python3 tools/morphogenesis/unique_anim_film.py     # -> /tmp/web8_unique_animations.mp4
 ```
 
+## Deeper cuts — each rule's hidden opposite — `deeper_cuts_film.py`
+
+A second parameter-space swarm pushed every rule's knobs the *other* way to surface its hidden
+regime — the **opposite** of its signature animation: Gray–Scott wave-turbulence, racemic chirality
+froth, a LUCA that never converges, frozen rival codes, roving RNA master-islands, a vents
+wave-train, a Life famine collapse. The sources are the same `gen.mjs` native bins under `d…` tags
+(driven to the opposite regime via `GEN_OUT` + `GEN_PARAMS`); `deeper_cuts_film.py` plays the seven
+most surprising frame-by-frame in amber.
+
+```bash
+# one hidden regime (low-k Gray–Scott wave turbulence), into its own bin:
+GEN_OUT=/tmp/g_dgs GEN_PARAMS='{"F":0.018,"k":0.045}' node tools/morphogenesis/gen.mjs grayscott 120 280 3 n
+python3 tools/morphogenesis/deeper_cuts_film.py     # -> /tmp/web8_deeper_cuts.mp4
+```
+
+## Cymatics — sound made visible — `cymatics.mjs` + `cymatics_film.py`
+
+No lab rule makes true standing waves, so `cymatics.mjs` adds a small **driven Chladni-plate** engine:
+at drive frequency `F` the square membrane settles into the modal-resonance sum
+`u(x,y)=Σ A_mn(F)·sin(mπx)sin(nπy)`, amplitude `A_mn = drive / ((ω²−F²)² + (γF)²)`, `ω_mn=√(m²+n²)`.
+"Sand" collects on the **nodes** (`|u|≈0`) → the classic figure; sweeping `F` morphs it through the
+sequence (ring → grid → star → rosette → lattice). It emits either a montage strip for visual triage
+or a `gen.mjs`-format native bin for the compositor. An 8-agent swarm searched driver position,
+damping `γ` and frequency for the most striking sweeps; `cymatics_film.py` plays the eight best
+frame-by-frame with a live drive-frequency readout and a sweep scrubber.
+
+```bash
+# montage strip (low->high freq) for an agent to judge:  strip <tag> <f0> <f1> <K> [N M gamma dcx dcy]
+node tools/morphogenesis/cymatics.mjs strip ctr 4.6 7.6 6 240 14 0.7 0.5 0.5
+# a sweep clip (gen.mjs native format):                  gen   <tag> <f0> <f1> <NF> [N M gamma dcx dcy]
+node tools/morphogenesis/cymatics.mjs gen cymsharp 3.16 5.0 280 240 14 0.3 0.5 0.5
+python3 tools/morphogenesis/cymatics_film.py        # -> /tmp/web8_cymatics.mp4
+```
+
 ## Requirements
 `node` (for the engine), `python3` with `numpy`, `Pillow`, `imageio_ffmpeg` (ffmpeg is bundled — no
 system ffmpeg needed). The fonts live in `docs/web8/assets/fonts/`.
