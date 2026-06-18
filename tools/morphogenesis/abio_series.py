@@ -58,12 +58,12 @@ def vig(n):
 VIG = vig(WIN)
 def grade(im, warm, gA=3.6):
     x = im / 255.0
-    x = np.clip(0.045 + 0.93 * x, 0, 1); x = x * x * (3 - 2 * x); im = x * 255.0
-    hi = np.clip(im - 172, 0, 255)                                               # bloom: blur highlights at half-res
+    x = np.clip(0.03 + 0.94 * x, 0, 1); xc = x * x * (3 - 2 * x); x = 0.62 * xc + 0.38 * x; im = x * 255.0  # gentle S-curve (won't crush bright fields to white)
+    hi = np.clip(im - 190, 0, 255)                                               # bloom: only the brighter highlights, half-res
     small = Image.fromarray(hi.astype(np.uint8)).resize((WIN // 2, WIN // 2), Image.BILINEAR).filter(ImageFilter.GaussianBlur(8))
     hib = np.asarray(small.resize((WIN, WIN), Image.BILINEAR), np.float32)
     tint = np.array([1.0, 0.86, 0.66] if warm else [0.72, 0.86, 1.0], np.float32)
-    im = im + hib * 0.55 * tint
+    im = im + hib * 0.44 * tint
     lum = im.mean(2, keepdims=True) / 255.0
     im = im + np.random.randn(WIN, WIN, 1).astype(np.float32) * gA * (0.5 + 1.1 * lum * (1 - lum) * 4)
     return np.clip(im * VIG, 0, 255)
@@ -116,7 +116,7 @@ STAGE = {
    caps=["Countless lineages contended in the early world; almost all left no heirs.",
          "One lineage's chemistry prevailed, and seeded every survivor that followed.",
          "The last universal common ancestor — the root from which all life still grows."]),
- 'life': dict(tag='ab_life', mode='w', name="Life", sb=("5 µm", "× 7 000"), ctr=(0.44, 0.50), wide=0.66, rise=False,
+ 'life': dict(tag='ab_life', mode='w', name="Life", sb=("5 µm", "× 7 000"), ctr=(0.42, 0.50), wide=0.72, rise=False,
    caps=["Self-replicating, mutating, open-ended — by every test that matters, this is alive.",
          "Programs that eat, divide and inherit, spreading to colonise their world.",
          "From a lifeless chemistry, life — and in four billion years it has never once stopped."]),
@@ -152,8 +152,8 @@ def build_shots(st):
     cx, cy = st['ctr']; w = st['wide']; ry = 0.10 if st['rise'] else 0.0
     return [
       dict(kind=0, sf=(0.00, 0.55), cam=(w, w * 0.87, cx - 0.02, cy + ry, cx + 0.02, cy + ry * 0.4), L=280),
-      dict(kind=1, sf=(0.42, 0.86), cam=(w * 0.60, w * 0.46, cx, cy + ry * 0.5, cx + 0.03, cy - 0.02), L=270),
-      dict(kind=2, sf=(0.80, 1.00), cam=(w * 0.42, w * 0.35, cx - 0.03, cy, cx + 0.03, cy), L=252),
+      dict(kind=1, sf=(0.42, 0.86), cam=(w * 0.62, w * 0.48, cx, cy + ry * 0.5, cx, cy - 0.02), L=270),
+      dict(kind=2, sf=(0.80, 1.00), cam=(w * 0.44, w * 0.36, cx - 0.02, cy, cx + 0.02, cy), L=252),
     ]
 
 # ── microscope HUD ───────────────────────────────────────────────────────────
