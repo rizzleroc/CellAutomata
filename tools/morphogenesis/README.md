@@ -218,6 +218,21 @@ bash tools/morphogenesis/abio_gen.sh                                          # 
 python3 tools/morphogenesis/abiogenesis_film.py                              # -> /tmp/web8_abiogenesis.mp4
 ```
 
+### The series — `abio_series.py` + `run_series.sh`
+
+The same twelve SEM sources, recut as a **four-part ~2-minute documentary series** (one act per episode:
+I *A Dead World Stirs* · II *Cradles in the Deep* · III *The Thread of Information* · IV *Life Begins*).
+Each episode covers three specimens, and each specimen gets **three shots** — establishing → detail
+push-in → macro hold — with its own narration beat, so it reads as real documentary coverage rather
+than a single slow zoom. Continuity is carried by an episode title card and a "next time" teaser
+(the finale closes the series). Same grade as the reel, with a faster half-res bloom for the longer runs.
+
+```bash
+bash tools/morphogenesis/abio_gen.sh                       # sources (shared with the reel)
+python3 tools/morphogenesis/abio_series.py test 1 300      # preview one frame of episode 1
+bash tools/morphogenesis/run_series.sh                     # all 4 eps -> /tmp/web8_abio_ep{1..4}_web.mp4 (<25 MB each)
+```
+
 ## Requirements
 `node` (for the engine), `python3` with `numpy`, `Pillow`, `imageio_ffmpeg` (ffmpeg is bundled — no
 system ffmpeg needed). The fonts live in `docs/web8/assets/fonts/`.
