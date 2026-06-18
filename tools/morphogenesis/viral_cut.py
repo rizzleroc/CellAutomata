@@ -14,6 +14,7 @@ FB = "docs/web8/assets/fonts/"
 def fnt(n, s): p = FB + n; return ImageFont.truetype(p, s) if os.path.exists(p) else ImageFont.load_default()
 F_disp = lambda s: fnt("Italiana-Regular.ttf", s)
 F_mono = lambda s: fnt("IBMPlexMono-Regular.ttf", s)
+F_bold = lambda s: fnt("IBMPlexMono-Bold.ttf", s)
 F_ital = lambda s: fnt("CrimsonPro-Italic.ttf", s)
 def smooth(t): t = max(0.0, min(1.0, t)); return t * t * (3 - 2 * t)
 # specimen defaults: mode, center, wide(height frac), display name, scale-bar/mag, default captions
@@ -76,20 +77,22 @@ def big_caption(cv, y, s, accent, a, kind="hook"):
     # big legible caption with a soft scrim; hook=huge mono, sub=italic serif
     if a <= 0.01 or not s: return
     if kind == "hook":
-        size = 92
-        for sz in range(size, 40, -4):
-            f = F_mono(sz); lines = wrapfit(s.upper(), f, W-150)
-            if len(lines) <= 3 and max(tlen(l,f) for l in lines) <= W-150: size = sz; break
-        f = F_mono(size); lines = wrapfit(s.upper(), f, W-150); lh = int(size*1.16)
+        size = 132
+        for sz in range(size, 48, -4):
+            f = F_bold(sz); lines = wrapfit(s.upper(), f, W-120)
+            if len(lines) <= 3 and max(tlen(l,f) for l in lines) <= W-120: size = sz; break
+        f = F_bold(size); lines = wrapfit(s.upper(), f, W-120); lh = int(size*1.10)
     else:
         size = 52; f = F_ital(size); lines = wrapfit(s, f, W-180); lh = int(size*1.2)
     blockh = lh*len(lines); y0 = y - blockh/2
     # scrim
     scr = Image.new("RGBA", cv.size, (0,0,0,0)); sd = ImageDraw.Draw(scr)
-    sd.rectangle([0, y0-46, W, y0+blockh+46], fill=(0,0,0,150)); cv.alpha_composite(Image.fromarray(np.asarray(scr.filter(ImageFilter.GaussianBlur(24)))))
-    if kind == "hook":  # thin accent rule above
+    pad = 66 if kind=="hook" else 46; sa = 210 if kind=="hook" else 150
+    sd.rectangle([0, y0-pad, W, y0+blockh+pad], fill=(0,0,0,sa)); cv.alpha_composite(Image.fromarray(np.asarray(scr.filter(ImageFilter.GaussianBlur(26)))))
+    if kind == "hook":  # accent rules bracketing the hook
         cw = max(tlen(l,f) for l in lines)
-        ImageDraw.Draw(cv).line([(W/2-cw/2, y0-26),(W/2+cw/2, y0-26)], fill=(*accent,int(220*a)), width=3)
+        ImageDraw.Draw(cv).line([(W/2-cw/2, y0-30),(W/2+cw/2, y0-30)], fill=(*accent,int(235*a)), width=5)
+        ImageDraw.Draw(cv).line([(W/2-cw/2, y0+blockh+30),(W/2+cw/2, y0+blockh+30)], fill=(*accent,int(235*a)), width=5)
     for i,l in enumerate(lines):
         _draw(cv, (W/2, y0+lh*i+lh/2), l, f, BONE if kind=="hook" else accent, a)
 def hud(cv, sb, accent, a):
@@ -127,13 +130,18 @@ def frame(C, f):
             im = portrait_crop(a, pw, ph, sz, b['cx'], b['cy'])
             im = grade(im, C['mode']=='w')
             cv = Image.fromarray(im.astype(np.uint8)).convert("RGBA")
-            fin = min(1.0, lf/6.0) * min(1.0, (b['L']-1-lf)/5.0)  # quick punch cut (no slow fade)
+            fin = min(1.0, (f+3)/3.0) * min(1.0, (C['NF']-1-f)/4.0)  # bold frame-1 open (frame0 full), hard punch-cuts between beats, tiny loop-safe out-tail
             ca = 0.25 + 0.75*min(1.0, lf/10.0)
             if b['kind']=="hook":   big_caption(cv, H-470, b['cap'], C['accent'], ca, "hook")
             elif b['kind']=="sub":  big_caption(cv, H-360, b['cap'], C['accent'], ca, "sub")
             else:
-                _draw(cv,(W/2,H/2-30),b['cap'],F_disp(96),BONE,ca,"mm")
-                _draw(cv,(W/2,H/2+70),"cellautomata",F_mono(22),C['accent'],0.6*ca,"mm")
+                bf = F_disp(96); bw = tlen(b['cap'], bf)
+                scr = Image.new("RGBA", cv.size, (0,0,0,0))
+                ImageDraw.Draw(scr).ellipse([W/2-bw/2-90, H/2-150, W/2+bw/2+90, H/2+150], fill=(0,0,0,205))
+                cv.alpha_composite(Image.fromarray(np.asarray(scr.filter(ImageFilter.GaussianBlur(40)))))
+                ImageDraw.Draw(cv).line([(W/2-70, H/2+34),(W/2+70, H/2+34)], fill=(*C['accent'],int(200*ca)), width=3)
+                _draw(cv,(W/2,H/2-26),b['cap'],bf,BONE,ca,"mm")
+                _draw(cv,(W/2,H/2+72),"cellautomata",F_mono(22),C['accent'],0.7*ca,"mm")
             hud(cv, C['sb'], C['accent'], 0.9)
             if fin < 1: cv = Image.blend(Image.new("RGBA",(W,H),(*BG,255)), cv, fin)
             return cv.convert("RGB")
