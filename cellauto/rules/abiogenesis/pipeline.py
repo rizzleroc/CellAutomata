@@ -912,7 +912,7 @@ EXTENDED_STAGE_INFO: tuple[StageInfo, ...] = (
 @dataclass
 class AbiogenesisExtendedPipelineRule(AbiogenesisPipelineRule):
     """Auto-promoting pipeline that walks every shipped origin-of-life process
-    (10 stages, scientific order). Drop-in replacement for the canonical
+    (13 stages, scientific order). Drop-in replacement for the canonical
     `AbiogenesisPipelineRule` — same protocol, just a longer narrative."""
 
     name: str = "abiogenesis-pipeline-extended"

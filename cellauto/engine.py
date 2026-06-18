@@ -20,6 +20,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
 
+from cellauto.provenance import run_manifest
 from cellauto.rules.base import Rule
 
 log = logging.getLogger(__name__)
@@ -124,6 +125,7 @@ class Engine:
             "step_count": self.step_count,
             "rng_state": list(self.rule.rng.getstate()) if hasattr(self.rule, "rng") else None,
             "state": self.rule.serialize_state(self.state),
+            "manifest": run_manifest(),  # provenance: version + commit + timestamp (ignored on load)
         }
 
     def save(self, path: str | Path) -> None:

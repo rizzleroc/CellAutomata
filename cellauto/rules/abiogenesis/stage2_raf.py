@@ -60,6 +60,7 @@ class AbiogenesisStage2RAF:
     n_species: int = 8
     n_reactions: int = 16
     food_fraction: float = 0.4
+    catalysis_fraction: float = 1.0  # P(a reaction is catalyzed); 0 -> no RAF can form (REV-03 control)
     food_supply: float = 0.05  # food concentration injected per cell per step
     diffusion_rate: float = 0.05
     rng: random.Random = field(default_factory=random.Random)
@@ -79,6 +80,7 @@ class AbiogenesisStage2RAF:
                 n_species=self.n_species,
                 n_reactions=self.n_reactions,
                 food_fraction=self.food_fraction,
+                catalysis_fraction=self.catalysis_fraction,
                 rng=self.rng,
             )
             raf = find_raf(network)
@@ -89,6 +91,7 @@ class AbiogenesisStage2RAF:
                 n_species=self.n_species,
                 n_reactions=self.n_reactions,
                 food_fraction=self.food_fraction,
+                catalysis_fraction=self.catalysis_fraction,
                 rng=self.rng,
             )
             raf = frozenset()
@@ -225,6 +228,7 @@ class AbiogenesisStage2RAF:
                 n_species=self.n_species,
                 n_reactions=self.n_reactions,
                 food_fraction=self.food_fraction,
+                catalysis_fraction=self.catalysis_fraction,
                 rng=self.rng,
             )
         else:
@@ -249,6 +253,7 @@ class AbiogenesisStage2RAF:
             "n_species": self.n_species,
             "n_reactions": self.n_reactions,
             "food_fraction": self.food_fraction,
+            "catalysis_fraction": self.catalysis_fraction,
             "food_supply": self.food_supply,
             "diffusion_rate": self.diffusion_rate,
         }

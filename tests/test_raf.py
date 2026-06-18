@@ -129,3 +129,37 @@ def test_random_network_finds_raf_above_connectivity_threshold():
         for _ in range(10)
     )
     assert saw_raf >= 7, f"only {saw_raf}/10 random high-connectivity nets had RAF"
+
+
+def test_no_catalysis_means_no_raf():
+    """REV-03 null control: with catalysis_fraction=0.0 nothing is catalyzed, so
+    — catalysis being mandatory (the "R" in RAF) — no RAF can form, however
+    connected the network is. This control was previously unreachable because the
+    builder catalyzed every reaction."""
+    rng = random.Random(7)
+    for _ in range(20):
+        net = random_reaction_network(
+            n_species=6, n_reactions=30, food_fraction=0.5, rng=rng, catalysis_fraction=0.0
+        )
+        assert all(r.catalyst is None for r in net.reactions)
+        assert find_raf(net) == frozenset()
+
+
+def test_catalysis_fraction_governs_raf_incidence():
+    """The knob actually drives the phenomenon: full catalysis yields RAFs far
+    more often than sparse catalysis (deterministic, seeded)."""
+
+    def raf_rate(frac: float, seed: int) -> int:
+        rng = random.Random(seed)
+        return sum(
+            bool(
+                find_raf(
+                    random_reaction_network(
+                        n_species=6, n_reactions=20, food_fraction=0.5, rng=rng, catalysis_fraction=frac
+                    )
+                )
+            )
+            for _ in range(20)
+        )
+
+    assert raf_rate(1.0, 1) > raf_rate(0.2, 1)
