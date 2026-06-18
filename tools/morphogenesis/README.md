@@ -197,6 +197,27 @@ node tools/morphogenesis/cymatics.mjs gen cymsharp 3.16 5.0 280 240 14 0.3 0.5 0
 python3 tools/morphogenesis/cymatics_film.py        # -> /tmp/web8_cymatics.mp4
 ```
 
+## Abiogenesis — the origin of life under the electron microscope — `sem_probe.mjs` + `abio_gen.sh` + `abiogenesis_film.py`
+
+A 13-agent swarm probed every origin-of-life rule for its most award-grade **depth-shaded SEM
+micrograph** (not native colour). `sem_probe.mjs` renders any rule's warm-sepia / cool-mono micrograph
+as a time-filmstrip + structure score, so an agent can judge the documentary look by eye and pick the
+best warmup / params / palette / frame-window / crop. `abio_gen.sh` then regenerates the twelve
+finalists at high supersampling (new `GEN_SC` env) with each agent's tuned emboss (`GEN_RELIEF`, held
+so `relief × SC` stays constant) and a clean substrate where a flat field would otherwise show
+screen-door dither (`GEN_NOISE`, which maps to a new optional `opts.noise` on `sem.js`). `abiogenesis_film.py`
+plays them as a cinematic vertical reel in five acts (Chemistry · Energy & Surfaces · Self-Making ·
+Information · Life): eased sub-pixel Ken-Burns camera, bloom + halation + per-frame film grain, and a
+microscope HUD (numeral · name · scale-bar · magnification · reticle · lower-third caption). A
+thirteenth stage (vesicles) was explored and dropped — its Allen-Cahn field carries an irreducible
+diagonal weave under the SEM.
+
+```bash
+node tools/morphogenesis/sem_probe.mjs t grayscott 150 2200 6 cool-mono 18   # a triage filmstrip + score
+bash tools/morphogenesis/abio_gen.sh                                          # the 12 stage SEM sources
+python3 tools/morphogenesis/abiogenesis_film.py                              # -> /tmp/web8_abiogenesis.mp4
+```
+
 ## Requirements
 `node` (for the engine), `python3` with `numpy`, `Pillow`, `imageio_ffmpeg` (ffmpeg is bundled — no
 system ffmpeg needed). The fonts live in `docs/web8/assets/fonts/`.

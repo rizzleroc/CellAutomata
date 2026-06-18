@@ -16,6 +16,7 @@ if(SCAT){function mul(a){return function(){a|=0;a=a+0x6D2B79F5|0;let t=Math.imul
 const pn=new Uint8ClampedArray(W*H*4);
 const SC = +process.env.GEN_SC || (W<=120?4:(W<=160?3:2));   // SEM supersample (GEN_SC overrides for crisper micrographs)
 const RELIEF = +process.env.GEN_RELIEF || 14;                // SEM relief gain (GEN_RELIEF overrides; note heightGain = relief*SC)
+const SEMO = (pal)=>{ const o={palette:pal,scale:SC,relief:RELIEF}; if(process.env.GEN_NOISE!==undefined) o.noise=+process.env.GEN_NOISE; return o; };  // GEN_NOISE overrides substrate grain
 const ps=new Uint8ClampedArray(W*SC*H*SC*4); const h=new Float32Array(W*H);
 const fds={}; for(const m of modes) if(m!=='spr') fds[m]=fs.openSync(`${STEM}_${m}.bin`,'w');
 const wr=(fd,b)=>fs.writeSync(fd,Buffer.from(b.buffer,b.byteOffset,b.byteLength));
@@ -24,8 +25,8 @@ const spr=[], pop=[]; const t0=Date.now();
 for(let f=0;f<frames;f++){
   for(let s=0;s<steps;s++) g.step();
   if(modes.includes('n')){ g.render(pn); wr(fds['n'],pn); }
-  if(modes.includes('w')){ g.renderHeight(h); window.SEM.render(h,W,H,ps,{palette:'warm-sepia',scale:SC,relief:RELIEF}); wr(fds['w'],ps); }
-  if(modes.includes('c')){ g.renderHeight(h); window.SEM.render(h,W,H,ps,{palette:'cool-mono',scale:SC,relief:RELIEF}); wr(fds['c'],ps); }
+  if(modes.includes('w')){ g.renderHeight(h); window.SEM.render(h,W,H,ps,SEMO('warm-sepia')); wr(fds['w'],ps); }
+  if(modes.includes('c')){ g.renderHeight(h); window.SEM.render(h,W,H,ps,SEMO('cool-mono')); wr(fds['c'],ps); }
   if(modes.includes('spr')) spr.push((g.sprites?g.sprites():[]).map(s=>({x:+s.x.toFixed(1),y:+s.y.toFixed(1),s:+(s.scale||1).toFixed(2),k:s.kind,h:s.hand||null})));
   pop.push(g.population?g.population():'');
 }
