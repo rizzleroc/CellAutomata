@@ -31,10 +31,11 @@ for d in picks:
     env = dict(os.environ); env['VCUT_CFG'] = json.dumps(cfg)
     subprocess.run(['python3', f'{ROOT}/viral_cut.py', 'render'], env=env, check=True)
     src = f"/tmp/viral_{idd}.mp4"; out = f"/tmp/viral_{idd}_web.mp4"
-    # light temporal denoise crushes the per-frame grain the encoder chokes on; short clips stay well under 25 MB
-    subprocess.run([FF, '-y', '-hide_banner', '-loglevel', 'error', '-i', src, '-vf', 'hqdn3d=2:1:2:2',
-                    '-c:v', 'libx264', '-crf', '20', '-preset', 'medium', '-c:a', 'aac', '-b:a', '128k',
-                    '-movflags', '+faststart', out], check=True)
+    # temporal denoise crushes the per-frame grain the encoder chokes on; a maxrate ceiling guarantees <25 MB
+    # even for the bright/busy specimens (grayscott, minerals, soup) whose grain blows past a plain crf.
+    subprocess.run([FF, '-y', '-hide_banner', '-loglevel', 'error', '-i', src, '-vf', 'hqdn3d=4:3:5:5',
+                    '-c:v', 'libx264', '-crf', '23', '-maxrate', '9000k', '-bufsize', '18000k', '-preset', 'medium',
+                    '-c:a', 'aac', '-b:a', '128k', '-movflags', '+faststart', out], check=True)
     mb = os.path.getsize(out) / 1e6; done.append((out, mb)); print(f"-> {out}  {mb:.1f} MB")
 print("\n=== DONE ===")
 for out, mb in done: print(f"{mb:6.1f} MB  {out}")
