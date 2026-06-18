@@ -130,7 +130,7 @@ def frame(C, f):
             im = portrait_crop(a, pw, ph, sz, b['cx'], b['cy'])
             im = grade(im, C['mode']=='w')
             cv = Image.fromarray(im.astype(np.uint8)).convert("RGBA")
-            fin = min(1.0, (f+3)/3.0) * min(1.0, (C['NF']-1-f)/4.0)  # bold frame-1 open (frame0 full), hard punch-cuts between beats, tiny loop-safe out-tail
+            fin = min(1.0, (f+3)/3.0) * min(1.0, (C['NF']-f)/2.0)  # bold frame-1 open (frame0 full), hard punch-cuts between beats; near-zero out-tail so end matches start for a seamless loop
             ca = 0.25 + 0.75*min(1.0, lf/10.0)
             if b['kind']=="hook":   big_caption(cv, H-470, b['cap'], C['accent'], ca, "hook")
             elif b['kind']=="sub":  big_caption(cv, H-360, b['cap'], C['accent'], ca, "sub")
