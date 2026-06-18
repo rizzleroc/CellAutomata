@@ -32,4 +32,4 @@ def test_every_rule_can_init_state_and_step():
         rule = cls()
         state = rule.init_state(8, 8)
         new_state = rule.step(state)
-        assert new_state is not None or state is not None, name
+        assert new_state is not None, f"{name}.step() returned None"
