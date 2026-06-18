@@ -1,0 +1,188 @@
+/* web9 — the living amoeba guide (V1 narration + V2 ask-to-change).
+   A compact panel pinned to the bottom-left of the specimen: a museum-label
+   speech bubble, the amoeba avatar, and an "ask the amoeba…" input + chips.
+   Empty areas never intercept pointer events; the interactive parts do. Motion
+   is handled in guide.js and gated on prefers-reduced-motion. */
+
+.guide-root {
+  position: absolute;
+  left: 18px;
+  bottom: 76px; /* clear the instrument (Run / Explode / View) bar at the foot */
+  z-index: 40;
+  width: min(330px, 46vw);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  align-items: flex-start;
+  pointer-events: none; /* gaps don't block the lab; children re-enable */
+}
+
+/* hide the bubble until it actually has something to say */
+.guide-bubble:has(.guide-bubble-text:empty) {
+  display: none;
+}
+.guide-bubble {
+  pointer-events: auto;
+  max-width: 320px;
+  background: rgba(8, 11, 17, 0.93);
+  border: 1px solid #1f4f4c;
+  border-left: 2px solid #39d4c8;
+  border-radius: 11px;
+  padding: 10px 13px;
+  color: #e6e0d0;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(3px);
+}
+.guide-bubble-text {
+  margin: 0;
+  font-family: 'Crimson Pro', Georgia, 'Times New Roman', serif;
+  font-style: italic;
+  font-size: 14.5px;
+  line-height: 1.42;
+}
+.guide-bubble-cite:not(:empty) {
+  display: block;
+  margin-top: 7px;
+  font-family: 'IBM Plex Mono', ui-monospace, monospace;
+  font-size: 9.5px;
+  letter-spacing: 0.06em;
+  color: #39d4c8;
+  opacity: 0.78;
+}
+
+.guide-dock {
+  pointer-events: none;
+  display: flex;
+  gap: 10px;
+  align-items: flex-end;
+}
+
+.amoeba-guide {
+  pointer-events: auto;
+  cursor: pointer;
+  flex: none;
+  border-radius: 50%;
+  filter: drop-shadow(0 6px 18px rgba(0, 0, 0, 0.55));
+}
+.amoeba-guide:focus-visible {
+  outline: 2px solid #39d4c8;
+  outline-offset: 3px;
+}
+
+.guide-controls {
+  pointer-events: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 0;
+  flex: 1;
+}
+
+.guide-ask {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: rgba(8, 11, 17, 0.9);
+  border: 1px solid #1f4f4c;
+  border-radius: 999px;
+  padding: 4px 4px 4px 13px;
+}
+.guide-ask:focus-within {
+  border-color: #39d4c8;
+}
+.guide-input {
+  flex: 1;
+  min-width: 0;
+  background: transparent;
+  border: none;
+  outline: none;
+  color: #e6e0d0;
+  font-family: 'IBM Plex Mono', ui-monospace, monospace;
+  font-size: 12px;
+}
+.guide-input::placeholder {
+  color: #8c8a82;
+}
+.guide-send {
+  flex: none;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  border: 1px solid #1f4f4c;
+  background: transparent;
+  color: #39d4c8;
+  cursor: pointer;
+  font-size: 14px;
+  line-height: 1;
+}
+.guide-send:hover,
+.guide-send:focus-visible {
+  border-color: #39d4c8;
+  background: rgba(57, 212, 200, 0.12);
+}
+
+.guide-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.guide-chip {
+  pointer-events: auto;
+  background: transparent;
+  border: 1px solid #1f4f4c;
+  color: #b9d8d2;
+  border-radius: 999px;
+  padding: 3px 10px;
+  font-family: 'IBM Plex Mono', ui-monospace, monospace;
+  font-size: 10.5px;
+  letter-spacing: 0.02em;
+  cursor: pointer;
+}
+.guide-chip:hover,
+.guide-chip:focus-visible {
+  border-color: #39d4c8;
+  color: #f3efe2;
+  background: rgba(57, 212, 200, 0.08);
+}
+
+@media (max-width: 860px) {
+  .guide-root {
+    left: 10px;
+    bottom: 64px;
+    width: min(300px, 72vw);
+  }
+  .amoeba-guide {
+    transform: scale(0.82);
+    transform-origin: left bottom;
+  }
+}
+
+/* minimise toggle — collapse to just the amoeba (click it to re-open) */
+.guide-min {
+  position: absolute;
+  top: 0;
+  right: 0;
+  pointer-events: auto;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  border: 1px solid #1f4f4c;
+  background: rgba(8, 11, 17, 0.92);
+  color: #8c8a82;
+  font-size: 14px;
+  line-height: 1;
+  cursor: pointer;
+  z-index: 2;
+}
+.guide-min:hover,
+.guide-min:focus-visible {
+  border-color: #39d4c8;
+  color: #e6e0d0;
+}
+.guide-root.collapsed {
+  width: auto;
+}
+.guide-root.collapsed .guide-bubble,
+.guide-root.collapsed .guide-controls {
+  display: none;
+}

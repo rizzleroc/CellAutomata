@@ -64,6 +64,18 @@ jobs:
         run: node docs/web8/tests/controls.mjs  # presets wired + minerals localises + vents PMF (web8 parity)
       - name: Web8 guide intent-parser tests
         run: node docs/web8/tests/intents.mjs   # ask-the-amoeba request -> action mapping
+      - name: Web9 guided-lab smoke tests
+        run: node docs/web9/tests/smoke.mjs     # + canonical 13-stage scientific-order lock
+      - name: Web9 design-contract tests
+        run: node docs/web9/tests/design.mjs
+      - name: Web9 apparatus runtime verification
+        run: node docs/web9/tests/runtime.mjs   # three already installed above
+      - name: Web9 apparatus animation verification
+        run: node docs/web9/tests/anim.mjs
+      - name: Web9 controls-contract tests
+        run: node docs/web9/tests/controls.mjs  # presets wired + minerals localises + vents PMF
+      - name: Web9 guide intent-parser tests
+        run: node docs/web9/tests/intents.mjs   # ask-the-amoeba request -> action mapping
       - name: Ontogeny engine + page tests
         run: |
           node docs/ontogeny/tests/ontogeny.mjs

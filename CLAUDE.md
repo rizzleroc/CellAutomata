@@ -26,11 +26,13 @@ multiples → stages of life).
 |---|---|---|
 | `web7/` | **The canonical lab** ("Catalytic Silence") — 13 abiogenesis stages, each a photoreal Three.js apparatus + a live SEM micrograph | active |
 | `web8/` | **The Guided Colony** = web7 + a living-amoeba guide creature (`guide.js`, `guide.css`, `blobgeom.js`) | active |
+| `web9/` | **The Guided Lab, scientific order** = a web8 fork whose 13-stage catalogue (`main.js` `STAGES`) is reordered to the engine's canonical `EXTENDED_STAGE_CLASSES` order (soup → vent → RD → mineral → RAF → chirality → RNA → code → coacervate → vesicles → selection → LUCA → life) and **order-locked** in `tests/smoke.mjs`. Reuses web8's fonts + life sprites via `../web8/assets/` (no duplicate binaries). | active |
 | `ontogeny/` | **Part II — the origin of an individual.** Pure canvas + `sem.js`; engine `sim.js`, renderer `render.js`, controller `app.js` | active |
 | `web`, `web2`, `web3`, `web6` | earlier clients, retained for comparison | legacy |
 
-Self-hosted fonts live in `web8/assets/fonts/`; ontogeny reuses them via
-`../web8/assets/fonts/`. PRDs: `docs/PRD_ONTOGENY.md`,
+Self-hosted fonts live in `web8/assets/fonts/`; ontogeny and web9 reuse them via
+`../web8/assets/fonts/` (web9 also shares `web8/assets/life/`). PRDs:
+`docs/PRD_ONTOGENY.md`,
 `docs/PRD_SEM_VISUALIZATION.md`, `docs/PRD_LIFE_DIGITAL_ORGANISMS.md`.
 
 ## Architecture notes
@@ -70,8 +72,12 @@ node docs/web7/tests/runtime.mjs      # needs: npm i three@0.162.0 --no-save
 node docs/web7/tests/anim.mjs
 node docs/web7/tests/controls.mjs     # presets wired to real params
 
-# Web8 (guided lab) — same five gates
-node docs/web8/tests/{smoke,design,runtime,anim,controls}.mjs
+# Web8 (guided lab) — six gates (adds the guide intent-parser)
+node docs/web8/tests/{smoke,design,runtime,anim,controls,intents}.mjs
+
+# Web9 (guided lab, canonical scientific order) — same six gates;
+# web9 smoke also locks the 13-stage catalogue to the engine's stage order
+node docs/web9/tests/{smoke,design,runtime,anim,controls,intents}.mjs
 
 # Web6 (legacy, still gated)
 node docs/web6/tests/{smoke,colony,runtime}.mjs

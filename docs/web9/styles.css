@@ -1,0 +1,548 @@
+/* ============================================================================
+   cellauto · web7 — "Catalytic Silence"
+   A catalogue page from a discipline that does not yet exist.
+   The aesthetic of the scientific plate held a moment too long.
+   Colour is information; abundance is poverty. Hairlines, not fences.
+   ========================================================================== */
+
+/* ── The laboratory's own grammar (self-hosted; no network dependency) ───── */
+/* the titular gesture is preloaded → `optional` so it makes first paint without
+   a swap-reflow; the delicate didone never jumps to a sturdy fallback mid-view */
+@font-face { font-family: "Italiana"; src: url("../web8/assets/fonts/Italiana-Regular.ttf") format("truetype");
+  font-weight: 400; font-display: optional; }
+@font-face { font-family: "Crimson Pro"; src: url("../web8/assets/fonts/CrimsonPro-Regular.ttf") format("truetype");
+  font-weight: 400; font-style: normal; font-display: swap; }
+@font-face { font-family: "Crimson Pro"; src: url("../web8/assets/fonts/CrimsonPro-Italic.ttf") format("truetype");
+  font-weight: 400; font-style: italic; font-display: swap; }
+@font-face { font-family: "IBM Plex Mono"; src: url("../web8/assets/fonts/IBMPlexMono-Regular.ttf") format("truetype");
+  font-weight: 400; font-display: swap; }
+@font-face { font-family: "IBM Plex Mono"; src: url("../web8/assets/fonts/IBMPlexMono-Bold.ttf") format("truetype");
+  font-weight: 600; font-display: swap; }
+
+:root {
+  /* Palette — a deep obsidian ground with the faintest cold suggestion. */
+  --obsidian:   #07090d;
+  --obsidian-2: #0a0e15;
+  --obsidian-3: #0d131c;
+  --obsidian-4: #111822;      /* hover wash (rgba below preferred) */
+  --ink:        #ece7da;      /* bone-white, museum captions printed in 1962 */
+  --ink-soft:   #cbc5b6;
+  --muted:      #9a9280;      /* footnote voice — ≥5:1 on obsidian */
+  --muted-dim:  #8a8474;      /* dim, but ≥4.5:1 on obsidian for small text */
+  --teal:       #3fe0d0;      /* the chemistry being documented — used as an event */
+  --teal-bright:#74f4e7;
+  --magenta:    #d77bff;      /* the counterpoint — rarer still */
+  --teal-line:        rgba(63,224,208,.18);   /* a whisper of structure */
+  --teal-line-soft:   rgba(63,224,208,.09);
+  --teal-glow:        rgba(63,224,208,.38);
+  --magenta-line:     rgba(215,123,255,.22);
+  --hair:             rgba(236,231,218,.08);   /* neutral hairline */
+  --hair-soft:        rgba(236,231,218,.045);
+  --plate-bg:         #0a0e16;                 /* behind the micrograph */
+
+  /* Typography — didone gesture, reading serif, geometric monospace. */
+  --font-display: "Italiana", "Didot", "Bodoni MT", "Hoefler Text", Georgia, "Times New Roman", serif;
+  --font-read:    "Crimson Pro", "Crimson Text", Georgia, "Times New Roman", serif;
+  --font-mono:    "IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+
+  /* A modular scale, by ear. */
+  --s1: 4px;  --s2: 8px;  --s3: 12px; --s4: 16px;
+  --s5: 24px; --s6: 32px; --s7: 48px; --s8: 64px;
+
+  /* Motion — the hush before a reaction completes. */
+  --ease:  cubic-bezier(.22,.61,.36,1);
+  --ease-out: cubic-bezier(.16,1,.3,1);
+  --fast:  170ms;
+  --med:   400ms;
+  --slow:  720ms;
+  --breath: 2200ms;          /* the playback pulse cycle */
+
+  --col-index: 272px;
+  --col-key:   248px;
+  --reg-h:     66px;
+}
+
+* { box-sizing: border-box; }
+html, body { margin: 0; height: 100%; }
+html { background: var(--obsidian); }
+body {
+  background: var(--obsidian);
+  color: var(--ink);
+  font-family: var(--font-read);
+  font-size: 16px;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+  font-variant-numeric: lining-nums;   /* clinical lining figures, not Crimson's oldstyle */
+  overflow: hidden;
+}
+/* plate numbers / IDs / telemetry align in columns */
+.stage-numeral, .readout, .meta-plate, .plate-caption, .plate-scale { font-variant-numeric: tabular-nums; }
+
+/* ── Accessibility scaffolding ───────────────────────────────────────────── */
+.sr-only {
+  position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px;
+  overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0;
+}
+.skip-link {
+  position: fixed; top: -100px; left: var(--s4); z-index: 999;
+  background: var(--obsidian-3); color: var(--ink); border: 1px solid var(--teal-line);
+  padding: var(--s2) var(--s4); border-radius: 8px; font-family: var(--font-mono);
+  font-size: 12px; text-decoration: none; transition: top var(--fast) var(--ease);
+}
+.skip-link:focus { top: var(--s4); }
+.noscript-note { position: fixed; inset: 0; z-index: 100; display: flex; align-items: center;
+  justify-content: center; text-align: center; padding: var(--s7);
+  background: var(--obsidian); color: var(--ink-soft); font-style: italic; font-size: 16px; }
+
+:focus-visible {
+  outline: 2px solid var(--teal);
+  outline-offset: 3px;
+  border-radius: 3px;
+}
+:focus:not(:focus-visible) { outline: none; }
+
+/* ── The vitrine ─────────────────────────────────────────────────────────── */
+.vitrine {
+  position: relative;
+  display: flex; flex-direction: column;
+  height: 100vh; height: 100dvh;
+  /* One faint teal breath at the crown; the magenta counterpoint is spent only
+     when a reaction runs (see .is-running), never at rest. */
+  background:
+    radial-gradient(120% 78% at 50% -22%, rgba(63,224,208,.018), transparent 62%),
+    var(--obsidian);
+  isolation: isolate;
+}
+
+/* a whisper of film grain — tactile, near-imperceptible (~3%) */
+.grain {
+  position: fixed; inset: 0; z-index: 60; pointer-events: none; opacity: .045;
+  mix-blend-mode: overlay; transform: translateZ(0);   /* own GPU layer; stable Safari isolation */
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+/* the void, held exactly so wide */
+.vignette {
+  position: fixed; inset: 0; z-index: 59; pointer-events: none;
+  background: radial-gradient(130% 110% at 50% 42%, transparent 58%, rgba(0,0,0,.45) 100%);
+}
+
+/* ───────────────────────────── TOP REGISTER ────────────────────────────── */
+.register {
+  position: relative; z-index: 5;
+  height: var(--reg-h); flex: 0 0 var(--reg-h);
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 0 var(--s6);
+  border-bottom: 1px solid var(--hair);   /* held together by geometry, not a panel fill */
+}
+.register-brand { display: flex; align-items: baseline; gap: var(--s4); }
+.brand-mark {
+  align-self: center; width: 7px; height: 7px; border-radius: 50%;
+  background: var(--muted-dim);
+  box-shadow: 0 0 0 rgba(63,224,208,0);
+  transition: background var(--med) var(--ease), box-shadow var(--med) var(--ease);
+}
+.brand-word {
+  margin: 0; font-family: var(--font-display); font-weight: 400;
+  font-size: 26px; line-height: 1; letter-spacing: .14em;
+  color: var(--ink);
+}
+.brand-rule { width: 30px; height: 1px; background: var(--teal-line); align-self: center; }
+.brand-sub {
+  font-family: var(--font-read); font-style: italic; font-size: 14px;
+  color: var(--muted); letter-spacing: .01em;
+}
+.register-meta {
+  display: flex; align-items: center; gap: var(--s3);
+  font-family: var(--font-mono); font-size: 10.5px; letter-spacing: .22em;
+  text-transform: uppercase; color: var(--muted);
+}
+.meta-plate { color: var(--teal); }
+.meta-dot { width: 3px; height: 3px; border-radius: 50%; background: var(--muted-dim); }
+.meta-cat { color: var(--muted-dim); letter-spacing: .14em; }
+
+/* ─────────────────────────────────  BODY  ──────────────────────────────── */
+.body {
+  flex: 1 1 auto; min-height: 0;
+  display: grid;
+  grid-template-columns: var(--col-index) minmax(0, 1fr) var(--col-key);
+}
+
+/* ── LEFT · the index ────────────────────────────────────────────────────── */
+.index {
+  display: flex; flex-direction: column; min-height: 0;
+  border-right: 1px solid var(--hair);   /* a margin in the catalogue, not a panel */
+}
+.index-head {
+  display: flex; align-items: baseline; justify-content: space-between;
+  padding: var(--s6) var(--s5) var(--s4);
+}
+.index-kicker, .key-kicker {
+  font-family: var(--font-mono); font-size: 10px; letter-spacing: .3em;
+  text-transform: uppercase; color: var(--muted);
+}
+.index-meta { font-family: var(--font-mono); font-size: 10px; color: var(--muted-dim); letter-spacing: .12em; }
+.index-list { flex: 1 1 auto; overflow-y: auto; padding: var(--s2) var(--s3) var(--s4); }
+.index-foot, .key-foot {
+  padding: var(--s5) var(--s5) var(--s6);
+  border-top: 1px solid var(--hair-soft);
+  font-style: italic; font-size: 12.5px; color: var(--muted-dim); line-height: 1.55;
+}
+
+/* a plate in the catalogue */
+.stage-btn {
+  position: relative; display: grid; grid-template-columns: 34px 1fr; gap: var(--s3);
+  align-items: center; width: 100%; text-align: left;
+  background: transparent; border: 0; border-radius: 9px;
+  padding: var(--s3) var(--s3) var(--s3) var(--s2);
+  margin-bottom: 2px; cursor: pointer; color: var(--ink-soft);
+  transition: background var(--fast) var(--ease), color var(--fast) var(--ease);
+}
+.stage-btn::before {            /* the hairline that marks the chosen plate */
+  content: ""; position: absolute; left: 0; top: 14%; bottom: 14%; width: 2px;
+  border-radius: 2px; background: var(--teal);
+  transform: scaleY(0); transform-origin: center;
+  transition: transform var(--med) var(--ease-out); opacity: 0;
+}
+.stage-numeral {
+  font-family: var(--font-mono); font-size: 12px; letter-spacing: .04em;
+  color: var(--muted-dim); text-align: center; padding-top: 1px;
+  transition: color var(--fast) var(--ease), text-shadow var(--med) var(--ease);
+}
+.stage-name { font-family: var(--font-read); font-size: 15px; line-height: 1.25; color: var(--ink-soft); }
+.stage-sub  { display: block; font-family: var(--font-mono); font-size: 10px; letter-spacing: .08em;
+  text-transform: uppercase; color: var(--muted-dim); margin-top: 3px; }
+.stage-btn:hover { color: var(--ink); }   /* the catalogue labels and withdraws — colour shift, no fill */
+.stage-btn:hover .stage-numeral { color: var(--muted); }
+.stage-btn.active { background: rgba(63,224,208,.05); }
+.stage-btn.active::before { transform: scaleY(1); opacity: 1; }
+.stage-btn.active .stage-name { color: var(--ink); }
+.stage-btn.active .stage-numeral { color: var(--teal); text-shadow: 0 0 14px var(--teal-glow); }
+.stage-btn.pending .stage-name { color: var(--muted); }
+.stage-btn.pending .stage-sub::after {
+  content: " · pending"; color: var(--muted-dim);
+}
+
+/* ── CENTRE · the specimen ───────────────────────────────────────────────── */
+.specimen { position: relative; min-width: 0; min-height: 0; }
+.panes { position: absolute; inset: 0; display: flex; z-index: 0; }
+.pane { position: relative; min-width: 0; min-height: 0; height: 100%; overflow: hidden; }
+.pane-lab { flex: 1 1 50%; }
+.viewport { position: absolute; inset: 0; cursor: grab; }   /* affordance: this specimen turns */
+.viewport:active { cursor: grabbing; }
+/* a fading, hairline-quiet hint that the apparatus is interactive */
+.viewport-hint { position: absolute; left: 50%; bottom: 20px; transform: translateX(-50%); z-index: 3;
+  font-family: var(--font-mono); font-size: 10px; letter-spacing: .2em; text-transform: uppercase;
+  color: var(--muted-dim); pointer-events: none; transition: opacity var(--slow) var(--ease); }
+.viewport-hint.gone { opacity: 0; }
+
+/* (The apparatus pane carries no corner brackets — one set of registration
+   marks, on the micrograph plate, is structure enough. Two would be a fence.) */
+
+.divider { flex: 0 0 1px; background: var(--hair); display: none; }
+
+/* the live micrograph, framed as a scientific plate */
+.pane-exp { flex: 1 1 50%; display: flex; align-items: center; justify-content: center;
+  background: radial-gradient(120% 120% at 50% 40%, #0c1119, var(--plate-bg));
+  padding: clamp(40px, 7vmin, 96px); }   /* the specimen held against a wide void */
+.plate {
+  position: relative; margin: 0; width: 100%; aspect-ratio: 1 / 1;
+  max-height: 100%; max-width: min(100%, calc(100vh - 300px));
+  display: flex; align-items: center; justify-content: center;
+  background: var(--plate-bg);
+  border: 1px solid var(--hair);
+  box-shadow:
+    0 0 0 6px var(--plate-bg),        /* matte breathing room */
+    0 0 0 7px var(--hair-soft),       /* a fine outer rule against the void */
+    0 24px 60px rgba(0,0,0,.5),
+    inset 0 0 40px rgba(0,0,0,.42);
+  transition: box-shadow var(--slow) var(--ease), border-color var(--slow) var(--ease);
+}
+.exp-canvas {
+  width: 100%; height: 100%; object-fit: contain; display: block;
+  image-rendering: -webkit-optimize-contrast;   /* older Safari */
+  image-rendering: crisp-edges;                  /* Firefox */
+  image-rendering: pixelated;                    /* the grid stays crisp, not smeared */
+  background: var(--plate-bg);
+}
+.exp-canvas.smooth { image-rendering: auto; }
+
+/* registration ticks at the plate corners — the instrument's own marks */
+.plate-mat { position: absolute; inset: 14px; pointer-events: none; }
+.plate-mat .reg { position: absolute; width: 14px; height: 14px; border: 0 solid var(--teal-line); }
+.plate-mat .reg.tl { top: 0; left: 0; border-top-width: 1px; border-left-width: 1px; }
+.plate-mat .reg.tr { top: 0; right: 0; border-top-width: 1px; border-right-width: 1px; }
+.plate-mat .reg.bl { bottom: 0; left: 0; border-bottom-width: 1px; border-left-width: 1px; }
+.plate-mat .reg.br { bottom: 0; right: 0; border-bottom-width: 1px; border-right-width: 1px; }
+
+.plate-badge {
+  position: absolute; top: 16px; right: 16px; z-index: 2;
+  display: flex; align-items: center; gap: 7px;
+  font-family: var(--font-mono); font-size: 10px; letter-spacing: .24em;
+  text-transform: uppercase; color: var(--ink-soft);
+  background: rgba(7,9,13,.82); border: 1px solid var(--hair);   /* opaque chip — no per-frame backdrop-filter over the live canvas */
+  padding: 5px 9px; border-radius: 5px;
+}
+.plate-badge .rec { width: 6px; height: 6px; border-radius: 50%; background: var(--muted-dim);
+  transition: background var(--med) var(--ease), box-shadow var(--med) var(--ease); }
+.plate-scale {
+  position: absolute; left: 16px; bottom: 16px; z-index: 2;
+  display: flex; align-items: center; gap: 8px;
+  font-family: var(--font-mono); font-size: 10px; letter-spacing: .12em; color: var(--muted);
+}
+.plate-scale .bar { width: 56px; height: 0; border-top: 1px solid var(--muted-dim);
+  position: relative; }
+.plate-scale .bar::before, .plate-scale .bar::after {
+  content: ""; position: absolute; top: -3.5px; width: 1px; height: 8px; background: var(--muted-dim); }
+.plate-scale .bar::before { left: 0; } .plate-scale .bar::after { right: 0; }
+/* a near-microscopic monospace identifier on an obsidian chip — legible over any
+   warm-sepia substrate (the chip, not a text-shadow, guarantees contrast) */
+.plate-caption {
+  position: absolute; right: 16px; bottom: 16px; z-index: 2; max-width: 56%; text-align: right;
+  font-family: var(--font-mono); font-size: 10px; letter-spacing: .18em; text-transform: uppercase;
+  color: var(--ink-soft); background: rgba(7,9,13,.64); padding: 4px 8px; border-radius: 4px;
+}
+.plate-empty {
+  position: absolute; inset: 0; z-index: 3; display: flex; flex-direction: column;
+  align-items: center; justify-content: center; gap: var(--s2); text-align: center; padding: 0 var(--s6);
+}
+.plate-empty[hidden] { display: none; }   /* the `hidden` attr must beat display:flex, else the empty-state overlays a live micrograph (#52) */
+.plate-empty .empty-mark { color: var(--teal); opacity: .5; font-size: 18px; }
+.plate-empty .empty-line { font-family: var(--font-display); font-size: 19px; letter-spacing: .08em; color: var(--ink-soft); }
+.plate-empty .empty-sub { font-style: italic; font-size: 12.5px; color: var(--muted-dim); }
+
+/* the museum wall label */
+.caption { position: absolute; top: var(--s6); left: var(--s7); z-index: 4; max-width: 46%;
+  pointer-events: none; opacity: 0; transform: translateY(6px);
+  animation: caption-rise var(--slow) var(--ease-out) forwards; }
+.caption-label { font-family: var(--font-mono); font-size: 10.5px; letter-spacing: .26em;
+  text-transform: uppercase; color: var(--teal); }
+.caption-title { margin: var(--s2) 0 0; font-family: var(--font-display); font-weight: 400;
+  font-size: 30px; line-height: 1.08; letter-spacing: .04em; color: var(--ink);   /* the didone set wide and quiet */
+  text-shadow: 0 2px 22px rgba(0,0,0,.85); }
+.caption-blurb { margin: var(--s3) 0 0; font-size: 14.5px; line-height: 1.6; color: var(--ink-soft);
+  max-width: 440px; text-shadow: 0 1px 10px rgba(0,0,0,.85); }
+@keyframes caption-rise { to { opacity: 1; transform: none; } }
+
+/* ── the instrument bar ──────────────────────────────────────────────────── */
+.instrument {
+  position: absolute; left: 0; right: 0; bottom: 0; z-index: 5;
+  display: flex; align-items: center; gap: var(--s5); padding: var(--s5) var(--s7);
+  background: linear-gradient(to top, rgba(7,9,13,.92) 18%, rgba(7,9,13,.5) 60%, transparent);
+  pointer-events: none;
+}
+.instrument > * { pointer-events: auto; }
+
+/* mobile-only stage switcher (the index rail is hidden ≤860px) */
+.mobile-stage { display: none; }
+.mobile-stage select {
+  font-family: var(--font-mono); font-size: 12px; letter-spacing: .04em; color: var(--ink);
+  background: var(--obsidian-3); border: 1px solid var(--teal-line); border-radius: 8px;
+  padding: 11px 12px; min-height: 44px;
+}
+
+.run {
+  display: inline-flex; align-items: center; gap: var(--s3);
+  background: rgba(63,224,208,.06); color: var(--ink);
+  border: 1px solid var(--teal-line); border-radius: 10px;
+  padding: 11px 20px; font-family: var(--font-mono); font-size: 12px;
+  letter-spacing: .14em; text-transform: uppercase; cursor: pointer;
+  transition: background var(--med) var(--ease), border-color var(--med) var(--ease),
+              box-shadow var(--med) var(--ease), color var(--med) var(--ease);
+}
+.run:hover { background: rgba(63,224,208,.1); border-color: var(--teal); }
+.run .run-ico { width: 0; height: 0; border-style: solid;
+  border-width: 6px 0 6px 10px; border-color: transparent transparent transparent var(--teal);
+  transition: border-color var(--med) var(--ease); }
+.run[aria-pressed="true"] { background: rgba(215,123,255,.08); border-color: var(--magenta-line); color: var(--ink); }
+.run[aria-pressed="true"] .run-ico { width: 10px; height: 10px; border: 0; background: var(--magenta);
+  border-radius: 1px; }
+.run[aria-pressed="true"]:hover { border-color: var(--magenta); }
+
+.explode { display: flex; align-items: center; gap: var(--s3);
+  font-family: var(--font-mono); font-size: 10px; letter-spacing: .18em; text-transform: uppercase; color: var(--muted); }
+/* a hairline rail; the knob's glow is reserved for hover/focus (an event), not standing */
+.explode input[type="range"] { -webkit-appearance: none; appearance: none;
+  width: 132px; height: 22px; background: transparent; cursor: pointer; }
+.explode input[type="range"]::-webkit-slider-runnable-track { height: 1px; background: var(--hair); border-radius: 2px; }
+.explode input[type="range"]::-moz-range-track { height: 1px; background: var(--hair); border-radius: 2px; }
+.explode input[type="range"]::-webkit-slider-thumb { -webkit-appearance: none; appearance: none;
+  width: 15px; height: 15px; margin-top: -7px; border-radius: 50%; background: var(--obsidian);
+  border: 1px solid var(--teal); transition: box-shadow var(--fast) var(--ease); }
+.explode input[type="range"]::-moz-range-thumb { width: 15px; height: 15px; border-radius: 50%;
+  background: var(--obsidian); border: 1px solid var(--teal); transition: box-shadow var(--fast) var(--ease); }
+.explode input[type="range"]:hover::-webkit-slider-thumb,
+.explode input[type="range"]:focus-visible::-webkit-slider-thumb { box-shadow: 0 0 10px var(--teal-glow); }
+.explode input[type="range"]:hover::-moz-range-thumb,
+.explode input[type="range"]:focus-visible::-moz-range-thumb { box-shadow: 0 0 10px var(--teal-glow); }
+
+/* telemetry is apparatus, not an event — set it quiet in mono muted, no glow */
+.readout { margin-left: auto; font-family: var(--font-mono); font-size: 11px; letter-spacing: .1em;
+  color: var(--muted); white-space: nowrap; }
+
+.viewtoggle { display: inline-flex; border: 1px solid var(--hair); border-radius: 9px; overflow: hidden; }
+.viewtoggle button { background: transparent; color: var(--muted); border: 0;
+  padding: 9px 14px; font-family: var(--font-mono); font-size: 10.5px; letter-spacing: .14em;
+  text-transform: uppercase; cursor: pointer; transition: background var(--fast) var(--ease), color var(--fast) var(--ease); }
+.viewtoggle button + button { border-left: 1px solid var(--hair); }
+.viewtoggle button:hover { color: var(--ink-soft); }
+.viewtoggle button[aria-checked="true"] { background: rgba(63,224,208,.08); color: var(--ink);
+  box-shadow: inset 0 -2px 0 var(--teal); }   /* non-colour cue for the active segment */
+/* a small, deliberate press acknowledgement */
+.run:active, .viewtoggle button:active, .stage-btn:active { transform: translateY(1px); }
+
+/* ── RIGHT · the specimen key ────────────────────────────────────────────── */
+.key { display: flex; flex-direction: column; min-height: 0;
+  border-left: 1px solid var(--hair); }
+/* Narrow-screen controls-drawer affordances — hidden on the desktop vitrine. */
+.key-toggle { display: none; align-items: center; gap: var(--s2);
+  background: rgba(63,224,208,.06); border: 1px solid var(--teal-line); color: var(--ink-soft);
+  font-family: var(--font-mono); font-size: 11px; letter-spacing: .1em; text-transform: uppercase;
+  padding: 12px 16px; border-radius: 8px; cursor: pointer; }
+.key-toggle:hover { border-color: var(--teal); color: var(--ink); }
+.key-close { display: none; margin-left: auto; background: transparent; border: 0;
+  color: var(--muted); font-size: 16px; line-height: 1; cursor: pointer; padding: 0 var(--s2); }
+.key-close:hover { color: var(--ink); }
+.key-scrim { display: none; }
+.key-head { display: flex; align-items: baseline; justify-content: space-between; padding: var(--s6) var(--s5) var(--s4); }
+.key-count { font-family: var(--font-mono); font-size: 10px; color: var(--muted-dim); letter-spacing: .12em; }
+.key-list { flex: 1 1 auto; overflow-y: auto; padding: var(--s2) var(--s3) var(--s4); }
+.part-row { display: flex; align-items: center; gap: var(--s2); width: 100%; text-align: left;
+  background: transparent; border: 0; color: var(--ink-soft);
+  font-family: var(--font-mono); font-size: 11px; letter-spacing: .03em;
+  padding: 6px var(--s3); border-radius: 6px; cursor: pointer;
+  transition: background var(--fast) var(--ease), color var(--fast) var(--ease); }
+.part-row::before { content: ""; width: 5px; height: 5px; border-radius: 50%; background: var(--teal-line);
+  flex: 0 0 auto; transition: background var(--fast) var(--ease), box-shadow var(--fast) var(--ease); }
+.part-row:hover { background: rgba(236,231,218,.04); color: var(--ink); }
+.part-row:hover::before { background: var(--teal); box-shadow: 0 0 8px var(--teal-glow); }
+.part-row.hidden { color: var(--muted-dim); text-decoration: line-through; }
+.part-row.hidden::before { background: var(--muted-dim); box-shadow: none; }
+.key-empty { font-style: italic; font-size: 12.5px; color: var(--muted-dim); padding: var(--s3); }
+
+/* ── Right rail: tabs + live-experiment parameter panel ──────────────────── */
+.rail-tabs { display: flex; flex: 0 0 auto; border-bottom: 1px solid var(--hair); }
+.rail-tab { flex: 1; background: transparent; border: 0; color: var(--muted);
+  font-family: var(--font-mono); font-size: 10px; letter-spacing: .2em; text-transform: uppercase;
+  padding: 16px 8px; cursor: pointer; transition: color var(--fast) var(--ease); }
+.rail-tab:hover { color: var(--ink-soft); }
+.rail-tab[aria-selected="true"] { color: var(--ink); box-shadow: inset 0 -2px 0 var(--teal); }
+.rail-tab:active { transform: translateY(1px); }
+.rail-body { flex: 1 1 auto; min-height: 0; display: flex; flex-direction: column; }
+.rail-body[hidden] { display: none; }
+
+.param-list { flex: 1 1 auto; overflow-y: auto; padding: var(--s5) var(--s5) var(--s4);
+  scrollbar-width: thin; scrollbar-color: var(--teal-line) transparent; }
+.param-row { margin-bottom: var(--s5); }
+.param-row .p-head { display: flex; align-items: baseline; justify-content: space-between; gap: var(--s2); margin-bottom: 7px; }
+.param-row .p-label { font-family: var(--font-mono); font-size: 10px; letter-spacing: .12em; text-transform: uppercase; color: var(--muted); }
+.param-row .p-val { font-family: var(--font-mono); font-size: 11px; color: var(--teal); white-space: nowrap; }
+.param-row input[type="range"] { -webkit-appearance: none; appearance: none; width: 100%; height: 20px; background: transparent; cursor: pointer; }
+.param-row input[type="range"]::-webkit-slider-runnable-track { height: 1px; background: var(--hair); border-radius: 2px; }
+.param-row input[type="range"]::-moz-range-track { height: 1px; background: var(--hair); border-radius: 2px; }
+.param-row input[type="range"]::-webkit-slider-thumb { -webkit-appearance: none; appearance: none; width: 14px; height: 14px; margin-top: -7px; border-radius: 50%; background: var(--obsidian); border: 1px solid var(--teal); transition: box-shadow var(--fast) var(--ease); }
+.param-row input[type="range"]::-moz-range-thumb { width: 14px; height: 14px; border-radius: 50%; background: var(--obsidian); border: 1px solid var(--teal); }
+.param-row input[type="range"]:hover::-webkit-slider-thumb,
+.param-row input[type="range"]:focus-visible::-webkit-slider-thumb { box-shadow: 0 0 10px var(--teal-glow); }
+.param-row select { width: 100%; font-family: var(--font-mono); font-size: 11px; color: var(--ink);
+  background: var(--obsidian-3); border: 1px solid var(--teal-line); border-radius: 7px; padding: 8px 10px; }
+.param-empty { font-style: italic; font-size: 12.5px; color: var(--muted-dim); padding: var(--s3) 0; }
+/* Regime preset description — the named-regime hint surfaced under the picker. */
+.param-hint:not(:empty) { font-style: italic; font-size: 12px; line-height: 1.45; color: var(--muted);
+  margin: -3px 0 var(--s5); padding: 0 0 0 1px; }
+.param-actions { flex: 0 0 auto; display: flex; gap: var(--s2); padding: var(--s4) var(--s5) var(--s5); border-top: 1px solid var(--hair-soft); }
+.ctl { flex: 1; background: rgba(63,224,208,.06); border: 1px solid var(--teal-line); color: var(--ink);
+  font-family: var(--font-mono); font-size: 10px; letter-spacing: .14em; text-transform: uppercase;
+  padding: 10px 8px; border-radius: 8px; cursor: pointer;
+  transition: background var(--med) var(--ease), border-color var(--med) var(--ease); }
+.ctl:hover { background: rgba(63,224,208,.1); border-color: var(--teal); }
+.ctl:active { transform: translateY(1px); }
+
+/* ── View states — data-view on .vitrine is the single source of truth ───── */
+.vitrine[data-view="lab"] .pane-lab { flex: 1 1 100%; }
+.vitrine[data-view="lab"] .pane-exp, .vitrine[data-view="lab"] .divider { display: none; }
+.vitrine[data-view="exp"] .pane-exp { flex: 1 1 100%; }
+.vitrine[data-view="exp"] .pane-lab, .vitrine[data-view="exp"] .divider { display: none; }
+.vitrine[data-view="split"] .divider { display: block; }
+/* in micrograph-only view the big wall-label competes with the specimen-in-a-void:
+   demote it to a quiet identifier so only the plate's own furniture frames it */
+.vitrine[data-view="exp"] .caption { max-width: 40%; }
+.vitrine[data-view="exp"] .caption-title { font-size: 19px; letter-spacing: .06em; }
+.vitrine[data-view="exp"] .caption-blurb { display: none; }
+
+/* ── Running state — the catalyst lands ──────────────────────────────────── */
+/* The catalyst lands. One quiet breath on the two live indicators; the plate
+   takes a STATIC teal rim (an animated multi-layer blurred shadow read as a
+   recording HUD and forced full repaints over the live canvas — not the hush). */
+.vitrine.is-running .brand-mark { background: var(--teal); box-shadow: 0 0 12px var(--teal-glow);
+  animation: breathe var(--breath) var(--ease) infinite; }
+.vitrine.is-running .plate-badge .rec { background: var(--magenta); box-shadow: 0 0 9px rgba(215,123,255,.6);
+  animation: breathe var(--breath) var(--ease) infinite; }
+.vitrine.is-running .plate { border-color: var(--teal-line);
+  box-shadow: 0 0 0 6px var(--plate-bg), 0 0 0 7px var(--teal-line),
+              0 24px 60px rgba(0,0,0,.5), inset 0 0 40px rgba(0,0,0,.42), 0 0 44px -10px var(--teal-glow); }
+@keyframes breathe { 0%,100% { opacity: 1; } 50% { opacity: .62; } }
+
+/* ── Scrollbars — hairlines, not fences ──────────────────────────────────── */
+.index-list, .key-list { scrollbar-width: thin; scrollbar-color: var(--teal-line) transparent; }
+.index-list::-webkit-scrollbar, .key-list::-webkit-scrollbar { width: 7px; }
+.index-list::-webkit-scrollbar-thumb, .key-list::-webkit-scrollbar-thumb {
+  background: var(--teal-line); border-radius: 4px; border: 2px solid transparent; background-clip: content-box; }
+
+/* ── Reduced motion — freeze the breath ──────────────────────────────────── */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: .001ms !important; animation-iteration-count: 1 !important;
+    transition-duration: .001ms !important; scroll-behavior: auto !important; }
+  .caption { opacity: 1; transform: none; }
+}
+
+/* ── Responsive — the vitrine adapts, the specimen stays the subject ─────── */
+@media (max-width: 1180px) {
+  :root { --col-index: 232px; --col-key: 0px; }
+  .body { grid-template-columns: var(--col-index) minmax(0,1fr); }
+  /* The rail leaves the grid and becomes a right-hand drawer so Parameters AND the
+     specimen key stay reachable (UX_SPEC §4.2 — collapse "without losing any control"). */
+  .key { position: fixed; top: 0; right: 0; z-index: 60; height: 100dvh; width: min(360px, 88vw);
+    background: var(--obsidian-2); box-shadow: -24px 0 60px rgba(0,0,0,.55);
+    transform: translateX(101%); transition: transform var(--med) var(--ease); will-change: transform; }
+  .key.open { transform: none; }
+  .key-toggle { display: inline-flex; }
+  .key-close { display: inline-flex; }
+  .key-scrim { display: block; position: fixed; inset: 0; z-index: 55;
+    background: rgba(4,6,10,.55); opacity: 0; pointer-events: none;
+    transition: opacity var(--med) var(--ease); }
+  .key-scrim.open { opacity: 1; pointer-events: auto; }
+  .caption { max-width: 60%; }
+  .vitrine[data-view="split"] .caption { max-width: 46%; }   /* don't let the wall-label cover the micrograph */
+}
+@media (max-width: 860px) {
+  :root { --col-index: 0px; --reg-h: 58px; }
+  body { overflow: auto; }
+  .vitrine { height: auto; min-height: 100dvh; }
+  .index { display: none; }
+  .body { grid-template-columns: 1fr; }
+  .specimen { min-height: 72vh; }
+  .panes { position: relative; flex-direction: column; }
+  .vitrine[data-view="split"] .pane-lab, .vitrine[data-view="split"] .pane-exp { flex: 1 1 360px; min-height: 360px; }
+  /* lab/micrograph-only views need a real stacked height too, else the pane collapses to 0 */
+  .vitrine[data-view="lab"] .pane-lab, .vitrine[data-view="exp"] .pane-exp { min-height: 72vh; }
+  .vitrine[data-view="split"] .divider { display: none; }
+  .pane-exp { padding: var(--s5); }
+  .caption { position: static; max-width: none; padding: var(--s5) var(--s5) 0; animation: none; opacity: 1; transform: none; }
+  .instrument { position: sticky; bottom: 0; flex-wrap: wrap; gap: var(--s3); padding: var(--s4) var(--s5);
+    background: rgba(7,9,13,.96); border-top: 1px solid var(--hair); }
+  /* mobile touch targets ≥44px */
+  .mobile-stage { display: block; order: -1; width: 100%; }
+  .mobile-stage select { width: 100%; }
+  .run { padding: 14px 22px; }
+  .viewtoggle button { padding: 13px 16px; }
+  .readout { margin-left: 0; order: 5; width: 100%; }
+  .register { padding: 0 var(--s5); }
+  .brand-sub, .register-meta { display: none; }
+}
+
+/* ── Forced-colors / high-contrast — keep structure legible ──────────────── */
+@media (forced-colors: active) {
+  .stage-btn.active::before, .vtick, .plate-mat .reg { forced-color-adjust: none; }
+  .plate, .run, .viewtoggle, .register, .index, .key { border-color: CanvasText; }
+}
