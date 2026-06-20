@@ -1,8 +1,9 @@
 name: Pages
 
-# Auto-deploy /docs (the static site: web6/ the canonical lab + generated plates)
-# to GitHub Pages on every push to main. The root docs/index.html redirects to
-# web6/.
+# Auto-deploy /docs (the static site: the ecosystem hub at docs/index.html +
+# web7/ the canonical lab + generated plates) to GitHub Pages on every push to
+# main. The root docs/index.html is the Catalytic-Silence hub; it links into
+# web7/. (web6/ is retained alongside as the prior client, for comparison.)
 #
 # One-time repo setup: Settings → Pages → Source → GitHub Actions.
 # After that, every merge to main republishes the site.
@@ -35,10 +36,38 @@ jobs:
           node-version: "20"
       - name: Web6 lab smoke tests
         run: node docs/web6/tests/smoke.mjs
+      - name: Web6 living-colony tests
+        run: node docs/web6/tests/colony.mjs
       - name: Web6 apparatus runtime verification
         run: |
           npm install three@0.162.0 --no-save --no-package-lock --silent
           node docs/web6/tests/runtime.mjs
+      - name: Web7 lab smoke tests
+        run: node docs/web7/tests/smoke.mjs
+      - name: Web7 design-contract tests
+        run: node docs/web7/tests/design.mjs
+      - name: Web7 apparatus runtime verification
+        run: node docs/web7/tests/runtime.mjs   # three already installed above
+      - name: Web7 apparatus animation verification
+        run: node docs/web7/tests/anim.mjs      # proves each experiment visibly runs
+      - name: Web7 controls-contract tests
+        run: node docs/web7/tests/controls.mjs  # presets wired to real params + minerals localises (REV-18)
+      - name: Web8 guided-lab smoke tests
+        run: node docs/web8/tests/smoke.mjs
+      - name: Web8 design-contract tests
+        run: node docs/web8/tests/design.mjs
+      - name: Web8 apparatus runtime verification
+        run: node docs/web8/tests/runtime.mjs   # three already installed above
+      - name: Web8 apparatus animation verification
+        run: node docs/web8/tests/anim.mjs
+      - name: Web8 controls-contract tests
+        run: node docs/web8/tests/controls.mjs  # presets wired + minerals localises + vents PMF (web8 parity)
+      - name: Web8 guide intent-parser tests
+        run: node docs/web8/tests/intents.mjs   # ask-the-amoeba request -> action mapping
+      - name: Ontogeny engine + page tests
+        run: |
+          node docs/ontogeny/tests/ontogeny.mjs
+          node docs/ontogeny/tests/smoke.mjs
 
   build:
     needs: test
