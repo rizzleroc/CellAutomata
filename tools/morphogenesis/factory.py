@@ -9,6 +9,7 @@ hook-bank x specimen x format x scene matrix. Each output is a self-contained, d
 Run from repo root. Outputs -> /tmp/factory/day_NN/ + day_NN/manifest.json
 """
 import os, sys, json, subprocess
+import numpy as np
 import imageio_ffmpeg
 FF = imageio_ffmpeg.get_ffmpeg_exe()
 HERE = os.path.dirname(os.path.abspath(__file__))
@@ -70,10 +71,44 @@ HOOKS = {
 
 # Format = pacing. durs are per-beat frames @24fps.
 FORMATS = {"reveal": [120,120,110], "punch": [90,80,90], "slow": [150,150,140]}
-# Scene = (ctr or None, wide or None) -> framing/zoom variety from the same sim.
-SCENES = [(None, None), ([0.50,0.50], 0.72), ([0.46,0.54], 0.58)]
+# Scene = (ctr nudge, wide multiplier) applied ON TOP of the auto-framed base -> zoom/pan variety, no dead space.
+SCENES = [(0.0, 1.0), (0.0, 0.78), (0.06, 0.60)]
 
 def avail(tag): return os.path.exists(f"/tmp/g_{tag}_meta.json")
+
+# --- content-aware auto-framing: zoom to where the structure actually is (kills dead space) ---
+_AF = {}
+def _bin_path(tag):
+    for m in ("c", "w"):
+        p = f"/tmp/g_{tag}_{m}.bin"
+        if os.path.exists(p): return p
+    return None
+def autoframe(tag):
+    """Return (ctr[x,y], wide) framing the bright content with margin. Cached per specimen."""
+    if tag in _AF: return _AF[tag]
+    try:
+        m = json.load(open(f"/tmp/g_{tag}_meta.json")); pw, ph = m["W"]*m["SC"], m["H"]*m["SC"]; fb = pw*ph*4
+        fr = int(0.7*(m["frames"]-1)); bp = _bin_path(tag)
+        with open(bp, "rb") as fp:
+            fp.seek(fr*fb); a = np.frombuffer(fp.read(fb), np.uint8).reshape(ph, pw, 4)[:, :, :3]
+        lum = a.mean(2).astype(np.float64)
+        lum = np.maximum(0.0, lum - np.percentile(lum, 65))   # drop dim substrate -> mass = real structure
+        if lum.sum() < 1e3:
+            _AF[tag] = ([0.5, 0.5], 0.92); return _AF[tag]
+        rowm, colm = lum.sum(1), lum.sum(0)
+        yi, xi = np.arange(ph)/ph, np.arange(pw)/pw
+        wy, wx = rowm/rowm.sum(), colm/colm.sum()
+        cy, cx = float((yi*wy).sum()), float((xi*wx).sum())
+        sy = float(np.sqrt(((yi-cy)**2*wy).sum())); sx = float(np.sqrt(((xi-cx)**2*wx).sum()))
+        need = max(4.2*sy, 4.2*sx*(16/9)) * 1.12              # frame the bright concentration in 9:16
+        wide = min(0.97, max(0.32, need))
+        _AF[tag] = ([round(cx, 3), round(cy, 3)], round(wide, 3))
+    except Exception:
+        _AF[tag] = ([0.5, 0.5], 0.9)
+    return _AF[tag]
+
+# Vivid grade applied at the lean re-encode: lift exposure, pop contrast/saturation, crisp the relief.
+VIVID = "eq=brightness=0.05:contrast=1.24:saturation=1.5:gamma=0.94,unsharp=5:5:0.7:5:5:0.0"
 
 def all_slots():
     """Deterministic, stable 500-ish slot list. Order interleaves specimens so each day is varied."""
@@ -89,11 +124,12 @@ def all_slots():
 def cfg_for(slot, gid):
     tag, fmt, si, hi = slot
     hooks = HOOKS.get(tag, HOOKS["_default"]); h = hooks[hi % len(hooks)]
-    ctr, wide = SCENES[si]
-    c = {"tag": tag, "id": gid, "hook": h[0], "payoff": h[1], "brand": h[2], "durs": FORMATS[fmt]}
-    if ctr is not None: c["ctr"] = ctr
-    if wide is not None: c["wide"] = wide
-    return c
+    base_ctr, base_wide = autoframe(tag)
+    nudge, wmult = SCENES[si]
+    ctr = [min(0.82, max(0.18, base_ctr[0] + nudge)), base_ctr[1]]
+    wide = round(max(0.22, base_wide * wmult), 3)
+    return {"tag": tag, "id": gid, "hook": h[0], "payoff": h[1], "brand": h[2],
+            "durs": FORMATS[fmt], "ctr": ctr, "wide": wide}
 
 def render_one(slot, gid, day_dir):
     c = cfg_for(slot, gid)
@@ -103,10 +139,10 @@ def render_one(slot, gid, day_dir):
     src = f"/tmp/viral_{gid}.mp4"
     if not os.path.exists(src):
         return {"id": gid, "ok": False, "err": (r.stderr or r.stdout)[-300:]}
-    out = f"{day_dir}/{gid}.mp4"   # re-encode to a lean shareable size
-    subprocess.run([FF, "-y", "-hide_banner", "-loglevel", "error", "-i", src, "-c:v", "libx264",
-                    "-crf", "23", "-preset", "veryfast", "-pix_fmt", "yuv420p", "-c:a", "aac",
-                    "-b:a", "144k", "-movflags", "+faststart", out], check=True)
+    out = f"{day_dir}/{gid}.mp4"   # lean re-encode + vivid grade (lift exposure, pop color, crisp relief)
+    subprocess.run([FF, "-y", "-hide_banner", "-loglevel", "error", "-i", src, "-vf", VIVID,
+                    "-c:v", "libx264", "-crf", "23", "-preset", "veryfast", "-pix_fmt", "yuv420p",
+                    "-c:a", "aac", "-b:a", "144k", "-movflags", "+faststart", out], check=True)
     mb = os.path.getsize(out) / 1e6
     return {"id": gid, "ok": True, "tag": slot[0], "fmt": slot[1], "scene": slot[2], "hook": c["hook"],
             "file": out, "mb": round(mb, 1)}
