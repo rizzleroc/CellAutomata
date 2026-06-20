@@ -139,10 +139,10 @@ def render_one(slot, gid, day_dir):
     src = f"/tmp/viral_{gid}.mp4"
     if not os.path.exists(src):
         return {"id": gid, "ok": False, "err": (r.stderr or r.stdout)[-300:]}
-    out = f"{day_dir}/{gid}.mp4"   # lean re-encode + vivid grade (lift exposure, pop color, crisp relief)
+    out = f"{day_dir}/{gid}.mp4"   # lean re-encode + vivid grade + VBV cap (social-sized, ~15-22MB)
     subprocess.run([FF, "-y", "-hide_banner", "-loglevel", "error", "-i", src, "-vf", VIVID,
-                    "-c:v", "libx264", "-crf", "23", "-preset", "veryfast", "-pix_fmt", "yuv420p",
-                    "-c:a", "aac", "-b:a", "144k", "-movflags", "+faststart", out], check=True)
+                    "-c:v", "libx264", "-crf", "24", "-maxrate", "9M", "-bufsize", "14M", "-preset", "medium",
+                    "-pix_fmt", "yuv420p", "-c:a", "aac", "-b:a", "128k", "-movflags", "+faststart", out], check=True)
     mb = os.path.getsize(out) / 1e6
     return {"id": gid, "ok": True, "tag": slot[0], "fmt": slot[1], "scene": slot[2], "hook": c["hook"],
             "file": out, "mb": round(mb, 1)}

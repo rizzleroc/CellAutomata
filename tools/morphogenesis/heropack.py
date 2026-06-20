@@ -67,9 +67,9 @@ def run_job(kind, cfg, day_dir):
     if not os.path.exists(src):
         return {"id": cfg["id"], "ok": False, "kind": kind, "err": (r.stderr or r.stdout)[-280:]}
     out = f"{day_dir}/{cfg['id']}.mp4"
-    subprocess.run([FF, "-y", "-hide_banner", "-loglevel", "error", "-i", src, "-c:v", "libx264", "-crf", "24",
-                    "-preset", "veryfast", "-pix_fmt", "yuv420p", "-c:a", "aac", "-b:a", "144k",
-                    "-movflags", "+faststart", out], check=True)
+    subprocess.run([FF, "-y", "-hide_banner", "-loglevel", "error", "-i", src, "-c:v", "libx264", "-crf", "25",
+                    "-maxrate", "9M", "-bufsize", "14M", "-preset", "medium", "-pix_fmt", "yuv420p",
+                    "-c:a", "aac", "-b:a", "128k", "-movflags", "+faststart", out], check=True)
     return {"id": cfg["id"], "ok": True, "kind": kind, "file": out, "mb": round(os.path.getsize(out)/1e6, 1)}
 
 def produce(pairs, day_dir, label):
