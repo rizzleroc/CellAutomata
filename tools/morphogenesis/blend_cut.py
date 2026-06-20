@@ -6,8 +6,8 @@ Optional ElevenLabs voiceover mp3 is ducked over a pulse bed; captions double th
   BLEND_CFG='{"src":"/path/sora.mp4","sem":"ab_grayscott","vo":"/tmp/vo.mp3","id":"blend_gs",
               "t0":0.25,"t1":3.65,"style":"reveal"}' python3 tools/morphogenesis/blend_cut.py
 Run from repo root. style: "reveal" (default) | "split" (side-by-side throughout). vo optional (pulse bed if absent)."""
-import os, sys, json, subprocess, numpy as np
-from PIL import Image, ImageDraw
+import os, sys, json, subprocess, re, numpy as np
+from PIL import Image, ImageDraw, ImageFilter
 import imageio_ffmpeg
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import viral_cut as vc
@@ -22,11 +22,26 @@ def read_window(src, t0, t1):
     a = np.frombuffer(raw[:nf * W * H * 3], np.uint8).reshape(nf, H, W, 3)
     return [a[i].astype(np.float32) for i in range(nf)]
 
+def punch(im):
+    """Boost the SEM micrograph: percentile contrast-stretch + S-curve + unsharp relief, so the
+    reaction-diffusion structure reads dramatically against the photoreal half."""
+    x = im.astype(np.float32)
+    lo, hi = np.percentile(x, 2), np.percentile(x, 98)
+    x = np.clip((x - lo) / max(1e-3, hi - lo) * 255, 0, 255)
+    n = np.clip(0.5 + (x/255 - 0.5) * 1.4, 0, 1) * 255                # contrast S-curve
+    blur = np.asarray(Image.fromarray(n.astype(np.uint8)).filter(ImageFilter.GaussianBlur(6)), np.float32)
+    return np.clip(n + 0.65 * (n - blur), 0, 255)                     # unsharp relief (tuned to limit bitrate)
+
 def sem_frame(tag, mode, cx, cy, frac, sz, warm):
     a, pw, ph = vc.read_src(tag, mode, frac)
-    return vc.grade(vc.portrait_crop(a, pw, ph, sz, cx, cy), warm)   # float32 HxWx3
+    return punch(vc.grade(vc.portrait_crop(a, pw, ph, sz, cx, cy), warm))   # float32 HxWx3
 
 def ramp(x): return float(np.clip(x, 0, 1))
+
+def probe_dur(path):
+    err = subprocess.run([FF, "-i", path], capture_output=True, text=True).stderr
+    m = re.search(r"Duration: (\d+):(\d+):([\d.]+)", err)
+    return int(m.group(1))*3600 + int(m.group(2))*60 + float(m.group(3)) if m else None
 
 def main():
     c = json.loads(os.environ.get("BLEND_CFG", "{}"))
@@ -44,7 +59,10 @@ def main():
         (14.0, 16.8, "yet it divides like it's alive.", "sub"),
     ]
     brand = c.get("brand", "CATALYTIC SILENCE")
-    TOTAL = c.get("total", 18.0); NF = int(TOTAL * FPS)
+    REF = 18.0                                              # reference timeline the caps are authored against
+    dur = probe_dur(vo) if (vo and os.path.exists(vo)) else None
+    TOTAL = c.get("total", (dur + 1.4) if dur else REF)    # fit the narration if VO is supplied
+    k = TOTAL / REF; NF = int(TOTAL * FPS)                 # proportionally stretch caps to the real length
 
     sora = read_window(src, t0, t1)
     if len(sora) < 8: raise SystemExit(f"too few Sora frames ({len(sora)})")
@@ -52,26 +70,23 @@ def main():
 
     def sora_at(f):  return boom[f % len(boom)]
     def visual(f):
-        t = f / FPS
+        p = (f / FPS) / TOTAL                                # normalized progress -> auto-scales to any length
         if style == "split":
-            top = sora_at(f); semf = sem_frame(sem, mode, cx, cy, ramp(t/TOTAL), wide*(1-0.3*t/TOTAL), warm)
-            return splitscreen(top, semf, accent)
+            return splitscreen(sora_at(f), sem_frame(sem, mode, cx, cy, ramp(p), wide*(1-0.3*p), warm), accent)
         # reveal: Sora -> (crossfade) -> SEM push-in -> split-screen tag
-        if t < 4.6:
+        if p < 0.255:                                        # Sora photoreal
             return sora_at(f)
-        if t < 6.0:                                          # crossfade Sora -> SEM
-            a = ramp((t-4.6)/1.4); sm = sem_frame(sem, mode, cx, cy, 0.0, wide, warm)
-            return sora_at(f)*(1-a) + sm*a
-        if t < 13.8:                                         # SEM micrograph, slow push-in
-            fr = ramp((t-6.0)/7.8); sz = wide*(1-0.34*fr)
-            return sem_frame(sem, mode, cx, cy, fr, sz, warm)
-        # split-screen payoff: render (Sora) over simulation (SEM)
-        semf = sem_frame(sem, mode, cx, cy, 1.0, wide*0.66, warm)
-        return splitscreen(sora_at(f), semf, accent)
+        if p < 0.333:                                        # crossfade Sora -> SEM
+            a = ramp((p-0.255)/0.078)
+            return sora_at(f)*(1-a) + sem_frame(sem, mode, cx, cy, 0.0, wide, warm)*a
+        if p < 0.767:                                        # SEM micrograph, slow push-in
+            fr = ramp((p-0.333)/0.434)
+            return sem_frame(sem, mode, cx, cy, fr, wide*(1-0.34*fr), warm)
+        return splitscreen(sora_at(f), sem_frame(sem, mode, cx, cy, 1.0, wide*0.66, warm), accent)
 
     silent = f"/tmp/blend_{cid}_silent.mp4"
     wr = imageio_ffmpeg.write_frames(silent, (W, H), fps=FPS, codec="libx264", pix_fmt_in="rgb24",
-                                     pix_fmt_out="yuv420p", macro_block_size=8, output_params=["-crf", "18", "-preset", "medium"])
+                                     pix_fmt_out="yuv420p", macro_block_size=8, output_params=["-crf", "20", "-preset", "medium"])
     wr.send(None)
     for f in range(NF):
         t = f / FPS
@@ -79,7 +94,7 @@ def main():
         cv = Image.fromarray(base).convert("RGBA")
         fade = min(1.0, (f+1)/4.0) * min(1.0, (NF-f)/8.0)   # open + tail
         for (cs, ce, txt, kind) in caps:
-            a = ramp((t-cs)/0.6) * ramp((ce-t)/0.6)
+            a = ramp((t-cs*k)/0.6) * ramp((ce*k-t)/0.6)     # caps stretch with the narration length
             if a > 0.01:
                 y = H-470 if kind == "hook" else H-360
                 vc.big_caption(cv, y, txt, accent, a, kind)

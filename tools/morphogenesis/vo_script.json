@@ -1,12 +1,15 @@
 {
   "id": "blend_gs",
   "voice_id": "JBFqnCBsd6RMkjVDRZzb",
+  "voice_name": "George — warm, mature British narrator (closest legitimate ElevenLabs match to an Attenborough-style nature-doc read; alt: Daniel onwK4e9ZLuTAKqWW03F9)",
+  "model": "eleven_multilingual_v2",
+  "voice_settings": { "stability": 0.5, "similarity_boost": 0.85, "style": 0.4, "use_speaker_boost": true },
   "join": " … ",
-  "note": "Narration for the grayscott reveal blend. Lines align to blend_cut.py caption beats. ~18s at a calm pace.",
+  "note": "Attenborough-style narration for the grayscott reveal. Sense of wonder, measured cadence, present tense. Lines align to blend_cut.py caption beats and auto-stretch to the audio length.",
   "lines": [
-    "This looks like a living cell, dividing.",
-    "It isn't. No DNA. No membrane. No life.",
-    "It's a simulation — just two chemicals, following two simple rules.",
-    "And yet, it grows. It divides. It behaves like life. This is how life may have begun."
+    "What you are looking at appears to be a living cell, dividing.",
+    "And yet, it is not alive. No DNA. No membrane. Nothing we would call life.",
+    "It is a simulation — just two chemicals, obeying two simple rules.",
+    "And still, it grows. It divides. It behaves, for all the world, as if it were alive. Perhaps this is how life itself began."
   ]
 }
