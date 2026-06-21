@@ -107,8 +107,11 @@ def autoframe(tag):
         _AF[tag] = ([0.5, 0.5], 0.9)
     return _AF[tag]
 
-# Vivid grade applied at the lean re-encode: lift exposure, pop contrast/saturation, crisp the relief.
-VIVID = "eq=brightness=0.05:contrast=1.24:saturation=1.5:gamma=0.94,unsharp=5:5:0.7:5:5:0.0"
+# Vivid grade applied at the lean re-encode: pop contrast/saturation + crisp relief, but PROTECT highlights
+# (curves rolls 1.0->0.9 so light palettes like 'life'/'soup' can't blow out to white). No brightness lift,
+# neutral gamma -> consistent across palettes.
+VIVID = ("eq=contrast=1.18:saturation=1.34:gamma=1.0,"
+         "curves=all='0/0 0.5/0.52 0.8/0.8 1/0.9',unsharp=5:5:0.5:5:5:0.0")
 
 def all_slots():
     """Deterministic, stable 500-ish slot list. Order interleaves specimens so each day is varied."""
