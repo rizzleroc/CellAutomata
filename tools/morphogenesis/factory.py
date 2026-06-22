@@ -8,13 +8,14 @@ hook-bank x specimen x format x scene matrix. Each output is a self-contained, d
   python3 tools/morphogenesis/factory.py range <a> <b>     # render global slots [a,b)
 Run from repo root. Outputs -> /tmp/factory/day_NN/ + day_NN/manifest.json
 """
-import os, sys, json, subprocess
+import os, sys, json, subprocess, glob
 import numpy as np
 import imageio_ffmpeg
 FF = imageio_ffmpeg.get_ffmpeg_exe()
 HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.abspath(HERE + "/../..")
 OUT = "/tmp/factory"
+HERO_POOL = f"{OUT}/heroproof"   # pre-rendered bioluminescent hero variants (heropack output), grouped by specimen
 
 # specimens with SEM bins present (verified at runtime). Tag -> viral_cut STAGE key.
 SPECIMENS = ["ab_grayscott", "ab_rna", "ab_chirality", "ab_coacervate", "ab_code",
@@ -161,6 +162,42 @@ def render_batch(slots, gids, day_dir, label):
     print(f"[{label}] {ok}/{len(man)} ok -> {day_dir}/manifest.json", flush=True)
     return man
 
+def _hero_src(specimen):
+    """Locate a hero source clip for a specimen: env override, else the largest uploaded mp4 (the Sora hero)."""
+    p = os.environ.get(f"CA_HERO_{specimen.upper()}", "")
+    if p and os.path.exists(p):
+        return p
+    c = sorted(glob.glob("/root/.claude/uploads/**/*.mp4", recursive=True), key=os.path.getsize, reverse=True)
+    return c[0] if (c and specimen == "grayscott") else None  # only grayscott has an uploaded hero today
+
+def ensure_hero_pool(specimen="grayscott"):
+    """Make sure heropack variants exist for `specimen`; regenerate from the source clip if missing."""
+    if glob.glob(f"{HERO_POOL}/hp_{specimen}_*.mp4"):
+        return True
+    src = _hero_src(specimen)
+    if not src:
+        return False
+    subprocess.run([sys.executable, f"{HERE}/heropack.py", "one", src, specimen], cwd=ROOT,
+                   capture_output=True, text=True)
+    return bool(glob.glob(f"{HERO_POOL}/hp_{specimen}_*.mp4"))
+
+def hero_swap(day_dir, specimens=("grayscott",)):
+    """Replace a day's SEM slots for hero-backed specimens with bioluminescent hero variants (premium tier)."""
+    total = 0
+    for sp in specimens:
+        if not ensure_hero_pool(sp):
+            print(f"hero_swap: no hero pool/source for {sp}, leaving as SEM", flush=True); continue
+        pool = sorted(glob.glob(f"{HERO_POOL}/hp_{sp}_*.mp4"))
+        targets = sorted(glob.glob(f"{day_dir}/*_{sp}.mp4"))
+        for i, tgt in enumerate(targets):
+            subprocess.run([FF, "-y", "-hide_banner", "-loglevel", "error", "-i", pool[i % len(pool)],
+                            "-c:v", "libx264", "-crf", "25", "-maxrate", "9M", "-bufsize", "14M",
+                            "-preset", "medium", "-pix_fmt", "yuv420p", "-c:a", "aac", "-b:a", "128k",
+                            "-movflags", "+faststart", tgt], check=True)
+            print(f"  hero -> {os.path.basename(tgt)}", flush=True)
+        total += len(targets); print(f"hero_swap[{sp}]: {len(targets)} -> hero", flush=True)
+    return total
+
 def main():
     mode = sys.argv[1] if len(sys.argv) > 1 else "plan"
     slots = all_slots()
@@ -183,6 +220,11 @@ def main():
         d = int(sys.argv[2]); chunk = slots[d*50:(d+1)*50]
         gids = [f"d{d:02d}_{i:02d}_{s[0].split('_')[1]}" for i, s in enumerate(chunk)]
         render_batch(chunk, gids, f"{OUT}/day_{d:02d}", f"day{d}")
+        hero_swap(f"{OUT}/day_{d:02d}")   # premium tier: grayscott SEM slots -> bioluminescent hero
+        print(f"[day{d}] done (with hero swap)", flush=True)
+        return
+    if mode == "hero_swap":
+        d = int(sys.argv[2]); hero_swap(f"{OUT}/day_{d:02d}")
         return
     if mode == "range":
         a, b = int(sys.argv[2]), int(sys.argv[3]); chunk = slots[a:b]
