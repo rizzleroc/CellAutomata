@@ -40,7 +40,8 @@ Self-hosted fonts live in `web8/assets/fonts/`; ontogeny reuses them via
   modules. Everything opens from `file://` or any static server.
 - **SEM depth-shading pipeline** (`sem.js`, one copy per client): a Float32
   height field `[0,1]` → depth-shaded RGBA. `window.SEM.render(height, w, h,
-  rgba, { palette, scale, relief })`. Palettes `warm-sepia` / `cool-mono`.
+  rgba, { palette, scale, relief, noise })`. Palettes `warm-sepia` / `cool-mono`;
+  optional `noise` overrides substrate-grain opacity (default `0.045`; web8 copy).
   **`scale` (supersample) is capped 1–4** (`sem.js:144`). Self-contained.
 - **Lab control panel** is built in `docs/web7/main.js:321-433` (web8 shares the
   rules) from each rule's **own `params` schema** plus its **regime picker**
