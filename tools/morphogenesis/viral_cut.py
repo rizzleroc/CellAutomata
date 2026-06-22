@@ -46,6 +46,17 @@ def grade(im, warm, gA=3.4):
     im = im + np.random.randn(H,W,1).astype(np.float32)*gA*(0.5+1.1*lum*(1-lum)*4)
     return np.clip(im*VIGF,0,255)
 _M = {}
+def darkify(im):
+    """Force a dramatic dark-field SEM look (bright structure on near-black) whatever the source polarity.
+    Pale/bright-dominant specimens (life, soup, rna) get inverted so their sparse structure glows; then a
+    black->white-point stretch drops the substrate to black and lifts the structure. Dark sources pass ~through."""
+    L = im.mean(2)
+    if L.mean() > 116:                       # bright-dominant -> invert: the interesting bits are the dark minority
+        im = 255.0 - im; L = 255.0 - L
+    bp = float(np.percentile(L, 42))         # substrate floor -> black
+    wp = max(bp + 30.0, float(np.percentile(L, 99.3)))
+    g = np.clip((im - bp) / (wp - bp), 0, 1) # stretch contrast around the structure
+    return (g ** 0.95) * 255.0
 def meta(tag):
     if tag not in _M: _M[tag] = json.load(open(f'/tmp/g_{tag}_meta.json'))
     return _M[tag]
@@ -128,6 +139,7 @@ def frame(C, f):
             sz = b['sz']*(1.0 - 0.06*e)  # gentle continued push within the beat
             a, pw, ph = read_src(C['tag'], C['mode'], frac)
             im = portrait_crop(a, pw, ph, sz, b['cx'], b['cy'])
+            im = darkify(im)
             im = grade(im, C['mode']=='w')
             cv = Image.fromarray(im.astype(np.uint8)).convert("RGBA")
             fin = min(1.0, (f+3)/3.0) * min(1.0, (C['NF']-f)/2.0)  # bold frame-1 open (frame0 full), hard punch-cuts between beats; near-zero out-tail so end matches start for a seamless loop
