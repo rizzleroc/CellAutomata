@@ -1,0 +1,6 @@
+mesh/
+seq/
+render_out/
+proof_out/
+protocell_height.png
+__pycache__/
