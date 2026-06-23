@@ -1,0 +1,9 @@
+This isn't a cell. It only learned to divide.
+
+Two chemicals on a blank lattice — no genes, no membranes — grow a body, pinch a furrow, and split in two.
+
+web9 renders that moment from a real Gray–Scott reaction, in 3D, through an Unreal Engine 5.8 pipeline.
+
+Deterministic to the bit: the same seed, the same cell, the same division, every time.
+
+Deterministic chemistry in. A dividing cell out. No genes required. SEM v9.
