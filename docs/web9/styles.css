@@ -154,3 +154,5 @@ input[type=range]{width:100%;accent-color:var(--cyan);height:4px}
 .cinema-clip .clip-title{font-family:var(--serif);font-size:24px;font-weight:600;color:var(--ink);margin:0 0 6px}
 .cinema-clip .clip-sub{color:var(--ink3);font-size:13px;line-height:1.5;margin:0}
 @media(max-width:900px){ .cinema-diptych{grid-template-columns:1fr} }
+.cinema-solo{display:flex;justify-content:center}
+.cinema-solo .cinema-clip{width:100%;max-width:430px}

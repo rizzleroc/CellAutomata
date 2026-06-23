@@ -1,16 +1,19 @@
-# web9 cinematic clips
+# web9 cinematic clip
 
-Holds the two origin-of-life interlude clips for the `#origin` section of web9.
+Holds the featured render for the `#origin` ("The cell, rendered") section of web9.
 
-Expected files — vertical **9:16**, H.264 `.mp4`, muted, loop-friendly, ~12s:
+The clip is the protocell dividing — translucent membrane, cyan Fresnel rim, dark-field
+scan-sweep — generated as a vertical **9:16** scanning-microscope clip via the ASIM
+"New Video Gym" (Sora) pipeline.
 
-- `soup.mp4`  — **The Soup**: a Hadean hydrothermal primordial ocean.
-- `spark.mp4` — **The Spark**: the first self-organizing chemistry.
+`index.html` lists two `<source>`s, in order:
 
-`video.js` keeps the `#origin` section hidden until at least one clip loads, and
-hides any individual clip whose file is missing — so the page degrades cleanly
-while the footage is being produced.
+1. `assets/video/protocell.mp4` — self-hosted (preferred). Drop the file here to use it.
+2. `https://s.asim.sh/videos/3d89a86a-1b9b-463b-b48f-89361bc766c3.mp4` — the CDN URL the gym
+   produced, used as a fallback until the file is self-hosted.
 
-Generated via the ASIM "New Video Gym" image→video pipeline. Drop the two `.mp4`
-files in this directory and the section lights up automatically; no markup change
-needed.
+`video.js` keeps the `#origin` section hidden until the clip loads, so the page degrades
+cleanly if neither source is reachable.
+
+To self-host, download the CDN URL above to `protocell.mp4` in this directory (the agent's
+sandbox is egress-blocked from `s.asim.sh`, so this step is done from an unrestricted machine).
