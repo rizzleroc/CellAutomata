@@ -20,3 +20,6 @@ audit-*.png
 v32-*.png
 .mcp.json
 .claude/
+
+# Node deps (environment/setup artifact — no manifest tracked in this repo).
+node_modules/
