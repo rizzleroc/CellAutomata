@@ -27,11 +27,13 @@ multiples → stages of life).
 | `web7/` | **The canonical lab** ("Catalytic Silence") — 13 abiogenesis stages, each a photoreal Three.js apparatus + a live SEM micrograph | active |
 | `web8/` | **The Guided Colony** = web7 + a living-amoeba guide creature (`guide.js`, `guide.css`, `blobgeom.js`) | active |
 | `ontogeny/` | **Part II — the origin of an individual.** Pure canvas + `sem.js`; engine `sim.js`, renderer `render.js`, controller `app.js` | active |
+| `web9/` | **Pro Studio** — the first **paid tier**: gated hi-res SEM export. A pure `studio.js` cockpit (Clerk sign-in + Stripe checkout) that POSTs the **Railway app server**'s `/api/render`; the 4000²-capable render is server-side Python. Only fully active on the Railway deploy (graceful "coming soon" on GitHub Pages). | active |
 | `web`, `web2`, `web3`, `web6` | earlier clients, retained for comparison | legacy |
 
-Self-hosted fonts live in `web8/assets/fonts/`; ontogeny reuses them via
+Self-hosted fonts live in `web8/assets/fonts/`; ontogeny + web9 reuse them via
 `../web8/assets/fonts/`. PRDs: `docs/PRD_ONTOGENY.md`,
-`docs/PRD_SEM_VISUALIZATION.md`, `docs/PRD_LIFE_DIGITAL_ORGANISMS.md`.
+`docs/PRD_SEM_VISUALIZATION.md`, `docs/PRD_LIFE_DIGITAL_ORGANISMS.md`,
+`docs/PRD_WEB9_PRO.md`.
 
 ## Architecture notes
 
@@ -52,6 +54,20 @@ Self-hosted fonts live in `web8/assets/fonts/`; ontogeny reuses them via
   `docs/ontogeny/render.js` — currently `BASE=168, SCALE=2` → a 336px offscreen
   buffer drawn to fit. Height-field primitives are grid-relative
   (resolution-independent). See standing requirement #64.
+- **Pro app server** (`server/`, FastAPI) is the **Railway** deploy. It serves
+  `docs/` statically AND gates `POST /api/render` (hi-res SEM PNG up to 4000²)
+  behind **Clerk** (JWT verified against JWKS) + **Stripe** (active-subscription
+  check, queried live, cached ~60s). The render is **headless** Python —
+  `cellauto.engine.Engine` + `SemRenderer.compose_at` — and never imports
+  `cellauto.app`/tkinter. The catalog of renderable *field* stages and their full
+  knob set (#65) is built from `cellauto.rules.params.PARAM_SPECS` in
+  `server/catalog.py`. Boots fine with no keys (Pro reports
+  `billing_not_configured`); `CELLAUTO_DEV_UNLOCKED=1` unlocks it locally. Full
+  contract + operator setup: `docs/PRD_WEB9_PRO.md`.
+- **Two deploys now.** GitHub Pages = the free static mirror (web9 there shows
+  "coming soon" because `/api/*` 404s). Railway = the full app where Pro
+  activates once the Clerk/Stripe env vars are set. The free site is identical on
+  both.
 
 ## Build · test · deploy
 
@@ -59,6 +75,11 @@ Deploy is automatic: `.github/workflows/pages.yml` builds + deploys `docs/` to
 Pages **on push to `main` only** (`build`/`deploy` are guarded by
 `if: github.event_name != 'pull_request'`). The **`test` job runs on PRs too**,
 so a broken client can't reach main. Python CI is `.github/workflows/ci.yml`.
+
+A second deploy target, **Railway**, runs the FastAPI **app server**
+(`Dockerfile` → `uvicorn server.app:app`, healthcheck `/healthz`) — it serves the
+same `docs/` plus the gated Pro API (`server/`). Set the Clerk/Stripe env vars
+per `docs/PRD_WEB9_PRO.md` §6; with none set it still serves the free site.
 
 Run the JS gates locally (zero-dep, Node 20) — these mirror CI exactly:
 
@@ -80,7 +101,10 @@ node docs/web6/tests/{smoke,colony,runtime}.mjs
 node docs/ontogeny/tests/ontogeny.mjs # the science (split-day, presets, calibration)
 node docs/ontogeny/tests/smoke.mjs    # module parse + page wiring + SEM harness
 
-# Python engine
+# Web9 (Pro Studio) — page wiring + Pro API surface
+node docs/web9/tests/smoke.mjs
+
+# Python engine + Pro app server (the server test needs: pip install -e .[dev])
 pytest -q
 ```
 
@@ -143,12 +167,23 @@ them; track work against the linked issues.
    there is **no** web7↔web8 parity gate and `sem.js` has already drifted.
 5. **Docs/repo drift — issue #69.** Stale version claims (PRD.md/README say
    4.1.1 / "v4.0 alpha" / "12-stage"; reality is 4.2.0 / 13 stages), client
-   sprawl (web8 unlinked from the hub), a `railway.toml` healthcheck pointed at
-   an orphaned client, and duplicated committed assets.
+   sprawl (web8 unlinked from the hub), and duplicated committed assets.
+   *(The `railway.toml` healthcheck now points at `/healthz` on the app server —
+   fixed in the web9 Pro PR.)*
 6. **Security audit tracker — issues #44 / #35–#43.** SEC-001 (pickle RCE in
    `engine.py` snapshot load) is fixed; the input-validation Highs (snapshot
    dims/arrays #36/#37, path traversal #38, image-decode #39, dep pinning #41,
    resource bounds #42, CI scan #43) remain open — keep them on the radar.
+7. **Pro tier — hi-res SEM export (`web9/` + `server/`).** The first paid tier:
+   a Clerk + Stripe-gated FastAPI app on Railway renders publication-quality SEM
+   micrographs up to 4000² via the **headless** Python pipeline (`Engine` +
+   `SemRenderer.compose_at`). MVP shipped — field stages, synchronous render,
+   query-Stripe-live entitlement, strict input/resource caps (closes the spirit
+   of #42 for this surface), and the full per-stage knob set + grayscott regime
+   (advances #65 server-side). Operator setup + API contract:
+   `docs/PRD_WEB9_PRO.md`. Open follow-ups: discrete-renderer stages (Stage 0 /
+   Conway / Wolfram / selection), async render jobs + progress, save/share
+   gallery, per-user render quota, and gating `server/` in CI lint + mypy.
 
 ## Maintaining this file
 

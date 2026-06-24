@@ -68,6 +68,8 @@ jobs:
         run: |
           node docs/ontogeny/tests/ontogeny.mjs
           node docs/ontogeny/tests/smoke.mjs
+      - name: Web9 Pro Studio smoke tests
+        run: node docs/web9/tests/smoke.mjs   # page wiring + Pro API surface
 
   build:
     needs: test
