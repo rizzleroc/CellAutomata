@@ -153,14 +153,30 @@ Set on the service (Variables tab). Railway injects `PORT` automatically.
 | `PRO_PRICE_LABEL` | optional | human label shown on the paywall (e.g. "$9/mo") |
 | `MAX_RENDER_SIZE` | optional | hard cap, default `4000` |
 | `MAX_RENDER_GRID` | optional | hard cap, default `384` |
-| `MAX_RENDER_STEPS` | optional | hard cap, default `4000` |
+| `MAX_RENDER_STEPS` | optional | hard cap, default `1500` |
 | `CELLAUTO_DEV_UNLOCKED` | **never in prod** | local-only: treat caller as entitled without Clerk/Stripe |
+
+### 6.4 Test-mode trial run (before the full security stack)
+You can exercise the gate without real money or a finished production setup. Keys
+go in Railway's **Variables** tab (or a local gitignored `.env`) — never in the
+repo. A `.env.example` at the repo root lists every variable with placeholders.
+
+- **Fastest — render only, no keys.** Set `CELLAUTO_DEV_UNLOCKED=1` and nothing
+  else. `/api/render` unlocks and the studio opens — good for trialing the render
+  itself, but it skips sign-in/checkout and grants Pro to **every** visitor, so
+  don't leave it on a public deploy.
+- **Recommended — the whole flow in test mode.** Use a Clerk **development**
+  instance and Stripe **test mode**; the keys read as `pk_test_…` / `sk_test_…` /
+  `whsec_…` and the code path is identical to live. Subscribe with Stripe's test
+  card `4242 4242 4242 4242` (any future expiry, any CVC) and leave
+  `CELLAUTO_DEV_UNLOCKED` unset. Flip the same vars to their `*_live_*` values
+  when you go to production — no code change.
 
 ## 7. Security & resource bounds (tracks #42 / SEC-008)
 
 `/api/render` is untrusted input and does real CPU/memory work, so:
 - **Hard caps**, env-overridable but bounded: `size ≤ MAX_RENDER_SIZE (4000)`,
-  `grid ≤ MAX_RENDER_GRID (384)`, `steps ≤ MAX_RENDER_STEPS (4000)`.
+  `grid ≤ MAX_RENDER_GRID (384)`, `steps ≤ MAX_RENDER_STEPS (1500)`.
 - **Strict validation**: rule must be a known field rule; every `params` key must exist in
   that rule's `PARAM_SPECS` and fall within `[lo,hi]`; ints coerced; everything else 400.
 - **Auth before work**: entitlement is checked before any engine step runs.
