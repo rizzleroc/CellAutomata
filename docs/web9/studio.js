@@ -11,6 +11,8 @@ const status = (m) => { const el = $('#status'); if (el) el.textContent = m; };
 let CFG = {};
 let RULES = [];
 let studioReady = false;
+let ACCESS_CODE = '';                       // interim shared code, if entered
+const CODE_KEY = 'cellauto_access_code';    // sessionStorage key
 
 const api = async (path, opts = {}) => {
   const headers = Object.assign({}, opts.headers);
@@ -18,6 +20,7 @@ const api = async (path, opts = {}) => {
   if (clerk && clerk.session) {
     try { const t = await clerk.session.getToken(); if (t) headers.Authorization = 'Bearer ' + t; } catch { /* ignore */ }
   }
+  if (ACCESS_CODE) headers['X-Access-Code'] = ACCESS_CODE;
   return fetch(path, Object.assign({}, opts, { headers }));
 };
 
@@ -38,6 +41,17 @@ async function boot() {
   try { CFG = await (await fetch('/api/public-config')).json(); } catch { CFG = {}; }
 
   if (CFG.devUnlocked) { await enterStudio(); return; }
+
+  // Interim shared-access-code gate — used before the full Clerk/Stripe flow.
+  // Active when Clerk isn't configured but an access code is.
+  if ((!CFG.authConfigured || !CFG.clerkPublishableKey) && CFG.accessCodeEnabled) {
+    ACCESS_CODE = sessionStorage.getItem(CODE_KEY) || '';
+    if (ACCESS_CODE && await verifyCode(ACCESS_CODE)) { await enterStudio(); return; }
+    forgetCode();
+    showCodeGate();
+    return;
+  }
+
   if (!CFG.authConfigured || !CFG.clerkPublishableKey) { showGate('unconfigured'); return; }
 
   try {
@@ -58,6 +72,53 @@ async function route() {
   try { ent = await (await api('/api/me/entitlement')).json(); } catch { /* keep default */ }
   if (ent.entitled) await enterStudio();
   else showGate('upgrade');
+}
+
+// ── interim access-code gate ─────────────────────────────────────────────────
+
+function forgetCode() {
+  ACCESS_CODE = '';
+  try { sessionStorage.removeItem(CODE_KEY); } catch { /* ignore */ }
+}
+
+async function verifyCode(code) {
+  try {
+    const res = await fetch('/api/access/verify', { method: 'POST', headers: { 'X-Access-Code': code } });
+    return res.ok;
+  } catch { return false; }
+}
+
+function showCodeGate(msg) {
+  show('gate');
+  $('#signin').innerHTML = '';
+  $('#upgradeBtn').hidden = true;
+  $('#gateTitle').textContent = 'Pro Studio — early access';
+  $('#gateBlurb').textContent = msg || 'Enter your access code to render publication-quality micrographs.';
+  const form = $('#codegate');
+  const input = $('#accessCode');
+  const btn = $('#accessBtn');
+  if (form && input && btn) {
+    form.hidden = false;
+    input.value = '';
+    btn.disabled = false;
+    form.onsubmit = async (e) => {
+      e.preventDefault();
+      const code = input.value.trim();
+      if (!code) return;
+      btn.disabled = true; status('Checking code…');
+      if (await verifyCode(code)) {
+        ACCESS_CODE = code;
+        try { sessionStorage.setItem(CODE_KEY, code); } catch { /* ignore */ }
+        status('Access granted.');
+        await enterStudio();
+      } else {
+        forgetCode();
+        showCodeGate('That code wasn’t accepted. Try again.');
+      }
+    };
+    input.focus();
+  }
+  wireAccount();
 }
 
 // ── Clerk loader (CDN, derived from the publishable key) ─────────────────────
@@ -94,6 +155,10 @@ function wireAccount() {
     const email = clerk.user.primaryEmailAddress?.emailAddress || 'signed in';
     acct.innerHTML = `<span class="who">${email}</span><button class="btn ghost" id="signOutBtn" style="width:auto;padding:6px 12px">Sign out</button>`;
     $('#signOutBtn').onclick = () => clerk.signOut(() => route());
+  } else if (ACCESS_CODE) {
+    acct.innerHTML = '<a class="who" href="../">← back to the lab</a>' +
+      '<button class="btn ghost" id="forgetCodeBtn" style="width:auto;padding:6px 12px">Forget code</button>';
+    $('#forgetCodeBtn').onclick = () => { forgetCode(); showCodeGate(); };
   } else {
     acct.innerHTML = '<a class="who" href="../">← back to the lab</a>';
   }
@@ -109,6 +174,7 @@ function showGate(kind, msg) {
   const signin = $('#signin');
   signin.innerHTML = '';
   upgrade.hidden = true;
+  const codegate = $('#codegate'); if (codegate) codegate.hidden = true;
 
   if (kind === 'unconfigured') {
     title.textContent = 'Pro Studio — coming soon';
@@ -260,6 +326,11 @@ async function doRender() {
     if (!res.ok) {
       let detail = `HTTP ${res.status}`;
       try { detail = (await res.json()).detail || detail; } catch { /* ignore */ }
+      if (res.status === 401 && CFG.accessCodeEnabled) {
+        forgetCode();
+        showCodeGate('Your access code was not accepted. Enter it again.');
+        return;
+      }
       if (res.status === 402) { showGate('upgrade'); return; }
       status('Render failed: ' + detail);
       return;

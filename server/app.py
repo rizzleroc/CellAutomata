@@ -25,6 +25,8 @@ log = logging.getLogger("cellauto.server")
 DOCS_DIR = Path(os.getenv("DOCS_DIR", str(Path(__file__).resolve().parent.parent / "docs")))
 
 _DEV_USER = {"sub": "dev-user", "email": "dev@local", "_dev": True}
+_CODE_USER = {"sub": "code-user", "email": None, "_code": True}
+_ACCESS_HEADER = "x-access-code"
 
 
 @asynccontextmanager
@@ -57,14 +59,18 @@ def _claims_or_none(request: Request) -> dict | None:
 
 
 def _require_user(request: Request) -> dict:
+    # 1) Clerk session, if one is presented and valid.
     authz = request.headers.get("authorization")
     if authz:
         try:
             return auth.verify_token(auth.extract_bearer(authz))
-        except auth.AuthError as exc:
-            if config.settings.dev_unlocked:
-                return dict(_DEV_USER)
-            raise HTTPException(status_code=exc.status, detail=str(exc)) from exc
+        except auth.AuthError:
+            pass  # fall through to the interim / dev paths below
+    # 2) Interim shared access code (before the full Clerk/Stripe flow).
+    code = request.headers.get(_ACCESS_HEADER)
+    if code and auth.access_code_ok(code):
+        return dict(_CODE_USER)
+    # 3) Local-only dev escape hatch.
     if config.settings.dev_unlocked:
         return dict(_DEV_USER)
     raise HTTPException(status_code=401, detail="authentication required")
@@ -73,6 +79,8 @@ def _require_user(request: Request) -> dict:
 def _require_entitled(user: dict) -> None:
     s = config.settings
     if s.dev_unlocked:
+        return
+    if user.get("_code"):  # a valid access code (proven in _require_user) is the entitlement
         return
     if not s.billing_configured():
         raise HTTPException(status_code=503, detail="billing_not_configured")
@@ -104,6 +112,7 @@ def public_config() -> dict:
     return {
         "clerkPublishableKey": s.clerk_publishable_key,
         "authConfigured": s.auth_configured(),
+        "accessCodeEnabled": s.access_code_configured(),
         "billingConfigured": s.billing_configured(),
         "billingEnabled": s.billing_configured() or s.dev_unlocked,
         "devUnlocked": s.dev_unlocked,
@@ -126,6 +135,9 @@ def me_entitlement(request: Request) -> dict:
     s = config.settings
     if s.dev_unlocked:
         return {"signedIn": True, "entitled": True, "reason": "dev_unlocked"}
+    code = request.headers.get(_ACCESS_HEADER)
+    if code and auth.access_code_ok(code):
+        return {"signedIn": True, "entitled": True, "reason": "access_code"}
     user = _claims_or_none(request)
     if user is None:
         return {"signedIn": False, "entitled": False, "reason": "not_signed_in"}
@@ -136,6 +148,22 @@ def me_entitlement(request: Request) -> dict:
     except billing.BillingError as exc:
         return {"signedIn": True, "entitled": False, "reason": str(exc)}
     return {"signedIn": True, "entitled": entitled, "reason": "ok" if entitled else "no_subscription"}
+
+
+# ── interim access-code gate ─────────────────────────────────────────────────
+
+
+@app.post("/api/access/verify")
+def access_verify(request: Request) -> dict:
+    """Confirm a shared access code (header ``X-Access-Code``) — the stopgap gate
+    used before the full Clerk/Stripe flow. 404 when no code is configured on the
+    deployment, 401 when it doesn't match. Comparison is constant-time."""
+    if not config.settings.access_code_configured():
+        raise HTTPException(status_code=404, detail="access_code_not_enabled")
+    code = request.headers.get(_ACCESS_HEADER)
+    if not (code and auth.access_code_ok(code)):
+        raise HTTPException(status_code=401, detail="invalid_code")
+    return {"ok": True}
 
 
 # ── billing endpoints ────────────────────────────────────────────────────────

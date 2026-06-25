@@ -37,6 +37,10 @@ class Settings:
     # App
     app_base_url: str
     pro_price_label: str
+    # Interim shared access code — a single code typed on the web9 page that
+    # unlocks rendering before the full Clerk/Stripe flow exists. Server-checked
+    # (constant-time) and set via env only; never committed. Empty = disabled.
+    access_code: str
     # Resource bounds (tracks #42 / SEC-008)
     max_render_size: int
     max_render_grid: int
@@ -47,6 +51,9 @@ class Settings:
 
     def auth_configured(self) -> bool:
         return bool(self.clerk_jwks_url)
+
+    def access_code_configured(self) -> bool:
+        return bool(self.access_code)
 
     def billing_configured(self) -> bool:
         return bool(self.stripe_secret_key and self.stripe_price_id and self.stripe_webhook_secret)
@@ -66,6 +73,7 @@ def load_settings() -> Settings:
         stripe_webhook_secret=os.getenv("STRIPE_WEBHOOK_SECRET", "").strip(),
         app_base_url=os.getenv("APP_BASE_URL", "").strip().rstrip("/"),
         pro_price_label=os.getenv("PRO_PRICE_LABEL", "").strip(),
+        access_code=os.getenv("CELLAUTO_ACCESS_CODE", "").strip(),
         max_render_size=_int("MAX_RENDER_SIZE", 4000),
         max_render_grid=_int("MAX_RENDER_GRID", 384),
         max_render_steps=_int("MAX_RENDER_STEPS", 1500),

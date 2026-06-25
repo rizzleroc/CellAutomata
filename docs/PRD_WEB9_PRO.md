@@ -95,12 +95,13 @@ Pro switches on the moment the keys are present.
 | Method | Path | Auth | Returns |
 |---|---|---|---|
 | GET | `/healthz` | – | `{"status":"ok"}` (Railway healthcheck) |
-| GET | `/api/public-config` | – | `{clerkPublishableKey, billingEnabled, priceLabel}` |
+| GET | `/api/public-config` | – | `{clerkPublishableKey, accessCodeEnabled, billingEnabled, priceLabel}` |
 | GET | `/api/rules` | – | `[{name,label,renderer,presets[],params[{attr,label,lo,hi,step,integer}]}]` |
-| GET | `/api/me/entitlement` | Bearer | `{signedIn, entitled, reason}` |
+| GET | `/api/me/entitlement` | Bearer / `X-Access-Code` | `{signedIn, entitled, reason}` |
+| POST | `/api/access/verify` | `X-Access-Code` | `{"ok":true}` (interim gate; `404` if no code configured) |
 | POST | `/api/checkout` | Bearer | `{url}` (Stripe Checkout) |
 | POST | `/api/stripe/webhook` | Stripe sig | `{"received":true}` |
-| POST | `/api/render` | Bearer + entitled | `image/png` |
+| POST | `/api/render` | Bearer **or** `X-Access-Code`, + entitled | `image/png` |
 | GET | `/*` | – | static `docs/` |
 
 **`POST /api/render` body** (all validated + clamped server-side):
@@ -154,6 +155,7 @@ Set on the service (Variables tab). Railway injects `PORT` automatically.
 | `MAX_RENDER_SIZE` | optional | hard cap, default `4000` |
 | `MAX_RENDER_GRID` | optional | hard cap, default `384` |
 | `MAX_RENDER_STEPS` | optional | hard cap, default `1500` |
+| `CELLAUTO_ACCESS_CODE` | optional | interim shared code that unlocks rendering before Clerk/Stripe; empty = off |
 | `CELLAUTO_DEV_UNLOCKED` | **never in prod** | local-only: treat caller as entitled without Clerk/Stripe |
 
 ### 6.4 Test-mode trial run (before the full security stack)
@@ -161,11 +163,18 @@ You can exercise the gate without real money or a finished production setup. Key
 go in Railway's **Variables** tab (or a local gitignored `.env`) — never in the
 repo. A `.env.example` at the repo root lists every variable with placeholders.
 
-- **Fastest — render only, no keys.** Set `CELLAUTO_DEV_UNLOCKED=1` and nothing
-  else. `/api/render` unlocks and the studio opens — good for trialing the render
-  itself, but it skips sign-in/checkout and grants Pro to **every** visitor, so
-  don't leave it on a public deploy.
-- **Recommended — the whole flow in test mode.** Use a Clerk **development**
+- **Simplest — a shared access code.** Set `CELLAUTO_ACCESS_CODE=<some code>`
+  and nothing else. web9 shows a code box ("early access"); anyone who enters the
+  matching code can render, with no Clerk/Stripe. The server checks it
+  constant-time (`POST /api/access/verify`) and the code rides on `/api/render`
+  as the `X-Access-Code` header — so the protected compute, not just the UI, is
+  gated. Hand the code to trial users out-of-band; unset it when the full flow is
+  live. (It's a stopgap: a single shared secret, no per-user quota or rate limit.)
+- **Render only, no gate.** Set `CELLAUTO_DEV_UNLOCKED=1` and nothing else.
+  `/api/render` unlocks and the studio opens with **no prompt at all** — good for
+  trialing the render itself, but it grants Pro to **every** visitor, so don't
+  leave it on a public deploy.
+- **The whole flow in test mode.** Use a Clerk **development**
   instance and Stripe **test mode**; the keys read as `pk_test_…` / `sk_test_…` /
   `whsec_…` and the code path is identical to live. Subscribe with Stripe's test
   card `4242 4242 4242 4242` (any future expiry, any CVC) and leave

@@ -101,6 +101,12 @@ select:focus, input:focus { outline: none; border-color: var(--teal-line); }
 .gate-card p { color: var(--ink-soft); margin: 0 0 var(--s4); }
 .gate-card .price { color: var(--teal); font-family: var(--font-mono); letter-spacing: .08em; }
 #signin { margin: var(--s5) 0; display: flex; justify-content: center; }
+.codegate { margin: var(--s5) auto 0; display: flex; gap: var(--s3); justify-content: center; max-width: 360px; }
+.codegate input[type="password"] { flex: 1 1 auto; background: var(--obsidian-3); color: var(--ink);
+  border: 1px solid var(--hair); border-radius: 6px; padding: 10px var(--s3);
+  font-family: var(--font-mono); font-size: 14px; letter-spacing: .12em; }
+.codegate input:focus { outline: none; border-color: var(--teal-line); }
+.codegate .btn { width: auto; flex: 0 0 auto; }
 .gate-actions { display: flex; gap: var(--s3); justify-content: center; }
 .gate-actions .btn { width: auto; }
 

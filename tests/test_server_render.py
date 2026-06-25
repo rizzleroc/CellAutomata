@@ -33,7 +33,7 @@ _AUTH_VARS = (
 
 @pytest.fixture
 def locked(monkeypatch):
-    for key in ("CELLAUTO_DEV_UNLOCKED", *_AUTH_VARS):
+    for key in ("CELLAUTO_DEV_UNLOCKED", "CELLAUTO_ACCESS_CODE", *_AUTH_VARS):
         monkeypatch.delenv(key, raising=False)
     config.settings = config.load_settings()
     yield
@@ -42,11 +42,22 @@ def locked(monkeypatch):
 
 @pytest.fixture
 def dev_unlocked(monkeypatch):
-    for key in _AUTH_VARS:
+    for key in ("CELLAUTO_ACCESS_CODE", *_AUTH_VARS):
         monkeypatch.delenv(key, raising=False)
     monkeypatch.setenv("CELLAUTO_DEV_UNLOCKED", "1")
     config.settings = config.load_settings()
     yield
+    config.settings = config.load_settings()
+
+
+@pytest.fixture
+def access_code(monkeypatch):
+    """Interim shared-code mode: a code is set, no Clerk/Stripe, no dev-unlock."""
+    for key in ("CELLAUTO_DEV_UNLOCKED", *_AUTH_VARS):
+        monkeypatch.delenv(key, raising=False)
+    monkeypatch.setenv("CELLAUTO_ACCESS_CODE", "trial-s3cret")
+    config.settings = config.load_settings()
+    yield "trial-s3cret"
     config.settings = config.load_settings()
 
 
@@ -177,3 +188,51 @@ def test_http_locked_gate(locked, client):
     assert client.post("/api/checkout").status_code == 503
     assert client.post("/api/stripe/webhook", content=b"{}").status_code == 503
     assert client.get("/api/me/entitlement").json()["signedIn"] is False
+    # No access code configured → the interim verify endpoint is absent (404).
+    assert client.post("/api/access/verify", headers={"X-Access-Code": "x"}).status_code == 404
+
+
+# ── HTTP surface (interim shared access code) ────────────────────────────────
+
+
+def test_http_access_code_flow(access_code, client):
+    code = access_code
+
+    cfg = client.get("/api/public-config").json()
+    assert cfg["accessCodeEnabled"] is True
+    assert cfg["billingConfigured"] is False
+    assert cfg["devUnlocked"] is False
+
+    # verify endpoint: right code 200, wrong/missing 401
+    assert client.post("/api/access/verify", headers={"X-Access-Code": code}).status_code == 200
+    assert client.post("/api/access/verify", headers={"X-Access-Code": "nope"}).status_code == 401
+    assert client.post("/api/access/verify").status_code == 401
+
+    # entitlement reflects the code
+    ent = client.get("/api/me/entitlement", headers={"X-Access-Code": code}).json()
+    assert ent["entitled"] is True and ent["reason"] == "access_code"
+    assert client.get("/api/me/entitlement").json()["entitled"] is False
+
+    body = {
+        "rule": "abiogenesis-stage1-grayscott",
+        "preset": "spots",
+        "seed": 1,
+        "grid": 48,
+        "steps": 20,
+        "size": 128,
+    }
+    # render is gated by the code: none/wrong → 401, right → 200 PNG
+    assert client.post("/api/render", json=body).status_code == 401
+    assert client.post("/api/render", headers={"X-Access-Code": "wrong"}, json=body).status_code == 401
+    good = client.post("/api/render", headers={"X-Access-Code": code}, json=body)
+    assert good.status_code == 200
+    assert good.headers["content-type"] == "image/png"
+    assert good.content[:8] == PNG_MAGIC
+
+    # a valid code still can't bypass input validation
+    bad = client.post(
+        "/api/render",
+        headers={"X-Access-Code": code},
+        json={"rule": "conway", "grid": 48, "steps": 5, "size": 128},
+    )
+    assert bad.status_code == 400

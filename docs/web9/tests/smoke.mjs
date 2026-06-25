@@ -28,6 +28,7 @@ for (const id of ['stage', 'regime', 'knobs', 'seed', 'grid', 'steps', 'size', '
   ok(new RegExp(`id="${id}"`).test(html), `index.html missing #${id}`);
 }
 ok(/type="module"\s+src="\.\/studio\.js"/.test(html), 'index.html must load studio.js as a module');
+ok(/id="accessCode"/.test(html) && /id="accessBtn"/.test(html), 'index.html exposes the interim access-code gate');
 ok(/aria-live="polite"/.test(html), 'missing the polite live region');
 ok(/class="skip-link"/.test(html), 'missing the skip-link');
 ok(/LIVE · SEM/.test(html), 'the plate carries the LIVE · SEM badge');
@@ -41,10 +42,11 @@ ok(/prefers-reduced-motion/.test(css), 'reduced-motion path present');
 
 // 4 · the controller talks to the Pro API surface -----------------------------
 const js = read('studio.js');
-for (const ep of ['/api/public-config', '/api/rules', '/api/me/entitlement', '/api/checkout', '/api/render']) {
+for (const ep of ['/api/public-config', '/api/rules', '/api/me/entitlement', '/api/checkout', '/api/render', '/api/access/verify']) {
   ok(js.includes(ep), `studio.js must call ${ep}`);
 }
 ok(/Authorization/.test(js) && /getToken/.test(js), 'studio.js attaches the Clerk bearer token');
+ok(/X-Access-Code/.test(js), 'studio.js attaches the interim access code header');
 ok(/image\/png|blob\(\)/.test(js), 'studio.js consumes the PNG render response');
 
 if (fails.length) console.error('\n' + fails.map((f) => '  ✗ ' + f).join('\n'));

@@ -27,7 +27,7 @@ multiples → stages of life).
 | `web7/` | **The canonical lab** ("Catalytic Silence") — 13 abiogenesis stages, each a photoreal Three.js apparatus + a live SEM micrograph | active |
 | `web8/` | **The Guided Colony** = web7 + a living-amoeba guide creature (`guide.js`, `guide.css`, `blobgeom.js`) | active |
 | `ontogeny/` | **Part II — the origin of an individual.** Pure canvas + `sem.js`; engine `sim.js`, renderer `render.js`, controller `app.js` | active |
-| `web9/` | **Pro Studio** — the first **paid tier**: gated hi-res SEM export. A pure `studio.js` cockpit (Clerk sign-in + Stripe checkout) that POSTs the **Railway app server**'s `/api/render`; the 4000²-capable render is server-side Python. Only fully active on the Railway deploy (graceful "coming soon" on GitHub Pages). | active |
+| `web9/` | **Pro Studio** — the first **paid tier**: gated hi-res SEM export. A pure `studio.js` cockpit (Clerk sign-in + Stripe checkout, or an interim shared access-code gate) that POSTs the **Railway app server**'s `/api/render`; the 4000²-capable render is server-side Python. Only fully active on the Railway deploy (graceful "coming soon" on GitHub Pages). | active |
 | `web`, `web2`, `web3`, `web6` | earlier clients, retained for comparison | legacy |
 
 Self-hosted fonts live in `web8/assets/fonts/`; ontogeny + web9 reuse them via
@@ -62,8 +62,10 @@ Self-hosted fonts live in `web8/assets/fonts/`; ontogeny + web9 reuse them via
   `cellauto.app`/tkinter. The catalog of renderable *field* stages and their full
   knob set (#65) is built from `cellauto.rules.params.PARAM_SPECS` in
   `server/catalog.py`. Boots fine with no keys (Pro reports
-  `billing_not_configured`); `CELLAUTO_DEV_UNLOCKED=1` unlocks it locally. Full
-  contract + operator setup: `docs/PRD_WEB9_PRO.md`.
+  `billing_not_configured`); `CELLAUTO_DEV_UNLOCKED=1` unlocks it locally, and
+  `CELLAUTO_ACCESS_CODE=<code>` is an interim shared-code gate (a code typed on
+  the page, checked constant-time + carried as `X-Access-Code`) for trial runs
+  before Clerk/Stripe. Full contract + operator setup: `docs/PRD_WEB9_PRO.md`.
 - **Two deploys now.** GitHub Pages = the free static mirror (web9 there shows
   "coming soon" because `/api/*` 404s). Railway = the full app where Pro
   activates once the Clerk/Stripe env vars are set. The free site is identical on

@@ -36,6 +36,12 @@
         <h1 id="gateTitle">Pro Studio</h1>
         <p id="gateBlurb">Sign in to render publication-quality micrographs.</p>
         <div id="signin"></div>
+        <form class="codegate" id="codegate" hidden autocomplete="off">
+          <label class="sr-only" for="accessCode">Access code</label>
+          <input type="password" id="accessCode" name="accessCode" placeholder="Access code"
+                 autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false">
+          <button class="btn" id="accessBtn" type="submit">Enter</button>
+        </form>
         <div class="gate-actions">
           <button class="btn" id="upgradeBtn" hidden>Upgrade to Pro <span id="gatePrice" class="price"></span></button>
         </div>

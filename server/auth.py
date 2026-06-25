@@ -8,6 +8,7 @@ return the claims. ``sub`` is the Clerk user id we key billing on.
 
 from __future__ import annotations
 
+import hmac
 import threading
 from typing import Any
 
@@ -18,6 +19,19 @@ class AuthError(Exception):
     def __init__(self, message: str, status: int = 401) -> None:
         super().__init__(message)
         self.status = status
+
+
+def access_code_ok(presented: str | None) -> bool:
+    """Constant-time check of the interim shared access code (see config).
+
+    Returns False when no code is configured or none is presented, so the gate
+    fails closed. This is a deliberately simple stopgap before the full
+    Clerk/Stripe flow — the code is the bearer credential while it's enabled.
+    """
+    expected = config.settings.access_code
+    if not expected or not presented:
+        return False
+    return hmac.compare_digest(str(presented), str(expected))
 
 
 _lock = threading.Lock()
