@@ -1,14 +1,19 @@
 # Railway service config.
 #
-# Forces the Dockerfile builder so Nixpacks doesn't try to install the
-# cellauto Python package (Pillow/numpy build) — the Railway service only
-# needs to serve docs/, not run the simulator.
+# Forces the Dockerfile builder so Nixpacks doesn't try to guess the build.
+# The image runs the FastAPI app server (server/app.py), which:
+#   * serves the free static site from docs/ (unchanged) —
+#       /            → docs/index.html      (Catalytic Silence hub)
+#       /web7/       → the canonical lab
+#       /web8/       → the guided lab
+#       /ontogeny/   → Part II
+#       /web9/       → Pro Studio (hi-res SEM export; gated)
+#       /generated/  → static stage plates
+#   * gates the Pro render API behind Clerk + Stripe —
+#       GET  /api/rules, /api/public-config, /api/me/entitlement
+#       POST /api/checkout, /api/stripe/webhook, /api/render
 #
-# Route map (served from docs/):
-#   /            → docs/index.html       (redirects to /web2/)
-#   /web2/       → web 2.0 multi-rule sandbox  (headline)
-#   /web/        → web 1.0 Gray-Scott museum plate  (preserved)
-#   /generated/  → static stage plates referenced by both demos
+# Set the Clerk/Stripe env vars on the service (see docs/PRD_WEB9_PRO.md §6).
 
 [build]
 builder = "dockerfile"
@@ -17,5 +22,5 @@ dockerfilePath = "Dockerfile"
 [deploy]
 restartPolicyType = "on_failure"
 restartPolicyMaxRetries = 3
-healthcheckPath = "/web2/"
+healthcheckPath = "/healthz"
 healthcheckTimeout = 30

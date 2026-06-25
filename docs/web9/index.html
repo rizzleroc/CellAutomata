@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="dark">
+<meta name="theme-color" content="#07090d">
+<meta name="description" content="cellauto Pro Studio — render any abiogenesis stage as a publication-quality SEM micrograph up to 4000×4000 and download the PNG.">
+<title>cellauto · Pro Studio — hi-res SEM export</title>
+<link rel="preload" href="../web8/assets/fonts/Italiana-Regular.ttf" as="font" type="font/ttf" crossorigin>
+<link rel="preload" href="../web8/assets/fonts/IBMPlexMono-Regular.ttf" as="font" type="font/ttf" crossorigin>
+<link rel="stylesheet" href="./styles.css">
+</head>
+<body>
+<a class="skip-link" href="#studio">Skip to the studio</a>
+<div class="grain" aria-hidden="true"></div>
+<div class="vignette" aria-hidden="true"></div>
+
+<div class="vitrine" id="vitrine">
+  <header class="register">
+    <div class="brand">
+      <span class="brand-mark" aria-hidden="true"></span>
+      <span class="brand-word">cellauto</span>
+      <span class="brand-rule" aria-hidden="true"></span>
+      <span class="brand-sub">Pro Studio · hi-res SEM export</span>
+    </div>
+    <div class="account" id="account">
+      <a class="who" href="../">← back to the lab</a>
+    </div>
+  </header>
+
+  <main class="body" id="app">
+    <!-- Gate: shown when not signed in, not subscribed, or Pro not configured. -->
+    <section class="gate" id="gate" hidden>
+      <div class="gate-card">
+        <h1 id="gateTitle">Pro Studio</h1>
+        <p id="gateBlurb">Sign in to render publication-quality micrographs.</p>
+        <div id="signin"></div>
+        <form class="codegate" id="codegate" hidden autocomplete="off">
+          <label class="sr-only" for="accessCode">Access code</label>
+          <input type="password" id="accessCode" name="accessCode" placeholder="Access code"
+                 autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false">
+          <button class="btn" id="accessBtn" type="submit">Enter</button>
+        </form>
+        <div class="gate-actions">
+          <button class="btn" id="upgradeBtn" hidden>Upgrade to Pro <span id="gatePrice" class="price"></span></button>
+        </div>
+      </div>
+    </section>
+
+    <!-- Studio: the controls + the preview plate. -->
+    <aside class="panel" id="studio" hidden>
+      <p class="kicker">Specimen</p>
+      <div class="field">
+        <label for="stage">Stage</label>
+        <select id="stage"></select>
+      </div>
+      <div class="field" id="regimeWrap" hidden>
+        <label for="regime">Regime</label>
+        <select id="regime"></select>
+      </div>
+
+      <p class="kicker">Knobs</p>
+      <p class="knob-help">Tick a knob to override its default. Untouched knobs use the stage's calibrated value.</p>
+      <div id="knobs"></div>
+
+      <p class="kicker">Render</p>
+      <div class="row2">
+        <div class="field"><label for="grid">Grid (sim res)</label><input type="number" id="grid" value="200" min="16" step="1"></div>
+        <div class="field"><label for="steps">Steps</label><input type="number" id="steps" value="400" min="1" step="1"></div>
+      </div>
+      <div class="row2">
+        <div class="field"><label for="seed">Seed</label><input type="number" id="seed" value="1" step="1"></div>
+        <div class="field"><label for="size">Output size</label><select id="size"></select></div>
+      </div>
+      <div class="field">
+        <label for="palette">Palette</label>
+        <select id="palette">
+          <option value="warm-sepia">warm-sepia</option>
+          <option value="cool-mono">cool-mono</option>
+        </select>
+      </div>
+      <button class="btn" id="renderBtn">Render micrograph</button>
+    </aside>
+
+    <!-- Preview / export (right column; lives next to #studio). -->
+    <section class="stagearea" id="stagearea" hidden>
+      <figure class="plate">
+        <figcaption class="plate-badge">LIVE · SEM — Pro</figcaption>
+        <div class="placeholder" id="placeholder">Configure a specimen and render. Output up to 4000×4000.</div>
+        <img id="result" alt="Rendered SEM micrograph" hidden>
+      </figure>
+      <div class="exportbar">
+        <a id="download" download="cellauto-sem.png" hidden>↓ download PNG</a>
+        <span id="renderMeta" class="who"></span>
+      </div>
+    </section>
+  </main>
+</div>
+
+<p id="status" class="sr-only" aria-live="polite" role="status"></p>
+
+<script type="module" src="./studio.js"></script>
+</body>
+</html>
