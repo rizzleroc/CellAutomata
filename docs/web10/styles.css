@@ -572,3 +572,31 @@ body {
 .stage-btn:hover::before, .stage-btn:focus-visible::before {
   background: linear-gradient(90deg, rgba(7,9,13,.85), rgba(7,9,13,.62) 55%, rgba(7,9,13,.40)); }
 @media (prefers-reduced-motion: reduce) { .pro-pill { transition: none; } }
+
+/* ── Mark X timeline scrubber ──────────────────────────────────────────────── */
+.timeline { flex: 0 0 auto; display: flex; align-items: center; gap: 12px;
+  padding: 8px 32px; border-top: 1px solid var(--hair, rgba(236,231,218,.08));
+  background: var(--obsidian-2, #0a0e15); }
+.tl-arrow { background: transparent; color: var(--ink-soft, #cbc5b6);
+  border: 1px solid var(--teal-line); border-radius: 6px; width: 26px; height: 26px;
+  cursor: pointer; font-size: 11px; flex: 0 0 auto; transition: color .17s, border-color .17s; }
+.tl-arrow:hover, .tl-arrow:focus-visible { color: var(--teal); border-color: var(--teal); }
+.tl-track { flex: 1 1 auto; display: flex; align-items: center; justify-content: space-between;
+  gap: 2px; position: relative; }
+.tl-track::before { content: ""; position: absolute; left: 8px; right: 8px; top: 9px; height: 1px;
+  background: var(--teal-line); z-index: 0; }
+.tl-node { position: relative; z-index: 1; background: transparent; border: 0; cursor: pointer;
+  display: flex; flex-direction: column; align-items: center; gap: 3px; padding: 0 4px; }
+.tl-dot { width: 9px; height: 9px; border-radius: 50%; background: var(--obsidian-3, #0d131c);
+  border: 1px solid var(--teal-line); transition: background .17s, border-color .17s, box-shadow .17s; }
+.tl-num { font-family: "IBM Plex Mono", ui-monospace, monospace; font-size: 8px; letter-spacing: .06em;
+  color: var(--muted, #9a9280); opacity: 0; transition: opacity .17s; }
+.tl-node:hover .tl-dot, .tl-node:focus-visible .tl-dot { border-color: var(--teal); }
+.tl-node:hover .tl-num, .tl-node:focus-visible .tl-num { opacity: 1; }
+.tl-node.is-current .tl-dot { background: var(--magenta); border-color: var(--magenta);
+  box-shadow: 0 0 9px var(--mag-line, rgba(215,123,255,.5)); }
+.tl-node.is-current .tl-num { opacity: 1; color: var(--teal); }
+.tl-prov { flex: 0 0 auto; font-family: "IBM Plex Mono", ui-monospace, monospace; font-size: 9px;
+  letter-spacing: .1em; color: var(--muted-dim, #8a8474); text-transform: uppercase; }
+@media (prefers-reduced-motion: reduce) { .tl-arrow, .tl-dot, .tl-num { transition: none; } }
+@media (max-width: 860px) { .tl-prov, .tl-num { display: none; } .timeline { padding: 8px 16px; } }

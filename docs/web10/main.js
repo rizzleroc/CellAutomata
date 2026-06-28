@@ -248,6 +248,14 @@ function loadStage(m) {
     b.classList.toggle('active', sel);
     if (sel) b.setAttribute('aria-current', 'true'); else b.removeAttribute('aria-current');
   });
+  // Mark X timeline scrubber — keep the node row + provenance in lockstep.
+  document.querySelectorAll('.tl-node').forEach(n => {
+    const sel = n.dataset.id === m.id;
+    n.classList.toggle('is-current', sel);
+    if (sel) n.setAttribute('aria-current', 'true'); else n.removeAttribute('aria-current');
+  });
+  const prov = $('tlProv');
+  if (prov) { const idx = STAGES.findIndex(s => s.id === m.id); prov.textContent = `PL.${plate.numeral} · ${idx + 1}/${STAGES.length} · BUILD MK X`; }
   const ss = $('stageSelect'); if (ss) ss.value = m.id;   // keep the mobile switcher in sync
   announce(`${m.label}. ${m.title}.`);
 }
@@ -620,6 +628,30 @@ stageSelect.onchange = () => {
   const m = STAGES.find(s => s.id === stageSelect.value);
   if (m) loadStage(m);
 };
+
+// ── Mark X timeline scrubber — a node per stage + ◀/▶ stepping ────────────────
+const tlTrack = $('tlTrack');
+if (tlTrack) {
+  STAGES.forEach((m) => {
+    const p = plateOf(m);
+    const n = document.createElement('button');
+    n.className = 'tl-node';
+    n.type = 'button';
+    n.dataset.id = m.id;
+    n.title = `${p.numeral} · ${p.name}`;
+    n.setAttribute('aria-label', n.title);
+    n.innerHTML = `<span class="tl-dot"></span><span class="tl-num">${p.numeral}</span>`;
+    n.onclick = () => loadStage(m);
+    tlTrack.appendChild(n);
+  });
+  const tlStep = (d) => {
+    const i = STAGES.findIndex((s) => s.id === currentMeta?.id);
+    const j = Math.max(0, Math.min(STAGES.length - 1, (i < 0 ? 0 : i) + d));
+    loadStage(STAGES[j]);
+  };
+  $('tlPrev')?.addEventListener('click', () => tlStep(-1));
+  $('tlNext')?.addEventListener('click', () => tlStep(1));
+}
 
 // Keyboard navigation of the index — Up/Down move focus, Home/End jump, the
 // button's native Enter/Space activates. (Correct vertical-menu semantics.)

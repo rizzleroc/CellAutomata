@@ -126,6 +126,8 @@ assert(/class="brand-build"/.test(html) && /MK/.test(html), "missing the Mark X 
 assert(/class="pro-pill"/.test(html) && /href="\.\.\/web9\//.test(html) && /\.pro-pill/.test(css),
   "missing the Pro · 4000² export pill linking to web9");
 assert(/--hero/.test(main) && /--hero/.test(css), "missing the hero-art stage rail backdrop (--hero)");
+assert(/class="timeline"/.test(html) && /id="tlTrack"/.test(html), "missing the Mark X 13-node timeline scrubber");
+assert(/tl-node/.test(main) && /\.tl-node\b/.test(css), "timeline scrubber not built (main.js) or styled (css)");
 assert(exists("../generated/web10/stage01_reaction_diffusion.png"), "the committed Stage II pilot hero is missing");
 
 console.log(`\n${checks} checks passed, ${failures} failure(s).`);
