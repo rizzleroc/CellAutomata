@@ -26,6 +26,7 @@ multiples → stages of life).
 |---|---|---|
 | `web7/` | **The canonical lab** ("Catalytic Silence") — 13 abiogenesis stages, each a photoreal Three.js apparatus + a live SEM micrograph | active |
 | `web8/` | **The Guided Colony** = web7 + a living-amoeba guide creature (`guide.js`, `guide.css`, `blobgeom.js`) | active |
+| `web10/` | **Mark X** — web7 re-shelled: hero-art stage rail + a Pro · 4000² export pill (→ `web9/`), magenta accent, "MK X" build tag. Reuses web7's `rules/*` + `apparatus/*` + `scene.js`; carries web8's newer `sem.js`. Per-stage hero art in `docs/generated/web10/` (MCP-generated; backfilling). | active |
 | `ontogeny/` | **Part II — the origin of an individual.** Pure canvas + `sem.js`; engine `sim.js`, renderer `render.js`, controller `app.js` | active |
 | `web`, `web2`, `web3`, `web6` | earlier clients, retained for comparison | legacy |
 
@@ -131,7 +132,9 @@ them; track work against the linked issues.
    **grayscott** (add `Du`, `Dv`, `substeps` — currently hardcoded in
    `grayscott.js:16-21`); **natural-selection** (only `amoebaLifespan`);
    **life** (the only stage with no regime picker). Guard a minimum control set
-   per rule with a smoke test.
+   per rule with a smoke test. web10's `DESIGN.md` §3 now documents each stage's
+   wired knob set + these II/XI/XIII gaps as a committed reference (gated by
+   `web10/tests/design.mjs`).
 3. **Test gates must verify the science — issue #67.** Several smoke gates pass
    on blank/garbage output (ontogeny lights 100% of pixels from the `0.10`
    substrate fill alone; the lab gate only checks opaque + >1 colour), and the

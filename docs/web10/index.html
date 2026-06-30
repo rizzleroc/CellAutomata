@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="color-scheme" content="dark">
+<meta name="theme-color" content="#07090d">
+<meta name="description" content="cellauto · Mark X — the next-generation Catalytic Silence lab. 13 abiogenesis stages, each a photoreal apparatus beside its live SEM micrograph, with hi-res Pro export.">
+<title>cellauto · Mark X — the Catalytic Silence lab</title>
+<!-- import-map polyfill so Safari 16.0–16.3 / Firefox <108 can still resolve `three` -->
+<script async src="https://cdn.jsdelivr.net/npm/es-module-shims@1.10.0/dist/es-module-shims.js" crossorigin="anonymous"></script>
+<script type="importmap">
+{
+  "imports": {
+    "three": "https://cdn.jsdelivr.net/npm/three@0.162.0/build/three.module.js",
+    "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.162.0/examples/jsm/"
+  }
+}
+</script>
+<link rel="preload" href="../web8/assets/fonts/Italiana-Regular.ttf" as="font" type="font/ttf" crossorigin>
+<link rel="preload" href="../web8/assets/fonts/CrimsonPro-Regular.ttf" as="font" type="font/ttf" crossorigin>
+<link rel="preload" href="../web8/assets/fonts/IBMPlexMono-Regular.ttf" as="font" type="font/ttf" crossorigin>
+<link rel="stylesheet" href="./styles.css">
+</head>
+<body>
+<!-- A catalogue page from a discipline that does not yet exist. -->
+<a class="skip-link" href="#specimen">Skip to specimen</a>
+
+<noscript>
+  <div class="noscript-note">cellauto is a live instrument — please enable JavaScript to enter the lab.</div>
+</noscript>
+
+<div class="vitrine" data-view="split">
+
+  <!-- decorative film: a whisper of grain + a held breath of vignette -->
+  <div class="grain" aria-hidden="true"></div>
+  <div class="vignette" aria-hidden="true"></div>
+  <!-- scrim behind the controls drawer on narrow screens (≤1180px): tap to dismiss -->
+  <div class="key-scrim" id="keyScrim" aria-hidden="true"></div>
+
+  <!-- visually-hidden live region: announces meaningful state, never the per-frame telemetry -->
+  <div class="sr-only" aria-live="polite" id="srStatus"></div>
+
+  <!-- ─────────────────────────  TOP REGISTER  ───────────────────────── -->
+  <header class="register">
+    <div class="register-brand">
+      <span class="brand-mark" id="statusDot" title="instrument idle" aria-hidden="true"></span>
+      <h1 class="brand-word">cellauto</h1>
+      <span class="brand-rule" aria-hidden="true"></span>
+      <span class="brand-sub">an origin-of-life instrument</span>
+      <span class="brand-build" title="Build — Mark X">MK&nbsp;X</span>
+    </div>
+    <div class="register-meta" aria-hidden="true">
+      <span class="meta-plate" id="plateNo" title="Plate number">PL. 0</span>
+      <span class="meta-dot"></span>
+      <span class="meta-mode" id="modeLabel">LAB</span>
+      <span class="meta-dot"></span>
+      <span class="meta-cat">cat. — Catalytic&nbsp;Silence</span>
+    </div>
+  </header>
+
+  <!-- ───────────────────  BODY · index | specimen | key  ─────────────── -->
+  <div class="body">
+
+    <!-- LEFT · the index of stages, set as a museum catalogue -->
+    <nav class="index" aria-label="Origin-of-life stages">
+      <div class="index-head">
+        <span class="index-kicker">Plates</span>
+        <span class="index-meta" id="stageCount" title="Stages 0–XI, plus the capstone (✦)">—</span>
+      </div>
+      <div class="index-list" id="stageNav"><!-- injected by main.js --></div>
+      <p class="index-foot">
+        Each plate is a working experiment, set beside the micrograph it produces.
+        <br><a href="../ontogeny/" style="color: var(--teal); text-decoration: none; border-bottom: 1px solid var(--teal-line);">Then — Ontogeny: the origin of an individual →</a>
+      </p>
+    </nav>
+
+    <!-- CENTRE · the specimen, given the dignity of breath -->
+    <main class="specimen" id="specimen" tabindex="-1" aria-labelledby="apTitle">
+      <div class="panes">
+
+        <!-- the apparatus, framed as a vitrine -->
+        <section class="pane pane-lab" aria-label="Apparatus">
+          <div id="viewport" class="viewport" role="img" tabindex="0"
+               aria-label="Interactive 3D apparatus. Arrow keys orbit; plus and minus zoom; drag to rotate."></div>
+          <div class="viewport-hint" id="viewportHint" aria-hidden="true">drag to rotate · scroll to zoom</div>
+        </section>
+
+        <div class="divider" aria-hidden="true"></div>
+
+        <!-- the live micrograph, framed as a scientific plate -->
+        <section class="pane pane-exp" aria-label="Live micrograph">
+          <figure class="plate">
+            <canvas id="expCanvas" class="exp-canvas" role="img" aria-label="Live SEM micrograph"></canvas>
+            <div class="plate-mat" aria-hidden="true">
+              <span class="reg tl"></span><span class="reg tr"></span>
+              <span class="reg bl"></span><span class="reg br"></span>
+            </div>
+            <div class="plate-badge"><span class="rec" id="recDot"></span>LIVE · SEM</div>
+            <a class="pro-pill" href="../web9/" title="Open Pro Studio — render this stage as a hi-res SEM micrograph up to 4000×4000">PRO · 4000² EXPORT ↗</a>
+            <div class="plate-scale" aria-hidden="true"><span class="bar"></span><span class="num">50 µm</span></div>
+            <figcaption class="plate-caption" id="expCaption">—</figcaption>
+            <div class="plate-empty" id="expEmpty" hidden>
+              <span class="empty-mark">✦</span>
+              <span class="empty-line">specimen pending</span>
+              <span class="empty-sub">no instrument is yet mapped to this plate</span>
+            </div>
+          </figure>
+        </section>
+      </div>
+
+      <!-- specimen caption — the museum wall label -->
+      <div class="caption">
+        <div class="caption-label" id="apLabel">Stage 0 — Miller–Urey</div>
+        <h2 class="caption-title" id="apTitle">Spark-discharge apparatus · 1953</h2>
+        <p class="caption-blurb" id="apBlurb"></p>
+      </div>
+
+      <!-- instrument bar — the apparatus made operable -->
+      <div class="instrument">
+        <!-- mobile-only stage switcher (the index rail is hidden ≤860px) -->
+        <div class="mobile-stage">
+          <label class="sr-only" for="stageSelect">Choose a stage</label>
+          <select id="stageSelect"></select>
+        </div>
+        <button id="runBtn" class="run" type="button" aria-pressed="false">
+          <span class="run-ico" aria-hidden="true"></span>
+          <span class="run-lbl">Run experiment</span>
+        </button>
+
+        <div class="explode" id="explodeRow">
+          <label for="explode">Exploded view</label>
+          <input id="explode" type="range" min="0" max="1" step="0.01" value="0"
+                 aria-label="Exploded view, separation">
+        </div>
+
+        <div class="readout" id="readout" aria-hidden="true"></div>
+
+        <div class="viewtoggle" id="viewToggle" role="radiogroup" aria-label="View">
+          <button data-view="lab"   type="button" role="radio" aria-checked="false" tabindex="-1" title="Apparatus only">Lab</button>
+          <button data-view="split" type="button" role="radio" aria-checked="true"  tabindex="0"  title="Apparatus and micrograph">Split</button>
+          <button data-view="exp"   type="button" role="radio" aria-checked="false" tabindex="-1" title="Live micrograph only">Micrograph</button>
+        </div>
+
+        <!-- narrow-screen launcher for the controls/parts rail (hidden ≥1180px) -->
+        <button id="keyToggle" class="key-toggle" type="button" aria-expanded="false" aria-controls="rail"
+                title="Show experiment controls">⚙ Controls</button>
+      </div>
+    </main>
+
+    <!-- RIGHT · tabbed rail — live experiment Parameters | the specimen key -->
+    <aside class="key" id="rail" aria-label="Instrument controls">
+      <div class="rail-tabs" role="tablist" aria-label="Right panel">
+        <button id="tabParams" class="rail-tab" role="tab" type="button"
+                aria-selected="true" aria-controls="paramPanel">Parameters</button>
+        <button id="tabParts" class="rail-tab" role="tab" type="button"
+                aria-selected="false" aria-controls="partsPanel" tabindex="-1">Apparatus</button>
+        <button id="keyClose" class="key-close" type="button" aria-label="Close controls" title="Close">✕</button>
+      </div>
+
+      <div id="paramPanel" class="rail-body" role="tabpanel" aria-labelledby="tabParams">
+        <div id="paramList" class="param-list"></div>
+        <div class="param-actions">
+          <button id="stepBtn" class="ctl" type="button" title="Advance one step">Step</button>
+          <button id="resetBtn" class="ctl" type="button" title="Re-seed the experiment">Reset</button>
+        </div>
+      </div>
+
+      <div id="partsPanel" class="rail-body" role="tabpanel" aria-labelledby="tabParts" hidden>
+        <div class="key-head">
+          <span class="key-kicker">Specimen key</span>
+          <span class="key-count" id="partCount">—</span>
+        </div>
+        <div class="key-list" id="partsList"></div>
+        <p class="key-foot">Named parts of the apparatus. Hover to illuminate · select to veil.</p>
+      </div>
+    </aside>
+
+  </div>
+
+  <!-- ─────────────  TIMELINE SCRUBBER (Mark X)  ───────────── -->
+  <footer class="timeline" aria-label="Stage timeline">
+    <button class="tl-arrow" id="tlPrev" type="button" aria-label="Previous stage" title="Previous stage">◀</button>
+    <div class="tl-track" id="tlTrack" role="group" aria-label="Stages"><!-- nodes injected by main.js --></div>
+    <button class="tl-arrow" id="tlNext" type="button" aria-label="Next stage" title="Next stage">▶</button>
+    <span class="tl-prov" id="tlProv" aria-hidden="true"></span>
+  </footer>
+</div>
+
+<!-- ── Live SEM experiment: web3 physics + SEM pipeline, as CLASSIC scripts ──
+     These execute synchronously in document order and MUST run before the
+     deferred ES module main.js, so window.CA.RULES + window.SEM (and the bare
+     script-global VIRIDIS_LUT that grayscott.js/life.js read) are all
+     populated before main.js's first line. viridis.js MUST be first. -->
+<script src="./experiment/viridis.js"></script>
+<script src="./experiment/sem.js"></script>
+<script src="./experiment/sprites.js"></script>
+<script src="./experiment/rules/soup.js"></script>
+<script src="./experiment/rules/grayscott.js"></script>
+<script src="./experiment/rules/raf.js"></script>
+<script src="./experiment/rules/vesicles.js"></script>
+<script src="./experiment/rules/vents.js"></script>
+<script src="./experiment/rules/minerals.js"></script>
+<script src="./experiment/rules/chirality.js"></script>
+<script src="./experiment/rules/rna.js"></script>
+<script src="./experiment/rules/code.js"></script>
+<script src="./experiment/rules/coacervate.js"></script>
+<script src="./experiment/rules/natural_selection.js"></script>
+<script src="./experiment/rules/luca.js"></script>
+<script src="./experiment/rules/life.js"></script>
+<script type="module" src="./main.js"></script>
+
+<!-- Offline failsafe: a CLASSIC script that runs even when the ES module never
+     boots (CDN blocked, import-map unsupported, WebGL/runtime error). If the lab
+     hasn't signalled ready, replace the dead viewport with an on-brand notice. -->
+<script>
+(function () {
+  window.addEventListener('load', function () {
+    setTimeout(function () {
+      if (window.__labReady) return;
+      var vp = document.getElementById('viewport');
+      if (vp && !vp.querySelector('canvas')) {
+        vp.innerHTML = '<div class="plate-empty" style="position:absolute;inset:0">' +
+          '<span class="empty-mark">✦</span>' +
+          '<span class="empty-line">instrument offline</span>' +
+          '<span class="empty-sub">the apparatus could not be retrieved — check your connection and reload</span></div>';
+        var sr = document.getElementById('srStatus');
+        if (sr) sr.textContent = 'The lab could not be loaded. Please check your connection and reload.';
+      }
+    }, 6000);
+  });
+})();
+</script>
+</body>
+</html>

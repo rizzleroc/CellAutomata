@@ -68,6 +68,16 @@ jobs:
         run: |
           node docs/ontogeny/tests/ontogeny.mjs
           node docs/ontogeny/tests/smoke.mjs
+      - name: Web10 (Mark X) lab smoke tests
+        run: node docs/web10/tests/smoke.mjs
+      - name: Web10 design-contract tests
+        run: node docs/web10/tests/design.mjs   # incl. Mark X identity + hero-art rail
+      - name: Web10 apparatus runtime verification
+        run: node docs/web10/tests/runtime.mjs  # three already installed above
+      - name: Web10 apparatus animation verification
+        run: node docs/web10/tests/anim.mjs
+      - name: Web10 controls-contract tests
+        run: node docs/web10/tests/controls.mjs
 
   build:
     needs: test
