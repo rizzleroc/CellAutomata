@@ -130,5 +130,16 @@ assert(/class="timeline"/.test(html) && /id="tlTrack"/.test(html), "missing the 
 assert(/tl-node/.test(main) && /\.tl-node\b/.test(css), "timeline scrubber not built (main.js) or styled (css)");
 assert(exists("../generated/web10/stage01_reaction_diffusion.png"), "the committed Stage II pilot hero is missing");
 
+
+// 12. DESIGN.md — the per-stage Controls reference (the wired-knob doc, #65). --
+// DESIGN.md §3 documents every stage's regime presets + sliders. Lock it so the
+// reference can't silently drift from the real `buildParamPanel` wiring.
+assert(exists("DESIGN.md"), "missing docs/web10/DESIGN.md");
+const design = exists("DESIGN.md") ? read("DESIGN.md") : "";
+assert(/Globals on every stage/.test(design), "DESIGN.md missing the Speed+Palette globals note");
+const ctrlCount = (design.match(/\*\*Controls\*\*\s*—/g) || []).length;
+assert(ctrlCount >= 13, `DESIGN.md must document Controls for all 13 stages (found ${ctrlCount})`);
+assert(/#65/.test(design), "DESIGN.md Controls reference should flag the #65 parity gaps (II / XI / XIII)");
+
 console.log(`\n${checks} checks passed, ${failures} failure(s).`);
 process.exit(failures === 0 ? 0 : 1);

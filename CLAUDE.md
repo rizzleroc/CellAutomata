@@ -132,7 +132,9 @@ them; track work against the linked issues.
    **grayscott** (add `Du`, `Dv`, `substeps` — currently hardcoded in
    `grayscott.js:16-21`); **natural-selection** (only `amoebaLifespan`);
    **life** (the only stage with no regime picker). Guard a minimum control set
-   per rule with a smoke test.
+   per rule with a smoke test. web10's `DESIGN.md` §3 now documents each stage's
+   wired knob set + these II/XI/XIII gaps as a committed reference (gated by
+   `web10/tests/design.mjs`).
 3. **Test gates must verify the science — issue #67.** Several smoke gates pass
    on blank/garbage output (ontogeny lights 100% of pixels from the `0.10`
    substrate fill alone; the lab gate only checks opaque + >1 colour), and the
