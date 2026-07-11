@@ -26,6 +26,7 @@ multiples → stages of life).
 |---|---|---|
 | `web7/` | **The canonical lab** ("Catalytic Silence") — 13 abiogenesis stages, each a photoreal Three.js apparatus + a live SEM micrograph | active |
 | `web8/` | **The Guided Colony** = web7 + a living-amoeba guide creature (`guide.js`, `guide.css`, `blobgeom.js`) | active |
+| `web9/` | **The Instrument** = web8 (guide/"slime" layer included) + a live measurement layer (`observables.js`): per-step observable sparkline (roughness σ²/⟨h⟩), CSV export, and a shareable run-URL (stage/view/palette in the hash) | active |
 | `ontogeny/` | **Part II — the origin of an individual.** Pure canvas + `sem.js`; engine `sim.js`, renderer `render.js`, controller `app.js` | active |
 | `web`, `web2`, `web3`, `web6` | earlier clients, retained for comparison | legacy |
 
