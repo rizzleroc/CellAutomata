@@ -104,7 +104,11 @@ def test_natural_selection_palette_of_one_does_not_crash() -> None:
     for _ in range(5):
         e.step()
     pop = e.population()
-    assert pop["amoebas"] >= 0
+    # A one-colour palette can never produce a colour *change*, so no cell is
+    # ever "new" and no condensation fires: zero amoebas, every cell accounted
+    # for (amoebas + new + settled == the whole 6x6 grid).
+    assert pop["amoebas"] == 0
+    assert sum(pop.values()) == 36
 
 
 def test_grayscott_runs_without_seed_perturbation() -> None:

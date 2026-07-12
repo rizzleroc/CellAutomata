@@ -144,7 +144,7 @@ def test_proxy_dynamics_still_available_for_ab_comparison():
         state = rule.step(state)
     # Just check we didn't crash and at least one cell is alive.
     alive_count = sum(1 for c in state.cells if c.alive)
-    assert alive_count >= 0  # tautology guards against unrelated regression
+    assert alive_count > 0, "proxy dynamics drove the protocell population extinct"
 
 
 def test_hypercycle_is_default_dynamics():

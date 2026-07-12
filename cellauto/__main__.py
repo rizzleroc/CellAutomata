@@ -20,6 +20,7 @@ import sys
 
 from cellauto.engine import Engine
 from cellauto.export import export_gif
+from cellauto.provenance import run_manifest
 from cellauto.rules import REGISTRY
 
 
@@ -97,6 +98,14 @@ def cmd_simulate(args: argparse.Namespace) -> None:
         "seed": engine.seed,
         "step_count": engine.step_count,
         "population": dict(engine.population()),
+        "params": {
+            "rule": args.rule,
+            "grid": args.grid,
+            "seed": args.seed,
+            "steps": args.steps,
+            "rule_config": list(args.rule_config or []),
+        },
+        "manifest": run_manifest(),
     }
     print(json.dumps(out, indent=2))
     if args.save:
