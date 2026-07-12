@@ -80,6 +80,10 @@ jobs:
         run: |
           node docs/ontogeny/tests/ontogeny.mjs
           node docs/ontogeny/tests/smoke.mjs
+      - name: Pond Water Analyzer smoke tests
+        run: node docs/pondwater/tests/smoke.mjs
+      - name: Pond Water Analyzer organism/anatomy verification
+        run: node docs/pondwater/tests/life.mjs   # three already installed above
 
   build:
     needs: test

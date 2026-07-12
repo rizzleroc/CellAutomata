@@ -28,6 +28,7 @@ multiples → stages of life).
 | `web8/` | **The Guided Colony** = web7 + a living-amoeba guide creature (`guide.js`, `guide.css`, `blobgeom.js`) | active |
 | `web9/` | **The Instrument** = web8 (guide/"slime" layer included) + a live measurement layer (`observables.js`): per-step observable sparkline (roughness σ²/⟨h⟩), CSV export, and a shareable run-URL (stage/view/palette in the hash) | active |
 | `ontogeny/` | **Part II — the origin of an individual.** Pure canvas + `sem.js`; engine `sim.js`, renderer `render.js`, controller `app.js` | active |
+| `pondwater/` | **The Pond Water Analyzer** — a dark-field microscope of virtual pond water. Six procedurally-grown organisms (`organisms/*.js`) from bacterium → water flea, each with true-to-life internal organs; a continuous **infinite-zoom engine** (`main.js`) dives from the whole drop to organ level, fading in organ callout labels by scale. Three.js via importmap, `scene.js` for the wet-mount look | active |
 | `web`, `web2`, `web3`, `web6` | earlier clients, retained for comparison | legacy |
 
 Self-hosted fonts live in `web8/assets/fonts/`; ontogeny reuses them via
@@ -80,6 +81,10 @@ node docs/web6/tests/{smoke,colony,runtime}.mjs
 # Ontogeny
 node docs/ontogeny/tests/ontogeny.mjs # the science (split-day, presets, calibration)
 node docs/ontogeny/tests/smoke.mjs    # module parse + page wiring + SEM harness
+
+# Pond Water Analyzer
+node docs/pondwater/tests/smoke.mjs   # importmap + module parse + roster/anatomy contract + HUD wiring
+node docs/pondwater/tests/life.mjs    # needs three: each organism builds, has organs, visibly moves
 
 # Python engine
 pytest -q
