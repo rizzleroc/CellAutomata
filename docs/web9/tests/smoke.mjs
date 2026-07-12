@@ -284,5 +284,26 @@ for (const id of ["obsSpark", "obsRead", "obsCsvBtn", "obsLinkBtn"]) {
 assert(exists("guide.js") && exists("blobgeom.js"), "web9 dropped the amoeba guide layer");
 assert(/src="\.\/guide\.js"/.test(html), "index.html does not mount the guide layer");
 
+// ── 9. web9 landing (slime studio + live experiment previews) ───────────────
+assert(exists("landing.js"), "web9 landing module landing.js is missing");
+assert(exists("landing.css"), "web9 landing.css is missing");
+if (exists("landing.js")) {
+  try {
+    execFileSync(process.execPath, ["--check", path.join(ROOT, "landing.js")], { stdio: "pipe" });
+    ok();
+  } catch (e) {
+    fail(`syntax error in landing.js: ${String(e.stderr || e).slice(0, 160)}`);
+  }
+  const lj = read("landing.js");
+  assert(/from\s+["']\.\/blobgeom\.js["']/.test(lj), "landing.js does not reuse blobgeom.js (the slime studio geometry)");
+  assert(/window\.WEB9/.test(lj) && /SEM\.render/.test(lj), "landing.js does not drive live previews via WEB9 + SEM.render");
+}
+for (const id of ["landing", "slimeStudio", "expGrid", "enterBtn"]) {
+  assert(html.includes(`id="${id}"`), `index.html landing is missing #${id}`);
+}
+assert(/href="\.\/landing\.css"/.test(html), "index.html does not load landing.css");
+assert(/src="\.\/landing\.js"/.test(html), "index.html does not load landing.js");
+assert(/window\.WEB9\s*=/.test(main), "main.js does not expose the WEB9 landing bridge (stages + enter)");
+
 console.log(`\n${checks} checks passed, ${failures} failure(s).`);
 process.exit(failures === 0 ? 0 : 1);

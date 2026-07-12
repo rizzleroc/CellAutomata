@@ -760,6 +760,23 @@ if (lab) {
   setupInstrument();
   tick();
   window.__labReady = true;   // tell the index.html failsafe the lab booted
+
+  // web9 landing bridge: the stage catalogue (for the live previews) + enter().
+  window.WEB9 = {
+    stages: STAGES.map((m) => ({
+      id: m.id, label: m.label, title: m.title,
+      ruleId: STAGE_MAP[m.id], name: plateOf(m).name, numeral: plateOf(m).numeral,
+    })),
+    enter(id) {
+      const m = id ? STAGES.find((s) => s.id === id) : null;
+      if (m) loadStage(m);
+      document.body.classList.add('lab-active');
+      requestAnimationFrame(() => { if (lab) lab.setSize(); renderExperimentFrame(); });
+      const sp = $('specimen'); if (sp && sp.focus) sp.focus();
+    },
+  };
+  // a deep link (…#stage=…) skips the landing and drops straight into the lab.
+  if (boot && boot.m) document.body.classList.add('lab-active');
 } else {
   failLab(hasWebGL() ? 'the apparatus could not be initialised'
                      : 'this exhibit requires WebGL, which is unavailable here');
