@@ -32,7 +32,9 @@ multiples → stages of life).
 
 Self-hosted fonts live in `web8/assets/fonts/`; ontogeny reuses them via
 `../web8/assets/fonts/`. PRDs: `docs/PRD_ONTOGENY.md`,
-`docs/PRD_SEM_VISUALIZATION.md`, `docs/PRD_LIFE_DIGITAL_ORGANISMS.md`.
+`docs/PRD_SEM_VISUALIZATION.md`, `docs/PRD_LIFE_DIGITAL_ORGANISMS.md`,
+`docs/PRD_COSMOS.md` (**Part III — the Constructors**: quantum lifeforms,
+plasma, multiverse + the Element Studio sandbox; proposed, not yet built).
 
 ## Architecture notes
 
@@ -150,6 +152,14 @@ them; track work against the linked issues.
    `engine.py` snapshot load) is fixed; the input-validation Highs (snapshot
    dims/arrays #36/#37, path traversal #38, image-decode #39, dep pinning #41,
    resource bounds #42, CI scan #43) remain open — keep them on the radar.
+7. **Part III — the Constructors (proposed).** `docs/PRD_COSMOS.md` specifies the
+   next-phase client (fork of web9): **plasma**, **quantum lifeforms**, and
+   **multiverse** constructor plates plus the **Element Studio** sandbox (combine
+   any elements to create/transform). Adds a **SPECULATIVE** honesty tier beside
+   REAL/REPRESENTATIONAL; every plate declares its tier. New plates reuse the rule
+   (`renderHeight`) / apparatus (`build`+`meta`) / preset contracts, so the panel,
+   SEM micrograph, and observables come free; the element-palette editor is the
+   one new UI surface. Prompt/PRD only — no code shipped yet.
 
 ## Maintaining this file
 
