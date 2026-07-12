@@ -122,13 +122,19 @@ def _viable(r: Reaction, producible: set[int]) -> bool:
 
 
 def random_reaction_network(
-    n_species: int, n_reactions: int, food_fraction: float, rng: random.Random
+    n_species: int,
+    n_reactions: int,
+    food_fraction: float,
+    rng: random.Random,
+    catalysis_fraction: float = 1.0,
 ) -> ReactionNetwork:
     """Construct a random reaction network for sandbox experiments.
 
     A random subset of species are flagged as food. Random A+B->C reactions
-    are generated, each catalyzed by a random species. Catalysis is assigned
-    to every reaction because under the formal RAF definition an uncatalyzed
+    are generated; each is catalyzed by a random species with probability
+    ``catalysis_fraction`` (default 1.0 = every reaction; 0.0 = none, so no RAF
+    can ever form — a falsifiable null control, REV-03). Under the formal RAF
+    definition an uncatalyzed
     reaction can never belong to a RAF (Hordijk & Steel 2004) — leaving half
     the reactions uncatalyzed, as an earlier version did, simply made them
     dead weight that could never join an autocatalytic set. Kauffman's 1986
@@ -142,7 +148,12 @@ def random_reaction_network(
     for _ in range(n_reactions):
         a, b = rng.sample(range(n_species), 2)
         c = rng.randrange(n_species)
-        catalyst = rng.randrange(n_species)
+        if catalysis_fraction >= 1.0:
+            catalyst: int | None = rng.randrange(n_species)  # original path, RNG order unchanged
+        elif rng.random() < catalysis_fraction:
+            catalyst = rng.randrange(n_species)
+        else:
+            catalyst = None
         rate = round(rng.uniform(0.05, 0.5), 3)
         reactions.append(Reaction(reactants=(a, b), product=c, rate_constant=rate, catalyst=catalyst))
     return ReactionNetwork(n_species=n_species, reactions=tuple(reactions), food_set=food_set)

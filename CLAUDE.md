@@ -27,13 +27,16 @@ multiples → stages of life).
 | `web7/` | **The canonical lab** ("Catalytic Silence") — 13 abiogenesis stages, each a photoreal Three.js apparatus + a live SEM micrograph | active |
 | `web8/` | **The Guided Colony** = web7 + a living-amoeba guide creature (`guide.js`, `guide.css`, `blobgeom.js`) | active |
 | `web9/` | **The Instrument** = web8 (guide/"slime" layer included) + a live measurement layer (`observables.js`): per-step observable sparkline (roughness σ²/⟨h⟩), CSV export, and a shareable run-URL (stage/view/palette in the hash) | active |
+| `web10/` | **Mark X** — web7 re-shelled: hero-art stage rail + a Pro · 4000² export pill (→ `web9/`), magenta accent, "MK X" build tag. Reuses web7's `rules/*` + `apparatus/*` + `scene.js`; carries web8's newer `sem.js`. Per-stage hero art in `docs/generated/web10/` (MCP-generated; backfilling). | active |
 | `ontogeny/` | **Part II — the origin of an individual.** Pure canvas + `sem.js`; engine `sim.js`, renderer `render.js`, controller `app.js` | active |
 | `pondwater/` | **The Pond Water Analyzer** — a dark-field microscope of virtual pond water. Six procedurally-grown organisms (`organisms/*.js`) from bacterium → water flea, each with true-to-life internal organs; a continuous **infinite-zoom engine** (`main.js`) dives from the whole drop to organ level, fading in organ callout labels by scale. Three.js via importmap, `scene.js` for the wet-mount look | active |
 | `web`, `web2`, `web3`, `web6` | earlier clients, retained for comparison | legacy |
 
 Self-hosted fonts live in `web8/assets/fonts/`; ontogeny reuses them via
 `../web8/assets/fonts/`. PRDs: `docs/PRD_ONTOGENY.md`,
-`docs/PRD_SEM_VISUALIZATION.md`, `docs/PRD_LIFE_DIGITAL_ORGANISMS.md`.
+`docs/PRD_SEM_VISUALIZATION.md`, `docs/PRD_LIFE_DIGITAL_ORGANISMS.md`,
+`docs/PRD_COSMOS.md` (**Part III — the Constructors**: quantum lifeforms,
+plasma, multiverse + the Element Studio sandbox; proposed, not yet built).
 
 ## Architecture notes
 
@@ -137,7 +140,9 @@ them; track work against the linked issues.
    **grayscott** (add `Du`, `Dv`, `substeps` — currently hardcoded in
    `grayscott.js:16-21`); **natural-selection** (only `amoebaLifespan`);
    **life** (the only stage with no regime picker). Guard a minimum control set
-   per rule with a smoke test.
+   per rule with a smoke test. web10's `DESIGN.md` §3 now documents each stage's
+   wired knob set + these II/XI/XIII gaps as a committed reference (gated by
+   `web10/tests/design.mjs`).
 3. **Test gates must verify the science — issue #67.** Several smoke gates pass
    on blank/garbage output (ontogeny lights 100% of pixels from the `0.10`
    substrate fill alone; the lab gate only checks opaque + >1 colour), and the
@@ -155,6 +160,14 @@ them; track work against the linked issues.
    `engine.py` snapshot load) is fixed; the input-validation Highs (snapshot
    dims/arrays #36/#37, path traversal #38, image-decode #39, dep pinning #41,
    resource bounds #42, CI scan #43) remain open — keep them on the radar.
+7. **Part III — the Constructors (proposed).** `docs/PRD_COSMOS.md` specifies the
+   next-phase client (fork of web9): **plasma**, **quantum lifeforms**, and
+   **multiverse** constructor plates plus the **Element Studio** sandbox (combine
+   any elements to create/transform). Adds a **SPECULATIVE** honesty tier beside
+   REAL/REPRESENTATIONAL; every plate declares its tier. New plates reuse the rule
+   (`renderHeight`) / apparatus (`build`+`meta`) / preset contracts, so the panel,
+   SEM micrograph, and observables come free; the element-palette editor is the
+   one new UI surface. Prompt/PRD only — no code shipped yet.
 
 ## Maintaining this file
 

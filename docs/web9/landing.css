@@ -234,3 +234,16 @@ body.lab-active .to-landing {
   transition: color 0.18s, border-color 0.18s;
 }
 body.lab-active .to-landing:hover { color: var(--teal); border-color: var(--teal); }
+
+/* ── cinema band (grafted from PR #77 — the rendered protocell clip) ────────── */
+.lp-cinema { display: flex; justify-content: center; }
+.lp-clip {
+  margin: 0; width: min(320px, 78vw); border-radius: 14px; overflow: hidden;
+  background: var(--obsidian-2); border: 1px solid var(--teal-line);
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.45);
+}
+.lp-clip video { display: block; width: 100%; aspect-ratio: 9 / 16; object-fit: cover; background: #000; }
+.lp-clip figcaption {
+  padding: 12px 14px; margin: 0; font: 400 12.5px/1.4 var(--font-read, "Crimson Pro"), Georgia, serif;
+  font-style: italic; color: var(--ink-soft);
+}

@@ -58,6 +58,10 @@ def test_cli_simulate_emits_valid_population_json():
     assert payload["step_count"] == 3
     assert payload["seed"] == 0
     assert "live_now" in payload["population"]
+    # provenance: the headless run carries its params + a manifest (Phase A).
+    assert payload["params"]["steps"] == 3
+    assert payload["params"]["rule_config"] == ["rule_number=110"]
+    assert payload["manifest"]["cellauto_version"]
 
 
 def test_cli_unknown_rule_is_rejected():
