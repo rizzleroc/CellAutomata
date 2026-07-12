@@ -191,11 +191,14 @@ export function organ(color = 0xb9614d, extra = {}) {
     color,
     roughness: 0.5,
     metalness: 0,
-    emissive: base.clone().multiplyScalar(0.14),
-    sheen: 0.35,
+    // Real microfauna organs are dim, lit by scattered/transmitted light — they
+    // must not self-glow like lanterns, or the body reads as coloured glass
+    // instead of a dark-field specimen. Keep emissive to a faint lift only.
+    emissive: base.clone().multiplyScalar(0.05),
+    sheen: 0.28,
     sheenRoughness: 0.8,
     sheenColor: base.clone().lerp(new THREE.Color(0xffd9c0), 0.4),
-    clearcoat: 0.3,
+    clearcoat: 0.28,
     clearcoatRoughness: 0.5,
     specularIntensity: 0.35,
     ior: 1.38,
@@ -216,12 +219,26 @@ export function nucleus(color = 0x8fb8ff, extra = {}) {
     color,
     roughness: 0.38,
     metalness: 0,
-    emissive: base.clone().multiplyScalar(0.35),
+    emissive: base.clone().multiplyScalar(0.14),
     clearcoat: 0.4,
     clearcoatRoughness: 0.4,
     specularIntensity: 0.5,
     envMapIntensity: 0.9,
     ...extra,
+  });
+}
+
+// Refractile cytoplasm — the dense field of bright, high-refractive-index
+// specks (food vacuoles, storage granules, crystals) that in real dark-field
+// scatter the condenser light into a galaxy of white points inside the cell.
+// This is the signature texture of a live protist; near-white + emissive so
+// the bloom lights it. One InstancedMesh; scale variance gives size variety.
+export function refractileMaterial(tint = 0xeaf4ff) {
+  return new THREE.MeshStandardMaterial({
+    color: tint,
+    emissive: new THREE.Color(tint).multiplyScalar(0.55),
+    roughness: 0.22,
+    metalness: 0,
   });
 }
 

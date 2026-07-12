@@ -61,9 +61,9 @@ function build() {
   g.add(ocellus);
 
   // ── Heart: a small chamber above the gut that beats fast ─────────────────
-  const heart = blob(0.28, 0.32, 0.28, organ(0xd85a4a, {
-    emissive: new THREE.Color(0x5a1812), transmission: 0.15,
-    rim: { color: 0xff8a72, power: 2.4, intensity: 0.6 },
+  const heart = blob(0.28, 0.32, 0.28, organ(0xc07866, {
+    emissive: new THREE.Color(0x2c100c), transmission: 0.18,
+    rim: { color: 0xe89a86, power: 2.6, intensity: 0.32 },
   }));
   heart.name = 'heart';
   heart.position.set(0.5, 0.7, 0.1);

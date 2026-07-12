@@ -56,9 +56,10 @@ const OpticsShader = {
       float cg = texture2D(tDiffuse, vUv).g;
       float cb = texture2D(tDiffuse, vUv - shift).b;
       vec3 col = vec3(cr, cg, cb);
-      // cool white balance + gentle desaturation of the whole field
+      // cool white balance + desaturation — real dark-field footage is nearly
+      // monochrome cool-grey, not saturated glass
       float l = dot(col, vec3(0.299, 0.587, 0.114));
-      col = mix(vec3(l), col, 0.88) * vec3(0.975, 1.0, 1.045);
+      col = mix(vec3(l), col, 0.78) * vec3(0.97, 1.0, 1.05);
       // vignette
       col *= 1.0 - smoothstep(0.32, 0.82, r) * uVignette;
       // animated sensor grain
@@ -73,7 +74,7 @@ export function createScope(container) {
   renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
   renderer.setSize(container.clientWidth, container.clientHeight);
   renderer.toneMapping = THREE.ACESFilmicToneMapping;
-  renderer.toneMappingExposure = 1.05;
+  renderer.toneMappingExposure = 0.9;   // specimens sit dark against the field
   renderer.outputColorSpace = THREE.SRGBColorSpace;
   container.appendChild(renderer.domElement);
 
@@ -136,7 +137,7 @@ export function createScope(container) {
 
   const bloom = new UnrealBloomPass(
     new THREE.Vector2(container.clientWidth, container.clientHeight),
-    0.7, 0.75, 0.72,          // dark-field refractive edges bloom into haloes
+    0.6, 0.8, 0.82,           // only the brightest — edges + refractile specks — halo
   );
   composer.addPass(bloom);
   composer.addPass(new OutputPass());

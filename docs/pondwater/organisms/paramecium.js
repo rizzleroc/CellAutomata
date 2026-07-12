@@ -3,7 +3,7 @@
 // gullet, two nuclei, pulsing contractile vacuoles that bail out water, and
 // food vacuoles circling on the cytoplasmic streaming. ~120 µm in life.
 
-import { THREE, cuticle, organ, nucleus, blob, ciliaCoat, surfaceNormalMap, registerOrgan, rng, TAU } from './lib.js';
+import { THREE, cuticle, organ, nucleus, blob, ciliaCoat, granuleField, refractileMaterial, surfaceNormalMap, registerOrgan, rng, TAU } from './lib.js';
 
 export const meta = {
   id: 'paramecium',
@@ -44,9 +44,17 @@ function build() {
   g.add(body);
   registerOrgan(g, body, 'Pellicle', 'A stiff-but-flexible protein skin that holds the slipper shape and anchors every cilium.', 0.0);
 
-  // ── Cilia coat: the dense rows that row it forward ───────────────────────
-  const coat = ciliaCoat(2.2, 0.85, 0.85, 1300, 0.2,
-    organ(0xeafff6, { emissive: new THREE.Color(0x243530), transparent: true, opacity: 0.8, roughness: 0.4, rim: false }));
+  // ── Endoplasm: the dense field of bright refractile granules (food
+  //    vacuoles, storage bodies, crystals) that scatter the condenser light —
+  //    the galaxy of white points inside a live protist ─────────────────────
+  const endo = granuleField(2.0, 0.72, 0.72, 520, 0.032, refractileMaterial(0xdfeeff), { seed: 77 });
+  endo.name = 'endoplasm';
+  g.add(endo);
+
+  // ── Cilia coat: a soft fine fringe (real cilia are a faint shimmer at the
+  //    rim, not a bright spiky halo) ─────────────────────────────────────────
+  const coat = ciliaCoat(2.2, 0.85, 0.85, 1100, 0.13,
+    organ(0xdfeee6, { emissive: new THREE.Color(0x0e120f), transparent: true, opacity: 0.4, roughness: 0.5, rim: false }));
   coat.name = 'cilia';
   g.add(coat);
   registerOrgan(g, coat, 'Cilia', 'Thousands of hair-like cilia beat in metachronal waves, rowing the cell and sweeping food to the mouth.', 0.15);
@@ -63,13 +71,14 @@ function build() {
   registerOrgan(g, groove, 'Oral groove & gullet', 'A ciliated funnel that sweeps bacteria into the cell, pinching them off as food vacuoles.', 0.3);
 
   // ── Macronucleus (big, kidney-shaped) + micronucleus (small) ─────────────
-  const macro = blob(0.55, 0.4, 0.4, nucleus(0xb69bff, { emissive: new THREE.Color(0x2e2350) }));
+  // A soft, dim blue-grey oval in life — not a glowing gem.
+  const macro = blob(0.55, 0.4, 0.4, nucleus(0x9aa6c8, { emissive: new THREE.Color(0x1a1e2e) }));
   macro.name = 'macronucleus';
   macro.position.set(0.1, 0, 0);
   g.add(macro);
   registerOrgan(g, macro, 'Macronucleus', 'The large working nucleus — runs the cell\'s day-to-day housekeeping and metabolism.', 0.45);
 
-  const micro = blob(0.16, 0.16, 0.16, nucleus(0x8fb8ff, { emissive: new THREE.Color(0x1a2a55) }));
+  const micro = blob(0.16, 0.16, 0.16, nucleus(0x8f9fbf, { emissive: new THREE.Color(0x141a2a) }));
   micro.name = 'micronucleus';
   micro.position.set(0.35, -0.12, 0.08);
   g.add(micro);
