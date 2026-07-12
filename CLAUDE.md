@@ -62,6 +62,15 @@ Self-hosted fonts live in `web8/assets/fonts/`; ontogeny reuses them via
   geometry realloc). Tests: `smoke.mjs` guards the lib exports + anatomy
   contract; `life.mjs` builds each organism against real three and asserts it
   moves.
+- **Pond Water optics post-chain** (`docs/pondwater/scene.js`): what sells the
+  live-microscopy look is the *optics*. The composer is `RenderPass → BokehPass
+  (depth-of-field, focus retargeted to the specimen every frame) → UnrealBloom
+  (refractive dark-field edge haloes) → OutputPass → OpticsShader (radial
+  chromatic aberration + cool white-balance + vignette + animated sensor
+  grain)`. `composer.render` is wrapped inside `createScope` to update the DoF
+  focus (`camera.distanceTo(controls.target)`) and grain seed, so `main.js`
+  stays untouched. Keep `ACESFilmicToneMapping` / `RoomEnvironment` /
+  `UnrealBloomPass` / `FogExp2` present — `tests/smoke.mjs` asserts them.
 - **Lab control panel** is built in `docs/web7/main.js:321-433` (web8 shares the
   rules) from each rule's **own `params` schema** plus its **regime picker**
   (`rule.presets` array, or an `enum` param), with two globals (speed, palette).
