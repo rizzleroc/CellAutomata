@@ -1,0 +1,129 @@
+/* Pond Water Analyzer — Catalytic-Silence shell over a dark-field microscope.
+   Obsidian field, a single teal signal colour, museum-catalogue typography.
+   Self-hosted fonts are shared from web8 (../web8/assets/fonts/). */
+
+@font-face { font-family: "Italiana"; src: url("../web8/assets/fonts/Italiana-Regular.ttf") format("truetype"); font-weight: 400; font-display: swap; }
+@font-face { font-family: "Crimson Pro"; src: url("../web8/assets/fonts/CrimsonPro-Regular.ttf") format("truetype"); font-weight: 400; font-display: swap; }
+@font-face { font-family: "Crimson Pro"; src: url("../web8/assets/fonts/CrimsonPro-Italic.ttf") format("truetype"); font-weight: 400; font-style: italic; font-display: swap; }
+@font-face { font-family: "IBM Plex Mono"; src: url("../web8/assets/fonts/IBMPlexMono-Regular.ttf") format("truetype"); font-weight: 400; font-display: swap; }
+@font-face { font-family: "IBM Plex Mono"; src: url("../web8/assets/fonts/IBMPlexMono-Bold.ttf") format("truetype"); font-weight: 700; font-display: swap; }
+
+:root {
+  --obsidian: #030608;
+  --panel: rgba(7, 12, 16, 0.72);
+  --line: rgba(63, 224, 208, 0.18);
+  --line-soft: rgba(63, 224, 208, 0.10);
+  --teal: #3fe0d0;
+  --teal-dim: rgba(63, 224, 208, 0.6);
+  --ink: #c9d6d2;
+  --ink-dim: #7d8a86;
+  --parchment: #d9cfb8;
+  --mono: "IBM Plex Mono", ui-monospace, SFMono-Regular, monospace;
+  --serif: "Crimson Pro", Georgia, serif;
+  --display: "Italiana", Georgia, serif;
+}
+
+* { box-sizing: border-box; }
+html, body { margin: 0; height: 100%; background: var(--obsidian); color: var(--ink); font-family: var(--serif); overflow: hidden; }
+.sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0,0,0,0); border: 0; }
+
+.noscript-note { position: fixed; inset: 0; display: grid; place-items: center; padding: 2rem; text-align: center; font-family: var(--mono); color: var(--teal); background: var(--obsidian); z-index: 100; }
+
+.scope { position: fixed; inset: 0; overflow: hidden; }
+.stage { position: absolute; inset: 0; touch-action: none; }
+.stage canvas { display: block; }
+
+/* ── optical overlay ─────────────────────────────────────────────────── */
+.optics { position: absolute; inset: 0; pointer-events: none; z-index: 2; }
+.vignette { position: absolute; inset: 0; background: radial-gradient(circle at 50% 46%, transparent 46%, rgba(0,0,0,0.55) 82%, rgba(0,0,0,0.9) 100%); }
+.reticle { position: absolute; left: 50%; top: 46%; width: 2px; height: 2px; transform: translate(-50%,-50%); }
+.reticle::before, .reticle::after { content: ""; position: absolute; left: 50%; top: 50%; background: var(--line-soft); transform: translate(-50%,-50%); }
+.reticle::before { width: 18px; height: 1px; }
+.reticle::after { width: 1px; height: 18px; }
+
+/* ── top register ────────────────────────────────────────────────────── */
+.register { position: absolute; top: 0; left: 0; right: 0; z-index: 6; display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 14px 20px; background: linear-gradient(180deg, rgba(3,6,8,0.85), transparent); pointer-events: none; }
+.brand { display: flex; align-items: center; gap: 10px; pointer-events: auto; }
+.brand-mark { width: 9px; height: 9px; border-radius: 50%; background: var(--teal); box-shadow: 0 0 10px var(--teal); }
+.brand-word { font-family: var(--display); font-size: 20px; letter-spacing: 0.03em; color: #eaf5f2; }
+.brand-rule { width: 26px; height: 1px; background: var(--line); }
+.brand-sub { font-family: var(--mono); font-size: 10px; letter-spacing: 0.16em; text-transform: uppercase; color: var(--ink-dim); }
+.register-meta { display: flex; align-items: center; gap: 12px; pointer-events: auto; }
+.meta-plate { font-family: var(--mono); font-size: 10px; letter-spacing: 0.18em; color: var(--teal-dim); }
+.meta-dot { width: 3px; height: 3px; border-radius: 50%; background: var(--ink-dim); }
+.meta-home { font-family: var(--mono); font-size: 10px; letter-spacing: 0.12em; color: var(--ink-dim); text-decoration: none; }
+.meta-home:hover { color: var(--teal); }
+
+/* ── magnification readout (top-right) ───────────────────────────────── */
+.readout { position: absolute; top: 62px; right: 20px; z-index: 5; text-align: right; }
+.mag { font-family: var(--mono); font-weight: 700; font-size: 30px; color: #eaf5f2; letter-spacing: 0.02em; text-shadow: 0 0 18px rgba(63,224,208,0.25); }
+.scale { font-family: var(--mono); font-size: 11px; letter-spacing: 0.1em; color: var(--teal-dim); margin-top: 2px; }
+.scalebar-track { margin-top: 8px; margin-left: auto; width: 220px; height: 10px; border-right: 1px solid var(--line); border-left: 1px solid var(--line); display: flex; justify-content: flex-end; align-items: center; }
+.scalebar { display: block; height: 2px; background: var(--teal); position: relative; box-shadow: 0 0 8px rgba(63,224,208,0.4); }
+.scalebar::after { content: attr(data-label); position: absolute; right: 0; bottom: 6px; font-family: var(--mono); font-size: 9px; letter-spacing: 0.08em; color: var(--teal-dim); white-space: nowrap; }
+
+/* ── left dossier ────────────────────────────────────────────────────── */
+.dossier { position: absolute; left: 20px; top: 96px; z-index: 5; width: 288px; max-width: 40vw; padding: 18px 18px 16px; background: var(--panel); border: 1px solid var(--line); border-radius: 6px; backdrop-filter: blur(9px) saturate(1.1); -webkit-backdrop-filter: blur(9px) saturate(1.1); }
+.dossier-head { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 8px; }
+.kicker { font-family: var(--mono); font-size: 9.5px; letter-spacing: 0.2em; text-transform: uppercase; color: var(--teal-dim); }
+.organ-count { font-family: var(--mono); font-size: 10px; color: var(--ink-dim); }
+.specimen-name { font-family: var(--display); font-weight: 400; font-size: 30px; line-height: 1.05; margin: 2px 0 4px; color: #eef7f4; }
+.specimen-taxon { font-family: var(--serif); font-style: italic; font-size: 15px; color: var(--parchment); }
+.specimen-kingdom { margin-top: 6px; }
+.specimen-kingdom span { display: inline-block; font-family: var(--mono); font-size: 9px; letter-spacing: 0.16em; text-transform: uppercase; color: var(--teal); border: 1px solid var(--line); border-radius: 999px; padding: 2px 9px; }
+.specimen-blurb { font-family: var(--serif); font-size: 14.5px; line-height: 1.5; color: var(--ink); margin: 12px 0 0; }
+
+.dossier-actions { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 16px; }
+.ctl { flex: 1 1 auto; font-family: var(--mono); font-size: 11px; letter-spacing: 0.04em; color: var(--ink); background: rgba(63,224,208,0.05); border: 1px solid var(--line); border-radius: 4px; padding: 7px 9px; cursor: pointer; transition: background 0.15s, color 0.15s, border-color 0.15s; }
+.ctl:hover { background: rgba(63,224,208,0.14); color: #eef7f4; border-color: var(--teal-dim); }
+.ctl:active { transform: translateY(1px); }
+
+/* only show Surface while diving */
+body[data-mode="drop"] #btnSurface { display: none; }
+
+.ladder { margin-top: 16px; padding-top: 14px; border-top: 1px solid var(--line-soft); }
+.roster { display: flex; flex-direction: column; gap: 5px; margin-top: 8px; }
+.roster-item { display: grid; grid-template-columns: 1fr auto; grid-template-rows: auto auto; align-items: center; gap: 0 8px; text-align: left; font-family: var(--serif); background: transparent; border: 1px solid transparent; border-left: 2px solid var(--line-soft); border-radius: 3px; padding: 5px 9px; cursor: pointer; transition: background 0.15s, border-color 0.15s; }
+.roster-item:hover { background: rgba(63,224,208,0.06); border-left-color: var(--teal); }
+.roster-item.active { background: rgba(63,224,208,0.12); border-left-color: var(--teal); }
+.roster-item .rk { grid-column: 1; grid-row: 1; font-family: var(--mono); font-size: 8.5px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--teal-dim); }
+.roster-item .rn { grid-column: 1; grid-row: 2; font-size: 15px; color: #eef7f4; }
+.roster-item .rs { grid-column: 2; grid-row: 1 / span 2; font-family: var(--mono); font-size: 10px; color: var(--ink-dim); }
+
+/* ── right depth gauge ───────────────────────────────────────────────── */
+.depth { position: absolute; right: 22px; top: 50%; transform: translateY(-50%); z-index: 5; display: flex; flex-direction: column; align-items: center; gap: 8px; height: 260px; }
+.depth-cap { font-family: var(--mono); font-size: 8.5px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--ink-dim); }
+.depth-track { position: relative; flex: 1; width: 4px; background: var(--line-soft); border-radius: 2px; overflow: hidden; }
+.depth-fill { position: absolute; bottom: 0; left: 0; right: 0; height: 0%; background: linear-gradient(180deg, var(--teal), rgba(63,224,208,0.25)); box-shadow: 0 0 10px rgba(63,224,208,0.5); transition: height 0.12s linear; }
+body[data-mode="drop"] .depth { opacity: 0.3; }
+
+/* ── organ callouts — an anatomical plate ────────────────────────────────
+   Labels dock to the left/right gutters in decluttered vertical slots; a
+   leader line (the SVG layer) runs from each label to its organ in the field. */
+.organ-layer { position: absolute; inset: 0; z-index: 4; pointer-events: none; }
+.organ-leaders { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; }
+.organ-leaders line { stroke: var(--teal-dim); stroke-width: 1; }
+.organ-leaders circle { fill: var(--teal); }
+.organ-callout { position: absolute; top: 0; width: 236px; opacity: 0; transition: opacity 0.18s; will-change: opacity, transform; }
+.organ-callout.side-right { text-align: right; }
+.organ-callout .txt { display: inline-block; text-align: left; background: rgba(3,6,8,0.82); border: 1px solid var(--line); border-left: 2px solid var(--teal); border-radius: 4px; padding: 5px 10px; max-width: 236px; backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px); }
+.organ-callout.side-right .txt { border-left: 1px solid var(--line); border-right: 2px solid var(--teal); }
+.organ-callout .txt b { display: block; font-family: var(--mono); font-size: 10.5px; font-weight: 700; letter-spacing: 0.03em; color: var(--teal); }
+.organ-callout .txt i { display: block; font-family: var(--serif); font-style: italic; font-size: 12px; line-height: 1.34; color: var(--ink); margin-top: 2px; }
+body[data-mode="drop"] .organ-layer { display: none; }
+
+/* ── footer hint ─────────────────────────────────────────────────────── */
+.hint { position: absolute; left: 0; right: 0; bottom: 12px; z-index: 5; text-align: center; font-family: var(--mono); font-size: 11px; letter-spacing: 0.04em; color: var(--ink-dim); pointer-events: none; }
+.hint b { color: var(--teal-dim); font-weight: 400; }
+body[data-mode="drop"] .hint-dive { display: none; }
+body[data-mode="dive"] .hint-drop { display: none; }
+
+/* ── responsive ──────────────────────────────────────────────────────── */
+@media (max-width: 720px) {
+  .dossier { top: 84px; width: 220px; padding: 12px; }
+  .specimen-name { font-size: 22px; }
+  .readout { top: 54px; }
+  .mag { font-size: 22px; }
+  .depth { height: 180px; right: 12px; }
+  .organ-callout { max-width: 170px; }
+}
