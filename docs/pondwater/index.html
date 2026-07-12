@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="color-scheme" content="dark">
+<meta name="theme-color" content="#030608">
+<meta name="description" content="Pond Water Analyzer — draw a drop of virtual pond water and dive it under a dark-field microscope. Bacteria, paramecia, rotifers, tardigrades, nematodes and water fleas, procedurally grown in Three.js with true-to-life internal anatomy and infinite zoom to organ level.">
+<title>Pond Water Analyzer · cellauto</title>
+<!-- import-map polyfill so Safari 16.0–16.3 / Firefox <108 can still resolve `three` -->
+<script async src="https://cdn.jsdelivr.net/npm/es-module-shims@1.10.0/dist/es-module-shims.js" crossorigin="anonymous"></script>
+<script type="importmap">
+{
+  "imports": {
+    "three": "https://cdn.jsdelivr.net/npm/three@0.162.0/build/three.module.js",
+    "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.162.0/examples/jsm/"
+  }
+}
+</script>
+<link rel="preload" href="../web8/assets/fonts/Italiana-Regular.ttf" as="font" type="font/ttf" crossorigin>
+<link rel="preload" href="../web8/assets/fonts/CrimsonPro-Regular.ttf" as="font" type="font/ttf" crossorigin>
+<link rel="preload" href="../web8/assets/fonts/IBMPlexMono-Regular.ttf" as="font" type="font/ttf" crossorigin>
+<link rel="stylesheet" href="./styles.css">
+</head>
+<body data-mode="drop">
+
+<noscript>
+  <div class="noscript-note">The Pond Water Analyzer is a live WebGL microscope — please enable JavaScript.</div>
+</noscript>
+
+<!-- visually-hidden live region: announces focus/sample changes, never per-frame telemetry -->
+<div class="sr-only" aria-live="polite" id="srStatus"></div>
+
+<div class="scope">
+
+  <!-- the WebGL microscope stage -->
+  <div id="stage" class="stage" role="img" aria-label="Dark-field microscope view of pond water"></div>
+
+  <!-- optical vignette + reticle over the field -->
+  <div class="optics" aria-hidden="true">
+    <div class="vignette"></div>
+    <div class="reticle"></div>
+  </div>
+
+  <!-- organ callout labels are injected here, projected from 3-D each frame;
+       the SVG carries the leader lines from each label to its organ anchor -->
+  <div id="organLayer" class="organ-layer" aria-hidden="true">
+    <svg id="organLeaders" class="organ-leaders"></svg>
+  </div>
+
+  <!-- ─────────────────────────  TOP REGISTER  ───────────────────────── -->
+  <header class="register">
+    <div class="brand">
+      <span class="brand-mark" aria-hidden="true"></span>
+      <span class="brand-word">Pond Water Analyzer</span>
+      <span class="brand-rule" aria-hidden="true"></span>
+      <span class="brand-sub">a live wet-mount · cellauto</span>
+    </div>
+    <div class="register-meta">
+      <span id="sampleId" class="meta-plate">SPECIMEN 001</span>
+      <span class="meta-dot" aria-hidden="true"></span>
+      <a class="meta-home" href="../index.html">↩ hub</a>
+    </div>
+  </header>
+
+  <!-- ─────────────────────────  READOUT (top-right)  ─────────────────── -->
+  <div class="readout" aria-hidden="true">
+    <div class="mag" id="magReadout">×133</div>
+    <div class="scale" id="scaleReadout">— field</div>
+    <div class="scalebar-track"><span class="scalebar" id="scaleBar" data-label="100 µm"></span></div>
+  </div>
+
+  <!-- ─────────────────────────  LEFT · specimen dossier  ─────────────── -->
+  <aside class="dossier">
+    <div class="dossier-head">
+      <span class="kicker">Specimen</span>
+      <span class="organ-count" id="organCount"></span>
+    </div>
+    <h1 class="specimen-name" id="specimenName">The drop</h1>
+    <div class="specimen-taxon" id="specimenTaxon">—</div>
+    <div class="specimen-kingdom"><span id="specimenKingdom">—</span></div>
+    <p class="specimen-blurb" id="specimenBlurb">A field of pond-water life at log-compressed scale. Click any organism, or pick one from the ladder, to dive in.</p>
+
+    <div class="dossier-actions">
+      <button class="ctl" id="btnSurface" title="Return to the whole drop">◈ Surface</button>
+      <button class="ctl" id="btnSample" title="Draw a fresh drop of pond water">⟳ New sample</button>
+      <button class="ctl" id="btnPlay" aria-pressed="false" title="Pause or resume all life">❚❚ Pause life</button>
+    </div>
+
+    <div class="ladder">
+      <div class="kicker">Ladder of life · pick to dive</div>
+      <div class="roster" id="roster"></div>
+    </div>
+  </aside>
+
+  <!-- ─────────────────────────  RIGHT · dive depth gauge  ────────────── -->
+  <div class="depth" aria-hidden="true">
+    <span class="depth-cap">organ</span>
+    <div class="depth-track"><span class="depth-fill" id="depthFill"></span></div>
+    <span class="depth-cap">whole</span>
+  </div>
+
+  <!-- ─────────────────────────  FOOTER hint  ─────────────────────────── -->
+  <footer class="hint">
+    <span class="hint-drop">Drag to orbit · scroll to zoom the drop · <b>click an organism to dive</b></span>
+    <span class="hint-dive">Keep scrolling to dive — organs are labelled as you reach their scale · <b>◈ Surface</b> to zoom back out</span>
+  </footer>
+
+</div>
+
+<script type="module" src="./main.js"></script>
+</body>
+</html>
