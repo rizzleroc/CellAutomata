@@ -44,6 +44,33 @@ Self-hosted fonts live in `web8/assets/fonts/`; ontogeny reuses them via
   height field `[0,1]` → depth-shaded RGBA. `window.SEM.render(height, w, h,
   rgba, { palette, scale, relief })`. Palettes `warm-sepia` / `cool-mono`.
   **`scale` (supersample) is capped 1–4** (`sem.js:144`). Self-contained.
+- **Pond Water material/geometry grammar** (`docs/pondwater/organisms/lib.js`):
+  the shared toolkit every organism inherits. `cuticle`/`organ`/`nucleus` are
+  now `MeshPhysicalMaterial` (transmission + thickness + `attenuationColor`/
+  `Distance` for real volumetric absorption, clearcoat, sheen, optional
+  iridescence). `addRim(mat, {color,power,intensity})` injects a Fresnel edge
+  glow via `onBeforeCompile` (replaces `#include <opaque_fragment>`, chains onto
+  any existing hook; cuticle applies it by default — pass `rim:false` to skip).
+  Micro-surface detail comes from `surfaceNormalMap({kind:'fbm'|'ridges'|
+  'segments'|'granular'})` — a procedural **DataTexture** (no canvas, so it is
+  identical under the headless `life.mjs` harness), cached/shared by key. Cilia
+  (`ciliaRing`/`ciliaCoat`) use a shared pre-curved tapered `filamentGeo` and
+  a hoisted pose object (no per-frame allocation); `helixFilament` is the
+  rotating flagellum; `granuleField` is instanced cytoplasm granulation. Keep
+  `userData._baseOpacity` intact — `main.js setOpacity` reads it for the dive
+  fade. `nematode.js` morphs its tube buffers in place each frame (no per-frame
+  geometry realloc). Tests: `smoke.mjs` guards the lib exports + anatomy
+  contract; `life.mjs` builds each organism against real three and asserts it
+  moves.
+- **Pond Water optics post-chain** (`docs/pondwater/scene.js`): what sells the
+  live-microscopy look is the *optics*. The composer is `RenderPass → BokehPass
+  (depth-of-field, focus retargeted to the specimen every frame) → UnrealBloom
+  (refractive dark-field edge haloes) → OutputPass → OpticsShader (radial
+  chromatic aberration + cool white-balance + vignette + animated sensor
+  grain)`. `composer.render` is wrapped inside `createScope` to update the DoF
+  focus (`camera.distanceTo(controls.target)`) and grain seed, so `main.js`
+  stays untouched. Keep `ACESFilmicToneMapping` / `RoomEnvironment` /
+  `UnrealBloomPass` / `FogExp2` present — `tests/smoke.mjs` asserts them.
 - **Lab control panel** is built in `docs/web7/main.js:321-433` (web8 shares the
   rules) from each rule's **own `params` schema** plus its **regime picker**
   (`rule.presets` array, or an `enum` param), with two globals (speed, palette).

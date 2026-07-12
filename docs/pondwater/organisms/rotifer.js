@@ -30,11 +30,14 @@ function build() {
     new THREE.Vector3(-0.05, -1.5, 0),
     new THREE.Vector3(0, -2.2, 0),
   ];
-  const bodyMat = cuticle(0xdff0f4, 0.17, { transmission: 0.6 });
+  const bodyMat = cuticle(0xdff0f4, 0.16, {
+    transmission: 0.68, thickness: 1.2,
+    rim: { color: 0xcfeeff, power: 2.6, intensity: 0.6 },
+  });
   const body = tubeBody(
     spine,
     (t) => 0.9 * Math.sin(Math.min(1, t * 1.15) * Math.PI) ** 0.6 + 0.14,
-    bodyMat, { tubular: 120, radial: 28 },
+    bodyMat, { tubular: 160, radial: 40 },
   );
   body.name = 'body-trunk';
   body.renderOrder = 12;
@@ -44,20 +47,33 @@ function build() {
   // ── Corona: two ciliated wheels at the head that spin to feed ────────────
   const corona = new THREE.Group(); corona.name = 'corona';
   corona.position.set(0, 2.45, 0);
+  // faint additive material for the metachronal "spin blur" the wheels give off
+  const vortexMat = new THREE.MeshBasicMaterial({
+    color: 0xffe6b0, transparent: true, opacity: 0.18,
+    blending: THREE.AdditiveBlending, depthWrite: false, side: THREE.DoubleSide,
+  });
   for (const side of [-1, 1]) {
     const disc = new THREE.Group();
     disc.position.set(side * 0.42, 0, 0);
     const rim = new THREE.Mesh(
-      new THREE.TorusGeometry(0.42, 0.08, 12, 28),
-      organ(0xe7c98a, { emissive: new THREE.Color(0x3a2f14) }),
+      new THREE.TorusGeometry(0.42, 0.09, 18, 40),
+      organ(0xe7c98a, { emissive: new THREE.Color(0x3a2f14), clearcoat: 0.5 }),
     );
     rim.rotation.x = Math.PI / 2;
     disc.add(rim);
-    const cilia = ciliaRing(0.42, 34, 0.34,
-      organ(0xfff4d8, { emissive: new THREE.Color(0x3a3320), transparent: true, opacity: 0.9 }),
+    // a dense ring of fine curved cilia — the "wheel" itself
+    const cilia = ciliaRing(0.42, 60, 0.36,
+      organ(0xfff4d8, { emissive: new THREE.Color(0x3a3320), transparent: true, opacity: 0.9, rim: false }),
       { axis: 'y' });
     cilia.userData.side = side;
     disc.add(cilia);
+    // two nested translucent discs whose spin reads as a feeding vortex
+    for (const rr of [0.5, 0.34]) {
+      const swirl = new THREE.Mesh(new THREE.RingGeometry(rr * 0.35, rr, 40, 1), vortexMat);
+      swirl.rotation.x = Math.PI / 2;
+      swirl.userData.spin = rr;
+      disc.add(swirl);
+    }
     disc.userData.cilia = cilia;
     corona.add(disc);
   }
@@ -67,7 +83,7 @@ function build() {
   // ── Mastax + trophi: the muscular pharyngeal jaw with hard grinding pieces
   const mastax = new THREE.Group(); mastax.name = 'mastax';
   mastax.position.set(0, 1.55, 0);
-  const bulb = blob(0.42, 0.42, 0.4, organ(0xc98a76, { emissive: new THREE.Color(0x3a1f18) }));
+  const bulb = blob(0.42, 0.42, 0.4, organ(0xc98a76, { emissive: new THREE.Color(0x3a1f18), transmission: 0.2 }));
   mastax.add(bulb);
   // trophi: two hardened jaw pieces that clap together
   const trophiMat = nucleus(0xf2e2c0, { emissive: new THREE.Color(0x4a4230), roughness: 0.3 });
@@ -87,13 +103,13 @@ function build() {
     new THREE.Vector3(-0.02, -0.5, 0.03),
     new THREE.Vector3(0, -1.2, 0),
   ];
-  const stomach = blob(0.42, 0.55, 0.42, organ(0x8fae5a, { emissive: new THREE.Color(0x243016), transparent: true, opacity: 0.9 }));
+  const stomach = blob(0.42, 0.55, 0.42, organ(0x8fae5a, { emissive: new THREE.Color(0x243016), transparent: true, opacity: 0.9, transmission: 0.3 }));
   stomach.name = 'stomach';
   stomach.position.set(0, 0.55, 0.03);
   g.add(stomach);
   registerOrgan(g, stomach, 'Stomach', 'A sac of digestive-gland cells — food swept in by the corona is broken down here.', 0.4);
 
-  const gut = tubeBody(gutPts, (t) => 0.16 - t * 0.05, organ(0x7c9a4a, { transparent: true, opacity: 0.85 }), { tubular: 40, radial: 12 });
+  const gut = tubeBody(gutPts, (t) => 0.16 - t * 0.05, organ(0x7c9a4a, { transparent: true, opacity: 0.85, transmission: 0.25 }), { tubular: 48, radial: 14 });
   gut.name = 'intestine';
   g.add(gut);
   registerOrgan(g, gut, 'Intestine', 'The gut carries digested matter to the cloaca at the foot base.', 0.55);
@@ -110,16 +126,24 @@ function build() {
   g.add(ovary);
   registerOrgan(g, ovary, 'Ovary & eggs', 'Rotifers you find are almost all females — eggs ripen here and hatch as clones (parthenogenesis).', 0.6);
 
-  // ── Foot + two toes: the telescoping anchor ──────────────────────────────
+  // ── Foot + two toes: the telescoping anchor, in nested segments ──────────
   const foot = new THREE.Group(); foot.name = 'foot';
   foot.position.set(0, -2.2, 0);
-  const stalk = new THREE.Mesh(new THREE.CylinderGeometry(0.13, 0.16, 0.6, 12), bodyMat.clone());
-  stalk.position.y = -0.3;
-  foot.add(stalk);
+  const footMat = bodyMat.clone();
+  const segments = [];
+  for (let s = 0; s < 3; s++) {
+    const rTop = 0.15 - s * 0.03, rBot = 0.13 - s * 0.03;
+    const seg = new THREE.Mesh(new THREE.CylinderGeometry(rTop, rBot, 0.26, 20), footMat);
+    seg.position.y = -0.12 - s * 0.24;
+    seg.userData.baseY = seg.position.y;
+    segments.push(seg);
+    foot.add(seg);
+  }
+  foot.userData.segments = segments;
   for (const s of [-1, 1]) {
-    const toe = new THREE.Mesh(new THREE.ConeGeometry(0.06, 0.45, 8), organ(0xd8c9a0, { emissive: new THREE.Color(0x2a2416) }));
-    toe.position.set(s * 0.1, -0.75, 0);
-    toe.rotation.z = s * 0.2;
+    const toe = new THREE.Mesh(new THREE.ConeGeometry(0.05, 0.42, 12), organ(0xd8c9a0, { emissive: new THREE.Color(0x2a2416) }));
+    toe.position.set(s * 0.08, -1.0, 0);
+    toe.rotation.z = s * 0.18;
     toe.rotation.x = Math.PI;
     foot.add(toe);
   }
@@ -135,11 +159,14 @@ function build() {
     reset: () => { phase = 0; },
     update: (dt, t) => {
       if (running) phase += dt;
-      // corona wheels spin + cilia beat
+      // corona wheels spin + cilia beat; the swirl discs spin faster for blur
       corona.children.forEach((disc, i) => {
         const dir = i === 0 ? 1 : -1;
         disc.rotation.z = phase * 3 * dir;
         disc.userData.cilia.userData.beat(phase, 0.6);
+        for (const c of disc.children) {
+          if (c.userData.spin) c.rotation.y = phase * 9 * dir;
+        }
       });
       // mastax jaws clap
       const clap = Math.max(0, Math.sin(phase * 5)) * 0.09;
@@ -150,6 +177,9 @@ function build() {
       // whole body inch/telescoping bend + foot probe
       g.rotation.z = Math.sin(phase * 0.8) * 0.06;
       foot.rotation.z = Math.sin(phase * 1.4 + 1) * 0.12;
+      // foot telescopes: segments extend and retract along the stalk
+      const ext = 0.5 + 0.5 * Math.sin(phase * 1.4);
+      foot.userData.segments.forEach((seg, i) => { seg.position.y = seg.userData.baseY - i * 0.06 * ext; });
       // eggs jostle
       eggs.forEach((e, i) => { e.scale.setScalar(1 + Math.sin(phase * 1.6 + i) * 0.04); });
     },

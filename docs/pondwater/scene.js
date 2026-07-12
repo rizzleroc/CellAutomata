@@ -6,6 +6,14 @@
 // the medium; a soft caustic gradient stands in for the condenser cone. The
 // same photoreal pillars the rest of the lab uses — PBR image-based lighting,
 // ACES tone-mapping, a restrained bloom so the wet highlights bloom like glass.
+//
+// What sells "under a microscope" over "a nice 3D model" is the *optics*, not
+// the geometry: a real objective has a razor-thin focal plane (everything else
+// falls into soft bokeh), it fringes high-contrast edges with chromatic
+// aberration, the sensor adds grain, and the field vignettes. Those live in the
+// post chain below — depth-of-field (focus tracked to the specimen), a light
+// chromatic-aberration + grain + vignette + cool-cast pass, and the bloom that
+// turns dark-field's bright refractive edges into glowing haloes.
 
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
@@ -13,14 +21,60 @@ import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
 import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
 import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
+import { BokehPass } from 'three/addons/postprocessing/BokehPass.js';
+import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
+
+// A single screen-space "optics" pass: radial chromatic aberration that grows
+// toward the edge, a cool desaturating colour cast (the microscope's white
+// balance), a soft vignette, and animated sensor grain. Cheap — one draw.
+const OpticsShader = {
+  uniforms: {
+    tDiffuse: { value: null },
+    uTime: { value: 0 },
+    uAberration: { value: 2.2 },
+    uVignette: { value: 0.55 },
+    uGrain: { value: 0.055 },
+    uResolution: { value: new THREE.Vector2(1, 1) },
+  },
+  vertexShader: /* glsl */`
+    varying vec2 vUv;
+    void main() { vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }
+  `,
+  fragmentShader: /* glsl */`
+    varying vec2 vUv;
+    uniform sampler2D tDiffuse;
+    uniform float uTime, uAberration, uVignette, uGrain;
+    uniform vec2 uResolution;
+    float hash(vec2 p) { return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453); }
+    void main() {
+      vec2 c = vUv - 0.5;
+      float r = length(c);
+      // radial chromatic aberration — clean at centre, fringed at the rim
+      vec2 shift = c * r * (uAberration * 4.0 / uResolution.x);
+      float cr = texture2D(tDiffuse, vUv + shift).r;
+      float cg = texture2D(tDiffuse, vUv).g;
+      float cb = texture2D(tDiffuse, vUv - shift).b;
+      vec3 col = vec3(cr, cg, cb);
+      // cool white balance + desaturation — real dark-field footage is nearly
+      // monochrome cool-grey, not saturated glass
+      float l = dot(col, vec3(0.299, 0.587, 0.114));
+      col = mix(vec3(l), col, 0.78) * vec3(0.97, 1.0, 1.05);
+      // vignette
+      col *= 1.0 - smoothstep(0.32, 0.82, r) * uVignette;
+      // animated sensor grain
+      col += (hash(vUv * uResolution + uTime) - 0.5) * uGrain;
+      gl_FragColor = vec4(col, 1.0);
+    }
+  `,
+};
 
 export function createScope(container) {
   const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false });
   renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
   renderer.setSize(container.clientWidth, container.clientHeight);
   renderer.toneMapping = THREE.ACESFilmicToneMapping;
-  renderer.toneMappingExposure = 1.05;
+  renderer.toneMappingExposure = 0.9;   // specimens sit dark against the field
   renderer.outputColorSpace = THREE.SRGBColorSpace;
   container.appendChild(renderer.domElement);
 
@@ -69,15 +123,38 @@ export function createScope(container) {
   const medium = createMedium();
   scene.add(medium);
 
-  // ── Postprocessing: wet-highlight bloom ─────────────────────────────────
+  // ── Postprocessing: DoF → bloom → tone → optics ─────────────────────────
   const composer = new EffectComposer(renderer);
   composer.addPass(new RenderPass(scene, camera));
+
+  // Depth of field: the thin focal plane that reads as "under a microscope".
+  // focus (world distance) is retargeted to the specimen every frame below.
+  const bokeh = new BokehPass(scene, camera, {
+    focus: 9, aperture: 0.00035, maxblur: 0.006,
+    width: container.clientWidth, height: container.clientHeight,
+  });
+  composer.addPass(bokeh);
+
   const bloom = new UnrealBloomPass(
     new THREE.Vector2(container.clientWidth, container.clientHeight),
-    0.55, 0.7, 0.85,
+    0.6, 0.8, 0.82,           // only the brightest — edges + refractile specks — halo
   );
   composer.addPass(bloom);
   composer.addPass(new OutputPass());
+
+  const optics = new ShaderPass(OpticsShader);
+  optics.uniforms.uResolution.value.set(container.clientWidth, container.clientHeight);
+  composer.addPass(optics);
+
+  // Drive the focal plane onto whatever the camera is looking at, and advance
+  // the grain — done here so main.js's render call needs no change.
+  const _render = composer.render.bind(composer);
+  let frame = 0;
+  composer.render = (deltaTime) => {
+    bokeh.uniforms['focus'].value = camera.position.distanceTo(controls.target);
+    optics.uniforms.uTime.value = (frame = (frame + 1) % 100000);
+    _render(deltaTime);
+  };
 
   function setSize() {
     const w = container.clientWidth, h = container.clientHeight;
@@ -86,10 +163,11 @@ export function createScope(container) {
     camera.updateProjectionMatrix();
     renderer.setSize(w, h);
     composer.setSize(w, h);
+    optics.uniforms.uResolution.value.set(w, h);
   }
   window.addEventListener('resize', setSize);
 
-  return { THREE, renderer, scene, camera, controls, composer, medium, spot, setSize };
+  return { THREE, renderer, scene, camera, controls, composer, bokeh, optics, medium, spot, setSize };
 }
 
 // Marine snow: two shells of drifting particulates — coarse detritus near the
