@@ -27,9 +27,10 @@ multiples → stages of life).
 | `web7/` | **The canonical lab** ("Catalytic Silence") — 13 abiogenesis stages, each a photoreal Three.js apparatus + a live SEM micrograph | active |
 | `web8/` | **The Guided Colony** = web7 + a living-amoeba guide creature (`guide.js`, `guide.css`, `blobgeom.js`) | active |
 | `web9/` | **The Instrument** = web8 (guide/"slime" layer included) + a live measurement layer (`observables.js`): per-step observable sparkline (roughness σ²/⟨h⟩), CSV export, and a shareable run-URL (stage/view/palette in the hash). A **Pro paywall** (`paywall.js`/`paywall.css`) gates the Parameters rail (tweak knobs · step/reset transport · CSV/link export) behind a one-tap `$1`/`$9.99` unlock **or a redeemable access token**; watching the live specimen is free | active |
+| `web10/` | **"Mark X"** — a re-shell of web7 (own engine copies) with a refined identity: MK X build tag + magenta accent, a hero-art plate rail (`generated/web10/stageNN_*.png`), a 13-node timeline scrubber + run provenance, and a **token-gated Pro export** (`pro.js`) that renders the current stage's SEM micrograph in-page up to **4000²** | active |
 | `ontogeny/` | **Part II — the origin of an individual.** Pure canvas + `sem.js`; engine `sim.js`, renderer `render.js`, controller `app.js` | active |
 | `pondwater/` | **The Pond Water Analyzer** — a dark-field microscope of virtual pond water. Six procedurally-grown organisms (`organisms/*.js`) from bacterium → water flea, each with true-to-life internal organs; a continuous **infinite-zoom engine** (`main.js`) dives from the whole drop to organ level, fading in organ callout labels by scale. Three.js via importmap, `scene.js` for the wet-mount look | active |
-| `slime/` | **Slime Studio** — interactive *Physarum* lab (`slime.js`): place nutrients, watch it grow paths, with a live SEM-micrograph feed beside the interactive view, plus a Pro paywall gating a 4K SEM plate export. Zero-dep canvas | active |
+| `slime/` | **Slime Studio** — interactive *Physarum* lab (`slime.js`): place nutrients, watch it grow paths, with a live SEM-micrograph feed beside the interactive view, plus a Pro paywall (shared `pro.js` token) gating a 4000² SEM plate export. Zero-dep canvas | active |
 | `web`, `web2`, `web3`, `web6` | earlier clients, retained for comparison | legacy |
 
 Self-hosted fonts live in `web8/assets/fonts/`; ontogeny reuses them via
@@ -41,6 +42,19 @@ Self-hosted fonts live in `web8/assets/fonts/`; ontogeny reuses them via
 - **Zero-dependency ES modules.** No build step. Labs load **Three.js via a CDN
   importmap**; ontogeny is pure `<canvas>` + `sem.js` (classic script) + ES
   modules. Everything opens from `file://` or any static server.
+- **Pro unlock — client-side token** (`pro.js`, a copy in `web10/` and `slime/`).
+  The site is static (GitHub Pages), so "Pro" is a **client-side unlock keyed by a
+  shareable token** (`CATSIL-XXXX-XXXX-CKSUM`, FNV-1a checksum) persisted in
+  `localStorage['catsil.pro.token']`. Because localStorage is per-origin,
+  redeeming a token in any client unlocks Pro in **all** of them and survives a
+  reload. It exposes `window.CatSilPro` (`isUnlocked`/`showPaywall`/`redeem`/
+  `grantDemo`/`clear`/`onChange`) and injects its own paywall modal (demo unlock +
+  redeem-token field). It gates the **hi-res SEM plate export** (web10's `PRO ·
+  4000²` pill renders the current stage in-page up to 4000²; slime's `Export 4K`
+  button). **Not a security boundary** — a client-side gate never is; it is the
+  "free taste → unlock with a token" model (cf. `docs/PRICING.md`). The unmerged
+  PR #76 (web9 Clerk/Stripe server) is the server-side alternative, undeployable on
+  Pages. Each client owns its copy of `pro.js` — propagate fixes to both.
 - **SEM depth-shading pipeline** (`sem.js`, one copy per client): a Float32
   height field `[0,1]` → depth-shaded RGBA. `window.SEM.render(height, w, h,
   rgba, { palette, scale, relief, noise })`. Palettes `warm-sepia` / `cool-mono`;
@@ -103,6 +117,9 @@ node docs/web7/tests/controls.mjs     # presets wired to real params
 
 # Web8 (guided lab) — same five gates
 node docs/web8/tests/{smoke,design,runtime,anim,controls}.mjs
+
+# Web10 (Mark X) — same five gates; design also locks the token-gated Pro export
+node docs/web10/tests/{smoke,design,runtime,anim,controls}.mjs
 
 # Web6 (legacy, still gated)
 node docs/web6/tests/{smoke,colony,runtime}.mjs

@@ -171,22 +171,32 @@
   const hint = $('hint'); let hinted = false; function hideHint() { if (!hinted) { hinted = true; hint.classList.add('gone'); } }
   setTimeout(hideHint, 7000);
 
-  // ---- pro / paywall — a real paid gate on the 4K micrograph export ----
-  let pro = false;
-  const proBtn = $('proBtn'), exportBtn = $('exportBtn'), paywall = $('paywall');
-  proBtn.addEventListener('click', () => { if (!pro) paywall.hidden = false; });
-  $('pwClose').addEventListener('click', () => { paywall.hidden = true; });
-  function goPro() { pro = true; paywall.hidden = true; proBtn.textContent = '✓ Pro'; proBtn.classList.add('owned'); exportBtn.disabled = false; }
-  $('pwOne').addEventListener('click', goPro);
-  $('pwAll').addEventListener('click', goPro);
-  exportBtn.addEventListener('click', () => {
-    if (!pro) { paywall.hidden = false; return; }
-    const R = 2048; renderSEM(imgB.data); octx.putImageData(imgB, 0, 0);
+  // ---- pro / paywall — shared token unlock (persists + unlocks every lab) ----
+  // Gates the 4K SEM micrograph plate export behind CatSilPro (docs/slime/pro.js):
+  // a client-side unlock token in localStorage, shared across every Catalytic
+  // Silence lab on this origin — unlock here and web10's Pro export unlocks too.
+  const proBtn = $('proBtn'), exportBtn = $('exportBtn');
+  const Pro = window.CatSilPro;
+  function reflectPro(unlocked) {
+    if (unlocked) { proBtn.textContent = '✓ Pro'; proBtn.classList.add('owned'); exportBtn.disabled = false; }
+    else { proBtn.textContent = '◆ Pro · $1'; proBtn.classList.remove('owned'); exportBtn.disabled = true; }
+  }
+  function ensurePro(then) {
+    if (!Pro) { then(); return; }                         // module absent → degrade open
+    if (Pro.isUnlocked()) { then(); return; }
+    Pro.showPaywall({ onUnlock: then });
+  }
+  if (Pro) { reflectPro(Pro.isUnlocked()); Pro.onChange(reflectPro); }
+  proBtn.addEventListener('click', () => ensurePro(() => {}));
+  function exportPlate() {
+    const R = 4000; renderSEM(imgB.data); octx.putImageData(imgB, 0, 0);
     const c = document.createElement('canvas'); c.width = R; c.height = R; const cc = c.getContext('2d');
-    cc.imageSmoothingEnabled = true; cc.drawImage(off, 0, 0, R, R);
+    cc.imageSmoothingEnabled = true; cc.imageSmoothingQuality = 'high'; cc.drawImage(off, 0, 0, R, R);
     c.toBlob(b => { if (!b) return; const url = URL.createObjectURL(b), a = document.createElement('a');
-      a.href = url; a.download = 'slime-studio-sem-' + R + '.png'; document.body.appendChild(a); a.click(); a.remove(); }, 'image/png');
-  });
+      a.href = url; a.download = 'slime-studio-sem-' + R + '.png'; document.body.appendChild(a); a.click(); a.remove();
+      setTimeout(() => URL.revokeObjectURL(url), 4000); }, 'image/png');
+  }
+  exportBtn.addEventListener('click', () => ensurePro(exportPlate));
 
   // ---- loop ----
   let last = performance.now(), acc = 0;
