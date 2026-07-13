@@ -34,6 +34,8 @@
       <button id="reset" class="btn">Reset</button>
       <button id="scatter" class="btn">Scatter nutrients</button>
       <button id="clearFood" class="btn ghost">Clear food</button>
+      <button id="proBtn" class="btn pro">◆ Pro · $1</button>
+      <button id="exportBtn" class="btn ghost" disabled>⤓ Export 4K plate</button>
     </div>
     <div class="grp sliders">
       <label class="sl">Speed <b id="vSpeed">2×</b><input id="speed" type="range" min="1" max="6" step="1" value="2"></label>
@@ -51,6 +53,16 @@
     <span>Jones 2010 agent model · Tero &amp; Nakagaki 2010 nutrient routing</span>
   </footer>
 
+  <div class="paywall" id="paywall" hidden>
+    <div class="pw-card">
+      <button class="pw-x" id="pwClose" aria-label="Close">×</button>
+      <h3>Unlock the Studio</h3>
+      <p>Unlock the publication-quality <strong>4K SEM micrograph plate</strong> export of your specimen. One tap.</p>
+      <button class="pw-btn" id="pwOne">Unlock — $1</button>
+      <a class="pw-all" id="pwAll" role="button" tabindex="0">Or unlock everything — $9.99</a>
+      <p class="pw-note">Demo checkout — nothing is charged.</p>
+    </div>
+  </div>
   <script src="slime.js"></script>
 </body>
 </html>

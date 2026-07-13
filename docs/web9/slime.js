@@ -171,6 +171,23 @@
   const hint = $('hint'); let hinted = false; function hideHint() { if (!hinted) { hinted = true; hint.classList.add('gone'); } }
   setTimeout(hideHint, 7000);
 
+  // ---- pro / paywall — a real paid gate on the 4K micrograph export ----
+  let pro = false;
+  const proBtn = $('proBtn'), exportBtn = $('exportBtn'), paywall = $('paywall');
+  proBtn.addEventListener('click', () => { if (!pro) paywall.hidden = false; });
+  $('pwClose').addEventListener('click', () => { paywall.hidden = true; });
+  function goPro() { pro = true; paywall.hidden = true; proBtn.textContent = '✓ Pro'; proBtn.classList.add('owned'); exportBtn.disabled = false; }
+  $('pwOne').addEventListener('click', goPro);
+  $('pwAll').addEventListener('click', goPro);
+  exportBtn.addEventListener('click', () => {
+    if (!pro) { paywall.hidden = false; return; }
+    const R = 2048; renderSEM(imgB.data); octx.putImageData(imgB, 0, 0);
+    const c = document.createElement('canvas'); c.width = R; c.height = R; const cc = c.getContext('2d');
+    cc.imageSmoothingEnabled = true; cc.drawImage(off, 0, 0, R, R);
+    c.toBlob(b => { if (!b) return; const url = URL.createObjectURL(b), a = document.createElement('a');
+      a.href = url; a.download = 'slime-studio-sem-' + R + '.png'; document.body.appendChild(a); a.click(); a.remove(); }, 'image/png');
+  });
+
   // ---- loop ----
   let last = performance.now(), acc = 0;
   function frame(now) {
