@@ -31,6 +31,16 @@
   cursor: default;
 }
 
+/* ── landing links to the paid studios (nav + Experiences card) ───────────── */
+.lp-nav-pro { color: var(--pw-magenta) !important; font-weight: 600; }
+.lp-nav-pro:hover { color: var(--pw-teal) !important; }
+.lp-exp-pro { border-color: var(--pw-line); box-shadow: 0 0 0 1px rgba(215, 123, 255, .1) inset; }
+.lp-exp-pro:hover { border-color: var(--pw-magenta); }
+.lp-exp .tag.pro {
+  background: linear-gradient(100deg, var(--pw-teal), var(--pw-magenta));
+  color: var(--pw-ground); font-weight: 700; letter-spacing: .02em;
+}
+
 /* ── the unlock modal ─────────────────────────────────────────────────────── */
 .pw-modal { position: fixed; inset: 0; z-index: 1200; display: grid; place-items: center; padding: 20px; }
 .pw-modal[hidden] { display: none; }
