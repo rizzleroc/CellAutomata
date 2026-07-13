@@ -1,0 +1,68 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Slime Studio · Catalytic Silence</title>
+<meta name="description" content="An interactive Physarum polycephalum lab — place nutrients and watch the slime mould grow paths to connect them, alongside a live SEM micrograph feed.">
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <header class="top">
+    <div class="brand">
+      <span class="mk">Slime Studio</span>
+      <span class="crumb">slime · Catalytic Silence</span>
+    </div>
+    <p class="sub"><em>Physarum polycephalum</em> — place nutrients, and watch it grow the paths that connect them.</p>
+  </header>
+
+  <main class="stage">
+    <figure class="panel">
+      <figcaption class="plabel"><span class="dot live"></span> Interactive — grow paths</figcaption>
+      <canvas id="paths" aria-label="Interactive slime mould — click or drag to place nutrients"></canvas>
+      <div class="hint" id="hint">click or drag on either view to drop nutrients</div>
+    </figure>
+    <figure class="panel">
+      <figcaption class="plabel"><span class="dot sem"></span> Live · SEM feed</figcaption>
+      <canvas id="feed" aria-label="Live scanning-electron-micrograph feed of the same specimen"></canvas>
+    </figure>
+  </main>
+
+  <div class="dock" role="group" aria-label="Studio controls">
+    <div class="grp">
+      <button id="play" class="btn primary" aria-pressed="true">❚❚ Pause</button>
+      <button id="reset" class="btn">Reset</button>
+      <button id="scatter" class="btn">Scatter nutrients</button>
+      <button id="clearFood" class="btn ghost">Clear food</button>
+      <button id="proBtn" class="btn pro">◆ Pro · $1</button>
+      <button id="exportBtn" class="btn ghost" disabled>⤓ Export 4K plate</button>
+    </div>
+    <div class="grp sliders">
+      <label class="sl">Speed <b id="vSpeed">2×</b><input id="speed" type="range" min="1" max="6" step="1" value="2"></label>
+      <label class="sl">Vigor <b id="vVigor">balanced</b><input id="vigor" type="range" min="0" max="100" step="1" value="55"></label>
+    </div>
+    <div class="grp readout" aria-hidden="true">
+      <span class="rd"><i>nutrients</i><b id="rNodes">0</b></span>
+      <span class="rd"><i>coverage</i><b id="rCover">0.0%</b></span>
+      <span class="rd"><i>plasmodia</i><b id="rAgents">0</b></span>
+    </div>
+  </div>
+
+  <footer class="foot">
+    <a href="../index.html">← Catalytic Silence</a>
+    <span>Jones 2010 agent model · Tero &amp; Nakagaki 2010 nutrient routing</span>
+  </footer>
+
+  <div class="paywall" id="paywall" hidden>
+    <div class="pw-card">
+      <button class="pw-x" id="pwClose" aria-label="Close">×</button>
+      <h3>Unlock the Studio</h3>
+      <p>Unlock the publication-quality <strong>4K SEM micrograph plate</strong> export of your specimen. One tap.</p>
+      <button class="pw-btn" id="pwOne">Unlock — $1</button>
+      <a class="pw-all" id="pwAll" role="button" tabindex="0">Or unlock everything — $9.99</a>
+      <p class="pw-note">Demo checkout — nothing is charged.</p>
+    </div>
+  </div>
+  <script src="slime.js"></script>
+</body>
+</html>

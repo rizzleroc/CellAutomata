@@ -84,6 +84,8 @@ jobs:
         run: node docs/pondwater/tests/smoke.mjs
       - name: Pond Water Analyzer organism/anatomy verification
         run: node docs/pondwater/tests/life.mjs   # three already installed above
+      - name: Slime Studio smoke test
+        run: node docs/slime/tests/smoke.mjs
 
   build:
     needs: test

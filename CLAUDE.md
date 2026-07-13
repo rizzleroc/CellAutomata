@@ -29,6 +29,7 @@ multiples → stages of life).
 | `web9/` | **The Instrument** = web8 (guide/"slime" layer included) + a live measurement layer (`observables.js`): per-step observable sparkline (roughness σ²/⟨h⟩), CSV export, and a shareable run-URL (stage/view/palette in the hash) | active |
 | `ontogeny/` | **Part II — the origin of an individual.** Pure canvas + `sem.js`; engine `sim.js`, renderer `render.js`, controller `app.js` | active |
 | `pondwater/` | **The Pond Water Analyzer** — a dark-field microscope of virtual pond water. Six procedurally-grown organisms (`organisms/*.js`) from bacterium → water flea, each with true-to-life internal organs; a continuous **infinite-zoom engine** (`main.js`) dives from the whole drop to organ level, fading in organ callout labels by scale. Three.js via importmap, `scene.js` for the wet-mount look | active |
+| `slime/` | **Slime Studio** — interactive *Physarum* lab (`slime.js`): place nutrients, watch it grow paths, with a live SEM-micrograph feed beside the interactive view, plus a Pro paywall gating a 4K SEM plate export. Zero-dep canvas | active |
 | `web`, `web2`, `web3`, `web6` | earlier clients, retained for comparison | legacy |
 
 Self-hosted fonts live in `web8/assets/fonts/`; ontogeny reuses them via
@@ -42,7 +43,8 @@ Self-hosted fonts live in `web8/assets/fonts/`; ontogeny reuses them via
   modules. Everything opens from `file://` or any static server.
 - **SEM depth-shading pipeline** (`sem.js`, one copy per client): a Float32
   height field `[0,1]` → depth-shaded RGBA. `window.SEM.render(height, w, h,
-  rgba, { palette, scale, relief })`. Palettes `warm-sepia` / `cool-mono`.
+  rgba, { palette, scale, relief, noise })`. Palettes `warm-sepia` / `cool-mono`;
+  optional `noise` overrides substrate-grain opacity (default `0.045`; web8 copy).
   **`scale` (supersample) is capped 1–4** (`sem.js:144`). Self-contained.
 - **Pond Water material/geometry grammar** (`docs/pondwater/organisms/lib.js`):
   the shared toolkit every organism inherits. `cuticle`/`organ`/`nucleus` are
