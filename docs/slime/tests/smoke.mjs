@@ -24,7 +24,8 @@ ok(/href="\.\.\/index\.html"/.test(html), 'links back to the hub');
 
 // every id the sim reads must exist in the markup
 for (const id of ['paths', 'feed', 'play', 'reset', 'scatter', 'clearFood',
-                  'speed', 'vSpeed', 'vigor', 'vVigor', 'rNodes', 'rCover', 'rAgents', 'hint']) {
+                  'speed', 'vSpeed', 'vigor', 'vVigor', 'colony', 'vColony', 'res', 'vRes',
+                  'rNodes', 'rCover', 'rAgents', 'hint']) {
   ok(new RegExp(`id="${id}"`).test(html), `markup has #${id}`);
 }
 
@@ -34,9 +35,12 @@ catch (e) { fails.push('slime.js failed node --check: ' + e.message); }
 
 // the Physarum engine + both renderers are present
 for (const fn of ['stampFood', 'function agents', 'function diffuse', 'function grow',
-                  'renderPaths', 'renderSEM', 'function step']) {
+                  'renderPaths', 'renderSEM', 'function step', 'function setGrid']) {
   ok(js.includes(fn), `slime.js defines ${fn}`);
 }
+// higher-resolution / larger-colony controls are wired to the engine
+ok(/getElementById\('res'\)|\$\('res'\)/.test(js) && /setGrid\(/.test(js), 'Detail control drives setGrid (adjustable grid resolution)');
+ok(/getElementById\('colony'\)|\$\('colony'\)/.test(js) && /targetPop\s*=/.test(js), 'Colony control drives targetPop (larger agent sets)');
 ok(/getElementById\('paths'\)/.test(js) && /getElementById\('feed'\)/.test(js), 'sim binds both canvases');
 ok(/addNode/.test(js) && /pointerdown/.test(js), 'pointer places nutrients');
 ok(/requestAnimationFrame/.test(js), 'runs an animation loop');

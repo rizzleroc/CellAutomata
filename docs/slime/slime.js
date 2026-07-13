@@ -5,19 +5,20 @@
 // Tero & Nakagaki 2010): sense-rotate-deposit-diffuse, plus food attractors.
 (() => {
   'use strict';
-  const G = 200, N = G * G, TAU = Math.PI * 2;
+  let G = 200, N = G * G;                  // grid resolution — adjustable (Detail control)
+  const TAU = Math.PI * 2;
   const clamp = (v, a, b) => (v < a ? a : v > b ? b : v);
   const lerp = (a, b, t) => a + (b - a) * t;
 
   // ---- fields + agents ----
-  const T = new Float32Array(N), Tn = new Float32Array(N), mx = new Float32Array(N);
-  const CAP = 34000, ax = new Float32Array(CAP), ay = new Float32Array(CAP), ah = new Float32Array(CAP);
+  let T = new Float32Array(N), Tn = new Float32Array(N), mx = new Float32Array(N);
+  const CAP = 60000, ax = new Float32Array(CAP), ay = new Float32Array(CAP), ah = new Float32Array(CAP);
   let pop = 0;
   const sa = 22 * Math.PI / 180, ra = 26 * Math.PI / 180, so = 9, ssz = 1.0;
   let dep = 5.6, decay = 0.90, targetPop = 20000, running = true, speed = 2;
 
   const nodes = [];                       // nutrient sites {x,y} in grid coords
-  const cx = G / 2, cy = G / 2;
+  let cx = G / 2, cy = G / 2;
 
   function seed() {
     pop = 0;
@@ -135,8 +136,15 @@
   const paths = document.getElementById('paths'), feed = document.getElementById('feed');
   const pctx = paths.getContext('2d'), fctx = feed.getContext('2d');
   const off = document.createElement('canvas'); off.width = G; off.height = G; const octx = off.getContext('2d');
-  const imgA = octx.createImageData(G, G), imgB = octx.createImageData(G, G);
+  let imgA = octx.createImageData(G, G), imgB = octx.createImageData(G, G);
   pctx.imageSmoothingEnabled = false; fctx.imageSmoothingEnabled = true;
+  // Re-resolution the colony: reallocate the field + agent-scent buffers to a new
+  // grid, keep the offscreen/ImageData in lockstep, then re-seed. Renderers and the
+  // 4K export read the live G, so a finer grid gives a finer micrograph everywhere.
+  function setGrid(g) { g = g | 0; if (g === G) return; G = g; N = g * g; cx = G / 2; cy = G / 2;
+    T = new Float32Array(N); Tn = new Float32Array(N); mx = new Float32Array(N);
+    off.width = g; off.height = g; imgA = octx.createImageData(g, g); imgB = octx.createImageData(g, g);
+    reset(); }
 
   function fit(c) { const r = c.getBoundingClientRect(), dpr = Math.min(devicePixelRatio || 1, 2);
     c.width = Math.max(1, r.width * dpr | 0); c.height = Math.max(1, r.height * dpr | 0); }
@@ -167,6 +175,8 @@
   $('clearFood').addEventListener('click', () => { nodes.length = 0; refreshReadout(); });
   const spd = $('speed'); spd.addEventListener('input', () => { speed = +spd.value; $('vSpeed').textContent = speed + '×'; });
   const vig = $('vigor'); vig.addEventListener('input', () => { const v = +vig.value; decay = lerp(0.86, 0.945, v / 100); dep = lerp(4.4, 6.6, v / 100); $('vVigor').textContent = v < 34 ? 'lean' : v < 67 ? 'balanced' : 'lush'; });
+  const col = $('colony'); if (col) col.addEventListener('input', () => { targetPop = +col.value; $('vColony').textContent = (targetPop / 1000 | 0) + 'k'; });
+  const res = $('res'); if (res) res.addEventListener('input', () => { setGrid(+res.value); $('vRes').textContent = res.value + '²'; refreshReadout(); });
 
   const hint = $('hint'); let hinted = false; function hideHint() { if (!hinted) { hinted = true; hint.classList.add('gone'); } }
   setTimeout(hideHint, 7000);
