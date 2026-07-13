@@ -38,6 +38,12 @@ assert(/id="proBtn"/.test(html), "index.html landing is missing the Go Pro butto
 // the Go Pro button lives in the landing hero CTA (the home page), not buried in the lab
 assert(/class="lp-cta"[\s\S]*id="proBtn"[\s\S]*<\/div>/.test(html), "the Go Pro button is not in the landing hero CTA");
 
+// 2b. Landing links to the paid studios — the on-site Slime Studio (nav + card)
+//     and the full-feed Studio artifact.
+assert((html.match(/href="\.\.\/slime\//g) || []).length >= 2, "landing must link to the on-site Slime Studio (../slime/) in both the nav and an Experiences card");
+assert(/claude\.ai\/code\/artifact\//.test(html), "landing does not link to the full-feed Studio artifact");
+assert(/class="lp-exp lp-exp-pro"/.test(html) && /The Studio/.test(html), "landing is missing the Pro Studio experience card");
+
 // 3. paywall.js gates the right surface and exposes a token API.
 const js = read("paywall.js");
 assert(/export\s+const\s+Paywall\s*=/.test(js), "paywall.js does not export Paywall");
