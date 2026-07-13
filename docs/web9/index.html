@@ -23,6 +23,7 @@
 <link rel="stylesheet" href="./styles.css">
 <link rel="stylesheet" href="./guide.css">
 <link rel="stylesheet" href="./landing.css">
+<link rel="stylesheet" href="./paywall.css">
 <style>
   /* web9 Instrument · live observable panel */
   .instrument-obs { margin-top: 14px; padding-top: 12px; border-top: 1px solid var(--teal-line, rgba(63,224,208,0.18)); }
@@ -74,6 +75,7 @@
         <div class="lp-cta">
           <button id="enterBtn" class="lp-btn lp-btn-primary" type="button">Enter the instrument →</button>
           <a class="lp-btn lp-btn-ghost" href="#experiments">See the experiments</a>
+          <button id="proBtn" class="lp-btn lp-btn-pro" type="button" title="Unlock parameter control, CSV export and shareable runs">◆ Go Pro — $1</button>
         </div>
         <ul class="lp-feats">
           <li>living amoeba guide</li>
@@ -323,6 +325,8 @@
 <script type="module" src="./guide.js"></script>
 <!-- web9 landing: slime studio + live experiment previews; reveals the lab on enter -->
 <script type="module" src="./landing.js"></script>
+<!-- web9 Pro paywall: gates the Parameters rail (tweak/control/export) with a redeemable token -->
+<script type="module" src="./paywall.js"></script>
 
 <!-- Offline failsafe: a CLASSIC script that runs even when the ES module never
      boots (CDN blocked, import-map unsupported, WebGL/runtime error). If the lab
