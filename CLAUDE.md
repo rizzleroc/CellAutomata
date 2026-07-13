@@ -26,7 +26,9 @@ multiples → stages of life).
 |---|---|---|
 | `web7/` | **The canonical lab** ("Catalytic Silence") — 13 abiogenesis stages, each a photoreal Three.js apparatus + a live SEM micrograph | active |
 | `web8/` | **The Guided Colony** = web7 + a living-amoeba guide creature (`guide.js`, `guide.css`, `blobgeom.js`) | active |
+| `web9/` | **The Instrument** = web8 (guide/"slime" layer included) + a live measurement layer (`observables.js`): per-step observable sparkline (roughness σ²/⟨h⟩), CSV export, and a shareable run-URL (stage/view/palette in the hash) | active |
 | `ontogeny/` | **Part II — the origin of an individual.** Pure canvas + `sem.js`; engine `sim.js`, renderer `render.js`, controller `app.js` | active |
+| `pondwater/` | **The Pond Water Analyzer** — a dark-field microscope of virtual pond water. Six procedurally-grown organisms (`organisms/*.js`) from bacterium → water flea, each with true-to-life internal organs; a continuous **infinite-zoom engine** (`main.js`) dives from the whole drop to organ level, fading in organ callout labels by scale. Three.js via importmap, `scene.js` for the wet-mount look | active |
 | `slime/` | **Slime Studio** — interactive *Physarum* lab (`slime.js`): place nutrients, watch it grow paths, with a live SEM-micrograph feed beside the interactive view, plus a Pro paywall gating a 4K SEM plate export. Zero-dep canvas | active |
 | `web`, `web2`, `web3`, `web6` | earlier clients, retained for comparison | legacy |
 
@@ -44,6 +46,33 @@ Self-hosted fonts live in `web8/assets/fonts/`; ontogeny reuses them via
   rgba, { palette, scale, relief, noise })`. Palettes `warm-sepia` / `cool-mono`;
   optional `noise` overrides substrate-grain opacity (default `0.045`; web8 copy).
   **`scale` (supersample) is capped 1–4** (`sem.js:144`). Self-contained.
+- **Pond Water material/geometry grammar** (`docs/pondwater/organisms/lib.js`):
+  the shared toolkit every organism inherits. `cuticle`/`organ`/`nucleus` are
+  now `MeshPhysicalMaterial` (transmission + thickness + `attenuationColor`/
+  `Distance` for real volumetric absorption, clearcoat, sheen, optional
+  iridescence). `addRim(mat, {color,power,intensity})` injects a Fresnel edge
+  glow via `onBeforeCompile` (replaces `#include <opaque_fragment>`, chains onto
+  any existing hook; cuticle applies it by default — pass `rim:false` to skip).
+  Micro-surface detail comes from `surfaceNormalMap({kind:'fbm'|'ridges'|
+  'segments'|'granular'})` — a procedural **DataTexture** (no canvas, so it is
+  identical under the headless `life.mjs` harness), cached/shared by key. Cilia
+  (`ciliaRing`/`ciliaCoat`) use a shared pre-curved tapered `filamentGeo` and
+  a hoisted pose object (no per-frame allocation); `helixFilament` is the
+  rotating flagellum; `granuleField` is instanced cytoplasm granulation. Keep
+  `userData._baseOpacity` intact — `main.js setOpacity` reads it for the dive
+  fade. `nematode.js` morphs its tube buffers in place each frame (no per-frame
+  geometry realloc). Tests: `smoke.mjs` guards the lib exports + anatomy
+  contract; `life.mjs` builds each organism against real three and asserts it
+  moves.
+- **Pond Water optics post-chain** (`docs/pondwater/scene.js`): what sells the
+  live-microscopy look is the *optics*. The composer is `RenderPass → BokehPass
+  (depth-of-field, focus retargeted to the specimen every frame) → UnrealBloom
+  (refractive dark-field edge haloes) → OutputPass → OpticsShader (radial
+  chromatic aberration + cool white-balance + vignette + animated sensor
+  grain)`. `composer.render` is wrapped inside `createScope` to update the DoF
+  focus (`camera.distanceTo(controls.target)`) and grain seed, so `main.js`
+  stays untouched. Keep `ACESFilmicToneMapping` / `RoomEnvironment` /
+  `UnrealBloomPass` / `FogExp2` present — `tests/smoke.mjs` asserts them.
 - **Lab control panel** is built in `docs/web7/main.js:321-433` (web8 shares the
   rules) from each rule's **own `params` schema** plus its **regime picker**
   (`rule.presets` array, or an `enum` param), with two globals (speed, palette).
@@ -81,6 +110,10 @@ node docs/web6/tests/{smoke,colony,runtime}.mjs
 # Ontogeny
 node docs/ontogeny/tests/ontogeny.mjs # the science (split-day, presets, calibration)
 node docs/ontogeny/tests/smoke.mjs    # module parse + page wiring + SEM harness
+
+# Pond Water Analyzer
+node docs/pondwater/tests/smoke.mjs   # importmap + module parse + roster/anatomy contract + HUD wiring
+node docs/pondwater/tests/life.mjs    # needs three: each organism builds, has organs, visibly moves
 
 # Python engine
 pytest -q

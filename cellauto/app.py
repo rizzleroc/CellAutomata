@@ -21,7 +21,6 @@ from __future__ import annotations
 
 import ctypes
 import ctypes.wintypes
-import json
 import logging
 import sys
 import tempfile
@@ -50,6 +49,7 @@ from cellauto.rules import REGISTRY
 from cellauto.rules.abiogenesis.pipeline import stage_info
 from cellauto.rules.abiogenesis.science import GRAY_SCOTT_PRESETS
 from cellauto.rules.params import PARAM_SPECS, PEARSON_PRESET_RULES, ParamSpec
+from cellauto.sem_config import _load_sem_config, _save_sem_config
 from cellauto.sprites import build_sprite_provider
 from cellauto.tutorial import tutorial_for
 
@@ -84,28 +84,9 @@ WINDOW_H = 1000
 
 
 # ── v4.0 config (SEM mode preferences) ──────────────────────────────────────
-
-_CONFIG_PATH = Path.home() / ".cellauto" / "config.json"
-
-
-def _load_sem_config() -> dict:
-    """Load persisted v4.0 preferences. Returns an empty dict if absent /
-    unreadable — never raises. The file is best-effort; first launch on a
-    fresh user account just uses defaults (SEM mode ON, warm-sepia).
-    """
-    try:
-        return json.loads(_CONFIG_PATH.read_text(encoding="utf-8"))
-    except Exception:
-        return {}
-
-
-def _save_sem_config(cfg: dict) -> None:
-    """Persist v4.0 preferences. Silently swallows IO errors — never user-visible."""
-    try:
-        _CONFIG_PATH.parent.mkdir(parents=True, exist_ok=True)
-        _CONFIG_PATH.write_text(json.dumps(cfg, indent=2), encoding="utf-8")
-    except Exception:
-        pass
+# Persistence lives in the tkinter-free cellauto.sem_config so the SEM/render
+# pipeline and its tests import headlessly (REV-01). The names are imported at
+# the top of this module (and thus re-exported for back-compat) and used below.
 
 
 # ── Font loading ────────────────────────────────────────────────────────────

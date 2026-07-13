@@ -144,10 +144,10 @@ def test_zero_field_produces_near_uniform_centre_patch():
 
 
 def test_sem_palette_round_trips_through_config():
-    """``cellauto.app._save_sem_config`` / ``_load_sem_config`` must round-trip
-    both the sem_mode flag and the palette name. Restore the prior config in
-    finally so a developer running the suite locally doesn't lose their pref."""
-    from cellauto.app import _CONFIG_PATH, _load_sem_config, _save_sem_config
+    """``cellauto.sem_config._save_sem_config`` / ``_load_sem_config`` must
+    round-trip both the sem_mode flag and the palette name. Restore the prior
+    config in finally so a developer running the suite locally keeps their pref."""
+    from cellauto.sem_config import _CONFIG_PATH, _load_sem_config, _save_sem_config
 
     prior = _load_sem_config()
     try:
