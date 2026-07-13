@@ -53,16 +53,9 @@
     <span>Jones 2010 agent model · Tero &amp; Nakagaki 2010 nutrient routing</span>
   </footer>
 
-  <div class="paywall" id="paywall" hidden>
-    <div class="pw-card">
-      <button class="pw-x" id="pwClose" aria-label="Close">×</button>
-      <h3>Unlock the Studio</h3>
-      <p>Unlock the publication-quality <strong>4K SEM micrograph plate</strong> export of your specimen. One tap.</p>
-      <button class="pw-btn" id="pwOne">Unlock — $1</button>
-      <a class="pw-all" id="pwAll" role="button" tabindex="0">Or unlock everything — $9.99</a>
-      <p class="pw-note">Demo checkout — nothing is charged.</p>
-    </div>
-  </div>
+  <!-- Client-side Pro unlock (token-gated 4K plate export); shared across every
+       Catalytic Silence lab on this origin. Loads before slime.js. -->
+  <script src="pro.js"></script>
   <script src="slime.js"></script>
 </body>
 </html>
