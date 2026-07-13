@@ -76,6 +76,8 @@ jobs:
         run: node docs/web9/tests/controls.mjs
       - name: Web9 guide intent-parser tests
         run: node docs/web9/tests/intents.mjs
+      - name: Web9 Pro paywall gate
+        run: node docs/web9/tests/paywall.mjs   # Go-Pro link + Parameters-rail gate + token unlock
       - name: Ontogeny engine + page tests
         run: |
           node docs/ontogeny/tests/ontogeny.mjs
