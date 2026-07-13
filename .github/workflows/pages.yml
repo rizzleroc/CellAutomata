@@ -76,6 +76,16 @@ jobs:
         run: node docs/web9/tests/controls.mjs
       - name: Web9 guide intent-parser tests
         run: node docs/web9/tests/intents.mjs
+      - name: Web10 Mark X smoke tests
+        run: node docs/web10/tests/smoke.mjs     # re-shelled web7 engine + Mark X shell
+      - name: Web10 design-contract tests
+        run: node docs/web10/tests/design.mjs    # Mark X identity + token-gated Pro export wiring
+      - name: Web10 apparatus runtime verification
+        run: node docs/web10/tests/runtime.mjs   # three already installed above
+      - name: Web10 apparatus animation verification
+        run: node docs/web10/tests/anim.mjs
+      - name: Web10 controls-contract tests
+        run: node docs/web10/tests/controls.mjs
       - name: Ontogeny engine + page tests
         run: |
           node docs/ontogeny/tests/ontogeny.mjs
