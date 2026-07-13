@@ -1,7 +1,7 @@
-// web9 · Slime Studio — zero-dependency structural smoke gate.
+// docs/slime · Slime Studio — zero-dependency structural smoke gate.
 // Proves the page parses, wires every control the sim drives, and keeps both
 // renderings (the interactive path view + the live SEM feed) and the Physarum
-// engine intact. Run: node docs/web9/tests/smoke.mjs
+// engine intact. Run: node docs/slime/tests/smoke.mjs
 import { readFileSync } from 'node:fs';
 import { execSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
@@ -41,5 +41,5 @@ ok(/getElementById\('paths'\)/.test(js) && /getElementById\('feed'\)/.test(js), 
 ok(/addNode/.test(js) && /pointerdown/.test(js), 'pointer places nutrients');
 ok(/requestAnimationFrame/.test(js), 'runs an animation loop');
 
-if (fails.length) { console.error(`web9 smoke: ${fails.length} FAILURES\n - ` + fails.join('\n - ')); process.exit(1); }
-console.log(`web9 Slime Studio smoke: ${pass} checks passed, 0 failures`);
+if (fails.length) { console.error(`slime smoke: ${fails.length} FAILURES\n - ` + fails.join('\n - ')); process.exit(1); }
+console.log(`Slime Studio smoke: ${pass} checks passed, 0 failures`);

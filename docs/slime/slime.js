@@ -1,4 +1,4 @@
-// web9 · Slime Studio — an interactive Physarum polycephalum lab.
+// docs/slime · Slime Studio — an interactive Physarum polycephalum lab.
 // Place nutrients, watch the mould grow paths that connect them; a live SEM
 // micrograph feed shades the same field as a depth-lit electron micrograph.
 // Zero dependencies. Same agent model as the lab's slime work (Jones 2010 /
