@@ -84,6 +84,12 @@ jobs:
         run: node docs/pondwater/tests/smoke.mjs
       - name: Pond Water Analyzer organism/anatomy verification
         run: node docs/pondwater/tests/life.mjs   # three already installed above
+      - name: Murmuration smoke tests
+        run: node docs/murmuration/tests/smoke.mjs
+      - name: Murmuration flocking-science verification
+        run: node docs/murmuration/tests/flock.mjs   # order emerges, bounded, banking, peregrine scatters
+      - name: Murmuration render verification
+        run: node docs/murmuration/tests/life.mjs     # three already installed above
 
   build:
     needs: test

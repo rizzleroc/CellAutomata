@@ -29,6 +29,7 @@ multiples → stages of life).
 | `web9/` | **The Instrument** = web8 (guide/"slime" layer included) + a live measurement layer (`observables.js`): per-step observable sparkline (roughness σ²/⟨h⟩), CSV export, and a shareable run-URL (stage/view/palette in the hash) | active |
 | `ontogeny/` | **Part II — the origin of an individual.** Pure canvas + `sem.js`; engine `sim.js`, renderer `render.js`, controller `app.js` | active |
 | `pondwater/` | **The Pond Water Analyzer** — a dark-field microscope of virtual pond water. Six procedurally-grown organisms (`organisms/*.js`) from bacterium → water flea, each with true-to-life internal organs; a continuous **infinite-zoom engine** (`main.js`) dives from the whole drop to organ level, fading in organ callout labels by scale. Three.js via importmap, `scene.js` for the wet-mount look | active |
+| `murmuration/` | **Murmuration** — a full starling-flocking simulator after Hoetzlein's *Flock2* (arXiv:2404.17804). **Orientation-based social flocking** (avoidance/alignment/cohesion as *turning* pressures through a limited visual field) drives a **single-body fixed-wing flight model** (`flock.js` — lift/drag/gravity/banking/stall; birds lose altitude in turns, speed up in dives). Framework-free engine (spatial-hash neighbours, seeded RNG) → InstancedMesh birds with a GPU wingbeat (`bird.js`); dusk-sky scope (`scene.js`); controller (`main.js`) with six regimes (`presets.js`), a stooping peregrine, order-parameter telemetry, three camera modes, and a shareable URL hash | active |
 | `web`, `web2`, `web3`, `web6` | earlier clients, retained for comparison | legacy |
 
 Self-hosted fonts live in `web8/assets/fonts/`; ontogeny reuses them via
@@ -112,6 +113,11 @@ node docs/ontogeny/tests/smoke.mjs    # module parse + page wiring + SEM harness
 # Pond Water Analyzer
 node docs/pondwater/tests/smoke.mjs   # importmap + module parse + roster/anatomy contract + HUD wiring
 node docs/pondwater/tests/life.mjs    # needs three: each organism builds, has organs, visibly moves
+
+# Murmuration (Flock2 simulator)
+node docs/murmuration/tests/smoke.mjs # importmap + module parse + param-schema/regime + HUD wiring
+node docs/murmuration/tests/flock.mjs # the SCIENCE: order emerges, bounded/finite, banking, peregrine scatters
+node docs/murmuration/tests/life.mjs  # needs three: InstancedMesh + wingbeat rig, orient() rigidity, birds move
 
 # Python engine
 pytest -q
