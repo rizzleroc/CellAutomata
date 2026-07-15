@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="dark">
+<meta name="theme-color" content="#07090d">
+<meta name="description" content="The Studio — every generative engine in the cellauto ecosystem, live in one place. Open any control desk and run it in the browser; Pro unlocks the 4K plate export. Hosted on-site.">
+<title>The Studio · cellauto</title>
+<link rel="preload" href="../web7/assets/fonts/Italiana-Regular.ttf" as="font" type="font/ttf" crossorigin>
+<link rel="preload" href="../web7/assets/fonts/CrimsonPro-Regular.ttf" as="font" type="font/ttf" crossorigin>
+<link rel="preload" href="../web7/assets/fonts/IBMPlexMono-Regular.ttf" as="font" type="font/ttf" crossorigin>
+<link rel="stylesheet" href="../hub.css">
+<style>
+  /* Studio-only touches over the shared hub grammar. */
+  .studio-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: var(--s4); margin-top: var(--s6); }
+  .engine { position: relative; display: flex; flex-direction: column; gap: var(--s2); padding: var(--s5);
+    border: 1px solid var(--hair); border-radius: 12px; background: var(--obsidian-2);
+    transition: border-color var(--med) var(--ease), transform var(--med) var(--ease), background var(--med) var(--ease); }
+  .engine:hover { border-color: var(--teal-line); transform: translateY(-2px); background: var(--obsidian-3); }
+  .engine .eyebrow { font-family: var(--font-mono); font-size: 10px; letter-spacing: .22em; text-transform: uppercase; color: var(--teal); }
+  .engine h3 { font-family: var(--font-display); font-size: 24px; letter-spacing: .02em; margin: 2px 0 0; }
+  .engine p { font-size: 15px; color: var(--ink-soft); margin: 0; }
+  .engine .go { margin-top: auto; font-family: var(--font-mono); font-size: 11px; letter-spacing: .12em;
+    text-transform: uppercase; color: var(--muted); transition: color var(--med) var(--ease); }
+  .engine:hover .go { color: var(--teal); }
+  .engine .pro-tag { position: absolute; top: var(--s4); right: var(--s4); font-family: var(--font-mono);
+    font-size: 9.5px; letter-spacing: .14em; text-transform: uppercase; color: var(--magenta);
+    border: 1px solid rgba(215,123,255,.28); border-radius: 999px; padding: 2px 9px; }
+  .studio-note { margin-top: var(--s6); font-size: 14px; color: var(--muted); font-style: italic; }
+</style>
+</head>
+<body>
+<a class="skip-link" href="#engines">Skip to the engines</a>
+
+<header class="register">
+  <div class="brand">
+    <span class="brand-word">cellauto</span>
+    <span class="brand-sub">the studio</span>
+  </div>
+  <nav class="nav" aria-label="Sections">
+    <a href="../index.html">Hub</a>
+    <a href="#engines">Engines</a>
+    <a href="../web7/">Lab</a>
+    <a href="../murmuration/">Murmuration</a>
+    <a href="https://github.com/rizzleroc/CellAutomata">GitHub</a>
+  </nav>
+</header>
+
+<main>
+  <section class="hero">
+    <div class="wrap">
+      <div class="hero-kicker">Catalytic Silence · the studio</div>
+      <h1 class="hero-title">The Studio</h1>
+      <p class="hero-lede">Every generative engine in the ecosystem, live in one place. Open any control desk and run it in the browser — from the origin-of-life labs to a starling murmuration. Pro unlocks the 4000² plate export where an engine offers it.</p>
+      <div class="hero-actions">
+        <a class="btn btn-primary" href="#engines">▶ Browse the engines</a>
+        <a class="btn btn-ghost" href="../index.html">Back to the hub</a>
+      </div>
+    </div>
+  </section>
+
+  <section id="engines" aria-labelledby="engines-h">
+    <div class="wrap">
+      <div class="kicker">The catalogue</div>
+      <h2 class="h2" id="engines-h">Every engine, one desk</h2>
+      <p class="sub">Each is the real simulation, running in your browser. Open one to take its controls.</p>
+
+      <div class="studio-grid">
+        <a class="engine" href="../web7/">
+          <span class="eyebrow">⚗️ origin of life</span>
+          <h3>The Lab</h3>
+          <p>The canonical Catalytic-Silence lab — thirteen photoreal apparatus, each beside its live SEM micrograph, with per-stage parameter controls.</p>
+          <span class="go">Open the lab →</span>
+        </a>
+
+        <a class="engine" href="../web9/">
+          <span class="eyebrow">📈 measured</span>
+          <h3>The Instrument</h3>
+          <p>The lab with a living amoeba guide and a measurement layer: observable sparklines, CSV export, and shareable run links.</p>
+          <span class="go">Open the instrument →</span>
+        </a>
+
+        <a class="engine" href="../web10/">
+          <span class="pro-tag">Pro · 4K</span>
+          <span class="eyebrow">✦ mark x</span>
+          <h3>Mark X</h3>
+          <p>A re-shell of the lab with a refined identity, a timeline scrubber and run provenance, and a token-gated export that renders any stage as an SEM micrograph up to 4000².</p>
+          <span class="go">Open Mark X →</span>
+        </a>
+
+        <a class="engine" href="../ontogeny/">
+          <span class="eyebrow">🥚 origin of you</span>
+          <h3>Ontogeny</h3>
+          <p>Part II — the origin of an individual: sperm + egg → zygote → the conditions that make twins, triplets and more.</p>
+          <span class="go">Open ontogeny →</span>
+        </a>
+
+        <a class="engine" href="../pondwater/">
+          <span class="eyebrow">🔬 life at every scale</span>
+          <h3>Pond Water Analyzer</h3>
+          <p>A dark-field microscope of virtual pond water — six procedurally-grown organisms with true-to-life anatomy and infinite zoom to organ level.</p>
+          <span class="go">Open pond water →</span>
+        </a>
+
+        <a class="engine" href="../slime/">
+          <span class="pro-tag">Pro · 4K</span>
+          <span class="eyebrow">✺ physarum</span>
+          <h3>Slime Studio</h3>
+          <p>Place nutrients and watch <em>Physarum</em> grow the paths that connect them, beside a live SEM feed. Pro unlocks the 4000² plate export.</p>
+          <span class="go">Open slime studio →</span>
+        </a>
+
+        <a class="engine" href="../murmuration/">
+          <span class="eyebrow">🐦 emergence</span>
+          <h3>Murmuration</h3>
+          <p>A full starling-flocking simulator after Hoetzlein's <em>Flock2</em> — orientation-based flocking driving real fixed-wing flight, with a stooping peregrine, six regimes and live order-parameter telemetry.</p>
+          <span class="go">Open murmuration →</span>
+        </a>
+      </div>
+
+      <p class="studio-note">Hosted on-site — the Studio and every engine it opens are served directly from this deployment. Pro is a one-tap client-side unlock ($1 · everything $9.99) or a redeemable token, shared across every engine on this origin.</p>
+    </div>
+  </section>
+</main>
+
+<footer class="foot">
+  <div class="wrap">
+    <span class="cat">cat. — Catalytic Silence · cellauto · the studio</span>
+    <span class="links-inline">
+      <a href="../index.html">Hub</a><a href="../web7/">Lab</a><a href="https://github.com/rizzleroc/CellAutomata">GitHub</a>
+    </span>
+  </div>
+</footer>
+</body>
+</html>
