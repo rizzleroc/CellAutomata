@@ -98,6 +98,12 @@ jobs:
         run: node docs/pondwater/tests/life.mjs   # three already installed above
       - name: Slime Studio smoke test
         run: node docs/slime/tests/smoke.mjs
+      - name: Murmuration smoke tests
+        run: node docs/murmuration/tests/smoke.mjs
+      - name: Murmuration flocking-science verification
+        run: node docs/murmuration/tests/flock.mjs   # order emerges, bounded, banking, peregrine scatters
+      - name: Murmuration render verification
+        run: node docs/murmuration/tests/life.mjs     # three already installed above
 
   build:
     needs: test
