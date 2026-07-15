@@ -26,12 +26,13 @@ multiples → stages of life).
 |---|---|---|
 | `web7/` | **The canonical lab** ("Catalytic Silence") — 13 abiogenesis stages, each a photoreal Three.js apparatus + a live SEM micrograph | active |
 | `web8/` | **The Guided Colony** = web7 + a living-amoeba guide creature (`guide.js`, `guide.css`, `blobgeom.js`) | active |
-| `web9/` | **The Instrument** = web8 (guide/"slime" layer included) + a live measurement layer (`observables.js`): per-step observable sparkline (roughness σ²/⟨h⟩), CSV export, and a shareable run-URL (stage/view/palette in the hash). A **Pro paywall** (`paywall.js`/`paywall.css`) gates the Parameters rail (tweak knobs · step/reset transport · CSV/link export) behind a one-tap `$1`/`$9.99` unlock **or a redeemable access token**; watching the live specimen is free. The landing links out to the full-feed **Studio** (the Pro 4K artifact), the on-site **Slime Studio**, and the **Murmuration** simulator | active |
+| `web9/` | **The Instrument** = web8 (guide/"slime" layer included) + a live measurement layer (`observables.js`): per-step observable sparkline (roughness σ²/⟨h⟩), CSV export, and a shareable run-URL (stage/view/palette in the hash). A **Pro paywall** (`paywall.js`/`paywall.css`) gates the Parameters rail (tweak knobs · step/reset transport · CSV/link export) behind a one-tap `$1`/`$9.99` unlock **or a redeemable access token**; watching the live specimen is free. The landing links to the on-site **Studio** (`docs/studio/`), the **Slime Studio**, and the **Murmuration** simulator | active |
 | `web10/` | **"Mark X"** — a re-shell of web7 (own engine copies) with a refined identity: MK X build tag + magenta accent, a hero-art plate rail (`generated/web10/stageNN_*.png`), a 13-node timeline scrubber + run provenance, and a **token-gated Pro export** (`pro.js`) that renders the current stage's SEM micrograph in-page up to **4000²** | active |
 | `ontogeny/` | **Part II — the origin of an individual.** Pure canvas + `sem.js`; engine `sim.js`, renderer `render.js`, controller `app.js` | active |
 | `pondwater/` | **The Pond Water Analyzer** — a dark-field microscope of virtual pond water. Six procedurally-grown organisms (`organisms/*.js`) from bacterium → water flea, each with true-to-life internal organs; a continuous **infinite-zoom engine** (`main.js`) dives from the whole drop to organ level, fading in organ callout labels by scale. Three.js via importmap, `scene.js` for the wet-mount look | active |
 | `slime/` | **Slime Studio** — interactive *Physarum* lab (`slime.js`): place nutrients, watch it grow paths, with a live SEM-micrograph feed beside the interactive view. Adjustable **Colony** (up to 60k plasmodia) and **Detail** (200²–360² grid, live `setGrid` realloc) controls for larger/higher-res colonies, plus a Pro paywall (shared `pro.js` token) gating a 4000² SEM plate export. Zero-dep canvas | active |
 | `murmuration/` | **Murmuration** — a full starling-flocking simulator after Hoetzlein's *Flock2* (arXiv:2404.17804). **Orientation-based social flocking** (avoidance/alignment/cohesion as *turning* pressures through a limited visual field) drives a **single-body fixed-wing flight model** (`flock.js` — lift/drag/gravity/banking/stall; birds lose altitude in turns, speed up in dives). Framework-free engine (spatial-hash neighbours, seeded RNG) → InstancedMesh birds with a GPU wingbeat (`bird.js`); dusk-sky scope (`scene.js`); controller (`main.js`) with six regimes (`presets.js`), a stooping peregrine, order-parameter telemetry, three camera modes, and a shareable URL hash | active |
+| `studio/` | **The Studio** — the on-site gateway hub (`docs/studio/index.html`, reuses `../hub.css`): a Catalytic-Silence card grid linking every live generative engine (labs, Ontogeny, Pond Water, Slime, Murmuration), noting the Pro 4K export where an engine offers it. **Replaces the former external claude.ai artifact** — served on-site (Railway + Pages), so there is no external Studio page. Zero-dep static HTML | active |
 | `web`, `web2`, `web3`, `web6` | earlier clients, retained for comparison | legacy |
 
 Self-hosted fonts live in `web8/assets/fonts/`; ontogeny reuses them via
@@ -137,6 +138,9 @@ node docs/pondwater/tests/life.mjs    # needs three: each organism builds, has o
 node docs/murmuration/tests/smoke.mjs # importmap + module parse + param-schema/regime + HUD wiring
 node docs/murmuration/tests/flock.mjs # the SCIENCE: order emerges, bounded/finite, banking, peregrine scatters
 node docs/murmuration/tests/life.mjs  # needs three: InstancedMesh + wingbeat rig, orient() rigidity, birds move
+
+# The Studio (on-site engine hub)
+node docs/studio/tests/smoke.mjs      # page parses, links every engine, no external artifact links (in studio or web9)
 
 # Python engine
 pytest -q

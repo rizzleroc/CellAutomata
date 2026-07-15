@@ -104,6 +104,8 @@ jobs:
         run: node docs/murmuration/tests/flock.mjs   # order emerges, bounded, banking, peregrine scatters
       - name: Murmuration render verification
         run: node docs/murmuration/tests/life.mjs     # three already installed above
+      - name: The Studio smoke test
+        run: node docs/studio/tests/smoke.mjs         # on-site engine hub; no external artifact links
 
   build:
     needs: test
