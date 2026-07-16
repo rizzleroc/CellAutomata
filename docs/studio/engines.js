@@ -16,12 +16,12 @@
     step(){ this.t+=0.02;const w=this.w,h=this.h,e=0.012,sp=this.spd;for(let i=0;i<this.N;i++){const nx=this.x[i]/w,ny=this.y[i]/h,gx=this.pot(nx+e,ny)-this.pot(nx-e,ny),gy=this.pot(nx,ny+e)-this.pot(nx,ny-e),a=Math.atan2(-gx,gy);this.x[i]+=Math.cos(a)*sp;this.y[i]+=Math.sin(a)*sp;if(--this.l[i]<=0||this.x[i]<0||this.y[i]<0||this.x[i]>=w||this.y[i]>=h)this.spawn(i);} }
     render(ctx){ ctx.globalCompositeOperation='source-over';ctx.fillStyle='rgba(5,8,20,'+this.fade+')';ctx.fillRect(0,0,this.w,this.h);ctx.globalCompositeOperation='lighter';const P=PALS[this.pal];const s=Math.max(1,(this.w/360*this.psz)|0);for(let i=0;i<this.N;i++){ctx.fillStyle=this.l[i]>48?P[0]:P[1];ctx.fillRect(this.x[i]|0,this.y[i]|0,s,s);}ctx.globalCompositeOperation='source-over'; }
     controls(){ return [
-      {t:'range',label:'Speed',min:0.4,max:3,step:0.05,get:()=>this.spd,set:v=>this.spd=v,fmt:v=>v.toFixed(2)},
-      {t:'range',label:'Trails',min:0.05,max:0.4,step:0.01,get:()=>this.fade,set:v=>this.fade=v,fmt:v=>(0.45-v).toFixed(2)},
-      {t:'range',label:'Swirl',min:3,max:8,step:0.1,get:()=>this.freq,set:v=>this.freq=v,fmt:v=>v.toFixed(1)},
-      {t:'range',label:'Density',min:800,max:32000,step:200,get:()=>this.N,set:v=>this.setN(v),fmt:v=>(v|0).toLocaleString()},
-      {t:'range',label:'Glow',min:0.5,max:3,step:0.1,get:()=>this.psz,set:v=>this.psz=v,fmt:v=>v.toFixed(1)+'×'},
-      {t:'seg',label:'Palette',opts:[['aurora','Aurora'],['ember','Ember'],['ice','Ice']],get:()=>this.pal,set:v=>this.pal=v},
+      {t:'range',key:'spd',label:'Speed',min:0.4,max:3,step:0.05,get:()=>this.spd,set:v=>this.spd=v,fmt:v=>v.toFixed(2)},
+      {t:'range',key:'fade',label:'Trails',min:0.05,max:0.4,step:0.01,get:()=>this.fade,set:v=>this.fade=v,fmt:v=>(0.45-v).toFixed(2)},
+      {t:'range',key:'swirl',label:'Swirl',min:3,max:8,step:0.1,get:()=>this.freq,set:v=>this.freq=v,fmt:v=>v.toFixed(1)},
+      {t:'range',key:'n',label:'Density',min:800,max:32000,step:200,get:()=>this.N,set:v=>this.setN(v),fmt:v=>(v|0).toLocaleString()},
+      {t:'range',key:'glow',label:'Glow',min:0.5,max:3,step:0.1,get:()=>this.psz,set:v=>this.psz=v,fmt:v=>v.toFixed(1)+'×'},
+      {t:'seg',key:'pal',label:'Palette',opts:[['aurora','Aurora'],['ember','Ember'],['ice','Ice']],get:()=>this.pal,set:v=>this.pal=v},
       {t:'button',label:'🎲 Randomize',act:()=>this.randomize()},
     ]; }
     randomize(){ this.spd=0.6+Math.random()*2.2;this.freq=3.5+Math.random()*4;this.fade=0.08+Math.random()*0.28;this.pal=['aurora','ember','ice'][Math.random()*3|0]; }
@@ -34,12 +34,12 @@
     pointer(px,py,down){ if(!down)return; const gx=(px/this.w*this.gw)|0,gy=(py/this.h*this.gh)|0,R=Math.max(2,(this.gw/28)|0);for(let dy=-R;dy<=R;dy++)for(let dx=-R;dx<=R;dx++){if(dx*dx+dy*dy>R*R)continue;const x=(gx+dx+this.gw)%this.gw,y=(gy+dy+this.gh)%this.gh,i=y*this.gw+x;this.V[i]=0.5;this.U[i]=0.25;} }
     render(ctx){ const d=this.img.data,V=this.V,n=this.gw*this.gh,pal=this.pal;for(let i=0;i<n;i++){const h=Math.min(1,V[i]/0.34),o=i*4;if(pal==='ember'){d[o]=18+h*236;d[o+1]=8+h*150;d[o+2]=26+h*30;}else if(pal==='mono'){const g=18+h*220;d[o]=g;d[o+1]=g;d[o+2]=g+h*10;}else{d[o]=8+h*44;d[o+1]=22+h*206;d[o+2]=34+h*150;}d[o+3]=255;}this.octx.putImageData(this.img,0,0);ctx.imageSmoothingEnabled=true;ctx.drawImage(this.off,0,0,this.w,this.h); }
     controls(){ return [
-      {t:'range',label:'Feed F',min:0.01,max:0.08,step:0.001,get:()=>this.F,set:v=>this.F=v,fmt:v=>v.toFixed(3)},
-      {t:'range',label:'Kill k',min:0.04,max:0.075,step:0.0005,get:()=>this.k,set:v=>this.k=v,fmt:v=>v.toFixed(4)},
-      {t:'range',label:'Rate',min:2,max:12,step:1,get:()=>this.sub,set:v=>this.sub=v,fmt:v=>v|0},
-      {t:'range',label:'Detail',min:96,max:384,step:32,get:()=>this.gw,set:v=>this.setGrid(v),fmt:v=>v+'²'},
-      {t:'range',label:'Diffuse',min:0.10,max:0.24,step:0.005,get:()=>this.du,set:v=>this.du=v,fmt:v=>v.toFixed(3)},
-      {t:'seg',label:'Palette',opts:[['teal','Teal'],['ember','Ember'],['mono','Mono']],get:()=>this.pal,set:v=>this.pal=v},
+      {t:'range',key:'f',label:'Feed F',min:0.01,max:0.08,step:0.001,get:()=>this.F,set:v=>this.F=v,fmt:v=>v.toFixed(3)},
+      {t:'range',key:'k',label:'Kill k',min:0.04,max:0.075,step:0.0005,get:()=>this.k,set:v=>this.k=v,fmt:v=>v.toFixed(4)},
+      {t:'range',key:'rate',label:'Rate',min:2,max:12,step:1,get:()=>this.sub,set:v=>this.sub=v,fmt:v=>v|0},
+      {t:'range',key:'grid',label:'Detail',min:96,max:384,step:32,get:()=>this.gw,set:v=>this.setGrid(v),fmt:v=>v+'²'},
+      {t:'range',key:'du',label:'Diffuse',min:0.10,max:0.24,step:0.005,get:()=>this.du,set:v=>this.du=v,fmt:v=>v.toFixed(3)},
+      {t:'seg',key:'pal',label:'Palette',opts:[['teal','Teal'],['ember','Ember'],['mono','Mono']],get:()=>this.pal,set:v=>this.pal=v},
       {t:'button',label:'🎲 Randomize',act:()=>this.randomize()},
       {t:'button',label:'Reseed',act:()=>this.reseed()},
     ]; }
@@ -61,15 +61,15 @@
     col(h,o,d){ if(this.pal==='warm'){d[o]=20+h*232;d[o+1]=16+h*196;d[o+2]=10+h*58;}else if(this.pal==='cool'){d[o]=18+h*70;d[o+1]=28+h*150;d[o+2]=42+h*212;}else{const hh=this.hue*0.008+h*0.6;d[o]=20+h*(Math.sin(6.283*hh)*.5+.5)*235;d[o+1]=20+h*(Math.sin(6.283*(hh+.33))*.5+.5)*235;d[o+2]=20+h*(Math.sin(6.283*(hh+.66))*.5+.5)*235;} }
     render(ctx){ const G=this.G,d=this.img.data,T=this.T,N=G*G;for(let i=0;i<N;i++){const h=Math.min(1,1-Math.exp(-T[i]/26));this.col(h,i*4,d);d[i*4+3]=255;}this.octx.putImageData(this.img,0,0);if(this.fold){ctx.fillStyle='#050409';ctx.fillRect(0,0,this.w,this.h);ctx.save();ctx.translate(this.w/2,this.h/2);const R=Math.max(this.w,this.h)*0.72,nf=this.foldN,wid=Math.tan(Math.PI/nf)*R;for(let s=0;s<nf;s++){ctx.save();ctx.rotate(s*2*Math.PI/nf);if(s%2)ctx.scale(1,-1);ctx.beginPath();ctx.moveTo(0,0);ctx.lineTo(R,-wid);ctx.lineTo(R,wid);ctx.closePath();ctx.clip();ctx.imageSmoothingEnabled=true;ctx.drawImage(this.off,-R*0.05,-R*0.5,R*1.1,R);ctx.restore();}ctx.restore();}else{ctx.imageSmoothingEnabled=true;ctx.drawImage(this.off,0,0,this.w,this.h);} }
     controls(){ const b=[
-      {t:'range',label:'Speed',min:1,max:5,step:1,get:()=>this.speed,set:v=>this.speed=v,fmt:v=>v+'×'},
-      {t:'range',label:'Decay',min:0.86,max:0.95,step:0.005,get:()=>this.decay,set:v=>this.decay=v,fmt:v=>v.toFixed(3)},
-      {t:'range',label:'Deposit',min:3,max:8,step:0.2,get:()=>this.dep,set:v=>this.dep=v,fmt:v=>v.toFixed(1)},
-      {t:'range',label:'Sensor°',min:0.15,max:0.9,step:0.03,get:()=>this.sa,set:v=>this.sa=v,fmt:v=>(v*57.3|0)+'°'},
-      {t:'range',label:'Reach',min:3,max:14,step:1,get:()=>this.so,set:v=>this.so=v,fmt:v=>v|0},
-      {t:'seg',label:'Detail',opts:[[82,'82²'],[128,'128²'],[192,'192²'],[256,'256²'],[320,'320²']],get:()=>this.G,set:v=>this.setGrid(v)},
-      {t:'range',label:'Colony',min:1500,max:26000,step:500,get:()=>this.NP,set:v=>this.setAgents(v),fmt:v=>(v|0).toLocaleString()+' cells'},
-      {t:'seg',label:'Palette',opts:[['warm','Gold'],['cool','Cosmic'],['spectral','Spectral']],get:()=>this.pal,set:v=>this.pal=v}];
-      if(this.fold)b.push({t:'range',label:'Symmetry',min:3,max:12,step:1,get:()=>this.foldN,set:v=>this.foldN=v,fmt:v=>v+'-fold'});
+      {t:'range',key:'spd',label:'Speed',min:1,max:5,step:1,get:()=>this.speed,set:v=>this.speed=v,fmt:v=>v+'×'},
+      {t:'range',key:'decay',label:'Decay',min:0.86,max:0.95,step:0.005,get:()=>this.decay,set:v=>this.decay=v,fmt:v=>v.toFixed(3)},
+      {t:'range',key:'dep',label:'Deposit',min:3,max:8,step:0.2,get:()=>this.dep,set:v=>this.dep=v,fmt:v=>v.toFixed(1)},
+      {t:'range',key:'sense',label:'Sensor°',min:0.15,max:0.9,step:0.03,get:()=>this.sa,set:v=>this.sa=v,fmt:v=>(v*57.3|0)+'°'},
+      {t:'range',key:'reach',label:'Reach',min:3,max:14,step:1,get:()=>this.so,set:v=>this.so=v,fmt:v=>v|0},
+      {t:'seg',key:'grid',label:'Detail',opts:[[82,'82²'],[128,'128²'],[192,'192²'],[256,'256²'],[320,'320²']],get:()=>this.G,set:v=>this.setGrid(v)},
+      {t:'range',key:'colony',label:'Colony',min:1500,max:26000,step:500,get:()=>this.NP,set:v=>this.setAgents(v),fmt:v=>(v|0).toLocaleString()+' cells'},
+      {t:'seg',key:'pal',label:'Palette',opts:[['warm','Gold'],['cool','Cosmic'],['spectral','Spectral']],get:()=>this.pal,set:v=>this.pal=v}];
+      if(this.fold)b.push({t:'range',key:'sym',label:'Symmetry',min:3,max:12,step:1,get:()=>this.foldN,set:v=>this.foldN=v,fmt:v=>v+'-fold'});
       b.push({t:'button',label:'Scatter nutrients',act:()=>this.scatter(14)});
       b.push({t:'button',label:'Clear food',act:()=>this.clearFood()});
       b.push({t:'button',label:'🎲 Randomize',act:()=>this.randomize()});
@@ -107,13 +107,13 @@
       for(let g=this.gusts.length-1;g>=0;g--){this.gusts[g].t-=0.05;if(this.gusts[g].t<=0)this.gusts.splice(g,1);} }
     render(ctx){ ctx.fillStyle='rgba(11,13,24,'+this.trail+')';ctx.fillRect(0,0,this.w,this.h);ctx.globalCompositeOperation='lighter';ctx.lineWidth=Math.max(1,this.w/360);for(let i=0;i<this.N;i++){const a=Math.atan2(this.vy[i],this.vx[i]);ctx.strokeStyle='hsla('+(30+((a+3.14159)/6.2832)*212)+',85%,63%,0.6)';ctx.beginPath();ctx.moveTo(this.x[i],this.y[i]);ctx.lineTo(this.x[i]-this.vx[i]*2.4,this.y[i]-this.vy[i]*2.4);ctx.stroke();}ctx.globalCompositeOperation='source-over';if(this.fal.active){ctx.fillStyle='rgba(239,75,82,.95)';ctx.beginPath();ctx.arc(this.fal.x,this.fal.y,Math.max(3,this.w/150),0,6.2832);ctx.fill();} }
     controls(){ return [
-      {t:'seg',label:'Cursor',opts:[['roost','Roost'],['scatter','Scatter'],['falcon','Falcon']],get:()=>this.mode,set:v=>this.mode=v},
-      {t:'range',label:'Flock',min:200,max:6000,step:100,get:()=>this.N,set:v=>this.setN(v),fmt:v=>(v|0).toLocaleString()+' birds'},
-      {t:'range',label:'Cohesion',min:0,max:2.4,step:0.1,get:()=>this.cohW/0.06,set:v=>this.cohW=v*0.06,fmt:v=>v.toFixed(1)},
-      {t:'range',label:'Spacing',min:0,max:2.5,step:0.1,get:()=>this.sep,set:v=>this.sep=v,fmt:v=>v.toFixed(1)},
-      {t:'range',label:'Speed',min:1.4,max:4,step:0.1,get:()=>this.top,set:v=>this.top=v,fmt:v=>v.toFixed(1)},
-      {t:'range',label:'Trails',min:0.08,max:0.4,step:0.02,get:()=>this.trail,set:v=>this.trail=v,fmt:v=>(0.48-v).toFixed(2)},
-      {t:'toggle',label:'Wild falcon',get:()=>this.wild,set:v=>this.wild=v},
+      {t:'seg',key:'cursor',label:'Cursor',opts:[['roost','Roost'],['scatter','Scatter'],['falcon','Falcon']],get:()=>this.mode,set:v=>this.mode=v},
+      {t:'range',key:'n',label:'Flock',min:200,max:6000,step:100,get:()=>this.N,set:v=>this.setN(v),fmt:v=>(v|0).toLocaleString()+' birds'},
+      {t:'range',key:'coh',label:'Cohesion',min:0,max:2.4,step:0.1,get:()=>this.cohW/0.06,set:v=>this.cohW=v*0.06,fmt:v=>v.toFixed(1)},
+      {t:'range',key:'sep',label:'Spacing',min:0,max:2.5,step:0.1,get:()=>this.sep,set:v=>this.sep=v,fmt:v=>v.toFixed(1)},
+      {t:'range',key:'spd',label:'Speed',min:1.4,max:4,step:0.1,get:()=>this.top,set:v=>this.top=v,fmt:v=>v.toFixed(1)},
+      {t:'range',key:'trail',label:'Trails',min:0.08,max:0.4,step:0.02,get:()=>this.trail,set:v=>this.trail=v,fmt:v=>(0.48-v).toFixed(2)},
+      {t:'toggle',key:'wild',label:'Wild falcon',get:()=>this.wild,set:v=>this.wild=v},
       {t:'button',label:'Gust',act:()=>this.gust()},
       {t:'button',label:'🎲 Randomize',act:()=>this.randomize()},
     ]; }
@@ -134,11 +134,11 @@
     render(ctx){ const G=this.G,d=this.img.data,A=this.A,N=G*G,pal=this.pal;for(let i=0;i<N;i++){const h=A[i],o=i*4;let r,g,b;if(pal==='plasma'){r=13+h*242;g=8+h*80+h*h*90;b=70+h*150-h*h*90;}else if(pal==='aurora'){r=8+h*70;g=18+h*225;b=38+h*180;}else{const v=h*255;r=v;g=v;b=v;}d[o]=r;d[o+1]=g;d[o+2]=b;d[o+3]=255;}this.octx.putImageData(this.img,0,0);ctx.imageSmoothingEnabled=true;ctx.drawImage(this.off,0,0,this.w,this.h); }
     randomize(){ this.mu=0.12+this._rand()*0.06;this.sig=0.022+this._rand()*0.02;this.dt=0.10+this._rand()*0.10;this.seed(); }
     controls(){ return [
-      {t:'range',label:'Growth μ',min:0.08,max:0.30,step:0.005,get:()=>this.mu,set:v=>this.mu=v,fmt:v=>v.toFixed(3)},
-      {t:'range',label:'Width σ',min:0.012,max:0.050,step:0.001,get:()=>this.sig,set:v=>this.sig=v,fmt:v=>v.toFixed(3)},
-      {t:'range',label:'Rate',min:0.05,max:0.25,step:0.01,get:()=>this.dt,set:v=>this.dt=v,fmt:v=>v.toFixed(2)},
-      {t:'range',label:'Radius',min:6,max:15,step:1,get:()=>this.R,set:v=>{this.R=v;this._kernel();},fmt:v=>v|0},
-      {t:'seg',label:'Palette',opts:[['plasma','Plasma'],['aurora','Aurora'],['mono','Mono']],get:()=>this.pal,set:v=>this.pal=v},
+      {t:'range',key:'mu',label:'Growth μ',min:0.08,max:0.30,step:0.005,get:()=>this.mu,set:v=>this.mu=v,fmt:v=>v.toFixed(3)},
+      {t:'range',key:'sig',label:'Width σ',min:0.012,max:0.050,step:0.001,get:()=>this.sig,set:v=>this.sig=v,fmt:v=>v.toFixed(3)},
+      {t:'range',key:'dt',label:'Rate',min:0.05,max:0.25,step:0.01,get:()=>this.dt,set:v=>this.dt=v,fmt:v=>v.toFixed(2)},
+      {t:'range',key:'r',label:'Radius',min:6,max:15,step:1,get:()=>this.R,set:v=>{this.R=v;this._kernel();},fmt:v=>v|0},
+      {t:'seg',key:'pal',label:'Palette',opts:[['plasma','Plasma'],['aurora','Aurora'],['mono','Mono']],get:()=>this.pal,set:v=>this.pal=v},
       {t:'button',label:'🎲 Randomize',act:()=>this.randomize()},
       {t:'button',label:'Reseed',act:()=>this.seed()},
     ]; }
@@ -153,12 +153,12 @@
       for(let y=0;y<G;y++){const fy=y/(G-1);for(let x=0;x<G;x++){const fx=x/(G-1);let f=(Math.cos(n*Math.PI*fx)*Math.cos(m*Math.PI*fy)-Math.cos(m*Math.PI*fx)*Math.cos(n*Math.PI*fy))*ph;for(let pk=0;pk<this.pokes.length;pk++){const P=this.pokes[pk],ex=fx-P.x,ey=fy-P.y,dd=Math.sqrt(ex*ex+ey*ey);f+=Math.cos(dd*38-this.t*7)*P.t*Math.exp(-dd*3.5);}const s=Math.exp(-f*f*this.sharp);const o=(y*G+x)*4;let r,g,b;if(pal==='mono'){const v=18+s*236;r=v;g=v;b=v;}else if(pal==='ember'){r=20+s*235;g=10+s*150;b=8+s*40;}else{r=14+s*60;g=24+s*205;b=40+s*150;}d[o]=r;d[o+1]=g;d[o+2]=b;d[o+3]=255;}}this.octx.putImageData(this.img,0,0);ctx.imageSmoothingEnabled=true;ctx.drawImage(this.off,0,0,this.w,this.h); }
     randomize(){ this.m=2+(Math.random()*8|0);this.n=1+(Math.random()*7|0);this.sharp=25+Math.random()*50|0; }
     controls(){ return [
-      {t:'range',label:'Mode m',min:1,max:11,step:1,get:()=>this.m,set:v=>this.m=v,fmt:v=>v|0},
-      {t:'range',label:'Mode n',min:1,max:11,step:1,get:()=>this.n,set:v=>this.n=v,fmt:v=>v|0},
-      {t:'range',label:'Grain',min:15,max:80,step:1,get:()=>this.sharp,set:v=>this.sharp=v,fmt:v=>v|0},
-      {t:'seg',label:'Palette',opts:[['mono','Sand'],['ember','Ember'],['teal','Teal']],get:()=>this.pal,set:v=>this.pal=v},
-      {t:'range',label:'Speed',min:0.2,max:3,step:0.1,get:()=>this.spd,set:v=>this.spd=v,fmt:v=>v.toFixed(1)+'×'},
-      {t:'toggle',label:'Auto-morph',get:()=>this.auto,set:v=>this.auto=v},
+      {t:'range',key:'m',label:'Mode m',min:1,max:11,step:1,get:()=>this.m,set:v=>this.m=v,fmt:v=>v|0},
+      {t:'range',key:'n',label:'Mode n',min:1,max:11,step:1,get:()=>this.n,set:v=>this.n=v,fmt:v=>v|0},
+      {t:'range',key:'grain',label:'Grain',min:15,max:80,step:1,get:()=>this.sharp,set:v=>this.sharp=v,fmt:v=>v|0},
+      {t:'seg',key:'pal',label:'Palette',opts:[['mono','Sand'],['ember','Ember'],['teal','Teal']],get:()=>this.pal,set:v=>this.pal=v},
+      {t:'range',key:'spd',label:'Speed',min:0.2,max:3,step:0.1,get:()=>this.spd,set:v=>this.spd=v,fmt:v=>v.toFixed(1)+'×'},
+      {t:'toggle',key:'auto',label:'Auto-morph',get:()=>this.auto,set:v=>this.auto=v},
       {t:'button',label:'🎲 Randomize',act:()=>this.randomize()},
     ]; }
   }
@@ -188,10 +188,10 @@
       this.octx.putImageData(this.img,0,0);ctx.imageSmoothingEnabled=false;ctx.drawImage(this.off,0,0,this.w,this.h); }
     randomize(){ this.rate=300+(Math.random()*1600|0);this.pal=['ice','ember','mono'][Math.random()*3|0]; }
     controls(){ return [
-      {t:'range',label:'Growth rate',min:100,max:5000,step:100,get:()=>this.rate,set:v=>this.rate=v,fmt:v=>(v|0)+'/f'},
-      {t:'range',label:'Walkers',min:400,max:9000,step:200,get:()=>this.NW,set:v=>this.setWalkers(v),fmt:v=>(v|0).toLocaleString()},
-      {t:'range',label:'Density',min:0.05,max:0.55,step:0.05,get:()=>this.bias,set:v=>this.bias=v,fmt:v=>v.toFixed(2)},
-      {t:'seg',label:'Palette',opts:[['ice','Frost'],['ember','Ember'],['mono','Silver']],get:()=>this.pal,set:v=>this.pal=v},
+      {t:'range',key:'rate',label:'Growth rate',min:100,max:5000,step:100,get:()=>this.rate,set:v=>this.rate=v,fmt:v=>(v|0)+'/f'},
+      {t:'range',key:'walkers',label:'Walkers',min:400,max:9000,step:200,get:()=>this.NW,set:v=>this.setWalkers(v),fmt:v=>(v|0).toLocaleString()},
+      {t:'range',key:'bias',label:'Density',min:0.05,max:0.55,step:0.05,get:()=>this.bias,set:v=>this.bias=v,fmt:v=>v.toFixed(2)},
+      {t:'seg',key:'pal',label:'Palette',opts:[['ice','Frost'],['ember','Ember'],['mono','Silver']],get:()=>this.pal,set:v=>this.pal=v},
       {t:'button',label:'🎲 Randomize',act:()=>this.randomize()},
       {t:'button',label:'Reset',act:()=>this.reset()},
     ]; }
@@ -224,12 +224,12 @@
       if(this.pred.active){ctx.fillStyle='rgba(18,12,22,.92)';ctx.beginPath();ctx.arc(this.pred.x,this.pred.y,Math.max(3,this.w/240),0,6.283);ctx.fill();} }
     randomize(){ this.coh=0.35+Math.random()*1.2;this.turn=0.1+Math.random()*0.12;this.sep=0.5+Math.random()*1.3;this.setN([2000,3000,4200,5600][Math.random()*4|0]); }
     controls(){ return [
-      {t:'range',label:'Flock',min:800,max:8000,step:200,get:()=>this.N,set:v=>this.setN(v),fmt:v=>(v|0).toLocaleString()+' birds'},
-      {t:'range',label:'Cohesion',min:0.2,max:2.6,step:0.1,get:()=>this.coh,set:v=>this.coh=v,fmt:v=>v.toFixed(1)},
-      {t:'range',label:'Spacing',min:0.2,max:2.2,step:0.1,get:()=>this.sep,set:v=>this.sep=v,fmt:v=>v.toFixed(1)},
-      {t:'range',label:'Agility',min:0.06,max:0.26,step:0.01,get:()=>this.turn,set:v=>this.turn=v,fmt:v=>v.toFixed(2)},
-      {t:'range',label:'Speed',min:1.8,max:4.5,step:0.1,get:()=>this.cruise,set:v=>this.cruise=v,fmt:v=>v.toFixed(1)},
-      {t:'toggle',label:'Predator',get:()=>this.hunt,set:v=>this.hunt=v},
+      {t:'range',key:'n',label:'Flock',min:800,max:8000,step:200,get:()=>this.N,set:v=>this.setN(v),fmt:v=>(v|0).toLocaleString()+' birds'},
+      {t:'range',key:'coh',label:'Cohesion',min:0.2,max:2.6,step:0.1,get:()=>this.coh,set:v=>this.coh=v,fmt:v=>v.toFixed(1)},
+      {t:'range',key:'sep',label:'Spacing',min:0.2,max:2.2,step:0.1,get:()=>this.sep,set:v=>this.sep=v,fmt:v=>v.toFixed(1)},
+      {t:'range',key:'turn',label:'Agility',min:0.06,max:0.26,step:0.01,get:()=>this.turn,set:v=>this.turn=v,fmt:v=>v.toFixed(2)},
+      {t:'range',key:'spd',label:'Speed',min:1.8,max:4.5,step:0.1,get:()=>this.cruise,set:v=>this.cruise=v,fmt:v=>v.toFixed(1)},
+      {t:'toggle',key:'hunt',label:'Predator',get:()=>this.hunt,set:v=>this.hunt=v},
       {t:'button',label:'🎲 Randomize',act:()=>this.randomize()},
     ]; }
   }
@@ -254,12 +254,12 @@
     pointer(px,py,down){ if(!down)return;this.autoC=false;this.mode='julia';this.cr=(px/this.w-0.5)*2*this.zoom*(this.w/this.h);this.ci=(py/this.h-0.5)*2*this.zoom; }
     randomize(){ this.mode=Math.random()<0.78?'julia':'mandelbrot';const a=Math.random()*6.283,rr=0.72+Math.random()*0.08;this.cr=rr*Math.cos(a);this.ci=rr*Math.sin(a);this.pal=['fire','ice','psy'][Math.random()*3|0];this.autoC=Math.random()<0.5; }
     controls(){ return [
-      {t:'seg',label:'Set',opts:[['julia','Julia'],['mandelbrot','Mandelbrot']],get:()=>this.mode,set:v=>this.mode=v},
-      {t:'range',label:'Zoom',min:0.4,max:2.2,step:0.05,get:()=>this.zoom,set:v=>this.zoom=v,fmt:v=>v.toFixed(2)+'×'},
-      {t:'range',label:'Detail',min:50,max:350,step:10,get:()=>this.maxI,set:v=>this.maxI=v,fmt:v=>v+' it'},
-      {t:'range',label:'Morph',min:0,max:3,step:0.1,get:()=>this.morph,set:v=>this.morph=v,fmt:v=>v.toFixed(1)+'×'},
-      {t:'seg',label:'Palette',opts:[['fire','Fire'],['ice','Ice'],['psy','Neon']],get:()=>this.pal,set:v=>this.pal=v},
-      {t:'toggle',label:'Auto-morph',get:()=>this.autoC,set:v=>this.autoC=v},
+      {t:'seg',key:'set',label:'Set',opts:[['julia','Julia'],['mandelbrot','Mandelbrot']],get:()=>this.mode,set:v=>this.mode=v},
+      {t:'range',key:'zoom',label:'Zoom',min:0.4,max:2.2,step:0.05,get:()=>this.zoom,set:v=>this.zoom=v,fmt:v=>v.toFixed(2)+'×'},
+      {t:'range',key:'iter',label:'Detail',min:50,max:350,step:10,get:()=>this.maxI,set:v=>this.maxI=v,fmt:v=>v+' it'},
+      {t:'range',key:'morph',label:'Morph',min:0,max:3,step:0.1,get:()=>this.morph,set:v=>this.morph=v,fmt:v=>v.toFixed(1)+'×'},
+      {t:'seg',key:'pal',label:'Palette',opts:[['fire','Fire'],['ice','Ice'],['psy','Neon']],get:()=>this.pal,set:v=>this.pal=v},
+      {t:'toggle',key:'auto',label:'Auto-morph',get:()=>this.autoC,set:v=>this.autoC=v},
       {t:'button',label:'🎲 Randomize',act:()=>this.randomize()},
     ]; }
   }

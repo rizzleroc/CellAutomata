@@ -202,10 +202,11 @@
   // Carry the live desk's tuned controls onto a freshly-made export kernel so the 4K
   // render/still matches exactly what you set (size controls first — they reallocate).
   function applySettings(dst,src){ if(!dst||!src||!dst.controls||!src.controls)return;
-    const sc=src.controls(),val=lab=>{const c=sc.find(x=>x.label===lab&&x.get);return c?c.get():undefined;};
+    const sc=src.controls(),val=key=>{const c=sc.find(x=>(x.key||x.label)===key&&x.get);return c?c.get():undefined;};
     const dc=dst.controls().filter(c=>c.set&&c.t!=='button');
-    dc.sort((a,b)=>(/Detail|Colony|Density|Flock/.test(a.label)?0:1)-(/Detail|Colony|Density|Flock/.test(b.label)?0:1));
-    for(const c of dc){ const v=val(c.label); if(v!==undefined){ try{ c.set(v); }catch(_){} } } }
+    const sizeKey=/^(grid|colony|n|walkers)$/; // reallocating controls first — they reseed the field
+    dc.sort((a,b)=>(sizeKey.test(a.key)?0:1)-(sizeKey.test(b.key)?0:1));
+    for(const c of dc){ const v=val(c.key||c.label); if(v!==undefined){ try{ c.set(v); }catch(_){} } } }
   function buildPanel(kernel){ panel.innerHTML='';
     for(const ctl of kernel.controls()){
       let wrap=document.createElement('div');
@@ -276,8 +277,10 @@
       saveLink(b,nm,'real '+w+'×'+h+' PNG'); },'image/png'); };
 
   // ---- share settings (permalink) + fullscreen ----
-  function settingsHash(){ if(!current||!deskKernel)return ''; const parts=['t='+slug(current.t.name)];
-    for(const c of deskKernel.controls()){ if(c.get&&c.t!=='button'){ let v=c.get(); if(c.t==='toggle')v=v?1:0; parts.push(encodeURIComponent(c.label)+'='+encodeURIComponent(v)); } }
+  // v=2 links are keyed by each control's stable `key` (labels can be reworded
+  // freely); v-less links from before the scheme keep restoring by label below.
+  function settingsHash(){ if(!current||!deskKernel)return ''; const parts=['v=2','t='+slug(current.t.name)];
+    for(const c of deskKernel.controls()){ if(c.get&&c.t!=='button'){ let v=c.get(); if(c.t==='toggle')v=v?1:0; parts.push(encodeURIComponent(c.key||c.label)+'='+encodeURIComponent(v)); } }
     return '#'+parts.join('&'); }
   async function copyLink(){ const url=location.href.split('#')[0]+settingsHash();
     try{ await navigator.clipboard.writeText(url); toast('Link copied — it reopens this tool with your exact settings.'); }
@@ -288,7 +291,8 @@
     const req=bigMedia.requestFullscreen||bigMedia.webkitRequestFullscreen; if(req){ Promise.resolve(req.call(bigMedia)).catch(enterCinema); } else enterCinema(); }
   function restoreFromHash(){ const h=location.hash.slice(1); if(!h)return; let params; try{params=new URLSearchParams(h);}catch(_){return;} const t=params.get('t'); if(!t)return;
     const c=cards.find(k=>slug(k.t.name)===t); if(!c)return; openModal(c);
-    for(const ctl of deskKernel.controls()){ if(ctl.set&&ctl.t!=='button'){ const raw=params.get(ctl.label); if(raw!=null){ let v; if(ctl.t==='toggle')v=(raw==='1'||raw==='true'); else if(ctl.t==='seg')v=isNaN(+raw)?raw:+raw; else v=+raw; try{ctl.set(v);}catch(_){} } } }
+    const v2=params.get('v')==='2'; // legacy label-keyed links (no v param) still restore
+    for(const ctl of deskKernel.controls()){ if(ctl.set&&ctl.t!=='button'){ const raw=params.get(v2?(ctl.key||ctl.label):ctl.label); if(raw!=null){ let v; if(ctl.t==='toggle')v=(raw==='1'||raw==='true'); else if(ctl.t==='seg')v=isNaN(+raw)?raw:+raw; else v=+raw; try{ctl.set(v);}catch(_){} } } }
     buildPanel(deskKernel); /* rebuild: sliders must reflect the values set() just applied */ applyLock(); }
   $('#doLink').onclick=copyLink; $('#doFull').onclick=toggleFull;
 
