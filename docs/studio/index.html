@@ -1,3 +1,8 @@
+<!doctype html>
+<html lang="en">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="dark">
 <title>Studio · the full feed</title>
 <style>
   :root{
@@ -374,7 +379,7 @@
       {t:'range',label:'Agility',min:0.06,max:0.26,step:0.01,get:()=>this.turn,set:v=>this.turn=v,fmt:v=>v.toFixed(2)},
       {t:'range',label:'Speed',min:1.8,max:4.5,step:0.1,get:()=>this.cruise,set:v=>this.cruise=v,fmt:v=>v.toFixed(1)},
       {t:'toggle',label:'Predator',get:()=>this.hunt,set:v=>this.hunt=v},
-      {t:'button',label:'\U0001f3b2 Randomize',act:()=>this.randomize()},
+      {t:'button',label:'🎲 Randomize',act:()=>this.randomize()},
     ]; }
   }
   // --- Fractal Worlds: an animated Julia/Mandelbrot builder — morphing worlds; click to seed ---
@@ -404,7 +409,7 @@
       {t:'range',label:'Morph',min:0,max:3,step:0.1,get:()=>this.morph,set:v=>this.morph=v,fmt:v=>v.toFixed(1)+'×'},
       {t:'seg',label:'Palette',opts:[['fire','Fire'],['ice','Ice'],['psy','Neon']],get:()=>this.pal,set:v=>this.pal=v},
       {t:'toggle',label:'Auto-morph',get:()=>this.autoC,set:v=>this.autoC=v},
-      {t:'button',label:'\U0001f3b2 Randomize',act:()=>this.randomize()},
+      {t:'button',label:'🎲 Randomize',act:()=>this.randomize()},
     ]; }
   }
   const make = (kind,w,h,preset) => kind==='flow'?new Flow(w,h):kind==='rd'?new RD(w,h,preset):kind==='slime'?new Slime(w,h,preset):kind==='boids'?new Boids(w,h):kind==='lenia'?new Lenia(w,h,preset):kind==='cymatics'?new Cymatics(w,h,preset):kind==='dla'?new DLA(w,h,preset):kind==='starling'?new Starling(w,h):kind==='fractal'?new Fractal(w,h):new Boids(w,h);
@@ -498,18 +503,17 @@
     cv.onpointerup=()=>{dn=false;if(kernel.ptr)kernel.ptr.on=false;};
     cv.onpointerleave=()=>{if(kernel.ptr)kernel.ptr.on=false;}; }
   function openModal(c){ current=c;$('#bigName').textContent=c.t.name;$('#bigBlurb').textContent=c.t.blurb;result.innerHTML='';prog.textContent='';
-    bigMedia.innerHTML='<canvas id="bigcv" width="720" height="405"></canvas>';const cv=$('#bigcv');const k=make(c.t.kind,720,405,c.t.preset);for(let w=0;w<30;w++)k.step();bg={ctx:cv.getContext('2d'),kernel:k};deskKernel=k;buildPanel(k);bindPointer(cv,k);updateRes();applyLock();modal.classList.add('open'); }
+    bigMedia.innerHTML='<canvas id="bigcv" width="720" height="405"></canvas>';const cv=$('#bigcv');const k=make(c.t.kind,720,405,c.t.preset);for(let w=0;w<30;w++)k.step();bg={ctx:cv.getContext('2d'),kernel:k};deskKernel=k;buildPanel(k);bindPointer(cv,k);applyLock();modal.classList.add('open'); }
   function closeModal(){ modal.classList.remove('open');bg=null;rendering=false; }
   $('#bigClose').onclick=closeModal;modal.onclick=e=>{if(e.target===modal&&!bigMedia.classList.contains('cinema'))closeModal();};addEventListener('keydown',e=>{if(e.key==='Escape'){if(bigMedia.classList.contains('cinema')){exitCinema();return;}if(document.fullscreenElement)return;if(modal.classList.contains('open'))closeModal();}});
 
-  function updateRes(){ for(const o of resSel.options) o.disabled=false; }
   const dims=w=>[w,Math.round(w*9/16)];   // 16:9 — real video dimensions (3840×2160 = true 4K UHD)
 
   // ===================== real render (client-side) =====================
   function renderVideo(tool,w,h,sec,onProg){ return new Promise((resolve,reject)=>{
     if(typeof MediaRecorder==='undefined'){reject(new Error('no-recorder'));return;}
     const cv=document.createElement('canvas');cv.width=w;cv.height=h;const ctx=cv.getContext('2d');
-    const k=make(tool.kind,w,h,tool.preset);applySettings(k,deskKernel);if(k&&'_cap'in k||tool.kind==='fractal')k._cap=1100;for(let i=0;i<40;i++)k.step();
+    const k=make(tool.kind,w,h,tool.preset);applySettings(k,deskKernel);if((k&&'_cap'in k)||tool.kind==='fractal')k._cap=1100;for(let i=0;i<40;i++)k.step();
     let stream;try{stream=cv.captureStream(30);}catch(e){reject(e);return;}
     // MP4/H.264 first so Safari can record too; VP9/VP8 WebM for Chrome/Firefox.
     let mime='';for(const m of ['video/mp4;codecs=h264','video/mp4','video/webm;codecs=vp9','video/webm;codecs=vp8','video/webm'])if(MediaRecorder.isTypeSupported(m)){mime=m;break;}
@@ -559,11 +563,11 @@
   function restoreFromHash(){ const h=location.hash.slice(1); if(!h)return; let params; try{params=new URLSearchParams(h);}catch(_){return;} const t=params.get('t'); if(!t)return;
     const c=cards.find(k=>slug(k.t.name)===t); if(!c)return; openModal(c);
     for(const ctl of deskKernel.controls()){ if(ctl.set&&ctl.t!=='button'){ const raw=params.get(ctl.label); if(raw!=null){ let v; if(ctl.t==='toggle')v=(raw==='1'||raw==='true'); else if(ctl.t==='seg')v=isNaN(+raw)?raw:+raw; else v=+raw; try{ctl.set(v);}catch(_){} } } }
-    buildPanel(deskKernel); applyLock(); }
+    buildPanel(deskKernel); /* rebuild: sliders must reflect the values set() just applied */ applyLock(); }
   $('#doLink').onclick=copyLink; $('#doFull').onclick=toggleFull;
 
   // toast
   const toastEl=$('#toast');let tT;function toast(m){toastEl.textContent=m;toastEl.classList.add('show');clearTimeout(tT);tT=setTimeout(()=>toastEl.classList.remove('show'),3200);}
-  refreshPlan();updateRes();restoreFromHash();
+  refreshPlan();restoreFromHash();
 })();
 </script>
