@@ -56,32 +56,66 @@ const css = read("paywall.css");
 assert(/#paramPanel\.pw-locked\s+\.param-lock/.test(css), "paywall.css does not reveal the lock overlay when #paramPanel is locked");
 assert(!/#caa86a/i.test(css), "paywall.css must not reintroduce the web6 brass accent");
 
-// 4. BEHAVIOUR: a real access token actually unlocks, case/space-insensitively.
-//    Evaluate the module's pure token logic in a sandbox (strip the DOM boot so
-//    it runs headless), then exercise validToken().
+// 3b. Access is registration-gated: the modal leads with a register form and
+//     the source advertises the "first 10 free" ledger.
+assert(/id="pwRegForm"/.test(js) && /id="pwName"/.test(js) && /id="pwEmail"/.test(js),
+  "paywall.js modal has no registration form (name + email)");
+assert(/FREE_LIMIT\s*=\s*10/.test(js), "the free tier must be 10 codes (FREE_LIMIT = 10)");
+assert(/FREE_CODES/.test(js) && /claimFree/.test(js) && /remainingFree/.test(js),
+  "paywall.js does not implement the free-code ledger (FREE_CODES / claimFree / remainingFree)");
+assert(/id="pwRemain"/.test(js) && /free codes remaining/.test(js),
+  "paywall.js does not surface how many free codes remain");
+
+// 4. BEHAVIOUR: registration hands out the ten free codes, then closes; codes
+//    (legacy + free + freshly minted) all validate. Evaluate the module's pure
+//    logic in a sandbox (strip the DOM boot so it runs headless).
 let P = null;
 try {
   let src = js
     .replace(/if \(document\.readyState[\s\S]*?else boot\(\);/, "")   // drop the DOM boot
     .replace(/export\s+const\s+Paywall/, "const Paywall");           // make it a plain script
-  src += "\n; globalThis.__P = { validToken, normToken, TOKENS };";
+  src += "\n; globalThis.__P = { validToken, normToken, TOKENS, FREE_CODES, FREE_LIMIT, makeCode, mintCode, freeRemaining, nextFreeCode, claimFree };";
   const ctx = { console };
   ctx.globalThis = ctx;
+  // Minimal window shim so mintCode()'s crypto path has a fallback.
+  ctx.window = {};
   vm.createContext(ctx);
   vm.runInContext(src, ctx, { filename: "paywall-headless.js" });
   P = ctx.__P;
   ok();
-} catch (e) { fail(`could not evaluate paywall token logic: ${String(e.message).slice(0, 160)}`); }
+} catch (e) { fail(`could not evaluate paywall logic: ${String(e.message).slice(0, 160)}`); }
 
 if (P) {
-  assert(P.TOKENS.size >= 1, "no access tokens defined");
-  const sample = [...P.TOKENS][0];
-  assert(P.validToken(sample), `the shipped token ${sample} does not validate`);
-  assert(P.validToken(`  ${sample.toLowerCase()}  `), "token validation is not case/space-insensitive");
-  assert(!P.validToken("not-a-real-token"), "an invalid token was accepted");
-  assert(!P.validToken(""), "an empty token was accepted");
-  // the token documented in the PR / handoff must be live
+  assert(P.TOKENS.size >= 1, "no legacy access tokens defined");
+  // legacy tokens still redeem, case/space-insensitively
   assert(P.validToken("CATALYST-SILENCE"), "the handoff token CATALYST-SILENCE is not accepted");
+  assert(P.validToken("  catalyst silence  "), "token validation is not case/space-insensitive");
+  assert(!P.validToken("not-a-real-token"), "an invalid code was accepted");
+  assert(!P.validToken(""), "an empty code was accepted");
+
+  // exactly ten free codes, each well-formed and redeemable
+  assert(P.FREE_LIMIT === 10 && P.FREE_CODES.length === 10, "there must be exactly 10 free codes");
+  assert(P.FREE_CODES.every((c) => P.validToken(c)), "a free code does not validate");
+  assert(new Set(P.FREE_CODES).size === 10, "the free codes are not distinct");
+
+  // a freshly minted (paid) code is checksum-valid; a tampered one is not
+  const minted = P.mintCode();
+  assert(P.validToken(minted), "a freshly minted code does not validate");
+  assert(!P.validToken(minted.replace(/.$/, minted.endsWith("Z") ? "0" : "Z")), "a tampered code was accepted");
+
+  // registration ledger: first 10 registrants get a free code, the 11th does not
+  const reg = { claimed: [] };
+  const issued = [];
+  for (let i = 0; i < 10; i++) {
+    assert(P.freeRemaining(reg.claimed.length) === 10 - i, `free-remaining count wrong at claim ${i}`);
+    const r = P.claimFree(reg, `User ${i}`, `u${i}@x.io`);
+    assert(r.ok && P.validToken(r.code), `claim ${i} did not yield a valid free code`);
+    issued.push(r.code);
+  }
+  assert(new Set(issued).size === 10, "free-code claims were not unique");
+  assert(P.freeRemaining(reg.claimed.length) === 0, "free tier did not close after 10 claims");
+  const eleventh = P.claimFree(reg, "Overflow", "of@x.io");
+  assert(!eleventh.ok && eleventh.full, "an 11th free claim was granted (free tier must be closed)");
 }
 
 console.log(`\n${checks} checks passed, ${failures} failure(s).`);
