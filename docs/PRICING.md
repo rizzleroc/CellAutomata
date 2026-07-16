@@ -33,7 +33,8 @@ One unlock, redeemable on any device with a token. Pro grants:
 
 - **Every control desk and parameter rail** unlocked.
 - **Hi-res SEM plate export — up to 4000×4000.**
-- **Real 4K video + still export** from the Studio.
+- **True-detail 4K video + still export** from the Studio — computed at export
+  resolution (finer grids, larger colonies, uncapped fractal stills), not upscaled.
 - **Observable plots, CSV data and shareable run links.**
 - **Larger colonies and higher-detail grids.**
 - One unlock covers **every Pro tool on the device**.
@@ -42,7 +43,7 @@ One unlock, redeemable on any device with a token. Pro grants:
 
 | Tool | Path | Free (watch) | Pro (create) |
 |---|---|---|---|
-| **The Studio** | `studio/` | All 13 engines running live | Every control desk · real 4K video + still export |
+| **The Studio** | `studio/` | All 13 engines running live | Every control desk · true-detail 4K video + still export |
 | **Slime Studio** | `slime/` | The live Physarum feed | 4K SEM plate export · colonies up to 60k · higher-detail grid |
 | **Mark X** | `web10/` | The full 13-stage lab | SEM plate export up to 4000×4000 |
 | **The Instrument** | `web9/` | The guided lab + live observables | Parameters rail (tune · step · reset) · CSV export · shareable run links |
@@ -70,8 +71,12 @@ boundary** (a client-side gate never is).
 
 - `pro.js` — the shared unlock. Exposes `window.CatSilPro`
   (`isUnlocked` / `getToken` / `verify` / `redeem` / `grantDemo` / `clear` /
-  `showPaywall` / `onChange`) and injects its own paywall modal. Copies live in
-  `web10/`, `slime/` and `studio/` — **propagate fixes to all three.**
+  `showPaywall` / `onChange`) and injects its own paywall modal;
+  `showPaywall({title, reason, onUnlock})` lets each client speak its own
+  product language in the heading (the Studio says "Unlock every desk").
+  Copies live in `web10/`, `slime/` and `studio/` beside the hub root's —
+  **propagate fixes to all four** (the Studio smoke gate fails CI if the
+  copies drift).
 - `web9/paywall.js` — the Instrument's separate paywall (token
   `CATALYST-SILENCE`), gating the Parameters rail.
 

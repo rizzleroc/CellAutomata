@@ -99,9 +99,9 @@ export const CATALOG = {
     {
       id: 'studio', name: 'The Studio', path: 'studio/', category: 'studios',
       access: 'freemium', watch: 'free', create: 'pro',
-      pro: ['Every control desk', 'Real 4K video + still export'],
+      pro: ['Every control desk', 'True-detail 4K video + still export'],
       tagline: 'Thirteen engines · one desk',
-      blurb: 'Flow fields, reaction–diffusion, Physarum, Lenia lifeforms, cymatics, crystal growth, a starling murmuration and morphing fractal worlds — all live. Open any tile for its control desk; Pro renders a real 4K video or still.'
+      blurb: 'Flow fields, reaction–diffusion, Physarum, Lenia lifeforms, cymatics, crystal growth, a starling murmuration and morphing fractal worlds — all live. Open any tile for its control desk; Pro renders true-detail 4K video and stills — computed at export resolution, not upscaled.'
     },
     {
       id: 'slime', name: 'Slime Studio', path: 'slime/', category: 'studios',

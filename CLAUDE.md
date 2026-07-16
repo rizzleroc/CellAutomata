@@ -31,7 +31,7 @@ multiples → stages of life).
 | `ontogeny/` | **Part II — the origin of an individual.** Pure canvas + `sem.js`; engine `sim.js`, renderer `render.js`, controller `app.js` | active |
 | `pondwater/` | **The Pond Water Analyzer** — a dark-field microscope of virtual pond water. Six procedurally-grown organisms (`organisms/*.js`) from bacterium → water flea, each with true-to-life internal organs; a continuous **infinite-zoom engine** (`main.js`) dives from the whole drop to organ level, fading in organ callout labels by scale. Three.js via importmap, `scene.js` for the wet-mount look | active |
 | `slime/` | **Slime Studio** — interactive *Physarum* lab (`slime.js`): place nutrients, watch it grow paths, with a live SEM-micrograph feed beside the interactive view. Adjustable **Colony** (up to 60k plasmodia) and **Detail** (200²–360² grid, live `setGrid` realloc) controls for larger/higher-res colonies, plus a Pro paywall (shared `pro.js` token) gating a 4000² SEM plate export. Zero-dep canvas | active |
-| `studio/` | **The Studio** — the full-feed generative desk: **13 engines** (flow, reaction–diffusion, Physarum incl. cosmic/kaleido/growth presets, boids murmuration, Lenia, cymatics, DLA, starling murmuration, fractal worlds), each a live tile with its own control desk, 🎲 randomize, and shareable-settings hash. Free to watch; **Pro** (shared `pro.js` token) unlocks every control desk + **real 4K video/still export** (in-browser `MediaRecorder`/`toBlob`). Single self-contained page; brought **on-site** from the former claude.ai artifact. Smoke-gated by `studio/tests/smoke.mjs` | active |
+| `studio/` | **The Studio** ("MK I") — the full-feed generative desk in the Catalytic Silence shell: **13 engines** (flow, reaction–diffusion, Physarum incl. cosmic/kaleido/growth presets, boids murmuration, Lenia, cymatics, DLA, starling murmuration, fractal worlds), each a live HiDPI tile with its own control desk, 🎲 randomize, and a **versioned share hash** (`#v=2` keyed by stable per-control `key`s; legacy label links still restore). Kernels live in `engines.js` (`window.StudioEngines`, classic script — vm-testable); the page is `index.html` + `engines.js` + `pro.js`. Free to watch; **Pro** (shared `pro.js` token) unlocks every control desk + **true-detail 4K video/still export** — per-engine `fidelity`/`warmPlan`/`still()` hooks compute finer fields at export size (fractal stills iterate every output pixel; a REC HUD + fidelity note keep the promise honest). Three gates: `studio/tests/{smoke,design,controls}.mjs` | active |
 | `murmuration/` | **Murmuration** — a full starling-flocking simulator after Hoetzlein's *Flock2* (arXiv:2404.17804). **Orientation-based social flocking** (avoidance/alignment/cohesion as *turning* pressures through a limited visual field) drives a **single-body fixed-wing flight model** (`flock.js` — lift/drag/gravity/banking/stall; birds lose altitude in turns, speed up in dives). Framework-free engine (spatial-hash neighbours, seeded RNG) → InstancedMesh birds with a GPU wingbeat (`bird.js`); dusk-sky scope (`scene.js`); controller (`main.js`) with six regimes (`presets.js`), a stooping peregrine, order-parameter telemetry, three camera modes, and a shareable URL hash | active |
 | `web`, `web2`, `web3`, `web6` | earlier clients, retained for comparison | legacy |
 
@@ -51,15 +51,19 @@ Self-hosted fonts live in `web8/assets/fonts/`; ontogeny reuses them via
   redeeming a token in any client unlocks Pro in **all** of them and survives a
   reload. It exposes `window.CatSilPro` (`isUnlocked`/`showPaywall`/`redeem`/
   `grantDemo`/`clear`/`onChange`) and injects its own paywall modal (demo unlock +
-  redeem-token field). It gates the **hi-res SEM plate export** (web10's `PRO ·
+  redeem-token field); `showPaywall({title, reason, onUnlock})` takes an optional
+  text-escaped `title` so each client speaks its own product language in the
+  heading (the Studio passes "Unlock every desk"; the default stays the SEM-plate
+  heading). It gates the **hi-res SEM plate export** (web10's `PRO ·
   4000²` pill renders the current stage in-page up to 4000²; slime's `Export 4K`
-  button; **studio's** every control desk + real 4K video/still export; and the
-  hub's `Go Pro` button, which unlocks site-wide from the front door). **Not a
+  button; **studio's** every control desk + true-detail 4K video/still export; and
+  the hub's `Go Pro` button, which unlocks site-wide from the front door). **Not a
   security boundary** — a client-side gate never is; it is the "free taste →
   unlock with a token" model (cf. `docs/PRICING.md`). The unmerged PR #76 (web9
   Clerk/Stripe server) is the server-side alternative, undeployable on Pages.
   web9 still ships its **own** `paywall.js` (token `CATALYST-SILENCE`); the other
-  four share `pro.js` — propagate `pro.js` fixes to **all four copies**.
+  four share `pro.js` — propagate `pro.js` fixes to **all four copies** (the
+  Studio smoke gate asserts 4-way byte-identity, so drift now fails CI).
 - **Front door & free/paid catalog.** `docs/index.html` is the front door: a
   hero clip (`media/hero_loop.mp4`), category-organized **tool cards each carrying
   a Free/Pro tier chip**, a plans surface with a working `Go Pro` unlock, the reel
@@ -147,7 +151,9 @@ node docs/pondwater/tests/smoke.mjs   # importmap + module parse + roster/anatom
 node docs/pondwater/tests/life.mjs    # needs three: each organism builds, has organs, visibly moves
 
 # The Studio (on-site, 13 engines) + the front-door free/paid catalog
-node docs/studio/tests/smoke.mjs      # 13 engines + shared Pro-token wiring + app parses
+node docs/studio/tests/smoke.mjs      # engines.js registry + Pro wiring + 4-way pro.js byte-identity
+node docs/studio/tests/design.mjs     # Catalytic Silence design contract (fonts/tokens/shell/a11y)
+node docs/studio/tests/controls.mjs   # vm-driven kernels: controls sound, science moves, export fidelity real
 node docs/tests/catalog.mjs           # catalog.js↔.json mirror + front door links/tiers every tool
 
 # Murmuration (Flock2 simulator)

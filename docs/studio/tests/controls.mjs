@@ -116,28 +116,32 @@ for (const t of TOOLS) {
   ok(snap().every((v) => typeof v !== 'number' || Number.isFinite(v)), 'no NaN/∞ after randomize');
 
   // ── 4. it runs, and the science moves (the anim gate) ─────────────────────
+  // Probe a FRESH kernel: randomize() above may have legitimately parked the
+  // sim in a static regime (e.g. the fractal's Auto-morph off — a still image
+  // by design), and defaults are what a visitor actually sees on the tiles.
+  const km = make(t.kind, 320, 200, t.preset);
   let threw = false;
-  try { for (let i = 0; i < 60; i++) k.step(); } catch (e) { threw = true; console.error('    ' + e.message); }
+  try { for (let i = 0; i < 60; i++) km.step(); } catch (e) { threw = true; console.error('    ' + e.message); }
   ok(!threw, '60 steps without throwing');
   const ctx = stubCtx(320, 200);
   if (FIELD.has(t.kind)) {
-    k.render(ctx);
-    const img1 = k.octx._last;
+    km.render(ctx);
+    const img1 = km.octx._last;
     const s1 = fieldStats(img1);
     ok(s1.varr > 0, `field is non-uniform (variance ${s1.varr.toFixed(1)})`);
     const copy = Uint8ClampedArray.from(img1.data);
-    for (let i = 0; i < 30; i++) k.step();
-    k.render(ctx);
-    const img2 = k.octx._last;
+    for (let i = 0; i < 30; i++) km.step();
+    km.render(ctx);
+    const img2 = km.octx._last;
     let diff = 0; for (let i = 0; i < img2.data.length; i++) if (img2.data[i] !== copy[i]) diff++;
     ok(diff > 0, `field evolves — ${diff} bytes differ after 30 more steps`);
   } else {
-    const x0 = Float64Array.from(k.x), y0 = Float64Array.from(k.y);
-    for (let i = 0; i < 10; i++) k.step();
+    const x0 = Float64Array.from(km.x), y0 = Float64Array.from(km.y);
+    for (let i = 0; i < 10; i++) km.step();
     let moved = 0, finite = true;
-    for (let i = 0; i < k.N; i++) {
-      if (!Number.isFinite(k.x[i]) || !Number.isFinite(k.y[i])) finite = false;
-      moved += Math.abs(k.x[i] - x0[i]) + Math.abs(k.y[i] - y0[i]);
+    for (let i = 0; i < km.N; i++) {
+      if (!Number.isFinite(km.x[i]) || !Number.isFinite(km.y[i])) finite = false;
+      moved += Math.abs(km.x[i] - x0[i]) + Math.abs(km.y[i] - y0[i]);
     }
     ok(finite, 'every position finite');
     ok(moved > 0, `particles move (Σ|Δ| = ${moved.toFixed(0)})`);
