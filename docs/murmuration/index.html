@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="color-scheme" content="dark">
+<meta name="theme-color" content="#0a0c18">
+<meta name="description" content="Murmuration — a full flocking simulator after Hoetzlein's Flock2: orientation-based social flocking driving a single-body fixed-wing flight model (lift, drag, banking, stalls). Thousands of starlings at dusk, with a stooping peregrine, live telemetry, six regimes and every parameter exposed.">
+<title>Murmuration · cellauto</title>
+<!-- import-map polyfill so Safari 16.0–16.3 / Firefox <108 can still resolve `three` -->
+<script async src="https://cdn.jsdelivr.net/npm/es-module-shims@1.10.0/dist/es-module-shims.js" crossorigin="anonymous"></script>
+<script type="importmap">
+{
+  "imports": {
+    "three": "https://cdn.jsdelivr.net/npm/three@0.162.0/build/three.module.js",
+    "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.162.0/examples/jsm/"
+  }
+}
+</script>
+<link rel="preload" href="../web8/assets/fonts/Italiana-Regular.ttf" as="font" type="font/ttf" crossorigin>
+<link rel="preload" href="../web8/assets/fonts/CrimsonPro-Regular.ttf" as="font" type="font/ttf" crossorigin>
+<link rel="preload" href="../web8/assets/fonts/IBMPlexMono-Regular.ttf" as="font" type="font/ttf" crossorigin>
+<link rel="stylesheet" href="./styles.css">
+</head>
+<body data-running="true">
+
+<noscript>
+  <div class="noscript-note">Murmuration is a live WebGL flight simulator — please enable JavaScript.</div>
+</noscript>
+
+<!-- visually-hidden live region: announces regime/mode changes, never per-frame telemetry -->
+<div class="sr-only" aria-live="polite" id="srStatus"></div>
+
+<div class="sky">
+
+  <!-- the WebGL stage -->
+  <div id="stage" class="stage" role="img" aria-label="A murmuration of starlings wheeling over a roost at dusk"></div>
+
+  <!-- optical vignette over the field -->
+  <div class="optics" aria-hidden="true"><div class="vignette"></div></div>
+
+  <!-- scrim behind the control drawer on narrow screens -->
+  <div class="key-scrim" id="keyScrim" aria-hidden="true"></div>
+
+  <!-- ─────────────────────────  TOP REGISTER  ───────────────────────── -->
+  <header class="register">
+    <div class="brand">
+      <span class="brand-mark" id="statusDot" aria-hidden="true"></span>
+      <span class="brand-word">Murmuration</span>
+      <span class="brand-rule" aria-hidden="true"></span>
+      <span class="brand-sub">orientation-based social flocking · cellauto</span>
+    </div>
+    <div class="register-meta">
+      <span id="regimeName" class="meta-plate">STARLING DUSK</span>
+      <span class="meta-dot" aria-hidden="true"></span>
+      <button class="meta-btn" id="btnPanel" title="Show / hide the controls">≡ controls</button>
+      <span class="meta-dot" aria-hidden="true"></span>
+      <a class="meta-home" href="../index.html">↩ hub</a>
+    </div>
+  </header>
+
+  <!-- ─────────────────────────  READOUT (top-right)  ─────────────────── -->
+  <div class="readout" aria-hidden="true">
+    <div class="pol-cap">order parameter · polarization</div>
+    <div class="pol" id="polReadout">0.00</div>
+    <canvas class="pol-spark" id="polSpark" width="240" height="40"></canvas>
+    <div class="tel">
+      <span class="tel-row"><b id="telCount">0</b> birds</span>
+      <span class="tel-row"><b id="telSpeed">0.0</b> m/s cruise</span>
+      <span class="tel-row"><b id="telNN">0.0</b> m nearest-neighbour</span>
+      <span class="tel-row"><b id="telBank">0°</b> mean bank</span>
+      <span class="tel-row"><b id="telStalls">0</b> stalling</span>
+    </div>
+  </div>
+
+  <!-- ─────────────────────────  LEFT · control drawer  ───────────────── -->
+  <aside class="panel" id="panel">
+    <div class="panel-head">
+      <span class="kicker">Regime</span>
+    </div>
+    <div class="regimes" id="regimeChips"></div>
+    <p class="regime-blurb" id="regimeBlurb">A balanced evening murmuration over the roost.</p>
+
+    <div class="actions">
+      <button class="ctl" id="btnPlay" aria-pressed="true" title="Pause or resume the flock">❚❚ Pause</button>
+      <button class="ctl" id="btnReset" title="Re-seed the flock">⟳ Reset</button>
+      <button class="ctl" id="btnCamera" title="Cycle camera: orbit → follow a bird → free">◎ Orbit</button>
+      <button class="ctl" id="btnShare" title="Copy a link that restores this exact setup">⧉ Share</button>
+    </div>
+
+    <div class="controls" id="controls"></div>
+  </aside>
+
+  <!-- ─────────────────────────  FOOTER hint  ─────────────────────────── -->
+  <footer class="hint">
+    <span>Drag to orbit · scroll to zoom · <b>pick a regime</b> or open <b>≡ controls</b> · toggle the <b>peregrine</b> to make it stoop</span>
+  </footer>
+
+</div>
+
+<script type="module" src="./main.js"></script>
+</body>
+</html>

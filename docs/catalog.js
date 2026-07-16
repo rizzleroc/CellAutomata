@@ -110,6 +110,12 @@ export const CATALOG = {
       tagline: 'Interactive Physarum lab',
       blurb: 'Place nutrients and watch Physarum grow transport paths beside a live SEM-micrograph feed. Pro raises the colony and detail ceilings and exports a 4000² plate.'
     },
+    {
+      id: 'murmuration', name: 'Murmuration', path: 'murmuration/', category: 'studios',
+      access: 'free', watch: 'free', create: 'free',
+      tagline: 'Starling flocking · after Flock2',
+      blurb: 'Thousands of birds at dusk from orientation-based social flocking on a real fixed-wing flight model — six regimes, a stooping peregrine, three camera modes and live order-parameter telemetry.'
+    },
 
     // ── Life at every scale ──────────────────────────────────────────────
     {

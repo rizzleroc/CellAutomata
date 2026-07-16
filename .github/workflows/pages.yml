@@ -102,6 +102,12 @@ jobs:
         run: node docs/studio/tests/smoke.mjs   # on-site studio + shared Pro token
       - name: Front-door free/paid catalog gate
         run: node docs/tests/catalog.mjs        # catalog.js↔.json + index.html link/tier every tool
+      - name: Murmuration smoke tests
+        run: node docs/murmuration/tests/smoke.mjs
+      - name: Murmuration flocking-science verification
+        run: node docs/murmuration/tests/flock.mjs   # order emerges, bounded, banking, peregrine scatters
+      - name: Murmuration render verification
+        run: node docs/murmuration/tests/life.mjs     # three already installed above
 
   build:
     needs: test
