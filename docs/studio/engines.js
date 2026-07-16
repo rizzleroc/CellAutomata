@@ -8,7 +8,7 @@
 
   // ===================== kernels =====================
   class Flow {
-    constructor(w,h){ this.w=w;this.h=h;this.spd=1.5;this.fade=0.16;this.freq=5.2;this.pal='aurora';this.psz=1;this.t=0;this.setN(Math.min(4000,(w*h*0.02)|0)); }
+    constructor(w,h){ this.w=w;this.h=h;this.spd=1.5;this.fade=0.16;this.freq=5.2;this.pal='aurora';this.psz=1;this.t=0;this.accumulates=true;this.setN(Math.min(4000,(w*h*0.02)|0)); }
     setN(n){ this.N=n|0;this.x=new Float32Array(this.N);this.y=new Float32Array(this.N);this.l=new Float32Array(this.N);this.s=1234567>>>0;for(let i=0;i<this.N;i++)this.spawn(i); }
     spawn(i){ this.s=(this.s*1664525+1013904223)>>>0;this.x[i]=this.s/4294967296*this.w;this.s=(this.s*1664525+1013904223)>>>0;this.y[i]=this.s/4294967296*this.h;this.s=(this.s*1664525+1013904223)>>>0;this.l[i]=18+this.s/4294967296*70; }
     pot(x,y){ const t=this.t,F=this.freq;return Math.sin(x*F+t*0.5)*Math.cos(y*F*0.9-t*0.42)+0.6*Math.sin((x+y)*F*0.65-t*0.3)+0.4*Math.cos((x*2.1-y*3.4)*F*0.57+t*0.6); }
@@ -44,6 +44,10 @@
       {t:'button',label:'Reseed',act:()=>this.reseed()},
     ]; }
     randomize(){ const P=[[0.037,0.065],[0.030,0.0595],[0.026,0.054],[0.014,0.045],[0.058,0.062],[0.022,0.051],[0.039,0.058]];const p=P[Math.random()*P.length|0];this.F=p[0];this.k=p[1];this.pal=['teal','ember','mono'][Math.random()*3|0];this.reseed(); }
+    // Export fidelity: double the field past the desk cap so 4K carries genuinely
+    // finer Gray–Scott structure (features live in cell units), not an upscale.
+    fidelity(mode){ const t=Math.min(mode==='still'?1024:512,this.gw*2); if(t>this.gw)this.setGrid(t); }
+    warmPlan(mode){ const s=130+(this.gw>>2); return {steps: mode==='still'?Math.min(400,s):Math.min(160,40+(this.gw>>3))}; }
   }
   class Slime {
     constructor(w,h,preset){ this.w=w;this.h=h;this.G=82;const G=this.G,N=G*G;this.T=new Float32Array(N);this.Tn=new Float32Array(N);this.preset=preset;this.fold=preset==='kaleido';this.pal=preset==='cosmic'?'cool':this.fold?'spectral':'warm';this.speed=2;this.decay=0.92;this.dep=5.4;this.sa=0.38;this.so=6;this.foldN=6;this.hue=0;this.NP=1500;this.ax=new Float32Array(this.NP);this.ay=new Float32Array(this.NP);this.ah=new Float32Array(this.NP);this.nodes=[];this.s=444;this.reseedAgents();if(preset==='tokyo'||preset==='growth')this.scatter(preset==='growth'?18:14);this.off=document.createElement('canvas');this.off.width=G;this.off.height=G;this.octx=this.off.getContext('2d');this.img=this.octx.createImageData(G,G); }
@@ -76,9 +80,14 @@
       b.push({t:'button',label:'Reset',act:()=>this.reset()});
       return b; }
     randomize(){ this.decay=0.87+Math.random()*0.07;this.dep=3.5+Math.random()*4;this.speed=1+(Math.random()*4|0);this.pal=['warm','cool','spectral'][Math.random()*3|0];if(this.fold)this.foldN=3+(Math.random()*9|0);this.reset(); }
+    // Export fidelity: finer trail grid + a proportionally larger colony, so 4K
+    // shows more vessels, not fatter pixels. Area-scaled agents keep coverage.
+    fidelity(mode){ const still=mode==='still',g0=this.G,t=Math.min(still?640:448,g0*2);
+      if(t>g0){ const r=t/g0; this.setGrid(t); this.setAgents(Math.min(still?60000:40000,Math.round(this.NP*r*r))); } }
+    warmPlan(mode){ const s=Math.round(130*Math.sqrt(this.G/82)); return {steps: mode==='still'?s:Math.max(40,s>>1)}; }
   }
   class Boids {
-    constructor(w,h){ this.w=w;this.h=h;this.mode='roost';this.cohW=0.06;this.trail=0.2;this.wild=true;this.fal={x:-1e5,y:-1e5,vx:0,vy:0,active:false,cool:120};this.ptr={x:-1e5,y:-1e5,on:false};this.sep=1;this.top=2.3;this.gusts=[];this.setN(320); }
+    constructor(w,h){ this.w=w;this.h=h;this.mode='roost';this.cohW=0.06;this.trail=0.2;this.wild=true;this.fal={x:-1e5,y:-1e5,vx:0,vy:0,active:false,cool:120};this.ptr={x:-1e5,y:-1e5,on:false};this.sep=1;this.top=2.3;this.gusts=[];this.accumulates=true;this.setN(320); }
     setN(n){ this.N=n|0;const N=this.N;this.x=new Float32Array(N);this.y=new Float32Array(N);this.vx=new Float32Array(N);this.vy=new Float32Array(N);let s=77;const r=()=>{s=(s*16807)%2147483647;return s/2147483647;};for(let i=0;i<N;i++){this.x[i]=r()*this.w;this.y[i]=r()*this.h;const a=r()*6.283;this.vx[i]=Math.cos(a)*1.5;this.vy[i]=Math.sin(a)*1.5;} }
     gust(){ this.gusts.push({x:this.ptr.on?this.ptr.x:this.w/2,y:this.ptr.on?this.ptr.y:this.h/2,t:1}); }
     pointer(x,y,down){ this.ptr.x=x;this.ptr.y=y;this.ptr.on=true;if(down)this.gusts.push({x,y,t:1}); }
@@ -133,6 +142,13 @@
       for(let y=0;y<G;y++){const row=y*G;for(let x=0;x<G;x++){let u=0;for(let k=0;k<K;k++){let xx=x+koX[k];if(xx<0)xx+=G;else if(xx>=G)xx-=G;let yy=y+koY[k];if(yy<0)yy+=G;else if(yy>=G)yy-=G;u+=A[yy*G+xx]*kw[k];}const g=2*Math.exp(-((u-mu)*(u-mu))/(2*sig*sig))-1;let v=A[row+x]+dt*g;B[row+x]=v<0?0:v>1?1:v;}}A.set(B); }
     render(ctx){ const G=this.G,d=this.img.data,A=this.A,N=G*G,pal=this.pal;for(let i=0;i<N;i++){const h=A[i],o=i*4;let r,g,b;if(pal==='plasma'){r=13+h*242;g=8+h*80+h*h*90;b=70+h*150-h*h*90;}else if(pal==='aurora'){r=8+h*70;g=18+h*225;b=38+h*180;}else{const v=h*255;r=v;g=v;b=v;}d[o]=r;d[o+1]=g;d[o+2]=b;d[o+3]=255;}this.octx.putImageData(this.img,0,0);ctx.imageSmoothingEnabled=true;ctx.drawImage(this.off,0,0,this.w,this.h); }
     randomize(){ this.mu=0.12+this._rand()*0.06;this.sig=0.022+this._rand()*0.02;this.dt=0.10+this._rand()*0.10;this.seed(); }
+    // Export fidelity (stills only): double the world AND the kernel radius so the
+    // physics is preserved while every lifeform carries twice the cell detail.
+    // Video stays at the live grid — the doubled kernel is too heavy in real time.
+    fidelity(mode){ if(mode!=='still')return; this.G=144; this.R=Math.min(24,this.R*2); this._kernel();
+      this.A=new Float32Array(this.G*this.G); this.B=new Float32Array(this.G*this.G); this.seed();
+      this.off.width=this.G; this.off.height=this.G; this.img=this.octx.createImageData(this.G,this.G); }
+    warmPlan(mode){ return {steps: mode==='still'?80:40}; }
     controls(){ return [
       {t:'range',key:'mu',label:'Growth μ',min:0.08,max:0.30,step:0.005,get:()=>this.mu,set:v=>this.mu=v,fmt:v=>v.toFixed(3)},
       {t:'range',key:'sig',label:'Width σ',min:0.012,max:0.050,step:0.001,get:()=>this.sig,set:v=>this.sig=v,fmt:v=>v.toFixed(3)},
@@ -152,6 +168,10 @@
     render(ctx){ const G=this.G,d=this.img.data,pal=this.pal;const drift=this.auto?Math.sin(this.t)*0.7:0;const m=this.m+drift,n=this.n-drift,ph=Math.sin(this.t*1.3)*0.45+1;
       for(let y=0;y<G;y++){const fy=y/(G-1);for(let x=0;x<G;x++){const fx=x/(G-1);let f=(Math.cos(n*Math.PI*fx)*Math.cos(m*Math.PI*fy)-Math.cos(m*Math.PI*fx)*Math.cos(n*Math.PI*fy))*ph;for(let pk=0;pk<this.pokes.length;pk++){const P=this.pokes[pk],ex=fx-P.x,ey=fy-P.y,dd=Math.sqrt(ex*ex+ey*ey);f+=Math.cos(dd*38-this.t*7)*P.t*Math.exp(-dd*3.5);}const s=Math.exp(-f*f*this.sharp);const o=(y*G+x)*4;let r,g,b;if(pal==='mono'){const v=18+s*236;r=v;g=v;b=v;}else if(pal==='ember'){r=20+s*235;g=10+s*150;b=8+s*40;}else{r=14+s*60;g=24+s*205;b=40+s*150;}d[o]=r;d[o+1]=g;d[o+2]=b;d[o+3]=255;}}this.octx.putImageData(this.img,0,0);ctx.imageSmoothingEnabled=true;ctx.drawImage(this.off,0,0,this.w,this.h); }
     randomize(){ this.m=2+(Math.random()*8|0);this.n=1+(Math.random()*7|0);this.sharp=25+Math.random()*50|0; }
+    // Export fidelity: the plate is closed-form, so stills are computed at the true
+    // output height (2160² for 4K) — pixel-exact nodal lines; video runs at 480².
+    fidelity(mode){ const t=mode==='still'?this.h:480; if(t>this.G){ this.G=t; this.off.width=t; this.off.height=t; this.img=this.octx.createImageData(t,t); } }
+    warmPlan(){ return {steps:8}; }
     controls(){ return [
       {t:'range',key:'m',label:'Mode m',min:1,max:11,step:1,get:()=>this.m,set:v=>this.m=v,fmt:v=>v|0},
       {t:'range',key:'n',label:'Mode n',min:1,max:11,step:1,get:()=>this.n,set:v=>this.n=v,fmt:v=>v|0},
@@ -187,6 +207,12 @@
       for(let i=0;i<this.NW;i+=3){const x=this.wx[i]|0,y=this.wy[i]|0,o=(y*G+x)*4;if(!grid[y*G+x]){d[o]=Math.min(255,d[o]+40);d[o+1]=Math.min(255,d[o+1]+44);d[o+2]=Math.min(255,d[o+2]+60);}}
       this.octx.putImageData(this.img,0,0);ctx.imageSmoothingEnabled=false;ctx.drawImage(this.off,0,0,this.w,this.h); }
     randomize(){ this.rate=300+(Math.random()*1600|0);this.pal=['ice','ember','mono'][Math.random()*3|0]; }
+    // Export fidelity: a larger lattice with more walkers, then (warmPlan) the
+    // crystal is grown until it actually fills the frame — real dendrites at 4K.
+    fidelity(mode){ const t=mode==='still'?600:320; if(t>this.G){ this.G=t; this.N=t*t; this.grid=new Uint8Array(this.N); this.age=new Float32Array(this.N);
+      this.cx=t>>1; this.cy=t>>1; this.off.width=t; this.off.height=t; this.img=this.octx.createImageData(t,t);
+      this.setWalkers(Math.min(27000,this.NW*3)); this.reset(); } }
+    warmPlan(mode){ return {steps: mode==='still'?6000:2000, done:()=>this.rad>=this.G*0.42}; }
     controls(){ return [
       {t:'range',key:'rate',label:'Growth rate',min:100,max:5000,step:100,get:()=>this.rate,set:v=>this.rate=v,fmt:v=>(v|0)+'/f'},
       {t:'range',key:'walkers',label:'Walkers',min:400,max:9000,step:200,get:()=>this.NW,set:v=>this.setWalkers(v),fmt:v=>(v|0).toLocaleString()},
@@ -219,10 +245,15 @@
         const cur=Math.atan2(hvy,hvx),des=Math.atan2(dvy,dvx);let da=des-cur;while(da>Math.PI)da-=6.283;while(da<-Math.PI)da+=6.283;const nh=cur+(da>turn?turn:da<-turn?-turn:da);let sp=Math.hypot(hvx,hvy);sp+=(cru-sp)*0.06;vx[i]=Math.cos(nh)*sp;vy[i]=Math.sin(nh)*sp;x[i]+=vx[i];y[i]+=vy[i];if(x[i]<-25)x[i]=w+25;else if(x[i]>w+25)x[i]=-25;if(y[i]<-25)y[i]=h+25;else if(y[i]>h+25)y[i]=-25;}}
     render(ctx){ const G=this.dg,dens=this.dens,d=this.img.data;for(let i=0;i<dens.length;i++)dens[i]*=0.66;
       for(let i=0;i<this.N;i++){const gx=(this.x[i]/this.w*G)|0,gy=(this.y[i]/this.h*G)|0;if(gx<1||gy<1||gx>=G-1||gy>=G-1)continue;const b=gy*G+gx;dens[b]+=1;dens[b-1]+=0.35;dens[b+1]+=0.35;dens[b-G]+=0.35;dens[b+G]+=0.35;}
-      for(let y=0;y<G;y++){const fy=y/(G-1),skyR=250-fy*182,skyG=182-fy*132,skyB=152-fy*66;for(let x=0;x<G;x++){const i=y*G+x,o=i*4;let dv=1-Math.exp(-dens[i]*1.5);const k=1-dv*0.93;d[o]=(skyR*k+dv*12)|0;d[o+1]=(skyG*k+dv*9)|0;d[o+2]=(skyB*k+dv*16)|0;d[o+3]=255;}}
+      const gain=1.5*(this._gain||1);
+      for(let y=0;y<G;y++){const fy=y/(G-1),skyR=250-fy*182,skyG=182-fy*132,skyB=152-fy*66;for(let x=0;x<G;x++){const i=y*G+x,o=i*4;let dv=1-Math.exp(-dens[i]*gain);const k=1-dv*0.93;d[o]=(skyR*k+dv*12)|0;d[o+1]=(skyG*k+dv*9)|0;d[o+2]=(skyB*k+dv*16)|0;d[o+3]=255;}}
       this.octx.putImageData(this.img,0,0);ctx.imageSmoothingEnabled=true;ctx.drawImage(this.off,0,0,this.w,this.h);
       if(this.pred.active){ctx.fillStyle='rgba(18,12,22,.92)';ctx.beginPath();ctx.arc(this.pred.x,this.pred.y,Math.max(3,this.w/240),0,6.283);ctx.fill();} }
     randomize(){ this.coh=0.35+Math.random()*1.2;this.turn=0.1+Math.random()*0.12;this.sep=0.5+Math.random()*1.3;this.setN([2000,3000,4200,5600][Math.random()*4|0]); }
+    // Export fidelity: finer density cloud (birds resolve as birds, not blur).
+    // The splat gain scales with cell area so the flock keeps its optical weight.
+    fidelity(mode){ const t=mode==='still'?Math.min(720,(this.h/3)|0):480;
+      if(t>this.dg){ this._gain=(t/this.dg)*(t/this.dg); this.dg=t; this.dens=new Float32Array(t*t); this.off.width=t; this.off.height=t; this.img=this.octx.createImageData(t,t); } }
     controls(){ return [
       {t:'range',key:'n',label:'Flock',min:800,max:8000,step:200,get:()=>this.N,set:v=>this.setN(v),fmt:v=>(v|0).toLocaleString()+' birds'},
       {t:'range',key:'coh',label:'Cohesion',min:0.2,max:2.6,step:0.1,get:()=>this.coh,set:v=>this.coh=v,fmt:v=>v.toFixed(1)},
@@ -243,14 +274,25 @@
       else if(pal==='ice'){ r=60+80*Math.sin(p+3.1);g=130+120*Math.sin(p+1.0);b=170+85*Math.sin(p); }
       else { const q=p+this.t*0.6;r=128+127*Math.sin(q);g=128+127*Math.sin(q+2.094);b=128+127*Math.sin(q+4.188); }
       d[o]=r<0?0:r>255?255:r;d[o+1]=g<0?0:g>255?255:g;d[o+2]=b<0?0:b>255?255:b; }
-    render(ctx){ const iw=Math.min(this.w,this._cap||2400),ih=Math.max(1,Math.round(iw*this.h/this.w));
-      if(this.off.width!==iw||this.off.height!==ih){this.off.width=iw;this.off.height=ih;this.img=this.octx.createImageData(iw,ih);}
-      const d=this.img.data,maxI=this.maxI,z=this.zoom,jul=this.mode==='julia',cr=this.cr,ci=this.ci,zx=z*iw/ih;
-      for(let py=0;py<ih;py++){ const iy=(py/ih-0.5)*2*z; for(let px=0;px<iw;px++){ const ix=(px/iw-0.5)*2*zx;
+    _scan(py,iw,ih,d){ const maxI=this.maxI,z=this.zoom,jul=this.mode==='julia',cr=this.cr,ci=this.ci,zx=z*iw/ih;
+      const iy=(py/ih-0.5)*2*z; for(let px=0;px<iw;px++){ const ix=(px/iw-0.5)*2*zx;
         let zr,zi,ar,ai; if(jul){zr=ix;zi=iy;ar=cr;ai=ci;}else{zr=0;zi=0;ar=ix-0.6;ai=iy;}
         let i=0,zr2=zr*zr,zi2=zi*zi; for(;i<maxI&&zr2+zi2<=16;i++){zi=2*zr*zi+ai;zr=zr2-zi2+ar;zr2=zr*zr;zi2=zi*zi;}
         const o=(py*iw+px)*4; if(i>=maxI){d[o]=6;d[o+1]=4;d[o+2]=12;}else{const mu=i+1-Math.log(Math.log(Math.sqrt(zr2+zi2)+1e-9)/Math.log(2)+1e-9);this._col(mu<0?0:mu,d,o);} d[o+3]=255; } }
+    _fit(iw,ih){ if(this.off.width!==iw||this.off.height!==ih){this.off.width=iw;this.off.height=ih;this.img=this.octx.createImageData(iw,ih);} }
+    render(ctx){ const iw=Math.min(this.w,this._cap||2400),ih=Math.max(1,Math.round(iw*this.h/this.w));
+      this._fit(iw,ih); const d=this.img.data;
+      for(let py=0;py<ih;py++)this._scan(py,iw,ih,d);
       this.octx.putImageData(this.img,0,0);ctx.imageSmoothingEnabled=true;ctx.drawImage(this.off,0,0,this.w,this.h); }
+    // Pro still: iterate EVERY output pixel (no internal cap) in ~32-row bands,
+    // yielding between bands so the page stays responsive and progress can show.
+    async still(ctx,onProg){ const iw=this.w,ih=this.h; this._fit(iw,ih); const d=this.img.data;
+      for(let py=0;py<ih;py++){ this._scan(py,iw,ih,d);
+        if((py&31)===31){ if(onProg)onProg(py/ih); await new Promise(r=>typeof requestAnimationFrame==='function'?requestAnimationFrame(r):typeof setTimeout==='function'?setTimeout(r,0):r()); } }
+      this.octx.putImageData(this.img,0,0);ctx.drawImage(this.off,0,0,iw,ih); if(onProg)onProg(1); }
+    // Export fidelity: stills are computed at true output resolution (via still());
+    // video raises the live cap 1100 → 1600 — the honest real-time ceiling.
+    fidelity(mode){ this._cap = mode==='video' ? 1600 : this.w; }
     pointer(px,py,down){ if(!down)return;this.autoC=false;this.mode='julia';this.cr=(px/this.w-0.5)*2*this.zoom*(this.w/this.h);this.ci=(py/this.h-0.5)*2*this.zoom; }
     randomize(){ this.mode=Math.random()<0.78?'julia':'mandelbrot';const a=Math.random()*6.283,rr=0.72+Math.random()*0.08;this.cr=rr*Math.cos(a);this.ci=rr*Math.sin(a);this.pal=['fire','ice','psy'][Math.random()*3|0];this.autoC=Math.random()<0.5; }
     controls(){ return [

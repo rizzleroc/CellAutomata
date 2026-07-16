@@ -101,6 +101,10 @@
   .btn2{font-family:var(--mono);font-size:12px;color:var(--ink);background:transparent;border:1px solid var(--line);border-radius:9px;padding:8px 12px;cursor:pointer}
   .btn2:hover{border-color:var(--accent);color:var(--accent)}
   .prog{font-family:var(--mono);font-size:11.5px;color:var(--muted);min-width:90px}
+  .fidnote{font-family:var(--mono);font-size:10.5px;color:var(--faint);margin-top:8px;letter-spacing:.03em}
+  .rechud{position:absolute;top:12px;left:14px;z-index:3;display:flex;align-items:center;gap:8px;font-family:var(--mono);font-size:12px;letter-spacing:.06em;color:#fff;background:rgba(8,8,12,.55);backdrop-filter:blur(4px);padding:6px 11px;border-radius:8px}
+  .rechud .dot{width:9px;height:9px;border-radius:50%;background:#ff4d6d;animation:recpulse 1.1s ease-in-out infinite}
+  @keyframes recpulse{0%,100%{opacity:1}50%{opacity:.25}}
   .result{margin-top:11px;font-family:var(--mono);font-size:12px}
   .result .dl{color:var(--good);text-decoration:none;border:1px solid color-mix(in srgb,var(--good) 40%,var(--line));border-radius:8px;padding:6px 11px;display:inline-block}
   .result .dl:hover{filter:brightness(1.1)}
@@ -136,11 +140,13 @@
         <label>Resolution <select id="resSel"><option value="1920">1920×1080 · HD</option><option value="2560">2560×1440 · QHD</option><option value="3840" selected>3840×2160 · 4K UHD</option></select></label>
         <label>Length <select id="lenSel"><option value="6">6s</option><option value="10" selected>10s</option><option value="15">15s</option></select></label>
         <button class="cta" id="doRender">● Render video</button>
+        <button class="btn2" id="doStop" hidden>■ Stop &amp; save</button>
         <button class="btn2" id="doPng">⤓ Save frame</button>
         <button class="btn2" id="doLink" title="Copy a link that reopens this tool with your exact settings">🔗 Copy link</button>
         <button class="btn2" id="doFull" title="Expand the preview to fullscreen">⛶ Fullscreen</button>
         <span class="prog" id="prog"></span>
       </div>
+      <div class="fidnote" id="fidNote"></div>
       <div class="result" id="result"></div>
     </div>
   </div>
@@ -230,26 +236,73 @@
     cv.onpointerup=()=>{dn=false;if(kernel.ptr)kernel.ptr.on=false;};
     cv.onpointerleave=()=>{if(kernel.ptr)kernel.ptr.on=false;}; }
   function openModal(c){ current=c;$('#bigName').textContent=c.t.name;$('#bigBlurb').textContent=c.t.blurb;result.innerHTML='';prog.textContent='';
-    bigMedia.innerHTML='<canvas id="bigcv" width="720" height="405"></canvas>';const cv=$('#bigcv');const k=make(c.t.kind,720,405,c.t.preset);for(let w=0;w<30;w++)k.step();bg={ctx:cv.getContext('2d'),kernel:k};deskKernel=k;buildPanel(k);bindPointer(cv,k);applyLock();modal.classList.add('open'); }
+    bigMedia.innerHTML='<canvas id="bigcv" width="720" height="405"></canvas>';const cv=$('#bigcv');const k=make(c.t.kind,720,405,c.t.preset);for(let w=0;w<30;w++)k.step();bg={ctx:cv.getContext('2d'),kernel:k};deskKernel=k;buildPanel(k);bindPointer(cv,k);updateFidelityNote();applyLock();modal.classList.add('open'); }
   function closeModal(){ modal.classList.remove('open');bg=null;rendering=false; }
   $('#bigClose').onclick=closeModal;modal.onclick=e=>{if(e.target===modal&&!bigMedia.classList.contains('cinema'))closeModal();};addEventListener('keydown',e=>{if(e.key==='Escape'){if(bigMedia.classList.contains('cinema')){exitCinema();return;}if(document.fullscreenElement)return;if(modal.classList.contains('open'))closeModal();}});
 
   const dims=w=>[w,Math.round(w*9/16)];   // 16:9 — real video dimensions (3840×2160 = true 4K UHD)
 
   // ===================== real render (client-side) =====================
-  function renderVideo(tool,w,h,sec,onProg){ return new Promise((resolve,reject)=>{
+  // Build the export kernel: a fresh sim at output size, desk settings copied on,
+  // per-engine export fidelity applied (finer grids/colonies — see engines.js),
+  // then warmed in ~30ms slices so the page stays responsive and progress shows.
+  // Engines with adaptive growth (DLA) stop early via warmPlan().done(); trail
+  // engines (accumulates) build their long-exposure trails into the target ctx.
+  const nextFrame=()=>new Promise(r=>requestAnimationFrame(r));
+  async function prepareExport(tool,w,h,mode,onProg,ctx){
+    const k=make(tool.kind,w,h,tool.preset); applySettings(k,deskKernel);
+    if(k.fidelity)k.fidelity(mode);
+    const plan=(k.warmPlan&&k.warmPlan(mode))||{steps:mode==='still'?130:40};
+    let t0=performance.now();
+    for(let i=0;i<plan.steps;i++){ k.step(); if(plan.done&&plan.done())break;
+      if(performance.now()-t0>30){ if(onProg)onProg(i/plan.steps); await nextFrame(); t0=performance.now(); } }
+    if(mode==='still'&&k.accumulates&&ctx){ for(let i=0;i<70;i++){ k.step(); k.render(ctx);
+      if(performance.now()-t0>30){ await nextFrame(); t0=performance.now(); } } }
+    if(onProg)onProg(1); return k; }
+
+  let stopRec=null; // "■ Stop & save" handle — an early stop still yields a valid, shorter clip
+  function renderVideo(k,w,h,sec,onProg){ return new Promise((resolve,reject)=>{
     if(typeof MediaRecorder==='undefined'){reject(new Error('no-recorder'));return;}
     const cv=document.createElement('canvas');cv.width=w;cv.height=h;const ctx=cv.getContext('2d');
-    const k=make(tool.kind,w,h,tool.preset);applySettings(k,deskKernel);if((k&&'_cap'in k)||tool.kind==='fractal')k._cap=1100;for(let i=0;i<40;i++)k.step();
     let stream;try{stream=cv.captureStream(30);}catch(e){reject(e);return;}
     // MP4/H.264 first so Safari can record too; VP9/VP8 WebM for Chrome/Firefox.
     let mime='';for(const m of ['video/mp4;codecs=h264','video/mp4','video/webm;codecs=vp9','video/webm;codecs=vp8','video/webm'])if(MediaRecorder.isTypeSupported(m)){mime=m;break;}
     const ext=/mp4/.test(mime)?'mp4':'webm',type=/mp4/.test(mime)?'video/mp4':'video/webm';
     let rec;try{rec=new MediaRecorder(stream,{mimeType:mime||undefined,videoBitsPerSecond:w>=3000?32e6:20e6});}catch(e){reject(e);return;}
-    const chunks=[];rec.ondataavailable=e=>{if(e.data&&e.data.size)chunks.push(e.data);};rec.onstop=()=>resolve({blob:new Blob(chunks,{type}),ext});rec.onerror=e=>reject((e&&e.error)||new Error('rec'));
-    rec.start(120);const t0=performance.now(),total=sec*1000;
-    (function f(){const el=performance.now()-t0;k.step();k.render(ctx);onProg&&onProg(Math.min(1,el/total));if(el>=total){try{rec.stop();}catch(_){}}else requestAnimationFrame(f);})();
+    const chunks=[];rec.ondataavailable=e=>{if(e.data&&e.data.size)chunks.push(e.data);};
+    rec.onstop=()=>{stopRec=null;resolve({blob:new Blob(chunks,{type}),ext});};
+    rec.onerror=e=>{stopRec=null;reject((e&&e.error)||new Error('rec'));};
+    rec.start(120);const t0=performance.now(),total=sec*1000;let stopped=false;
+    const halt=()=>{ if(!stopped){ stopped=true; try{rec.stop();}catch(_){} } };
+    stopRec=halt;
+    (function f(){ if(stopped)return; const el=performance.now()-t0; k.step();k.render(ctx);
+      if(onProg)onProg(Math.min(1,el/total),el); if(el>=total)halt(); else requestAnimationFrame(f); })();
   }); }
+
+  // Recording is live by design (captureStream) — the REC HUD makes that a
+  // deliberate experience: pulsing dot, elapsed/total clock, locked selects.
+  const fmtT=ms=>{const s=Math.max(0,ms/1000);return String(Math.floor(s/60)).padStart(2,'0')+':'+String(Math.floor(s%60)).padStart(2,'0');};
+  function setRecUI(on,w,h,sec){ const sheet=document.querySelector('.sheet'); if(sheet)sheet.classList.toggle('rec',!!on);
+    $('#doRender').disabled=!!on; $('#doStop').hidden=!on; resSel.disabled=lenSel.disabled=!!on;
+    let hud=bigMedia.querySelector('.rechud');
+    if(on){ if(!hud){ hud=document.createElement('div'); hud.className='rechud';
+        hud.innerHTML='<span class="dot"></span><span class="rt" id="recTime"></span>'; bigMedia.appendChild(hud); }
+      $('#recTime').textContent='REC 00:00 / '+fmtT(sec*1000)+' · '+w+'×'+h; }
+    else if(hud) hud.remove(); }
+  $('#doStop').onclick=()=>{ if(stopRec)stopRec(); };
+
+  // What "4K" honestly means per engine — stated under the export bar.
+  function updateFidelityNote(){ if(!current||!deskKernel)return; const [w,h]=dims(+resSel.value),kind=current.t.kind,k=deskKernel;let s='';
+    if(kind==='flow'||kind==='boids') s='every particle simulated at '+w+'×'+h+' — nothing upscaled';
+    else if(kind==='rd') s='still: field '+Math.min(1024,k.gw*2)+'² · video: '+Math.min(512,k.gw*2)+'² — computed, not upscaled';
+    else if(kind==='slime') s='still: trail grid '+Math.min(640,k.G*2)+'² · video: '+Math.min(448,k.G*2)+'² — colony scales with area';
+    else if(kind==='lenia') s='still: world 144² with matched kernel · video: live-res (the doubled kernel is too heavy in real time)';
+    else if(kind==='cymatics') s='still: computed at true '+h+'² — pixel-exact nodal lines · video: 480²';
+    else if(kind==='dla') s='still: lattice 600², crystal grown to fill the frame · video: 320²';
+    else if(kind==='starling') s='still: density field '+Math.min(720,(h/3)|0)+'² · video: 480²';
+    else if(kind==='fractal') s='still: every pixel of '+w+'×'+h+' iterated · video: computed at 1600px';
+    $('#fidNote').textContent=s; }
+  resSel.onchange=updateFidelityNote;
   // Save that works inside a sandboxed artifact: a user-clickable link on a data:
   // URL (survives where blob downloads are blocked) beside a right-click hint on
   // the inline preview. No programmatic .click() — that is exactly what the sandbox blocks.
@@ -260,21 +313,29 @@
     fr.readAsDataURL(blob); }
 
   $('#doRender').onclick=async()=>{ if(!usable(current.t)){toast('Unlock “'+current.t.name+'” to render — $1.');applyLock();return;} const [w,h]=dims(+resSel.value),sec=+lenSel.value;
-    rendering=true;$('#doRender').disabled=true;result.innerHTML='';prog.textContent='rendering '+w+'×'+h+'… 0%';
-    try{ const {blob,ext}=await renderVideo(current.t,w,h,sec,f=>prog.textContent='rendering '+w+'×'+h+'… '+(f*100|0)+'%');
+    rendering=true;result.innerHTML='';setRecUI(true,w,h,sec);prog.textContent='growing the field… 0%';
+    try{ const k=await prepareExport(current.t,w,h,'video',f=>prog.textContent='growing the field… '+(f*100|0)+'%');
+      prog.textContent='recording live · a '+sec+'s clip takes '+sec+'s';
+      const {blob,ext}=await renderVideo(k,w,h,sec,(f,el)=>{const rt=$('#recTime');if(rt)rt.textContent='REC '+fmtT(el)+' / '+fmtT(sec*1000)+' · '+w+'×'+h;});
       const url=URL.createObjectURL(blob),nm='studio-'+slug(current.t.name)+'-'+h+'p.'+ext;
       bigMedia.innerHTML='<video src="'+url+'" controls autoplay loop muted playsinline></video>';bg=null;
       prog.textContent='done · '+w+'×'+h+' · '+(blob.size/1e6).toFixed(1)+' MB';
       saveLink(blob,nm,'real '+w+'×'+h+' '+ext.toUpperCase()+' video');
     }catch(e){ prog.textContent=''; toast('In-browser video capture is unavailable here — use “Save frame” for a real 4K still instead.'); }
-    rendering=false;$('#doRender').disabled=false; };
+    setRecUI(false);rendering=false; };
 
-  $('#doPng').onclick=()=>{ if(!usable(current.t)){toast('Unlock “'+current.t.name+'” to export — $1.');applyLock();return;} const [w,h]=dims(+resSel.value); prog.textContent='rendering '+w+'×'+h+' still…'; const cv=document.createElement('canvas');cv.width=w;cv.height=h;const ctx=cv.getContext('2d');const k=make(current.t.kind,w,h,current.t.preset);applySettings(k,deskKernel);for(let i=0;i<130;i++)k.step();k.render(ctx);
-    cv.toBlob(b=>{ if(!b){toast('Could not export frame.');prog.textContent='';return;} const url=URL.createObjectURL(b),nm='studio-'+slug(current.t.name)+'-'+w+'x'+h+'.png';
-      // Show the still INLINE so it visibly generates even where a download is sandbox-blocked; the link is a user-gesture save.
-      bigMedia.innerHTML='<img alt="'+w+'×'+h+' still" src="'+url+'" style="width:100%;height:100%;object-fit:contain;background:#05070c">';bg=null;
-      prog.textContent='done · '+w+'×'+h+' · '+(b.size/1e6).toFixed(1)+' MB';
-      saveLink(b,nm,'real '+w+'×'+h+' PNG'); },'image/png'); };
+  $('#doPng').onclick=async()=>{ if(!usable(current.t)){toast('Unlock “'+current.t.name+'” to export — $1.');applyLock();return;} const [w,h]=dims(+resSel.value);
+    const btn=$('#doPng');btn.disabled=true;prog.textContent='growing the field… 0%';
+    try{ const cv=document.createElement('canvas');cv.width=w;cv.height=h;const ctx=cv.getContext('2d');
+      const k=await prepareExport(current.t,w,h,'still',f=>prog.textContent='growing the field… '+(f*100|0)+'%',ctx);
+      if(k.still) await k.still(ctx,f=>prog.textContent='rendering '+w+'×'+h+'… '+(f*100|0)+'%'); else k.render(ctx);
+      cv.toBlob(b=>{ if(!b){toast('Could not export frame.');prog.textContent='';return;} const url=URL.createObjectURL(b),nm='studio-'+slug(current.t.name)+'-'+w+'x'+h+'.png';
+        // Show the still INLINE so it visibly generates even where a download is sandbox-blocked; the link is a user-gesture save.
+        bigMedia.innerHTML='<img alt="'+w+'×'+h+' still" src="'+url+'" style="width:100%;height:100%;object-fit:contain;background:#05070c">';bg=null;
+        prog.textContent='done · '+w+'×'+h+' · '+(b.size/1e6).toFixed(1)+' MB';
+        saveLink(b,nm,'real '+w+'×'+h+' PNG'); },'image/png');
+    }catch(e){ prog.textContent=''; toast('Could not export frame.'); }
+    btn.disabled=false; };
 
   // ---- share settings (permalink) + fullscreen ----
   // v=2 links are keyed by each control's stable `key` (labels can be reworded
