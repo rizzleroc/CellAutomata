@@ -123,6 +123,88 @@ section { padding: var(--s8) 0; border-bottom: 1px solid var(--hair); }
 .foot .links-inline { display: flex; gap: var(--s5); font-family: var(--font-mono); font-size: 11px; letter-spacing: .1em; }
 .foot .links-inline a { color: var(--muted); } .foot .links-inline a:hover { color: var(--ink); }
 
+/* ── Nav "Go Pro" ────────────────────────────────────────────────────────── */
+.nav-pro { font-family: var(--font-mono); font-size: 11px; letter-spacing: .18em; text-transform: uppercase;
+  color: var(--magenta); background: rgba(215,123,255,.06); border: 1px solid rgba(215,123,255,.28);
+  border-radius: 8px; padding: 6px 12px; cursor: pointer; transition: all var(--med) var(--ease); }
+.nav-pro:hover { background: rgba(215,123,255,.14); border-color: var(--magenta); box-shadow: 0 0 24px -10px rgba(215,123,255,.6); }
+.nav-pro.on { color: var(--teal); border-color: var(--teal-line); background: rgba(63,224,208,.06); }
+
+/* ── Split hero with the live clip ───────────────────────────────────────── */
+.hero-grid { display: grid; grid-template-columns: minmax(0,1.02fr) minmax(0,.98fr); gap: clamp(var(--s6),5vw,var(--s8)); align-items: center; }
+.hero-copy .hero-lede { max-width: 34ch; }
+.hero-note { margin-top: var(--s5); font-family: var(--font-mono); font-size: 12px; letter-spacing: .04em; color: var(--muted); }
+.hero-note a { color: var(--teal); }
+.hero-media { margin: 0; border: 1px solid var(--teal-line); border-radius: 14px; overflow: hidden; background: var(--obsidian-2);
+  box-shadow: 0 0 60px -24px var(--teal-glow); }
+.hero-clip { display: block; width: 100%; aspect-ratio: 1/1; object-fit: cover; background: var(--obsidian-3); }
+.hero-media figcaption { display: flex; justify-content: space-between; gap: var(--s4); flex-wrap: wrap;
+  padding: var(--s3) var(--s4); font-family: var(--font-mono); font-size: 11px; letter-spacing: .1em;
+  text-transform: uppercase; color: var(--muted); border-top: 1px solid var(--hair); }
+.hero-media figcaption a { color: var(--teal); }
+
+/* ── Category groups ─────────────────────────────────────────────────────── */
+.catgroup { margin: var(--s7) 0 var(--s5); }
+.catgroup:first-of-type { margin-top: var(--s6); }
+.cat-h { font-family: var(--font-display); font-weight: 400; font-size: clamp(22px,3vw,30px); letter-spacing: .02em; margin: 0;
+  padding-bottom: var(--s3); border-bottom: 1px solid var(--hair); }
+.cat-sub { font-style: italic; color: var(--muted); margin: var(--s3) 0 0; max-width: 62ch; }
+
+/* ── Tool cards (tier-chipped) ───────────────────────────────────────────── */
+.tools { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px,1fr)); gap: var(--s5); }
+.tool { display: flex; flex-direction: column; border: 1px solid var(--hair); border-radius: 12px; padding: var(--s5);
+  background: var(--obsidian-2); transition: border-color var(--med) var(--ease), background var(--med) var(--ease), box-shadow var(--med) var(--ease); }
+.tool:hover { border-color: var(--teal-line); background: var(--obsidian-3); box-shadow: 0 0 44px -20px var(--teal-glow); }
+.tool-head { display: flex; align-items: center; gap: var(--s3); flex-wrap: wrap; }
+.tool-name { font-family: var(--font-display); font-weight: 400; font-size: 23px; letter-spacing: .02em; margin: 0; color: var(--ink); flex: 1 1 auto; }
+.tool-tag { font-family: var(--font-mono); font-size: 11px; letter-spacing: .08em; text-transform: uppercase; color: var(--teal); margin-top: var(--s3); }
+.tool-blurb { font-size: 14.5px; color: var(--ink-soft); margin: var(--s3) 0 0; line-height: 1.5; }
+.tool-pro { margin-top: var(--s4); padding: 8px 12px; border-radius: 8px; background: rgba(215,123,255,.06);
+  border: 1px solid rgba(215,123,255,.2); font-family: var(--font-mono); font-size: 11px; letter-spacing: .04em; color: var(--magenta); }
+.tool-go { font-family: var(--font-mono); font-size: 10px; letter-spacing: .18em; text-transform: uppercase; color: var(--teal);
+  margin-top: var(--s5); padding-top: var(--s4); border-top: 1px solid var(--hair); }
+
+/* ── Tier chips ──────────────────────────────────────────────────────────── */
+.chip { font-family: var(--font-mono); font-size: 9.5px; letter-spacing: .14em; text-transform: uppercase;
+  padding: 4px 9px; border-radius: 999px; border: 1px solid var(--hair); white-space: nowrap; }
+.chip.free { color: var(--teal); border-color: var(--teal-line); background: rgba(63,224,208,.05); }
+.chip.watch { color: var(--muted); border-color: var(--hair); }
+.chip.pro { color: var(--magenta); border-color: rgba(215,123,255,.32); background: rgba(215,123,255,.07); }
+
+/* ── Plans ───────────────────────────────────────────────────────────────── */
+.plans { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px,1fr)); gap: var(--s5); align-items: start; }
+.plan { border: 1px solid var(--hair); border-radius: 14px; padding: var(--s6); background: var(--obsidian-2); display: flex; flex-direction: column; }
+.plan-pro { border-color: rgba(215,123,255,.28); background: linear-gradient(180deg, rgba(215,123,255,.045), transparent 60%), var(--obsidian-2); }
+.plan-head { display: flex; align-items: baseline; justify-content: space-between; gap: var(--s4); flex-wrap: wrap; }
+.plan-name { font-family: var(--font-display); font-weight: 400; font-size: 30px; letter-spacing: .03em; margin: 0; }
+.plan-price { font-family: var(--font-mono); font-size: 13px; letter-spacing: .04em; color: var(--ink-soft); }
+.plan-price span { color: var(--muted); font-size: 11px; }
+.plan-pro .plan-price { color: var(--magenta); }
+.plan-tag { font-style: italic; color: var(--muted); margin-top: var(--s2); }
+.plan-list { list-style: none; padding: 0; margin: var(--s5) 0 var(--s6); display: flex; flex-direction: column; gap: var(--s3); }
+.plan-list li { position: relative; padding-left: var(--s5); font-size: 14.5px; color: var(--ink-soft); line-height: 1.45; }
+.plan-list li::before { content: "◇"; position: absolute; left: 0; color: var(--teal); font-size: 12px; top: 2px; }
+.plan-pro .plan-list li::before { content: "◆"; color: var(--magenta); }
+.plan-cta { margin-top: auto; align-self: flex-start; cursor: pointer; }
+button.plan-cta { font-family: var(--font-mono); font-size: 12px; letter-spacing: .14em; text-transform: uppercase; }
+button.btn-primary.on { border-color: var(--teal); color: var(--teal); }
+.plan-fine { margin-top: var(--s4); font-family: var(--font-mono); font-size: 10.5px; letter-spacing: .03em; color: var(--muted-dim); line-height: 1.5; }
+.plan-fine a { color: var(--teal); }
+
+/* ── Reel ────────────────────────────────────────────────────────────────── */
+.reel-frame { margin: 0; border: 1px solid var(--teal-line); border-radius: 14px; overflow: hidden; background: #000;
+  box-shadow: 0 0 70px -30px var(--teal-glow); max-width: 720px; }
+.reel-video { display: block; width: 100%; aspect-ratio: 1/1; background: #000; }
+
+/* ── About reads ─────────────────────────────────────────────────────────── */
+.reads { display: flex; flex-wrap: wrap; gap: var(--s5); margin-top: var(--s6); }
+.reads .read { font-family: var(--font-mono); font-size: 11px; letter-spacing: .12em; text-transform: uppercase; color: var(--muted); }
+.reads .read:hover { color: var(--teal); }
+
+@media (max-width: 880px) {
+  .hero-grid { grid-template-columns: 1fr; }
+  .hero-media { order: -1; max-width: 460px; }
+}
 @media (max-width: 720px) {
   .wrap { padding: 0 var(--s5); }
   .register { padding: var(--s3) var(--s5); flex-wrap: wrap; gap: var(--s3); }
