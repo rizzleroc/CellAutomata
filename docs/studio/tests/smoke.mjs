@@ -48,12 +48,22 @@ for (const api of ['isUnlocked', 'showPaywall', 'redeem', 'grantDemo', 'onChange
   ok(proJs.includes(api + ':') || proJs.includes(api + ' :'), `pro.js exposes CatSilPro.${api}`);
 }
 ok(proJs.includes("'catsil.pro.token'"), 'pro.js uses the shared token key');
+// The four pro.js copies (hub root, web10, slime, studio) must stay byte-identical —
+// a fix in one that misses the others is exactly the drift CLAUDE.md warns about.
+for (const other of ['../pro.js', '../web10/pro.js', '../slime/pro.js']) {
+  ok(readFileSync(resolve(DIR, other), 'utf8') === proJs, `pro.js byte-identical to ${other.replace('../', 'docs/')}`);
+}
+ok(/showPaywall\(\{\s*title:/.test(html), 'paywall opened with Studio-voiced title');
+ok(!html.includes('\\U0001f3b2') && !engines.includes('\\U0001f3b2'), 'no broken \\U escape regression');
 
 // ── 3. real export + home link ───────────────────────────────────────────────
 console.log('exports + shell:');
 ok(html.includes('3840') && html.includes('MediaRecorder'), 'real 4K (3840) video export path present');
 ok(html.includes('toBlob') || html.includes('toDataURL'), 'still-export path present');
 ok(/class="home" href="\.\.\/"/.test(html), 'links back to the site (../)');
+ok(html.includes("'v=2'"), 'share links carry the v=2 stable-key scheme');
+ok(html.includes('devicePixelRatio'), 'HiDPI (devicePixelRatio) canvases');
+ok(html.includes('prepareExport') && html.includes('warmPlan'), 'export fidelity pipeline present');
 
 // ── 4. both scripts parse ────────────────────────────────────────────────────
 console.log('syntax:');

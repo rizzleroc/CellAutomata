@@ -99,7 +99,11 @@ jobs:
       - name: Slime Studio smoke test
         run: node docs/slime/tests/smoke.mjs
       - name: Studio (13 engines) smoke test
-        run: node docs/studio/tests/smoke.mjs   # on-site studio + shared Pro token
+        run: node docs/studio/tests/smoke.mjs   # on-site studio + shared Pro token (4-way byte-identity)
+      - name: Studio design contract
+        run: node docs/studio/tests/design.mjs  # Catalytic Silence fonts/palette/a11y + honest-export UI
+      - name: Studio engine-integrity gate
+        run: node docs/studio/tests/controls.mjs # vm-driven kernels: controls sound, science moves, fidelity real
       - name: Front-door free/paid catalog gate
         run: node docs/tests/catalog.mjs        # catalog.js↔.json + index.html link/tier every tool
       - name: Murmuration smoke tests
