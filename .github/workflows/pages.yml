@@ -98,6 +98,10 @@ jobs:
         run: node docs/pondwater/tests/life.mjs   # three already installed above
       - name: Slime Studio smoke test
         run: node docs/slime/tests/smoke.mjs
+      - name: Studio (13 engines) smoke test
+        run: node docs/studio/tests/smoke.mjs   # on-site studio + shared Pro token
+      - name: Front-door free/paid catalog gate
+        run: node docs/tests/catalog.mjs        # catalog.js↔.json + index.html link/tier every tool
 
   build:
     needs: test

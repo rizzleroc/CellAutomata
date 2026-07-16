@@ -1,0 +1,149 @@
+/* catalog.js — the free / paid map of the whole cellauto site.
+ *
+ * SINGLE SOURCE OF TRUTH for what is Free and what is Pro. The front door
+ * (docs/index.html), the plans page, and any tooling read the SAME model from
+ * here. A mirror is committed as catalog.json for non-module / machine
+ * consumers; docs/tests/catalog.mjs asserts the two never drift and that the
+ * front door links every tool below.
+ *
+ * The site is a static GitHub Pages deploy, so "Pro" is a CLIENT-SIDE unlock
+ * keyed by a shareable token (see pro.js / docs/PRICING.md) — never a security
+ * boundary. Watching every live specimen is always free; Pro unlocks creation:
+ * the control desks / parameter rails, the hi-res exports, data + shareable
+ * links, and the larger colonies.
+ *
+ * access:
+ *   'free'     — nothing gated; run it, watch it, export what it offers.
+ *   'freemium' — free to WATCH the live feed; Pro to CREATE (control + export).
+ */
+
+export const CATALOG = {
+  updated: '2026-07-16',
+  live: 'https://rizzleroc.github.io/CellAutomata/',
+
+  // One client-side unlock, shared across every Pro tool on the device.
+  tokenModel: {
+    key: 'catsil.pro.token',
+    format: 'CATSIL-XXXX-XXXX-CKSUM',
+    shared: 'Redeeming in any client unlocks Pro in all of them (per-origin localStorage).',
+    note: 'Client-side unlock, not a server entitlement. See docs/PRICING.md.'
+  },
+
+  tiers: [
+    {
+      id: 'free',
+      name: 'Free',
+      price: '$0',
+      tagline: 'Watch every specimen. Run the labs.',
+      includes: [
+        'Every live simulation, running in your browser',
+        'The origin-of-life lab (13 stages) and the guided colony',
+        'Ontogeny and the Pond Water Analyzer, end to end',
+        'The full plate gallery and the studio reel'
+      ]
+    },
+    {
+      id: 'pro',
+      name: 'Pro',
+      price: '$1 a lab · $9.99 everything',
+      unlock: 'One token, redeemable on any device',
+      tagline: 'Take control. Export at publication scale.',
+      includes: [
+        'Every control desk and parameter rail unlocked',
+        'Hi-res SEM plate export — up to 4000×4000',
+        'Real 4K video + still export from the Studio',
+        'Observable plots, CSV data and shareable run links',
+        'Larger colonies and higher-detail grids',
+        'One unlock covers every Pro tool on the device'
+      ]
+    }
+  ],
+
+  categories: [
+    { id: 'labs',    name: 'The origin-of-life labs',  blurb: 'Thirteen stages of abiogenesis — each a real experiment beside the electron micrograph it produces.' },
+    { id: 'studios', name: 'Generative studios',        blurb: 'Open-ended engines you play with directly — grow, tune, and export.' },
+    { id: 'life',    name: 'Life at every scale',       blurb: 'From a single individual’s origin to a whole drop of pond water.' },
+    { id: 'gallery', name: 'Galleries & film',          blurb: 'Rendered specimens and the studio reel — free to browse.' }
+  ],
+
+  tools: [
+    // ── The origin-of-life labs ──────────────────────────────────────────
+    {
+      id: 'web7', name: 'The Lab', path: 'web7/', category: 'labs',
+      access: 'free', watch: 'free', create: 'free',
+      tagline: 'The canonical lab — Catalytic Silence',
+      blurb: 'Thirteen abiogenesis stages, each a photoreal 3-D apparatus beside its live SEM micrograph, with per-stage parameter controls.'
+    },
+    {
+      id: 'web8', name: 'The Guided Colony', path: 'web8/', category: 'labs',
+      access: 'free', watch: 'free', create: 'free',
+      tagline: 'The lab + a living guide',
+      blurb: 'Everything in the lab, joined by a living-amoeba guide creature that narrates the stages and takes requests.'
+    },
+    {
+      id: 'web10', name: 'Mark X', path: 'web10/', category: 'labs',
+      access: 'freemium', watch: 'free', create: 'pro',
+      pro: ['SEM plate export up to 4000×4000'],
+      tagline: 'The refined shell · token-gated 4K plate',
+      blurb: 'A re-shell of the lab with a hero-art plate rail, a 13-node timeline scrubber and run provenance. Pro renders the current stage’s SEM micrograph in-page up to 4000×4000.'
+    },
+    {
+      id: 'web9', name: 'The Instrument', path: 'web9/', category: 'labs',
+      access: 'freemium', watch: 'free', create: 'pro',
+      pro: ['Parameters rail (tune · step · reset)', 'Observable sparkline', 'CSV export', 'Shareable run links'],
+      tagline: 'Guided + measured · Pro parameter rail',
+      blurb: 'The lab with living guides and a live measurement layer — per-step observables, CSV export and shareable run URLs. Pro unlocks the Parameters rail.'
+    },
+
+    // ── Generative studios ───────────────────────────────────────────────
+    {
+      id: 'studio', name: 'The Studio', path: 'studio/', category: 'studios',
+      access: 'freemium', watch: 'free', create: 'pro',
+      pro: ['Every control desk', 'Real 4K video + still export'],
+      tagline: 'Thirteen engines · one desk',
+      blurb: 'Flow fields, reaction–diffusion, Physarum, Lenia lifeforms, cymatics, crystal growth, a starling murmuration and morphing fractal worlds — all live. Open any tile for its control desk; Pro renders a real 4K video or still.'
+    },
+    {
+      id: 'slime', name: 'Slime Studio', path: 'slime/', category: 'studios',
+      access: 'freemium', watch: 'free', create: 'pro',
+      pro: ['4K SEM plate export', 'Colonies up to 60k · higher-detail grid'],
+      tagline: 'Interactive Physarum lab',
+      blurb: 'Place nutrients and watch Physarum grow transport paths beside a live SEM-micrograph feed. Pro raises the colony and detail ceilings and exports a 4000² plate.'
+    },
+
+    // ── Life at every scale ──────────────────────────────────────────────
+    {
+      id: 'ontogeny', name: 'Ontogeny', path: 'ontogeny/', category: 'life',
+      access: 'free', watch: 'free', create: 'free',
+      tagline: 'Part II — the origin of an individual',
+      blurb: 'From sperm + egg to zygote and beyond — a real simulation of human development, and every condition that makes twins, triplets, quintuplets and more.'
+    },
+    {
+      id: 'pondwater', name: 'Pond Water Analyzer', path: 'pondwater/', category: 'life',
+      access: 'free', watch: 'free', create: 'free',
+      tagline: 'A dark-field microscope of a virtual drop',
+      blurb: 'Six procedurally-grown organisms — bacterium to water flea — with true-to-life internal anatomy, under a continuous infinite-zoom dive from the whole drop to organ level.'
+    },
+
+    // ── Galleries & film ─────────────────────────────────────────────────
+    {
+      id: 'plates', name: 'The Plates', path: 'index.html#plates', category: 'gallery',
+      access: 'free', watch: 'free', create: 'free',
+      tagline: 'Rendered specimens',
+      blurb: 'The plate for every stage — the look each live feed reaches toward.'
+    },
+    {
+      id: 'reel', name: 'The Studio Reel', path: 'media/studio_reel.mp4', category: 'gallery',
+      access: 'free', watch: 'free', create: 'free',
+      tagline: 'Thirteen engines in one film',
+      blurb: 'A continuous reel of the generative studio — flow to fractal — rendered from the real engines.'
+    }
+  ]
+};
+
+// Convenience selectors (used by the front door and tests).
+export const byCategory = (id) => CATALOG.tools.filter((t) => t.category === id);
+export const freeTools = () => CATALOG.tools.filter((t) => t.access === 'free');
+export const proTools = () => CATALOG.tools.filter((t) => t.access === 'freemium');
+
+export default CATALOG;
