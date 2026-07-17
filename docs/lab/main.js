@@ -11,6 +11,7 @@
 import * as THREE from 'three';
 import { createLab } from './scene.js';
 import { buildPlaceholder } from './apparatus/placeholder.js';
+import { Observables } from './observables.js';
 import { meta as millerUrey } from './apparatus/miller_urey.js';
 import { meta as grayscott } from './apparatus/grayscott_dish.js';
 import { meta as raf } from './apparatus/raf_flask.js';
@@ -167,6 +168,7 @@ function selectExperiment(m) {
   expHeightBuf = new Float32Array(expRule.width * expRule.height);
   expCaption.textContent = plateOf(m).name;
   buildParamPanel(expRule);                            // surface this stage's own tunable knobs
+  Observables.reset(plateOf(m).name);                  // instrument: a fresh time-series per specimen
   renderExperimentFrame();                             // paint one frame immediately (even if paused)
 }
 
@@ -196,6 +198,10 @@ function expTick(now) {
   let advanced = false, safety = 4;
   while (now - expLastStep >= interval && safety-- > 0) {
     expRule.step(); expLastStep += interval; advanced = true;
+  }
+  if (advanced) {                                      // instrument: measure each real step
+    if (typeof expRule.renderHeight === 'function') { expRule.renderHeight(expHeightBuf); Observables.record(expRule, expHeightBuf); }
+    else Observables.record(expRule, null);
   }
   if (currentView() !== 'lab') {
     if (expRule.hiRes || advanced) renderExperimentFrame();
@@ -782,6 +788,40 @@ function disposeTree(obj) {
   });
 }
 
+// ── Instrument layer: live observable readout + CSV export + run link ────────
+function currentRunHash() {
+  const p = new URLSearchParams();
+  if (currentMeta) p.set('stage', currentMeta.id);
+  p.set('view', currentView());
+  if (expPalette) p.set('palette', expPalette);
+  return '#' + p.toString();
+}
+function applyRunHash() {
+  if (!location.hash || location.hash.length < 2) return null;
+  const p = new URLSearchParams(location.hash.slice(1));
+  const pal = p.get('palette'); if (pal) expPalette = pal;
+  const id = p.get('stage');
+  return { m: id ? STAGES.find((s) => s.id === id) : null, view: p.get('view') };
+}
+function setupInstrument() {
+  Observables.init($('obsSpark'), $('obsRead'));
+  const csv = $('obsCsvBtn'), link = $('obsLinkBtn');
+  if (csv) csv.onclick = () => {
+    const blob = new Blob([Observables.toCSV()], { type: 'text/csv' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url; a.download = (currentMeta ? currentMeta.id : 'run') + '_observables.csv';
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+    announce(`Exported ${Observables.count()} measured samples as CSV.`);
+  };
+  if (link) link.onclick = async () => {
+    const url = location.origin + location.pathname + currentRunHash();
+    try { await navigator.clipboard.writeText(url); announce('Shareable run link copied to the clipboard.'); }
+    catch (e) { location.hash = currentRunHash(); announce('Run link set in the address bar.'); }
+  };
+}
+
 // ── web8 guide bridge ─────────────────────────────────────────────────────────
 // The amoeba guide (guide.js) drives the lab ONLY through this façade. It
 // only calls the same controls a user can reach by hand, so it can't do anything
@@ -817,8 +857,10 @@ window.WEB8 = {
 };
 
 if (lab) {
-  setView('split');      // normalize mode-label + aria-checked + roving tabindex through one path
-  loadStage(STAGES[0]);
+  const boot = applyRunHash();      // restore stage/view/palette from a shared run link
+  setView(boot && ['lab', 'split', 'exp'].includes(boot.view) ? boot.view : 'split');
+  loadStage(boot && boot.m ? boot.m : STAGES[0]);
+  setupInstrument();
   tick();
   window.__labReady = true;   // tell the index.html failsafe the lab booted
 } else {

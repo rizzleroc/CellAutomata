@@ -602,3 +602,15 @@ body {
   letter-spacing: .1em; color: var(--muted-dim, #8a8474); text-transform: uppercase; }
 @media (prefers-reduced-motion: reduce) { .tl-arrow, .tl-dot, .tl-num { transition: none; } }
 @media (max-width: 860px) { .tl-prov, .tl-num { display: none; } .timeline { padding: 8px 16px; } }
+
+/* ── Instrument · live observable panel (ported from web9, Mark X voice) ───── */
+.instrument-obs { margin-top: 14px; padding-top: 12px; border-top: 1px solid rgba(63,224,208,.18); }
+.obs-head { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; margin-bottom: 6px; }
+.obs-kicker { font: 500 10px/1.2 var(--font-mono, "IBM Plex Mono", ui-monospace, monospace);
+  letter-spacing: .14em; text-transform: uppercase; color: var(--teal, #3fe0d0); opacity: .85; }
+.obs-read { font: 400 11px/1.3 var(--font-mono, "IBM Plex Mono", ui-monospace, monospace);
+  color: var(--ink-soft, #cbc5b6); text-align: right; }
+.obs-spark { display: block; width: 100%; height: 46px; border: 1px solid rgba(63,224,208,.15);
+  border-radius: 3px; background: rgba(9,12,17,.5); }
+.obs-actions { display: flex; gap: 8px; margin-top: 8px; }
+.obs-actions .ctl { flex: 1; }

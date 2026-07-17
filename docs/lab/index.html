@@ -165,6 +165,18 @@
           <button id="stepBtn" class="ctl" type="button" title="Advance one step">Step</button>
           <button id="resetBtn" class="ctl" type="button" title="Re-seed the experiment">Reset</button>
         </div>
+        <div class="instrument-obs" id="obsPanel">
+          <div class="obs-head">
+            <span class="obs-kicker">Instrument · live measure</span>
+            <span class="obs-read" id="obsRead" title="Field roughness σ² (pattern amplitude) · mean level ⟨h⟩ · population">—</span>
+          </div>
+          <canvas id="obsSpark" class="obs-spark" width="240" height="46" role="img"
+                  aria-label="Field roughness (pattern amplitude) over time"></canvas>
+          <div class="obs-actions">
+            <button id="obsCsvBtn" class="ctl" type="button" title="Download the observable time-series as CSV">Export CSV</button>
+            <button id="obsLinkBtn" class="ctl" type="button" title="Copy a shareable link to this specimen and view">Copy link</button>
+          </div>
+        </div>
       </div>
 
       <div id="partsPanel" class="rail-body" role="tabpanel" aria-labelledby="tabParts" hidden>
