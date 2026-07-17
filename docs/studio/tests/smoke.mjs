@@ -50,7 +50,7 @@ for (const api of ['isUnlocked', 'showPaywall', 'redeem', 'grantDemo', 'onChange
 ok(proJs.includes("'catsil.pro.token'"), 'pro.js uses the shared token key');
 // The four pro.js copies (hub root, web10, slime, studio) must stay byte-identical —
 // a fix in one that misses the others is exactly the drift CLAUDE.md warns about.
-for (const other of ['../pro.js', '../web10/pro.js', '../slime/pro.js']) {
+for (const other of ['../pro.js', '../lab/pro.js', '../slime/pro.js']) {
   ok(readFileSync(resolve(DIR, other), 'utf8') === proJs, `pro.js byte-identical to ${other.replace('../', 'docs/')}`);
 }
 ok(/showPaywall\(\{\s*title:/.test(html), 'paywall opened with Studio-voiced title');
