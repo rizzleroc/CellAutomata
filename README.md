@@ -13,8 +13,8 @@
 ![Python](https://img.shields.io/badge/python-3.10%2B-blue)
 ![Version](https://img.shields.io/badge/version-4.2.0-orange)
 
-> **v4.0 alpha — SEM-grade rendering codebase.** This is the production fork
-> for the v4.0 cycle: depth-shaded warm-sepia / cool-mono micrograph rendering
+> **v4.2.0 — SEM-grade rendering codebase.** This is the production fork:
+> depth-shaded warm-sepia / cool-mono micrograph rendering
 > with a LIVE SEM FEED instrument framing on top of the unchanged v3.6 science
 > engine. Toggle from `View ▸ SEM mode`. The v3.6 viridis renderer remains the
 > A/B baseline and the safe fallback. See [docs/PRD_SEM_VISUALIZATION.md](docs/PRD_SEM_VISUALIZATION.md)
@@ -185,11 +185,13 @@ genetic code → coacervate → vesicles → selection → LUCA:
 
 ## Try it in your browser (no install)
 
-A live in-browser Stage 1 demo lives at [`docs/web/`](docs/web/) — a single
-static page with the Gray-Scott reaction-diffusion PDE running on a `<canvas>`
-via vanilla JS (no Pyodide). F/k sliders, Pearson preset chips, and the same
-viridis colormap as the desktop build. The other stages are exhibited as
-static museum plates beneath. Deployable to GitHub Pages from `/docs`.
+The live site is the **Catalytic Silence hub** at [`docs/index.html`](docs/) —
+the front door into **The Lab** (`docs/lab/` — all 13 origin-of-life stages,
+each a photoreal apparatus beside its live SEM micrograph, with an amoeba
+guide and a live measurement layer), the generative **Studio**, the **Slime**
+and **Murmuration** simulators, **Ontogeny**, and the **Pond Water Analyzer**.
+The original v1 Gray-Scott museum plate is preserved at
+[`docs/web/`](docs/web/). Deployable to GitHub Pages from `/docs`.
 
 ## Install
 

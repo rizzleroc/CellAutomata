@@ -42,7 +42,14 @@ post-abiogenesis follow-on for **both**.
 - **v4.0 PRD merged, code unstarted.** SEM-grade depth-shaded
   rendering. Twelve items S1–S12 open in `ROADMAP.md` §6.
 
-### Track B — Web client (canonical: `docs/web3/`)
+### Track B — Web client (canonical: `docs/lab/`)
+
+> **Superseded note.** This track was authored when `docs/web3/` was the current
+> web client. The canonical client is now **`docs/lab/`** (the consolidated
+> flagship); `docs/web3/` is a preserved v4.0-era client. The punchlist below is
+> kept as history — the web rule-parity work it tracks has long since shipped in
+> the lab lineage.
+
 Three bundles exist in `docs/`; the redirect chain says which is canonical:
 
 - **`docs/web3/`** — **CANONICAL CURRENT**. Implements the v4.0 SEM PRD
