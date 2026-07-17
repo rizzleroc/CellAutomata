@@ -1,9 +1,10 @@
 name: Pages
 
 # Auto-deploy /docs (the static site: the ecosystem hub at docs/index.html +
-# web7/ the canonical lab + generated plates) to GitHub Pages on every push to
-# main. The root docs/index.html is the Catalytic-Silence hub; it links into
-# web7/. (web6/ is retained alongside as the prior client, for comparison.)
+# lab/ the flagship + generated plates) to GitHub Pages on every push to main.
+# The root docs/index.html is the Catalytic-Silence hub; it links into lab/.
+# (web7/ web8/ web9/ web10/ are redirect stubs into lab/; web/ web2/ web3/
+# web6/ are v1-era clients kept on disk, unlinked and ungated.)
 #
 # One-time repo setup: Settings → Pages → Source → GitHub Actions.
 # After that, every merge to main republishes the site.
@@ -34,60 +35,22 @@ jobs:
       - uses: actions/setup-node@v6
         with:
           node-version: "20"
-      - name: Web6 lab smoke tests
-        run: node docs/web6/tests/smoke.mjs
-      - name: Web6 living-colony tests
-        run: node docs/web6/tests/colony.mjs
-      - name: Web6 apparatus runtime verification
+      - name: Lab (flagship) smoke tests
+        run: node docs/lab/tests/smoke.mjs      # engine + guide + instrument layers all parse and wire
+      - name: Lab design-contract tests
+        run: node docs/lab/tests/design.mjs     # Mark X identity + merged layers + shared fonts
+      - name: Lab apparatus runtime verification
         run: |
           npm install three@0.162.0 --no-save --no-package-lock --silent
-          node docs/web6/tests/runtime.mjs
-      - name: Web7 lab smoke tests
-        run: node docs/web7/tests/smoke.mjs
-      - name: Web7 design-contract tests
-        run: node docs/web7/tests/design.mjs
-      - name: Web7 apparatus runtime verification
-        run: node docs/web7/tests/runtime.mjs   # three already installed above
-      - name: Web7 apparatus animation verification
-        run: node docs/web7/tests/anim.mjs      # proves each experiment visibly runs
-      - name: Web7 controls-contract tests
-        run: node docs/web7/tests/controls.mjs  # presets wired to real params + minerals localises (REV-18)
-      - name: Web8 guided-lab smoke tests
-        run: node docs/web8/tests/smoke.mjs
-      - name: Web8 design-contract tests
-        run: node docs/web8/tests/design.mjs
-      - name: Web8 apparatus runtime verification
-        run: node docs/web8/tests/runtime.mjs   # three already installed above
-      - name: Web8 apparatus animation verification
-        run: node docs/web8/tests/anim.mjs
-      - name: Web8 controls-contract tests
-        run: node docs/web8/tests/controls.mjs  # presets wired + minerals localises + vents PMF (web8 parity)
-      - name: Web8 guide intent-parser tests
-        run: node docs/web8/tests/intents.mjs   # ask-the-amoeba request -> action mapping
-      - name: Web9 instrument-lab smoke tests
-        run: node docs/web9/tests/smoke.mjs     # web8 fork + observable/CSV/run-link instrument layer
-      - name: Web9 design-contract tests
-        run: node docs/web9/tests/design.mjs
-      - name: Web9 apparatus runtime verification
-        run: node docs/web9/tests/runtime.mjs   # three already installed above
-      - name: Web9 apparatus animation verification
-        run: node docs/web9/tests/anim.mjs
-      - name: Web9 controls-contract tests
-        run: node docs/web9/tests/controls.mjs
-      - name: Web9 guide intent-parser tests
-        run: node docs/web9/tests/intents.mjs
-      - name: Web9 Pro paywall gate
-        run: node docs/web9/tests/paywall.mjs   # Go-Pro link + Parameters-rail gate + token unlock
-      - name: Web10 Mark X smoke tests
-        run: node docs/web10/tests/smoke.mjs     # re-shelled web7 engine + Mark X shell
-      - name: Web10 design-contract tests
-        run: node docs/web10/tests/design.mjs    # Mark X identity + token-gated Pro export wiring
-      - name: Web10 apparatus runtime verification
-        run: node docs/web10/tests/runtime.mjs   # three already installed above
-      - name: Web10 apparatus animation verification
-        run: node docs/web10/tests/anim.mjs
-      - name: Web10 controls-contract tests
-        run: node docs/web10/tests/controls.mjs
+          node docs/lab/tests/runtime.mjs
+      - name: Lab apparatus animation verification
+        run: node docs/lab/tests/anim.mjs       # proves each experiment visibly runs
+      - name: Lab controls-contract tests
+        run: node docs/lab/tests/controls.mjs   # presets wired to real params + minerals localises
+      - name: Lab guide intent-parser tests
+        run: node docs/lab/tests/intents.mjs    # ask-the-amoeba request -> action mapping
+      - name: Lab Pro gate (CatSilPro)
+        run: node docs/lab/tests/pro.mjs        # rail + instrument export + 4000² plate on the shared token
       - name: Ontogeny engine + page tests
         run: |
           node docs/ontogeny/tests/ontogeny.mjs
@@ -106,6 +69,8 @@ jobs:
         run: node docs/studio/tests/controls.mjs # vm-driven kernels: controls sound, science moves, fidelity real
       - name: Front-door free/paid catalog gate
         run: node docs/tests/catalog.mjs        # catalog.js↔.json + index.html link/tier every tool
+      - name: Shared-file parity gate
+        run: node docs/tests/parity.mjs         # sem.js lab↔ontogeny + pro.js ×4 byte-identical
       - name: Murmuration smoke tests
         run: node docs/murmuration/tests/smoke.mjs
       - name: Murmuration flocking-science verification
