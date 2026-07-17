@@ -1,12 +1,12 @@
 /* Murmuration — Catalytic-Silence shell over a dusk sky.
    Indigo field, a single warm-amber signal colour for the sun/flock telemetry,
-   museum-catalogue typography. Fonts are shared from web8 (../web8/assets/fonts/). */
+   museum-catalogue typography. Fonts are shared from the site home (../assets/fonts/). */
 
-@font-face { font-family: "Italiana"; src: url("../web8/assets/fonts/Italiana-Regular.ttf") format("truetype"); font-weight: 400; font-display: swap; }
-@font-face { font-family: "Crimson Pro"; src: url("../web8/assets/fonts/CrimsonPro-Regular.ttf") format("truetype"); font-weight: 400; font-display: swap; }
-@font-face { font-family: "Crimson Pro"; src: url("../web8/assets/fonts/CrimsonPro-Italic.ttf") format("truetype"); font-weight: 400; font-style: italic; font-display: swap; }
-@font-face { font-family: "IBM Plex Mono"; src: url("../web8/assets/fonts/IBMPlexMono-Regular.ttf") format("truetype"); font-weight: 400; font-display: swap; }
-@font-face { font-family: "IBM Plex Mono"; src: url("../web8/assets/fonts/IBMPlexMono-Bold.ttf") format("truetype"); font-weight: 700; font-display: swap; }
+@font-face { font-family: "Italiana"; src: url("../assets/fonts/Italiana-Regular.ttf") format("truetype"); font-weight: 400; font-display: swap; }
+@font-face { font-family: "Crimson Pro"; src: url("../assets/fonts/CrimsonPro-Regular.ttf") format("truetype"); font-weight: 400; font-display: swap; }
+@font-face { font-family: "Crimson Pro"; src: url("../assets/fonts/CrimsonPro-Italic.ttf") format("truetype"); font-weight: 400; font-style: italic; font-display: swap; }
+@font-face { font-family: "IBM Plex Mono"; src: url("../assets/fonts/IBMPlexMono-Regular.ttf") format("truetype"); font-weight: 400; font-display: swap; }
+@font-face { font-family: "IBM Plex Mono"; src: url("../assets/fonts/IBMPlexMono-Bold.ttf") format("truetype"); font-weight: 700; font-display: swap; }
 
 :root {
   --night: #0a0c18;

@@ -31,8 +31,8 @@ const FONTS = [
   "Italiana-Regular.ttf", "CrimsonPro-Regular.ttf", "CrimsonPro-Italic.ttf",
   "IBMPlexMono-Regular.ttf", "IBMPlexMono-Bold.ttf",
 ];
-for (const f of FONTS) assert(exists(`../web8/assets/fonts/${f}`), `missing reused web8 font ../web8/assets/fonts/${f}`);
-assert(/\.\.\/web8\/assets\/fonts\//.test(css), "web10 reuses ../web8/assets/fonts (no duplicated binaries)");
+for (const f of FONTS) assert(exists(`../assets/fonts/${f}`), `missing reused web8 font ../assets/fonts/${f}`);
+assert(/\.\.\/assets\/fonts\//.test(css), "lab reuses the shared ../assets/fonts (no duplicated binaries)");
 for (const fam of ["Italiana", "Crimson Pro", "IBM Plex Mono"])
   assert(new RegExp(`@font-face[\\s\\S]*?font-family:\\s*"${fam}"`).test(css), `styles.css does not @font-face "${fam}"`);
 assert(/font-display:\s*swap/.test(css), "fonts should declare font-display: swap");

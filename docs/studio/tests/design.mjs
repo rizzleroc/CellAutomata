@@ -22,8 +22,8 @@ const html = readFileSync(join(DIR, 'index.html'), 'utf8');
 console.log('fonts:');
 for (const f of ['Italiana-Regular.ttf', 'CrimsonPro-Regular.ttf', 'CrimsonPro-Italic.ttf',
                  'IBMPlexMono-Regular.ttf', 'IBMPlexMono-Bold.ttf']) {
-  ok(existsSync(resolve(DIR, '../web8/assets/fonts', f)), `font file exists: ${f}`);
-  ok(html.includes(`../web8/assets/fonts/${f}`), `@font-face points at ${f}`);
+  ok(existsSync(resolve(DIR, '../assets/fonts', f)), `font file exists: ${f}`);
+  ok(html.includes(`../assets/fonts/${f}`), `@font-face points at ${f}`);
 }
 for (const fam of ['Italiana', 'Crimson Pro', 'IBM Plex Mono']) {
   ok(html.includes(`font-family:'${fam}'`), `@font-face declares ${fam}`);
