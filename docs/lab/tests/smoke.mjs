@@ -45,10 +45,16 @@ if (mapMatch) {
 }
 
 // 2. index.html references files that exist.
-for (const rel of ["styles.css", "main.js"]) {
+for (const rel of ["styles.css", "main.js", "guide.css", "guide.js"]) {
   assert(html.includes(rel), `index.html does not reference ${rel}`);
   assert(exists(rel), `referenced file missing: ${rel}`);
 }
+// the instrument layer's DOM + the retired bespoke paywall staying retired
+for (const id of ["obsPanel", "obsSpark", "obsCsvBtn", "obsLinkBtn"]) {
+  assert(html.includes(`id="${id}"`), `instrument DOM missing: #${id}`);
+}
+assert(!html.includes("paywall.js") && !html.includes("landing.js"),
+  "the bespoke web9 paywall/landing must not return — Pro is CatSilPro only");
 
 // 3. Every JS module passes `node --check`, and its relative imports resolve.
 const APPARATUS = [
@@ -58,6 +64,8 @@ const APPARATUS = [
 ];
 const MODULES = [
   "scene.js", "main.js", "apparatus/lib.js", "apparatus/placeholder.js", "tests/smoke.mjs",
+  // the flagship's merged layers: the web8 amoeba guide + the web9 instrument
+  "guide.js", "blobgeom.js", "narration.js", "intents.js", "observables.js",
   ...APPARATUS.map((a) => `apparatus/${a}.js`),
 ];
 for (const rel of MODULES) {

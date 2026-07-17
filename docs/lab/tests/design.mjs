@@ -147,5 +147,19 @@ const ctrlCount = (design.match(/\*\*Controls\*\*\s*—/g) || []).length;
 assert(ctrlCount >= 13, `DESIGN.md must document Controls for all 13 stages (found ${ctrlCount})`);
 assert(/#65/.test(design), "DESIGN.md Controls reference should flag the #65 parity gaps (II / XI / XIII)");
 
+// 13. The flagship's merged layers wear the same coat. ------------------------
+// Guide: the amoeba layer must be linked (its CSS + module) and free.
+assert(/<link[^>]+guide\.css/.test(html), "guide.css must be linked in <head>");
+assert(/<script type="module" src="\.\/guide\.js">/.test(html), "guide.js module must load after main.js");
+// Instrument: the observables panel + its Mark X styling.
+for (const id of ["obsSpark", "obsRead", "obsCsvBtn", "obsLinkBtn"]) {
+  assert(html.includes(`id="${id}"`), `instrument DOM missing: #${id}`);
+}
+assert(/\.instrument-obs/.test(css), "styles.css missing the .instrument-obs panel styling");
+// Pro: the Parameters rail lock (CatSilPro) exists and is styled.
+assert(/\.param-lock/.test(css) && /pw-locked/.test(css), "styles.css missing the .param-lock / pw-locked gate styling");
+const mainSrc = read("main.js");
+assert(/Unlock the Instrument/.test(mainSrc), "main.js must speak the flagship Pro language ('Unlock the Instrument')");
+
 console.log(`\n${checks} checks passed, ${failures} failure(s).`);
 process.exit(failures === 0 ? 0 : 1);
