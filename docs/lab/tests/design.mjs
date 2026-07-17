@@ -1,4 +1,4 @@
-// web7 design-contract tests — run with `node docs/web7/tests/design.mjs`.
+// lab (flagship) design-contract tests — run with `node docs/lab/tests/design.mjs`.
 //
 // smoke.mjs guards the ENGINE contract (importmap, modules, STAGE_MAP, the live
 // SEM pipeline). This file guards the "Catalytic Silence" DESIGN contract — the
@@ -20,7 +20,7 @@ const assert = (cond, m) => (cond ? ok() : fail(m));
 const read = (rel) => fs.readFileSync(path.join(ROOT, rel), "utf8");
 const exists = (rel) => fs.existsSync(path.join(ROOT, rel));
 
-console.log("Running web7 design-contract tests…\n");
+console.log("Running lab (flagship) design-contract tests…\n");
 
 const html = read("index.html");
 const css = read("styles.css");
@@ -108,7 +108,7 @@ assert(/id="resetBtn"/.test(html) && /id="stepBtn"/.test(html), "missing the Res
 assert(exists("../index.html"), "missing the ecosystem hub at docs/index.html");
 assert(exists("../hub.css"), "missing docs/hub.css");
 const hub = exists("../index.html") ? read("../index.html") : "";
-assert(/href="web7\/"/.test(hub), "hub does not link into the lab (web7/)");
+assert(/href="lab\/"/.test(hub), "hub does not link into the flagship (lab/)");
 assert(/id="plates"/.test(hub) && /id="about"/.test(hub), "hub missing plates/about sections");
 assert(/hub\.css/.test(hub), "hub does not link hub.css");
 assert(/Catalytic Silence/i.test(hub), "hub missing the Catalytic Silence framing");

@@ -1,4 +1,4 @@
-// web7 lab smoke tests — run with `node docs/web7/tests/smoke.mjs`.
+// lab (flagship) smoke tests — run with `node docs/lab/tests/smoke.mjs`.
 //
 // web7 is WebGL + ES-modules (Three.js), so it can't use web2/web3's vm-IIFE
 // harness — there's no GL context in node. Instead this is a zero-dependency
@@ -27,7 +27,7 @@ const assert = (cond, m) => (cond ? ok() : fail(m));
 const read = (rel) => fs.readFileSync(path.join(ROOT, rel), "utf8");
 const exists = (rel) => fs.existsSync(path.join(ROOT, rel));
 
-console.log("Running web7 lab smoke tests…\n");
+console.log("Running lab (flagship) smoke tests…\n");
 
 // 1. index.html: importmap is valid JSON and maps `three` + addons to a CDN.
 const html = read("index.html");

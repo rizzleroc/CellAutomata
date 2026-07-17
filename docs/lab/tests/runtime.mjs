@@ -1,5 +1,5 @@
 // web7 apparatus RUNTIME verification — run with three.js installed:
-//   npm install three@0.162.0 --no-save && node docs/web7/tests/runtime.mjs
+//   npm install three@0.162.0 --no-save && node docs/lab/tests/runtime.mjs
 //
 // The structural smoke test (smoke.mjs) is zero-dependency and gates the page
 // statically. This one goes further: it executes every apparatus against the

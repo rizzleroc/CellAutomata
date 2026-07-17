@@ -1,6 +1,6 @@
 // web7 apparatus ANIMATION-RICHNESS verification — the "is the experiment
 // actually running?" gate. Run with three installed:
-//   npm install three@0.162.0 --no-save && node docs/web7/tests/anim.mjs
+//   npm install three@0.162.0 --no-save && node docs/lab/tests/anim.mjs
 //
 // runtime.mjs proves each apparatus BUILDS and its anim contract doesn't throw.
 // This goes further: it proves that pressing "Run experiment" makes the scene

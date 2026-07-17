@@ -1,3 +1,5 @@
+> **Superseded** — this plan describes the retired `web8/` client; its guide layer now ships in `docs/lab/`.
+
 # web8 — The Guided Colony
 
 **Status:** PLAN (pre-implementation) · **Builds on:** **web7** (`docs/web7/`)
