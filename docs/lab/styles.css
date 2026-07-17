@@ -614,3 +614,23 @@ body {
   border-radius: 3px; background: rgba(9,12,17,.5); }
 .obs-actions { display: flex; gap: 8px; margin-top: 8px; }
 .obs-actions .ctl { flex: 1; }
+
+/* ── Pro lock over the Parameters rail (CatSilPro; watching stays free) ────── */
+#paramPanel { position: relative; }
+.param-lock { position: absolute; inset: 0; z-index: 5; display: none; place-items: center; padding: 18px;
+  background: linear-gradient(180deg, rgba(7,9,13,.55), rgba(7,9,13,.85)); backdrop-filter: blur(2px); }
+#paramPanel.pw-locked .param-lock { display: grid; }
+#paramPanel.pw-locked #paramList,
+#paramPanel.pw-locked .param-actions,
+#paramPanel.pw-locked .obs-actions { pointer-events: none; filter: saturate(.5) opacity(.5); }
+.param-lock-card { text-align: center; max-width: 230px; }
+.param-lock-ico { display: inline-block; font-size: 20px; color: var(--magenta, #d77bff); margin-bottom: 8px; }
+.param-lock-cap { margin: 0 0 14px; font-family: var(--font-read, "Crimson Pro", Georgia, serif);
+  font-size: 15px; line-height: 1.45; color: var(--ink, #ece7da); }
+.param-lock-btn { padding: 10px 18px; border: 0; border-radius: 10px; cursor: pointer;
+  font: 700 12.5px/1 var(--font-mono, "IBM Plex Mono", ui-monospace, monospace); letter-spacing: .04em;
+  background: linear-gradient(135deg, var(--teal, #3fe0d0), #2bb7ab); color: #04201d;
+  box-shadow: 0 8px 26px -12px rgba(63,224,208,.7); transition: filter .14s ease; }
+.param-lock-btn:hover { filter: brightness(1.07); }
+.param-lock-sub { display: block; margin-top: 10px; font: 400 10px/1.4 var(--font-mono, "IBM Plex Mono", monospace);
+  letter-spacing: .1em; text-transform: uppercase; color: var(--muted, #9a9280); }

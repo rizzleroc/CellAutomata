@@ -788,6 +788,41 @@ function disposeTree(obj) {
   });
 }
 
+// ── Pro · Parameters rail + instrument export are CatSilPro-gated ────────────
+// Watching the live specimen (and the guide's narration) is free; tuning and
+// exporting are Pro. One shared token (catsil.pro.token) covers every
+// Catalytic Silence lab on this origin. If pro.js failed to load entirely we
+// degrade OPEN (a broken gate should never brick the free experience).
+const PRO_TITLE = 'Unlock the Instrument';
+const PRO_REASON = 'The Parameters rail (tune · step · reset), observable CSV export and shareable run links, plus the <strong>4000×4000</strong> SEM plate. One token covers every Catalytic Silence lab on this device.';
+function ensureParamLock() {
+  const panel = $('paramPanel');
+  if (!panel || panel.querySelector('.param-lock')) return;
+  const lock = document.createElement('div');
+  lock.className = 'param-lock';
+  lock.setAttribute('aria-hidden', 'true');
+  lock.innerHTML = `
+    <div class="param-lock-card">
+      <span class="param-lock-ico" aria-hidden="true">◆</span>
+      <p class="param-lock-cap">Unlock to tweak parameters and control this simulation.</p>
+      <button class="param-lock-btn" id="paramUnlock" type="button">Unlock the Instrument</button>
+      <span class="param-lock-sub">watching the live specimen is free</span>
+    </div>`;
+  panel.appendChild(lock);
+  lock.querySelector('#paramUnlock').addEventListener('click', () => {
+    if (window.CatSilPro) CatSilPro.showPaywall({ title: PRO_TITLE, reason: PRO_REASON });
+  });
+}
+function reflectParamLock(unlocked) {
+  document.body.classList.toggle('lab-pro', !!unlocked);
+  const panel = $('paramPanel');
+  if (panel) panel.classList.toggle('pw-locked', !unlocked);
+}
+function proGate(fn) {
+  if (!window.CatSilPro || CatSilPro.isUnlocked()) { fn(); return; }
+  CatSilPro.showPaywall({ title: PRO_TITLE, reason: PRO_REASON, onUnlock: fn });
+}
+
 // ── Instrument layer: live observable readout + CSV export + run link ────────
 function currentRunHash() {
   const p = new URLSearchParams();
@@ -806,7 +841,7 @@ function applyRunHash() {
 function setupInstrument() {
   Observables.init($('obsSpark'), $('obsRead'));
   const csv = $('obsCsvBtn'), link = $('obsLinkBtn');
-  if (csv) csv.onclick = () => {
+  if (csv) csv.onclick = () => proGate(() => {
     const blob = new Blob([Observables.toCSV()], { type: 'text/csv' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
@@ -814,12 +849,15 @@ function setupInstrument() {
     document.body.appendChild(a); a.click(); a.remove();
     setTimeout(() => URL.revokeObjectURL(url), 1000);
     announce(`Exported ${Observables.count()} measured samples as CSV.`);
-  };
-  if (link) link.onclick = async () => {
+  });
+  if (link) link.onclick = () => proGate(async () => {
     const url = location.origin + location.pathname + currentRunHash();
     try { await navigator.clipboard.writeText(url); announce('Shareable run link copied to the clipboard.'); }
     catch (e) { location.hash = currentRunHash(); announce('Run link set in the address bar.'); }
-  };
+  });
+  ensureParamLock();
+  reflectParamLock(!window.CatSilPro || CatSilPro.isUnlocked());
+  if (window.CatSilPro) CatSilPro.onChange(reflectParamLock);
 }
 
 // ── web8 guide bridge ─────────────────────────────────────────────────────────
