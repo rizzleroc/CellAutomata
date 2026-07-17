@@ -21,6 +21,7 @@
 <link rel="preload" href="../web8/assets/fonts/CrimsonPro-Regular.ttf" as="font" type="font/ttf" crossorigin>
 <link rel="preload" href="../web8/assets/fonts/IBMPlexMono-Regular.ttf" as="font" type="font/ttf" crossorigin>
 <link rel="stylesheet" href="./styles.css">
+<link rel="stylesheet" href="./guide.css">
 </head>
 <body>
 <!-- A catalogue page from a discipline that does not yet exist. -->
@@ -212,6 +213,8 @@
      runs before the module so window.CatSilPro is ready when main.js wires the pill. -->
 <script src="./pro.js"></script>
 <script type="module" src="./main.js"></script>
+<!-- web8 guide layer: the living amoeba guide. Mounts itself over .specimen. -->
+<script type="module" src="./guide.js"></script>
 
 <!-- Offline failsafe: a CLASSIC script that runs even when the ES module never
      boots (CDN blocked, import-map unsupported, WebGL/runtime error). If the lab
