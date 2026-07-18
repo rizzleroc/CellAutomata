@@ -21,6 +21,20 @@ const ok = (c, m) => { if (!c) { console.error('  ✗ ' + m); fails++; } else co
 const html = readFileSync(join(DIR, 'index.html'), 'utf8');
 const engines = readFileSync(join(DIR, 'engines.js'), 'utf8');
 
+// ── 0. the document actually parses to a page ───────────────────────────────
+// A text-grep gate is blind to structural HTML breakage: an unclosed <style>
+// swallows the entire body (and every <script>) as CSS text, so the page renders
+// blank while every includes()/regex check below still passes. Balance the tags
+// and confirm the shell markup sits AFTER the style block closes, not inside it.
+console.log('document shell:');
+ok((html.match(/<style>/g) || []).length === (html.match(/<\/style>/g) || []).length,
+   '<style> tags are balanced (page body is not swallowed as CSS)');
+const styleClose = html.indexOf('</style>');
+ok(styleClose !== -1 && html.indexOf('<div class="wrap"') > styleClose,
+   '.wrap shell markup comes after </style> (real body content, not CSS text)');
+ok(html.indexOf('<script src="engines.js">') > styleClose,
+   'the engine scripts live in the body, after the style block closes');
+
 // ── 1. the thirteen engines (now in engines.js) ─────────────────────────────
 console.log('engines:');
 const m = engines.match(/const TOOLS\s*=\s*\[([\s\S]*?)\];/);
