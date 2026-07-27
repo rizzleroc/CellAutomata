@@ -8,8 +8,8 @@ PROJ="${PROJ:-$HOME/Protocell/Protocell.uproject}"
 HERE="$(cd "$(dirname "$0")" && pwd)"
 COMMON="-unattended -nosplash -nop4 -stdout -FullStdOutLogOutput"
 
-export UE_HEIGHT_PNG="${UE_HEIGHT_PNG:-/tmp/protocell_height.png}"      # from export_height.mjs (copy to the UE box)
-export UE_OUT_DIR="${UE_OUT_DIR:-{project_dir}/Saved/MovieRenders/protocell}"
+export UE_HEIGHT_PNG="${UE_HEIGHT_PNG:-$HERE/assets/protocell_hero_height.png}"  # committed hero map; override to re-export
+export UE_OUT_DIR="${UE_OUT_DIR:-$(dirname "$PROJ")/Saved/MovieRenders/protocell}"
 
 echo "[1/4] import sim heightmap"; "$UE" "$PROJ" -ExecutePythonScript="$HERE/import_heightfield.py" $COMMON
 echo "[2/4] build scene + material";"$UE" "$PROJ" -ExecutePythonScript="$HERE/build_scene.py"        $COMMON
