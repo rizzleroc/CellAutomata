@@ -99,9 +99,10 @@ const seedMat = new THREE.ShaderMaterial({ vertexShader:VERT, fragmentShader:`
 const stepMat = new THREE.ShaderMaterial({
   uniforms:{ tState:{value:null}, texel:{value:new THREE.Vector2(1/SIMW,1/SIMH)},
              F:{value:0.0367}, k:{value:0.0649}, Du:{value:0.2097}, Dv:{value:0.105},
-             uPointer:{value:new THREE.Vector2(-1,-1)}, uInject:{value:0.0}, uBrushR:{value:0.055}, uAspect:{value:AR} },
+             uPointer:{value:new THREE.Vector2(-1,-1)}, uInject:{value:0.0}, uBrushR:{value:0.055}, uAspect:{value:AR},
+             uVel:{value:new THREE.Vector2(0,0)} },
   vertexShader:VERT, fragmentShader:`
-    uniform sampler2D tState; uniform vec2 texel; uniform float F,k,Du,Dv,uInject,uBrushR,uAspect; uniform vec2 uPointer; varying vec2 vUv;
+    uniform sampler2D tState; uniform vec2 texel; uniform float F,k,Du,Dv,uInject,uBrushR,uAspect; uniform vec2 uPointer,uVel; varying vec2 vUv;
     void main(){
       vec4 c=texture2D(tState,vUv); float u=c.r,v=c.g;
       #define S(dx,dy) texture2D(tState, vUv+vec2(dx,dy)*texel)
@@ -109,8 +110,11 @@ const stepMat = new THREE.ShaderMaterial({
       float lu=(dl.r+dr.r+tl.r+tr.r)*0.05+(l.r+r.r+d.r+t.r)*0.2-u;
       float lv=(dl.g+dr.g+tl.g+tr.g)*0.05+(l.g+r.g+d.g+t.g)*0.2-v; float uvv=u*v*v;
       u=clamp(u+(Du*lu-uvv+F*(1.0-u)),0.,1.); v=clamp(v+(Dv*lv+uvv-(F+k)*v),0.,1.);
-      // the pointer FEEDS the reaction — the colony grows where you touch it
-      vec2 pd=(vUv-uPointer); pd.x*=uAspect; float b=smoothstep(uBrushR,0.0,length(pd))*uInject;
+      vec2 pd=(vUv-uPointer); pd.x*=uAspect; float near=smoothstep(uBrushR*2.2,0.0,length(pd));
+      // CURRENT: dragging stirs the living matter (semi-Lagrangian advection toward where your hand came from)
+      if(near>0.002){ vec4 up=texture2D(tState, vUv - uVel*near); u=mix(u,up.r,near*0.45); v=mix(v,up.g,near*0.45); }
+      // FEED: the colony grows where you touch it
+      float b=smoothstep(uBrushR,0.0,length(pd))*uInject;
       v=clamp(v+b*0.42,0.,1.); u=clamp(u-b*0.22,0.,1.);
       gl_FragColor=vec4(u,v,0.0,1.0);
     }` });
@@ -125,28 +129,32 @@ const dispScene = new THREE.Scene(), dispCam = new THREE.OrthographicCamera(-1,1
 const dispMat = new THREE.ShaderMaterial({
   uniforms:{ tState:{value:rtA.texture}, texel:{value:new THREE.Vector2(1/SIMW,1/SIMH)},
              uTime:{value:0}, uBreath:{value:1}, uHalo:{value:new THREE.Vector2(-1,-1)}, uHaloI:{value:0},
-             uAspect:{value:AR}, uWarm:{value:new THREE.Color(1.0,0.66,0.24)}, uCool:{value:new THREE.Color(0.24,0.86,1.0)}, uStress:{value:0} },
+             uAspect:{value:AR}, uWarm:{value:new THREE.Color(1.0,0.66,0.24)}, uCool:{value:new THREE.Color(0.24,0.86,1.0)}, uStress:{value:0},
+             uZoom:{value:1}, uCenter:{value:new THREE.Vector2(0.5,0.5)}, uShock:{value:new THREE.Vector3(-1,-1,-1)} },
   vertexShader:`varying vec2 vUv; void main(){ vUv=uv; gl_Position=vec4(position.xy,0.0,1.0); }`,
   fragmentShader:`
-    uniform sampler2D tState; uniform vec2 texel; uniform float uTime,uBreath,uHaloI,uAspect,uStress; uniform vec2 uHalo; uniform vec3 uWarm,uCool; varying vec2 vUv;
+    uniform sampler2D tState; uniform vec2 texel; uniform float uTime,uBreath,uHaloI,uAspect,uStress,uZoom; uniform vec2 uHalo,uCenter; uniform vec3 uWarm,uCool,uShock; varying vec2 vUv;
     void main(){
-      float v = texture2D(tState,vUv).g;
-      float vl=texture2D(tState,vUv-vec2(texel.x,0.)).g, vr=texture2D(tState,vUv+vec2(texel.x,0.)).g;
-      float vd=texture2D(tState,vUv-vec2(0.,texel.y)).g, vu=texture2D(tState,vUv+vec2(0.,texel.y)).g;
+      vec2 s = uCenter + (vUv-0.5)/uZoom;                            // DIVE: sample the field through the zoom lens
+      float v = texture2D(tState,s).g;
+      float vl=texture2D(tState,s-vec2(texel.x,0.)).g, vr=texture2D(tState,s+vec2(texel.x,0.)).g;
+      float vd=texture2D(tState,s-vec2(0.,texel.y)).g, vu=texture2D(tState,s+vec2(0.,texel.y)).g;
       float h = clamp(v*2.6,0.0,1.0);
       vec2 g = vec2(vr-vl, vu-vd)*2.6;
       vec3 N = normalize(vec3(-g.x*7.0, -g.y*7.0, 1.0));
       float lam = clamp(N.x*0.35+N.y*0.28+N.z*0.9, 0.0, 1.0);
       float spec = pow(clamp(N.x*0.26+N.y*0.2+N.z*0.95,0.0,1.0), 22.0)*0.5;
-      float e = pow(clamp((h-0.10)/0.62,0.0,1.0), 0.9);             // emissive cell body (raised floor -> dark gaps)
+      float e = pow(clamp((h-0.10)/0.62,0.0,1.0), 0.9);
       float core = smoothstep(0.6,0.98,h);
-      vec3 pal = mix(uWarm, uCool, clamp(uStress*0.9,0.0,1.0));      // warms at rest, cools under stress
+      vec3 pal = mix(uWarm, uCool, clamp(uStress*0.9,0.0,1.0));
       vec3 bg = vec3(0.006,0.011,0.022);
       vec3 col = bg*(1.0-e) + pal*e*(0.5+0.35*lam)*0.9 + core*vec3(0.55,0.45,0.32) + spec*vec3(0.6,0.75,0.95)*0.7;
-      // attention halo — the organism brightens where it "notices" you
       vec2 hd=(vUv-uHalo); hd.x*=uAspect; float halo=smoothstep(0.15,0.0,length(hd))*uHaloI;
       col += halo*mix(uWarm,uCool,0.3)*0.35;
-      col *= uBreath;                                                // sub-perceptual heartbeat
+      // SHOCKWAVE: a click sends a bright ring expanding across the specimen
+      if(uShock.z>=0.0){ vec2 sd=(vUv-uShock.xy); sd.x*=uAspect; float rr=length(sd);
+        float ring=exp(-pow((rr-uShock.z*0.85)/0.022,2.0))*(1.0-uShock.z); col += ring*mix(uWarm,uCool,0.5)*1.4; }
+      col *= uBreath;
       gl_FragColor=vec4(col,1.0);
     }` });
 const dq = new THREE.Mesh(new THREE.PlaneGeometry(2,2), dispMat); dispScene.add(dq);
@@ -172,36 +180,48 @@ function resize(){ const w=innerWidth,h=innerHeight; renderer.setSize(w,h); comp
 addEventListener('resize', resize); resize();
 
 // ══════════════════ interaction — the core of "it reacts to me" ══════════════════
-const pointer = new THREE.Vector2(0.5,0.5);       // eased pointer the sim feeds from
+const pointer = new THREE.Vector2(0.5,0.5);       // eased pointer the sim feeds from (screen uv)
 const target  = new THREE.Vector2(0.5,0.5);       // raw input target
 const halo    = new THREE.Vector2(0.5,0.5);       // laggier "attention" that follows with more inertia
-let inject=0, activity=0, pressed=false, lastMove=-1e9, lastT=0;
-let ghostSeed = 41.0;                              // idle auto-wander phase
+const prevP   = new THREE.Vector2(0.5,0.5);       // for velocity (the "current")
+const center  = new THREE.Vector2(0.5,0.5);       // dive lens centre — leans toward where you explore
+const fpt     = new THREE.Vector2(0.5,0.5);       // pointer mapped into field space (through the lens)
+let inject=0, activity=0, pressed=false, lastMove=-1e9;
+let zoom=2.6, zoomTarget=1.0;                      // the piece DIVES in from far at the open
+let ghostSeed=41.0, shockX=0, shockY=0, shockAge=-1;
 const moodEl=document.getElementById('mood'), vitEl=document.getElementById('vit'), simEl=document.getElementById('simres');
 const titleEl=document.getElementById('title'), hintEl=document.getElementById('hint');
 simEl.textContent = SIMW+'×'+SIMH;
 
 function setTarget(cx,cy){ target.set(cx/innerWidth, 1.0 - cy/innerHeight); }
 addEventListener('pointermove', e=>{ const dx=e.clientX/innerWidth-target.x, dy=(1-e.clientY/innerHeight)-target.y;
-  setTarget(e.clientX,e.clientY); const sp=Math.hypot(dx,dy); inject=Math.min(1, inject+0.35+sp*4.0); activity=Math.min(1.4, activity+0.25+sp*6.0);
+  setTarget(e.clientX,e.clientY); const sp=Math.hypot(dx,dy); inject=Math.min(1, inject+0.35+sp*4.0); activity=Math.min(1.4, activity+0.22+sp*6.0);
   lastMove=performance.now(); fadeIntro(); }, {passive:true});
-addEventListener('pointerdown', e=>{ pressed=true; setTarget(e.clientX,e.clientY); inject=1.0; activity=1.4; lastMove=performance.now(); fadeIntro(); ensureAudio(); }, {passive:true});
+addEventListener('pointerdown', e=>{ pressed=true; setTarget(e.clientX,e.clientY); inject=1.0; activity=1.5; lastMove=performance.now();
+  shockX=e.clientX/innerWidth; shockY=1-e.clientY/innerHeight; shockAge=0; fadeIntro(); ensureAudio(); blip(shockX); }, {passive:true});
 addEventListener('pointerup', ()=>{ pressed=false; }, {passive:true});
 addEventListener('pointercancel', ()=>{ pressed=false; }, {passive:true});
+addEventListener('wheel', e=>{ zoomTarget=Math.max(0.75, Math.min(4.0, zoomTarget*(e.deltaY<0?1.12:0.9))); e.preventDefault(); }, {passive:false});
 function fadeIntro(){ if(titleEl.style.opacity!=='0'){ titleEl.style.opacity='0'; hintEl.style.opacity='0'; } }
 
-document.getElementById('reset').onclick=()=>{ simQuad.material=seedMat; renderer.setRenderTarget(rtA); renderer.render(simScene,simCam); simQuad.material=stepMat; for(let i=0;i<600;i++) stepSim(1); activity=1.2; };
+document.getElementById('reset').onclick=()=>{ simQuad.material=seedMat; renderer.setRenderTarget(rtA); renderer.render(simScene,simCam); simQuad.material=stepMat; for(let i=0;i<600;i++) stepSim(1); activity=1.2; zoomTarget=1.0; };
 
-// ── generative voice: a drone whose filter + level follow the organism's activity (sound follows motion) ──
-let actx=null, master=null, flt=null, oscs=[], soundOn=false, micOn=false, analyser=null, micData=null;
+// ── generative voice: a drone + a lead you "play" by moving + a ping on touch (sound follows motion) ──
+let actx=null, master=null, flt=null, oscs=[], lead=null, leadG=null, soundOn=false, micOn=false, analyser=null, micData=null;
+const SCALE=[0,3,5,7,10,12,15,19];
 function ensureAudio(){ if(actx||!soundOn) return; buildAudio(); }
-function buildAudio(){ actx=new (window.AudioContext||window.webkitAudioContext)(); master=actx.createGain(); master.gain.value=0.0;
+function buildAudio(){ if(actx) return; actx=new (window.AudioContext||window.webkitAudioContext)(); master=actx.createGain(); master.gain.value=0.0;
   flt=actx.createBiquadFilter(); flt.type='lowpass'; flt.frequency.value=500; flt.Q.value=6; flt.connect(master); master.connect(actx.destination);
-  [55,82.5,110,166].forEach((f,i)=>{ const o=actx.createOscillator(); o.type=i<2?'sine':'triangle'; o.frequency.value=f; const g=actx.createGain(); g.gain.value=i<2?0.5:0.18; o.connect(g); g.connect(flt); o.start(); oscs.push(o); }); }
+  [55,82.5,110,166].forEach((f,i)=>{ const o=actx.createOscillator(); o.type=i<2?'sine':'triangle'; o.frequency.value=f; const g=actx.createGain(); g.gain.value=i<2?0.5:0.18; o.connect(g); g.connect(flt); o.start(); oscs.push(o); });
+  lead=actx.createOscillator(); lead.type='sine'; leadG=actx.createGain(); leadG.gain.value=0; lead.connect(leadG); leadG.connect(master); lead.start(); }
+function blip(x){ if(!actx||!soundOn) return; const n=SCALE[Math.floor(x*SCALE.length)%SCALE.length]; const f=196*Math.pow(2,n/12);
+  const o=actx.createOscillator(); o.type='sine'; o.frequency.value=f; const g=actx.createGain(); const now=actx.currentTime;
+  g.gain.setValueAtTime(0,now); g.gain.linearRampToValueAtTime(0.11,now+0.008); g.gain.exponentialRampToValueAtTime(0.001,now+0.55);
+  o.connect(g); g.connect(master); o.start(now); o.stop(now+0.6); }
 document.getElementById('sound').onclick=function(){ soundOn=!soundOn; this.classList.toggle('on',soundOn); if(soundOn){ buildAudio(); if(actx.state==='suspended') actx.resume(); } else if(master){ master.gain.setTargetAtTime(0,actx.currentTime,0.2); } };
 document.getElementById('mic').onclick=async function(){ if(micOn){ micOn=false; this.classList.remove('on'); return; }
   try{ const s=await navigator.mediaDevices.getUserMedia({audio:true}); if(!actx) buildAudio(); const src=actx.createMediaStreamSource(s);
-    analyser=actx.createAnalyser(); analyser.fftSize=256; micData=new Uint8Array(analyser.frequencyBinCount); src.connect(analyser); micOn=true; this.classList.add('on'); soundOn=true; document.getElementById('sound').classList.add('on'); }
+    analyser=actx.createAnalyser(); analyser.fftSize=256; micData=new Uint8Array(analyser.frequencyBinCount); src.connect(analyser); micOn=true; this.classList.add('on'); soundOn=true; document.getElementById('sound').classList.add('on'); if(actx.state==='suspended') actx.resume(); }
   catch(err){ this.textContent='mic ✕'; } };
 
 // ══════════════════ loop ══════════════════
@@ -209,41 +229,54 @@ const clock=new THREE.Clock(); let t=0;
 function animate(){ requestAnimationFrame(animate);
   const dt=Math.min(clock.getDelta(),0.05); t+=dt; const now=performance.now();
 
-  // idle auto-wander: when ignored, the specimen explores on its own (apparent agency)
+  // idle auto-wander: when ignored, the specimen explores and slowly breathes its zoom (apparent agency)
   const idle = (now-lastMove) > 3500;
-  if(idle){ ghostSeed+=dt*0.13; const wx=0.5+0.32*Math.sin(ghostSeed*1.0)+0.12*Math.sin(ghostSeed*2.3);
-    const wy=0.5+0.30*Math.cos(ghostSeed*0.8)+0.12*Math.cos(ghostSeed*1.9);
-    target.set(wx,wy); inject=Math.min(inject+0.010, 0.12); activity=Math.min(0.5, activity+0.004);
-    if(titleEl.style.opacity==='0'){ /* stay faded */ } }
+  if(idle){ ghostSeed+=dt*0.13; target.set(0.5+0.32*Math.sin(ghostSeed)+0.12*Math.sin(ghostSeed*2.3), 0.5+0.30*Math.cos(ghostSeed*0.8)+0.12*Math.cos(ghostSeed*1.9));
+    inject=Math.min(inject+0.010,0.12); activity=Math.min(0.5,activity+0.004); }
 
-  // mic → agitation (it responds to the room / your voice)
   if(micOn&&analyser){ analyser.getByteFrequencyData(micData); let s=0; for(let i=0;i<micData.length;i++) s+=micData[i]; const lvl=s/micData.length/255;
-    activity=Math.min(1.5, activity+lvl*0.15); inject=Math.min(1, inject+lvl*0.25); }
+    activity=Math.min(1.5,activity+lvl*0.15); inject=Math.min(1,inject+lvl*0.25); }
 
-  // easing / inertia — pointer leads, halo lags (the "noticing" turn)
-  pointer.lerp(target, 0.18); halo.lerp(target, 0.07);
-  if(!pressed && !idle) inject *= 0.90;             // homeostasis: injection relaxes when you stop
-  activity *= 0.965;                                 // stress decays back toward rest
+  pointer.lerp(target,0.18); halo.lerp(target,0.07);
+  if(!pressed && !idle) inject*=0.90;                // homeostasis
+  activity*=0.965;
 
-  // never-repeating heartbeat: rate itself slowly noise-modulated; layers desync
+  // dive lens: ease zoom to target (opens by diving in) + a slow breath; lean centre toward the pointer
+  zoom += (zoomTarget-zoom)*0.03;
   const hb = 0.62 + 0.22*Math.sin(t*1.1) + 0.16*Math.sin(t*0.37+1.3);
   const breath = 0.94 + 0.06*Math.sin(t*hb) + activity*0.05;
+  const dispZoom = zoom*(1.0+0.01*Math.sin(t*hb*0.6));
+  center.lerp({x:0.5+(pointer.x-0.5)*0.12, y:0.5+(pointer.y-0.5)*0.12}, 0.03);
 
-  stepMat.uniforms.uPointer.value.copy(pointer); stepMat.uniforms.uInject.value=inject*(pressed?1.0:0.7);
+  // the "current": velocity of the pointer stirs the field where you drag
+  stepMat.uniforms.uVel.value.set((pointer.x-prevP.x)/zoom, (pointer.y-prevP.y)/zoom); prevP.copy(pointer);
+  // map the on-screen pointer through the lens into field space so touch lands where you see it
+  fpt.set(center.x+(pointer.x-0.5)/zoom, center.y+(pointer.y-0.5)/zoom);
+  stepMat.uniforms.uPointer.value.copy(fpt); stepMat.uniforms.uInject.value=inject*(pressed?1.0:0.7);
+  stepMat.uniforms.uBrushR.value=0.055/zoom;
+  // REGIME SHIFT: agitation morphs the very structure — dividing spots flow into restless worms, then settle
+  const exc=Math.min(1,activity*0.8);
+  stepMat.uniforms.F.value=0.0367+(0.030-0.0367)*exc; stepMat.uniforms.k.value=0.0649+(0.0625-0.0649)*exc;
   stepSim(pressed?16:12);
+
   dispMat.uniforms.tState.value=rtA.texture;
   dispMat.uniforms.uTime.value=t; dispMat.uniforms.uBreath.value=breath;
   dispMat.uniforms.uHalo.value.copy(halo); dispMat.uniforms.uHaloI.value=Math.min(1, inject*0.5+activity*0.3);
-  dispMat.uniforms.uStress.value = Math.min(1, activity*0.8);
+  dispMat.uniforms.uStress.value=Math.min(1,activity*0.8);
+  dispMat.uniforms.uZoom.value=dispZoom; dispMat.uniforms.uCenter.value.copy(center);
+  if(shockAge>=0){ shockAge+=dt*1.5; if(shockAge>1) shockAge=-1; }
+  dispMat.uniforms.uShock.value.set(shockX,shockY,shockAge);
 
-  // audiovisual coupling: bloom pulses + chromatic aberration flinches with activity
-  bloom.strength = 0.24 + activity*0.5 + (breath-0.94)*1.0;
-  grade.uniforms.ca.value = 0.0016 + activity*0.014; grade.uniforms.time.value=t;
-  if(soundOn&&actx&&master){ const target_g=Math.min(0.13, 0.02+activity*0.11); master.gain.setTargetAtTime(target_g, actx.currentTime, 0.12);
-    flt.frequency.setTargetAtTime(420+activity*2200, actx.currentTime, 0.15); oscs.forEach((o,i)=>o.detune.setTargetAtTime(Math.sin(t*0.5+i)*8*activity, actx.currentTime,0.2)); }
+  bloom.strength = 0.24 + activity*0.5 + (breath-0.94)*1.0 + (shockAge>=0?(1-shockAge)*0.4:0);
+  grade.uniforms.ca.value = 0.0016 + activity*0.016; grade.uniforms.time.value=t;
+  if(soundOn&&actx&&master){ master.gain.setTargetAtTime(Math.min(0.13,0.02+activity*0.11), actx.currentTime, 0.12);
+    flt.frequency.setTargetAtTime(420+activity*2200, actx.currentTime, 0.15);
+    oscs.forEach((o,i)=>o.detune.setTargetAtTime(Math.sin(t*0.5+i)*8*activity, actx.currentTime,0.2));
+    if(lead){ const n=SCALE[Math.floor(pointer.y*SCALE.length)%SCALE.length]; lead.frequency.setTargetAtTime(196*Math.pow(2,n/12), actx.currentTime,0.08);
+      leadG.gain.setTargetAtTime((pressed||!idle)?Math.min(0.06,activity*0.05):0.0, actx.currentTime,0.1); } }
 
   composer.render();
-  if((now%180|0)<20){ moodEl.textContent = activity>0.8?'agitated':activity>0.35?'stirring':idle?'wandering':'resting'; vitEl.textContent=(Math.min(1,activity)*100|0)+'%'; }
+  if((now%180|0)<20){ moodEl.textContent = activity>0.85?'agitated':activity>0.35?'stirring':idle?'wandering':'resting'; vitEl.textContent=(Math.min(1,activity)*100|0)+'%'; }
   if(t>0.3){ const l=document.getElementById('loading'); if(l&&l.style.opacity!=='0'){ l.style.opacity='0'; setTimeout(()=>l.remove(),800);} }
 }
 animate();
