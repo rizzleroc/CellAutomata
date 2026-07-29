@@ -113,9 +113,9 @@ const stepMat = new THREE.ShaderMaterial({
       vec2 pd=(vUv-uPointer); pd.x*=uAspect; float near=smoothstep(uBrushR*2.2,0.0,length(pd));
       // CURRENT: dragging stirs the living matter (semi-Lagrangian advection toward where your hand came from)
       if(near>0.002){ vec4 up=texture2D(tState, vUv - uVel*near); u=mix(u,up.r,near*0.45); v=mix(v,up.g,near*0.45); }
-      // FEED: the colony grows where you touch it
+      // FEED: the colony grows where you touch it (self-limiting so heavy touch enriches, never floods to white)
       float b=smoothstep(uBrushR,0.0,length(pd))*uInject;
-      v=clamp(v+b*0.42,0.,1.); u=clamp(u-b*0.22,0.,1.);
+      v=clamp(v+b*0.30*(1.0-v*0.7),0.,1.); u=clamp(u-b*0.16,0.,1.);
       gl_FragColor=vec4(u,v,0.0,1.0);
     }` });
 
@@ -195,9 +195,9 @@ simEl.textContent = SIMW+'×'+SIMH;
 
 function setTarget(cx,cy){ target.set(cx/innerWidth, 1.0 - cy/innerHeight); }
 addEventListener('pointermove', e=>{ const dx=e.clientX/innerWidth-target.x, dy=(1-e.clientY/innerHeight)-target.y;
-  setTarget(e.clientX,e.clientY); const sp=Math.hypot(dx,dy); inject=Math.min(1, inject+0.35+sp*4.0); activity=Math.min(1.4, activity+0.22+sp*6.0);
+  setTarget(e.clientX,e.clientY); const sp=Math.hypot(dx,dy); inject=Math.min(0.9, inject+0.30+sp*3.2); activity=Math.min(1.0, activity+0.18+sp*4.5);
   lastMove=performance.now(); fadeIntro(); }, {passive:true});
-addEventListener('pointerdown', e=>{ pressed=true; setTarget(e.clientX,e.clientY); inject=1.0; activity=1.5; lastMove=performance.now();
+addEventListener('pointerdown', e=>{ pressed=true; setTarget(e.clientX,e.clientY); inject=0.9; activity=1.05; lastMove=performance.now();
   shockX=e.clientX/innerWidth; shockY=1-e.clientY/innerHeight; shockAge=0; fadeIntro(); ensureAudio(); blip(shockX); }, {passive:true});
 addEventListener('pointerup', ()=>{ pressed=false; }, {passive:true});
 addEventListener('pointercancel', ()=>{ pressed=false; }, {passive:true});
@@ -238,8 +238,8 @@ function animate(){ requestAnimationFrame(animate);
     activity=Math.min(1.5,activity+lvl*0.15); inject=Math.min(1,inject+lvl*0.25); }
 
   pointer.lerp(target,0.18); halo.lerp(target,0.07);
-  if(!pressed && !idle) inject*=0.90;                // homeostasis
-  activity*=0.965;
+  if(!pressed && !idle) inject*=0.88;                // homeostasis
+  activity*=0.955;
 
   // dive lens: ease zoom to target (opens by diving in) + a slow breath; lean centre toward the pointer
   zoom += (zoomTarget-zoom)*0.03;
@@ -267,8 +267,8 @@ function animate(){ requestAnimationFrame(animate);
   if(shockAge>=0){ shockAge+=dt*1.5; if(shockAge>1) shockAge=-1; }
   dispMat.uniforms.uShock.value.set(shockX,shockY,shockAge);
 
-  bloom.strength = 0.24 + activity*0.5 + (breath-0.94)*1.0 + (shockAge>=0?(1-shockAge)*0.4:0);
-  grade.uniforms.ca.value = 0.0016 + activity*0.016; grade.uniforms.time.value=t;
+  bloom.strength = 0.22 + activity*0.30 + (breath-0.94)*0.8 + (shockAge>=0?(1-shockAge)*0.35:0);
+  grade.uniforms.ca.value = 0.0014 + activity*0.006; grade.uniforms.time.value=t;
   if(soundOn&&actx&&master){ master.gain.setTargetAtTime(Math.min(0.13,0.02+activity*0.11), actx.currentTime, 0.12);
     flt.frequency.setTargetAtTime(420+activity*2200, actx.currentTime, 0.15);
     oscs.forEach((o,i)=>o.detune.setTargetAtTime(Math.sin(t*0.5+i)*8*activity, actx.currentTime,0.2));
