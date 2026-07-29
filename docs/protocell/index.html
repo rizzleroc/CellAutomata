@@ -2,54 +2,49 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
 <meta name="color-scheme" content="dark">
 <meta name="theme-color" content="#04060a">
-<meta name="description" content="THIS ISN'T A CELL — a real-time WebGL protocell whose bioluminescent membrane is driven by a live GPU Gray–Scott reaction–diffusion simulation. The Unreal 5.8 hero concept, ported to Three.js so it runs in the browser.">
-<title>THIS ISN'T A CELL — a live protocell</title>
+<meta name="description" content="THIS ISN'T A CELL — a live, interactive protocell. A GPU Gray–Scott reaction–diffusion colony that grows where you touch, notices your cursor, breathes, wanders on its own, and voices its state. Runs in the browser.">
+<title>THIS ISN'T A CELL — a living specimen</title>
 <link rel="icon" href="../icon_v2.png">
 <style>
-  :root{ --teal:#3fe0d0; --mag:#d77bff; --ink:#ece7da; --muted:#8a95a0; }
+  :root{ --gold:#e7b24a; --teal:#3fe0d0; --ink:#ece7da; --muted:#8a95a0; }
   *{box-sizing:border-box;margin:0}
-  html,body{height:100%}
-  body{background:#04060a;color:var(--ink);overflow:hidden;font-family:"IBM Plex Mono",ui-monospace,SFMono-Regular,Menlo,monospace;-webkit-font-smoothing:antialiased}
+  html,body{height:100%;overflow:hidden;background:#04060a}
+  body{color:var(--ink);font-family:"IBM Plex Mono",ui-monospace,SFMono-Regular,Menlo,monospace;-webkit-font-smoothing:antialiased;touch-action:none;cursor:crosshair}
   @font-face{font-family:"Italiana";src:url("../web7/assets/fonts/Italiana-Regular.ttf") format("truetype");font-display:swap}
   @font-face{font-family:"IBM Plex Mono";src:url("../web7/assets/fonts/IBMPlexMono-Regular.ttf") format("truetype");font-display:swap}
   @font-face{font-family:"Crimson Pro";src:url("../web7/assets/fonts/CrimsonPro-Italic.ttf") format("truetype");font-style:italic;font-display:swap}
-  #scene{position:fixed;inset:0;display:block}
+  #scene{position:fixed;inset:0;display:block;width:100%;height:100%}
   .hud{position:fixed;inset:0;pointer-events:none;z-index:5}
-  .frame{position:absolute;inset:22px;border:1px solid rgba(63,224,208,.14);border-radius:4px}
-  .corner{position:absolute;width:26px;height:26px;border:2px solid rgba(63,224,208,.45)}
-  .corner.tl{top:16px;left:16px;border-right:0;border-bottom:0}
-  .corner.tr{top:16px;right:16px;border-left:0;border-bottom:0}
-  .corner.bl{bottom:16px;left:16px;border-right:0;border-top:0}
-  .corner.br{bottom:16px;right:16px;border-left:0;border-top:0}
-  .reticle{position:absolute;top:50%;left:50%;width:44px;height:44px;transform:translate(-50%,-50%);opacity:.4}
-  .reticle::before,.reticle::after{content:"";position:absolute;background:rgba(63,224,208,.55)}
-  .reticle::before{left:50%;top:0;width:1px;height:100%;transform:translateX(-.5px)}
-  .reticle::after{top:50%;left:0;height:1px;width:100%;transform:translateY(-.5px)}
+  .frame{position:absolute;inset:22px;border:1px solid rgba(231,178,74,.14);border-radius:4px}
+  .corner{position:absolute;width:26px;height:26px;border:2px solid rgba(231,178,74,.4)}
+  .corner.tl{top:16px;left:16px;border-right:0;border-bottom:0}.corner.tr{top:16px;right:16px;border-left:0;border-bottom:0}
+  .corner.bl{bottom:16px;left:16px;border-right:0;border-top:0}.corner.br{bottom:16px;right:16px;border-left:0;border-top:0}
   .rec{position:absolute;top:34px;left:40px;display:flex;align-items:center;gap:8px;font-size:12px;letter-spacing:.18em;color:var(--muted)}
   .dot{width:9px;height:9px;border-radius:50%;background:#ff5470;box-shadow:0 0 10px #ff5470;animation:blink 1.4s steps(1) infinite}
   @keyframes blink{50%{opacity:.15}}
   .meta{position:absolute;top:34px;right:44px;text-align:right;font-size:11.5px;letter-spacing:.14em;color:var(--muted);line-height:1.7}
-  .meta b{color:var(--teal);font-weight:400}
+  .meta b{color:var(--gold);font-weight:400}
+  .readout{position:absolute;bottom:44px;right:44px;font-size:11px;letter-spacing:.1em;color:var(--muted);text-align:right;line-height:1.7}
+  .readout b{color:var(--gold);font-weight:400}
   .scalebar{position:absolute;bottom:44px;left:44px;font-size:11px;letter-spacing:.12em;color:var(--muted)}
   .scalebar .bar{display:inline-block;width:120px;height:5px;border:1px solid rgba(236,231,218,.5);border-top:0;margin-right:9px;vertical-align:2px}
-  .readout{position:absolute;bottom:44px;right:44px;font-size:11px;letter-spacing:.1em;color:var(--muted);text-align:right;line-height:1.7}
-  .readout b{color:var(--teal);font-weight:400}
-  .title{position:absolute;left:50%;bottom:15%;transform:translateX(-50%);text-align:center;transition:opacity 1.6s ease}
-  .title h1{font-family:"Italiana",serif;font-size:clamp(34px,6vw,74px);letter-spacing:.06em;color:var(--ink);text-shadow:0 2px 50px rgba(4,6,10,.9)}
-  .title p{font-family:"Crimson Pro",serif;font-style:italic;font-size:clamp(15px,2vw,22px);color:var(--muted);margin-top:6px;text-shadow:0 2px 30px rgba(4,6,10,.9)}
-  .hint{position:absolute;bottom:14px;left:50%;transform:translateX(-50%);font-size:10.5px;letter-spacing:.2em;color:rgba(138,149,160,.55);text-transform:uppercase}
-  .home{position:absolute;bottom:44px;left:50%;transform:translateX(-50%);pointer-events:auto;font-size:10.5px;letter-spacing:.16em;color:var(--muted);text-decoration:none;border:1px solid rgba(236,231,218,.12);padding:5px 12px;border-radius:7px}
-  .home:hover{color:var(--ink);border-color:var(--teal)}
+  .title{position:absolute;left:0;right:0;bottom:16%;text-align:center;transition:opacity 1.4s ease}
+  .title h1{font-family:"Italiana",serif;font-size:clamp(32px,6vw,70px);letter-spacing:.06em;text-shadow:0 2px 50px rgba(4,6,10,.9)}
+  .title p{font-family:"Crimson Pro",serif;font-style:italic;font-size:clamp(14px,2vw,21px);color:var(--muted);margin-top:6px}
+  .hint{position:absolute;left:0;right:0;bottom:9%;text-align:center;font-size:11px;letter-spacing:.22em;color:rgba(231,178,74,.7);text-transform:uppercase;transition:opacity 1s ease}
+  .ui{position:absolute;bottom:40px;left:50%;transform:translateX(-50%);display:flex;gap:10px;pointer-events:auto;z-index:6}
+  .btn{font-family:inherit;font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);background:rgba(10,14,20,.6);border:1px solid rgba(236,231,218,.14);border-radius:999px;padding:8px 14px;cursor:pointer;backdrop-filter:blur(6px)}
+  .btn:hover{color:var(--ink);border-color:var(--gold)}
+  .btn.on{color:#04060a;background:var(--gold);border-color:var(--gold)}
+  .home{position:absolute;top:34px;left:50%;transform:translateX(-50%);pointer-events:auto;font-size:10.5px;letter-spacing:.16em;color:var(--muted);text-decoration:none}
+  .home:hover{color:var(--gold)}
   .loading{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:#04060a;z-index:20;color:var(--muted);font-size:12px;letter-spacing:.2em;transition:opacity .8s}
 </style>
 <script type="importmap">
-{ "imports": {
-  "three": "./vendor/three.module.js",
-  "three/addons/": "./vendor/jsm/"
-}}
+{ "imports": { "three": "./vendor/three.module.js", "three/addons/": "./vendor/jsm/" }}
 </script>
 </head>
 <body>
@@ -58,19 +53,22 @@
 <div class="hud" aria-hidden="true">
   <div class="frame"></div>
   <div class="corner tl"></div><div class="corner tr"></div><div class="corner bl"></div><div class="corner br"></div>
-  <div class="reticle"></div>
   <div class="rec"><span class="dot"></span> REC · LIVE</div>
-  <div class="meta">SPECIMEN <b>PC-001</b><br>GRAY–SCOTT · <b>MITOSIS</b><br>Fk <b>0.0367 / 0.0649</b></div>
+  <div class="meta">SPECIMEN <b>PC-001</b><br>GRAY–SCOTT · <b>LIVE</b><br><span id="mood">resting</span></div>
   <div class="scalebar"><span class="bar"></span>2 µm</div>
-  <div class="readout" id="readout">GPU sim <b>256²</b><br><span id="fps">–</span> fps</div>
-  <div class="title" id="title"><h1>THIS ISN'T A CELL</h1><p>it is a reaction, learning to divide</p></div>
-  <a class="home" href="../">← cellauto</a>
-  <div class="hint">drag to orbit · scroll to zoom</div>
+  <div class="readout">GPU sim <b id="simres">–</b><br>vitality <b id="vit">–</b></div>
+  <div class="title" id="title"><h1>THIS ISN'T A CELL</h1><p>it is a reaction — touch it, and it answers</p></div>
+  <div class="hint" id="hint">move to feed it · click to disturb · it reacts to you</div>
+</div>
+<a class="home" href="../">← cellauto</a>
+<div class="ui">
+  <button class="btn" id="sound">◍ sound</button>
+  <button class="btn" id="mic">🎙 listen</button>
+  <button class="btn" id="reset">↺ reset</button>
 </div>
 
 <script type="module">
 import * as THREE from 'three';
-import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
 import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
@@ -78,181 +76,178 @@ import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 
 const canvas = document.getElementById('scene');
-const renderer = new THREE.WebGLRenderer({ canvas, antialias:true, powerPreference:'high-performance' });
-renderer.setPixelRatio(Math.min(devicePixelRatio, 1.75));
-renderer.toneMapping = THREE.ACESFilmicToneMapping; renderer.toneMappingExposure = 0.82;
+const renderer = new THREE.WebGLRenderer({ canvas, antialias:false, powerPreference:'high-performance' });
+renderer.setPixelRatio(Math.min(devicePixelRatio,1.6));
+renderer.toneMapping = THREE.ACESFilmicToneMapping; renderer.toneMappingExposure = 0.78;
 
-// ══════════════════ GPU reaction–diffusion (Gray–Scott · mitosis) — runs entirely on the GPU ══════════════════
-const SIM = 256, SUBSTEPS = 14;
-const rtOpts = { type:THREE.HalfFloatType, format:THREE.RGBAFormat, wrapS:THREE.RepeatWrapping, wrapT:THREE.RepeatWrapping,
-                 minFilter:THREE.LinearFilter, magFilter:THREE.LinearFilter, depthBuffer:false, stencilBuffer:false };
-let rtA = new THREE.WebGLRenderTarget(SIM, SIM, rtOpts), rtB = new THREE.WebGLRenderTarget(SIM, SIM, rtOpts);
+// ── sim grid sized to the viewport aspect (so cells stay round, no wrap needed) ──
+const AR = innerWidth/innerHeight;
+const SIMH = 340, SIMW = Math.max(240, Math.min(680, Math.round(SIMH*AR)));
+const rtOpts = { type:THREE.HalfFloatType, format:THREE.RGBAFormat, minFilter:THREE.LinearFilter, magFilter:THREE.LinearFilter, depthBuffer:false, stencilBuffer:false };
+let rtA = new THREE.WebGLRenderTarget(SIMW, SIMH, rtOpts), rtB = new THREE.WebGLRenderTarget(SIMW, SIMH, rtOpts);
 const simScene = new THREE.Scene(), simCam = new THREE.OrthographicCamera(-1,1,1,-1,0,1);
 const simQuad = new THREE.Mesh(new THREE.PlaneGeometry(2,2)); simScene.add(simQuad);
-const VERT2D = `varying vec2 vUv; void main(){ vUv=uv; gl_Position=vec4(position.xy,0.0,1.0); }`;
-const seedMat = new THREE.ShaderMaterial({ vertexShader:VERT2D, fragmentShader:`
+const VERT = `varying vec2 vUv; void main(){ vUv=uv; gl_Position=vec4(position.xy,0.0,1.0); }`;
+
+const seedMat = new THREE.ShaderMaterial({ vertexShader:VERT, fragmentShader:`
   varying vec2 vUv;
-  void main(){
-    float v = 0.0;                                   // 200 evenly-scattered nuclei (R2 low-discrepancy)
-    for(int i=0;i<200;i++){ float fi=float(i)+1.0;
-      vec2 c = fract(vec2(fi*0.7548776662, fi*0.5698402909));
-      v += smoothstep(0.02, 0.0, distance(vUv,c))*0.5; }
-    v = clamp(v, 0.0, 0.5);
-    gl_FragColor = vec4(1.0 - v, v, 0.0, 1.0);
-  }` });
+  void main(){ float v=0.0;
+    for(int i=0;i<160;i++){ float fi=float(i)+1.0; vec2 c=fract(vec2(fi*0.7548776662, fi*0.5698402909));
+      v += smoothstep(0.018,0.0,distance(vUv,c))*0.5; }
+    v=clamp(v,0.0,0.5); gl_FragColor=vec4(1.0-v,v,0.0,1.0); }` });
+
 const stepMat = new THREE.ShaderMaterial({
-  uniforms:{ tState:{value:null}, texel:{value:new THREE.Vector2(1/SIM,1/SIM)}, F:{value:0.0367}, k:{value:0.0649}, Du:{value:0.2097}, Dv:{value:0.105} },
-  vertexShader:VERT2D, fragmentShader:`
-    uniform sampler2D tState; uniform vec2 texel; uniform float F,k,Du,Dv; varying vec2 vUv;
+  uniforms:{ tState:{value:null}, texel:{value:new THREE.Vector2(1/SIMW,1/SIMH)},
+             F:{value:0.0367}, k:{value:0.0649}, Du:{value:0.2097}, Dv:{value:0.105},
+             uPointer:{value:new THREE.Vector2(-1,-1)}, uInject:{value:0.0}, uBrushR:{value:0.055}, uAspect:{value:AR} },
+  vertexShader:VERT, fragmentShader:`
+    uniform sampler2D tState; uniform vec2 texel; uniform float F,k,Du,Dv,uInject,uBrushR,uAspect; uniform vec2 uPointer; varying vec2 vUv;
     void main(){
-      vec4 c = texture2D(tState, vUv); float u=c.r, v=c.g;
-      #define S(dx,dy) texture2D(tState, vUv + vec2(dx,dy)*texel)
-      vec4 l=S(-1.,0.), r=S(1.,0.), d=S(0.,-1.), t=S(0.,1.);
-      vec4 dl=S(-1.,-1.), dr=S(1.,-1.), tl=S(-1.,1.), tr=S(1.,1.);
+      vec4 c=texture2D(tState,vUv); float u=c.r,v=c.g;
+      #define S(dx,dy) texture2D(tState, vUv+vec2(dx,dy)*texel)
+      vec4 l=S(-1.,0.),r=S(1.,0.),d=S(0.,-1.),t=S(0.,1.),dl=S(-1.,-1.),dr=S(1.,-1.),tl=S(-1.,1.),tr=S(1.,1.);
       float lu=(dl.r+dr.r+tl.r+tr.r)*0.05+(l.r+r.r+d.r+t.r)*0.2-u;
-      float lv=(dl.g+dr.g+tl.g+tr.g)*0.05+(l.g+r.g+d.g+t.g)*0.2-v;
-      float uvv=u*v*v;
-      gl_FragColor = vec4(clamp(u+(Du*lu-uvv+F*(1.0-u)),0.,1.), clamp(v+(Dv*lv+uvv-(F+k)*v),0.,1.), 0.0, 1.0);
+      float lv=(dl.g+dr.g+tl.g+tr.g)*0.05+(l.g+r.g+d.g+t.g)*0.2-v; float uvv=u*v*v;
+      u=clamp(u+(Du*lu-uvv+F*(1.0-u)),0.,1.); v=clamp(v+(Dv*lv+uvv-(F+k)*v),0.,1.);
+      // the pointer FEEDS the reaction — the colony grows where you touch it
+      vec2 pd=(vUv-uPointer); pd.x*=uAspect; float b=smoothstep(uBrushR,0.0,length(pd))*uInject;
+      v=clamp(v+b*0.42,0.,1.); u=clamp(u-b*0.22,0.,1.);
+      gl_FragColor=vec4(u,v,0.0,1.0);
     }` });
+
 simQuad.material = seedMat; renderer.setRenderTarget(rtA); renderer.render(simScene, simCam);
 simQuad.material = stepMat;
-function stepSim(n){ for(let i=0;i<n;i++){ stepMat.uniforms.tState.value = rtA.texture; renderer.setRenderTarget(rtB); renderer.render(simScene, simCam); const t=rtA; rtA=rtB; rtB=t; } renderer.setRenderTarget(null); }
-for (let i=0;i<2600;i++) stepSim(1);   // culture a full dividing colony before first frame
+function stepSim(n){ for(let i=0;i<n;i++){ stepMat.uniforms.tState.value=rtA.texture; renderer.setRenderTarget(rtB); renderer.render(simScene,simCam); const t=rtA; rtA=rtB; rtB=t; } renderer.setRenderTarget(null); }
+for (let i=0;i<1800;i++) stepSim(1);   // culture a colony before first frame
 
-// ══════════════════ scene + lit translucent membrane ══════════════════
-const scene = new THREE.Scene();
-scene.fog = new THREE.FogExp2(0x04070c, 0.028);
-const camera = new THREE.PerspectiveCamera(40, innerWidth/innerHeight, 0.1, 100);
-camera.position.set(0, 0.5, 6.4);
-const controls = new OrbitControls(camera, canvas);
-controls.enableDamping = true; controls.dampingFactor = 0.05; controls.autoRotate = true; controls.autoRotateSpeed = 0.32;
-controls.minDistance = 3.4; controls.maxDistance = 12; controls.enablePan = false;
-
-const membrane = new THREE.ShaderMaterial({
-  transparent:true, depthWrite:false, side:THREE.FrontSide,
-  uniforms:{
-    tState:{value:rtA.texture}, texel:{value:new THREE.Vector2(1/SIM,1/SIM)}, dispScale:{value:0.058},
-    time:{value:0}, camPos:{value:new THREE.Vector3()}, lightDir:{value:new THREE.Vector3(0.45,0.65,0.6).normalize()},
-    rimColor:{value:new THREE.Color(0.22,0.95,1.0)}, coreColor:{value:new THREE.Color(0.95,0.30,0.70)},
-    wallColor:{value:new THREE.Color(0.55,1.0,0.98)},
-    envTop:{value:new THREE.Color(0.12,0.32,0.46)}, envBot:{value:new THREE.Color(0.02,0.03,0.06)}
-  },
-  vertexShader:`
-    uniform sampler2D tState; uniform vec2 texel; uniform float dispScale;
-    varying vec3 vWN; varying vec3 vWP; varying float vCell; varying float vWall;
-    void main(){
-      float v  = texture2D(tState, uv).g;
-      float vl = texture2D(tState, uv-vec2(texel.x,0.0)).g, vr = texture2D(tState, uv+vec2(texel.x,0.0)).g;
-      float vd = texture2D(tState, uv-vec2(0.0,texel.y)).g, vu = texture2D(tState, uv+vec2(0.0,texel.y)).g;
-      vec2 grad = vec2(vr-vl, vu-vd);
-      grad *= smoothstep(0.0,0.06,uv.y) * smoothstep(1.0,0.94,uv.y);   // kill equirect pole-pinch streaks
-      float cell = smoothstep(0.10, 0.30, v);            // populated cell body (remapped to GS mitosis range)
-      float wall = clamp(length(grad)*8.0, 0.0, 1.0);    // bright dividing membrane between cells
-      vCell = cell; vWall = wall;
-      vec3 n = normalize(normal);
-      vec3 T = normalize(cross(vec3(0.0,1.0,0.0), n) + vec3(1e-5));
-      vec3 B = cross(n, T);
-      vec3 pn = normalize(n - (T*grad.x + B*grad.y) * 4.2);               // bump normal from cell-wall slope (decoupled)
-      vec3 p  = position + n * (cell * dispScale);                          // gentle cell relief — organic silhouette
-      vec4 wp = modelMatrix * vec4(p,1.0); vWP = wp.xyz;
-      vWN = normalize(mat3(modelMatrix) * pn);
-      gl_Position = projectionMatrix * viewMatrix * wp;
-    }`,
+// ── display: membrane-lit living cell + attention halo + breathing ──
+const dispScene = new THREE.Scene(), dispCam = new THREE.OrthographicCamera(-1,1,1,-1,0,1);
+const dispMat = new THREE.ShaderMaterial({
+  uniforms:{ tState:{value:rtA.texture}, texel:{value:new THREE.Vector2(1/SIMW,1/SIMH)},
+             uTime:{value:0}, uBreath:{value:1}, uHalo:{value:new THREE.Vector2(-1,-1)}, uHaloI:{value:0},
+             uAspect:{value:AR}, uWarm:{value:new THREE.Color(1.0,0.66,0.24)}, uCool:{value:new THREE.Color(0.24,0.86,1.0)}, uStress:{value:0} },
+  vertexShader:`varying vec2 vUv; void main(){ vUv=uv; gl_Position=vec4(position.xy,0.0,1.0); }`,
   fragmentShader:`
-    uniform vec3 camPos, lightDir, rimColor, coreColor, wallColor, envTop, envBot; uniform float time;
-    varying vec3 vWN; varying vec3 vWP; varying float vCell; varying float vWall;
+    uniform sampler2D tState; uniform vec2 texel; uniform float uTime,uBreath,uHaloI,uAspect,uStress; uniform vec2 uHalo; uniform vec3 uWarm,uCool; varying vec2 vUv;
     void main(){
-      vec3 N = normalize(vWN), Vd = normalize(camPos - vWP), L = normalize(lightDir), H = normalize(L+Vd);
-      float diff = max(0.0, dot(N,L));
-      float spec = pow(max(0.0, dot(N,H)), 90.0);
-      float fres = pow(1.0 - max(0.0, dot(N,Vd)), 3.0);
-      vec3  R    = reflect(-Vd, N);
-      vec3  env  = mix(envBot, envTop, clamp(R.y*0.5+0.5, 0.0, 1.0));
-      vec3  film = 0.5 + 0.5*cos(6.2831*(fres*vec3(1.0,0.9,0.7) + vec3(0.0,0.15,0.3))); // thin-film iridescence
-      vec3 col = vec3(0.008,0.028,0.050)                                   // deep wet membrane base
-               + diff * vec3(0.06,0.31,0.42) * 0.72                        // KEY LIGHT on cell relief — carries 3D form (deep teal)
-               + env  * fres * 0.42                                        // wet environment reflection
-               + film * fres * 0.12                                        // iridescent soap-film edge
-               + rimColor  * fres  * 0.55                                  // teal fresnel rim
-               + coreColor * vCell * 0.52                                  // luminescent cell bodies (magenta cores)
-               + wallColor * vWall * 0.50                                  // bright cell-division walls (the accent)
-               + spec * vec3(0.55,0.85,1.0) * 0.32;                        // tight wet specular (tinted, restrained)
-      float a = clamp(0.62 + fres*0.34 + vWall*0.16, 0.0, 0.97);
-      gl_FragColor = vec4(col, a);
-    }`
-});
-const hero = new THREE.Mesh(new THREE.SphereGeometry(1.9, 256, 160), membrane);
-scene.add(hero);
+      float v = texture2D(tState,vUv).g;
+      float vl=texture2D(tState,vUv-vec2(texel.x,0.)).g, vr=texture2D(tState,vUv+vec2(texel.x,0.)).g;
+      float vd=texture2D(tState,vUv-vec2(0.,texel.y)).g, vu=texture2D(tState,vUv+vec2(0.,texel.y)).g;
+      float h = clamp(v*2.6,0.0,1.0);
+      vec2 g = vec2(vr-vl, vu-vd)*2.6;
+      vec3 N = normalize(vec3(-g.x*7.0, -g.y*7.0, 1.0));
+      float lam = clamp(N.x*0.35+N.y*0.28+N.z*0.9, 0.0, 1.0);
+      float spec = pow(clamp(N.x*0.26+N.y*0.2+N.z*0.95,0.0,1.0), 22.0)*0.5;
+      float e = pow(clamp((h-0.10)/0.62,0.0,1.0), 0.9);             // emissive cell body (raised floor -> dark gaps)
+      float core = smoothstep(0.6,0.98,h);
+      vec3 pal = mix(uWarm, uCool, clamp(uStress*0.9,0.0,1.0));      // warms at rest, cools under stress
+      vec3 bg = vec3(0.006,0.011,0.022);
+      vec3 col = bg*(1.0-e) + pal*e*(0.5+0.35*lam)*0.9 + core*vec3(0.55,0.45,0.32) + spec*vec3(0.6,0.75,0.95)*0.7;
+      // attention halo — the organism brightens where it "notices" you
+      vec2 hd=(vUv-uHalo); hd.x*=uAspect; float halo=smoothstep(0.15,0.0,length(hd))*uHaloI;
+      col += halo*mix(uWarm,uCool,0.3)*0.35;
+      col *= uBreath;                                                // sub-perceptual heartbeat
+      gl_FragColor=vec4(col,1.0);
+    }` });
+const dq = new THREE.Mesh(new THREE.PlaneGeometry(2,2), dispMat); dispScene.add(dq);
 
-// inner luminous cytoplasm — visible THROUGH the translucent membrane, gives the protocell real depth
-const core = new THREE.Mesh(new THREE.SphereGeometry(1.62, 96, 64), new THREE.ShaderMaterial({
-  transparent:true, depthWrite:false, blending:THREE.AdditiveBlending, side:THREE.BackSide,
-  uniforms:{ camPos:{value:membrane.uniforms.camPos.value}, time:{value:0},
-             glowA:{value:new THREE.Color(0.90,0.28,0.66)}, glowB:{value:new THREE.Color(0.16,0.72,0.92)} },
-  vertexShader:`varying vec3 vWP; varying vec3 vWN;
-    void main(){ vec4 wp=modelMatrix*vec4(position,1.0); vWP=wp.xyz; vWN=normalize(mat3(modelMatrix)*normal);
-      gl_Position=projectionMatrix*viewMatrix*wp; }`,
-  fragmentShader:`uniform vec3 camPos,glowA,glowB; uniform float time; varying vec3 vWP; varying vec3 vWN;
-    void main(){ vec3 Vd=normalize(camPos-vWP); float f=pow(max(0.0,dot(normalize(vWN),Vd)),1.6);
-      float pulse=0.82+0.18*sin(time*0.9);
-      vec3 c=mix(glowB,glowA,f)*f*0.24*pulse;
-      gl_FragColor=vec4(c,1.0); }`
-}));
-scene.add(core);
-
-// faint distant motes for depth (cheap)
-{ const NP=900, pos=new Float32Array(NP*3), col=new Float32Array(NP*3); let s=99>>>0; const r=()=>{s=(s*1664525+1013904223)>>>0;return s/4294967296;};
-  for (let i=0;i<NP;i++){ const rr=4.5+r()*11, a=r()*6.28, y=(r()-0.5)*13;
-    pos[i*3]=Math.cos(a)*rr; pos[i*3+1]=y; pos[i*3+2]=Math.sin(a)*rr;
-    const t=r()<0.12; col[i*3]=t?0.85:0.10; col[i*3+1]=t?0.3:0.7; col[i*3+2]=t?0.9:0.85; }
-  const pg=new THREE.BufferGeometry(); pg.setAttribute('position',new THREE.BufferAttribute(pos,3)); pg.setAttribute('color',new THREE.BufferAttribute(col,3));
-  scene.add(new THREE.Points(pg, new THREE.PointsMaterial({size:0.035,vertexColors:true,transparent:true,opacity:0.32,blending:THREE.AdditiveBlending,depthWrite:false}))); }
-
-// ══════════════════ post: bloom → grade (chromatic + scan + vignette + grain) ══════════════════
+// ── post: bloom (pulses with activity) → grade (chromatic aberration on stress, vignette, grain) ──
 const composer = new EffectComposer(renderer);
-composer.addPass(new RenderPass(scene, camera));
-const bloom = new UnrealBloomPass(new THREE.Vector2(innerWidth,innerHeight), 0.38, 0.55, 0.88);
+composer.addPass(new RenderPass(dispScene, dispCam));
+const bloom = new UnrealBloomPass(new THREE.Vector2(innerWidth,innerHeight), 0.30, 0.5, 0.86);
 composer.addPass(bloom);
 const grade = new ShaderPass({
-  uniforms:{ tDiffuse:{value:null}, time:{value:0}, res:{value:new THREE.Vector2(innerWidth,innerHeight)} },
+  uniforms:{ tDiffuse:{value:null}, time:{value:0}, ca:{value:0.0016}, res:{value:new THREE.Vector2(innerWidth,innerHeight)} },
   vertexShader:`varying vec2 vUv; void main(){ vUv=uv; gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.0); }`,
-  fragmentShader:`
-    uniform sampler2D tDiffuse; uniform float time; uniform vec2 res; varying vec2 vUv;
-    void main(){
-      vec2 uv=vUv; vec2 d=(uv-0.5);
-      float ca=0.0015+0.004*dot(d,d);                                  // subtle chromatic aberration
-      vec3 c; c.r=texture2D(tDiffuse,uv+d*ca).r; c.g=texture2D(tDiffuse,uv).g; c.b=texture2D(tDiffuse,uv-d*ca).b;
-      c.r*=1.015; c.b*=1.04;                                           // cool split
-      float sy=fract(time*0.09); c += smoothstep(0.028,0.0,abs(uv.y-sy)) * vec3(0.05,0.16,0.20); // scan sweep
-      c *= 1.0 - 0.85*pow(length(d)*1.35, 2.4);                        // vignette
-      float g=fract(sin(dot(uv*(time+1.0),vec2(12.9898,78.233)))*43758.5453);
-      c += (g-0.5)*0.04;                                              // grain
-      gl_FragColor=vec4(c,1.0);
-    }` });
+  fragmentShader:`uniform sampler2D tDiffuse; uniform float time,ca; uniform vec2 res; varying vec2 vUv;
+    void main(){ vec2 uv=vUv,d=uv-0.5; float a=ca+0.006*dot(d,d);
+      vec3 c; c.r=texture2D(tDiffuse,uv+d*a).r; c.g=texture2D(tDiffuse,uv).g; c.b=texture2D(tDiffuse,uv-d*a).b;
+      c *= 1.0-0.8*pow(length(d)*1.35,2.4);
+      float gr=fract(sin(dot(uv*(time+1.0),vec2(12.9898,78.233)))*43758.5453); c += (gr-0.5)*0.035;
+      gl_FragColor=vec4(c,1.0); }` });
 composer.addPass(grade);
 composer.addPass(new OutputPass());
 
-function resize(){ const w=innerWidth,h=innerHeight; renderer.setSize(w,h); composer.setSize(w,h); camera.aspect=w/h; camera.updateProjectionMatrix(); bloom.resolution.set(w,h); grade.uniforms.res.value.set(w,h); }
+function resize(){ const w=innerWidth,h=innerHeight; renderer.setSize(w,h); composer.setSize(w,h); bloom.resolution.set(w,h); grade.uniforms.res.value.set(w,h); }
 addEventListener('resize', resize); resize();
 
+// ══════════════════ interaction — the core of "it reacts to me" ══════════════════
+const pointer = new THREE.Vector2(0.5,0.5);       // eased pointer the sim feeds from
+const target  = new THREE.Vector2(0.5,0.5);       // raw input target
+const halo    = new THREE.Vector2(0.5,0.5);       // laggier "attention" that follows with more inertia
+let inject=0, activity=0, pressed=false, lastMove=-1e9, lastT=0;
+let ghostSeed = 41.0;                              // idle auto-wander phase
+const moodEl=document.getElementById('mood'), vitEl=document.getElementById('vit'), simEl=document.getElementById('simres');
+const titleEl=document.getElementById('title'), hintEl=document.getElementById('hint');
+simEl.textContent = SIMW+'×'+SIMH;
+
+function setTarget(cx,cy){ target.set(cx/innerWidth, 1.0 - cy/innerHeight); }
+addEventListener('pointermove', e=>{ const dx=e.clientX/innerWidth-target.x, dy=(1-e.clientY/innerHeight)-target.y;
+  setTarget(e.clientX,e.clientY); const sp=Math.hypot(dx,dy); inject=Math.min(1, inject+0.35+sp*4.0); activity=Math.min(1.4, activity+0.25+sp*6.0);
+  lastMove=performance.now(); fadeIntro(); }, {passive:true});
+addEventListener('pointerdown', e=>{ pressed=true; setTarget(e.clientX,e.clientY); inject=1.0; activity=1.4; lastMove=performance.now(); fadeIntro(); ensureAudio(); }, {passive:true});
+addEventListener('pointerup', ()=>{ pressed=false; }, {passive:true});
+addEventListener('pointercancel', ()=>{ pressed=false; }, {passive:true});
+function fadeIntro(){ if(titleEl.style.opacity!=='0'){ titleEl.style.opacity='0'; hintEl.style.opacity='0'; } }
+
+document.getElementById('reset').onclick=()=>{ simQuad.material=seedMat; renderer.setRenderTarget(rtA); renderer.render(simScene,simCam); simQuad.material=stepMat; for(let i=0;i<600;i++) stepSim(1); activity=1.2; };
+
+// ── generative voice: a drone whose filter + level follow the organism's activity (sound follows motion) ──
+let actx=null, master=null, flt=null, oscs=[], soundOn=false, micOn=false, analyser=null, micData=null;
+function ensureAudio(){ if(actx||!soundOn) return; buildAudio(); }
+function buildAudio(){ actx=new (window.AudioContext||window.webkitAudioContext)(); master=actx.createGain(); master.gain.value=0.0;
+  flt=actx.createBiquadFilter(); flt.type='lowpass'; flt.frequency.value=500; flt.Q.value=6; flt.connect(master); master.connect(actx.destination);
+  [55,82.5,110,166].forEach((f,i)=>{ const o=actx.createOscillator(); o.type=i<2?'sine':'triangle'; o.frequency.value=f; const g=actx.createGain(); g.gain.value=i<2?0.5:0.18; o.connect(g); g.connect(flt); o.start(); oscs.push(o); }); }
+document.getElementById('sound').onclick=function(){ soundOn=!soundOn; this.classList.toggle('on',soundOn); if(soundOn){ buildAudio(); if(actx.state==='suspended') actx.resume(); } else if(master){ master.gain.setTargetAtTime(0,actx.currentTime,0.2); } };
+document.getElementById('mic').onclick=async function(){ if(micOn){ micOn=false; this.classList.remove('on'); return; }
+  try{ const s=await navigator.mediaDevices.getUserMedia({audio:true}); if(!actx) buildAudio(); const src=actx.createMediaStreamSource(s);
+    analyser=actx.createAnalyser(); analyser.fftSize=256; micData=new Uint8Array(analyser.frequencyBinCount); src.connect(analyser); micOn=true; this.classList.add('on'); soundOn=true; document.getElementById('sound').classList.add('on'); }
+  catch(err){ this.textContent='mic ✕'; } };
+
 // ══════════════════ loop ══════════════════
-const clock = new THREE.Clock(); let t=0, fAcc=0, fCnt=0; const fpsEl=document.getElementById('fps'), titleEl=document.getElementById('title');
-function animate(){
-  requestAnimationFrame(animate);
-  const dt = Math.min(clock.getDelta(), 0.05); t += dt;
-  stepSim(SUBSTEPS);                              // advance the sim on the GPU
-  membrane.uniforms.tState.value = rtA.texture;
-  membrane.uniforms.time.value = t; grade.uniforms.time.value = t; core.material.uniforms.time.value = t;
-  camera.getWorldPosition(membrane.uniforms.camPos.value);
-  hero.rotation.y += dt*0.035; core.rotation.y = hero.rotation.y;
-  controls.update();
+const clock=new THREE.Clock(); let t=0;
+function animate(){ requestAnimationFrame(animate);
+  const dt=Math.min(clock.getDelta(),0.05); t+=dt; const now=performance.now();
+
+  // idle auto-wander: when ignored, the specimen explores on its own (apparent agency)
+  const idle = (now-lastMove) > 3500;
+  if(idle){ ghostSeed+=dt*0.13; const wx=0.5+0.32*Math.sin(ghostSeed*1.0)+0.12*Math.sin(ghostSeed*2.3);
+    const wy=0.5+0.30*Math.cos(ghostSeed*0.8)+0.12*Math.cos(ghostSeed*1.9);
+    target.set(wx,wy); inject=Math.min(inject+0.010, 0.12); activity=Math.min(0.5, activity+0.004);
+    if(titleEl.style.opacity==='0'){ /* stay faded */ } }
+
+  // mic → agitation (it responds to the room / your voice)
+  if(micOn&&analyser){ analyser.getByteFrequencyData(micData); let s=0; for(let i=0;i<micData.length;i++) s+=micData[i]; const lvl=s/micData.length/255;
+    activity=Math.min(1.5, activity+lvl*0.15); inject=Math.min(1, inject+lvl*0.25); }
+
+  // easing / inertia — pointer leads, halo lags (the "noticing" turn)
+  pointer.lerp(target, 0.18); halo.lerp(target, 0.07);
+  if(!pressed && !idle) inject *= 0.90;             // homeostasis: injection relaxes when you stop
+  activity *= 0.965;                                 // stress decays back toward rest
+
+  // never-repeating heartbeat: rate itself slowly noise-modulated; layers desync
+  const hb = 0.62 + 0.22*Math.sin(t*1.1) + 0.16*Math.sin(t*0.37+1.3);
+  const breath = 0.94 + 0.06*Math.sin(t*hb) + activity*0.05;
+
+  stepMat.uniforms.uPointer.value.copy(pointer); stepMat.uniforms.uInject.value=inject*(pressed?1.0:0.7);
+  stepSim(pressed?16:12);
+  dispMat.uniforms.tState.value=rtA.texture;
+  dispMat.uniforms.uTime.value=t; dispMat.uniforms.uBreath.value=breath;
+  dispMat.uniforms.uHalo.value.copy(halo); dispMat.uniforms.uHaloI.value=Math.min(1, inject*0.5+activity*0.3);
+  dispMat.uniforms.uStress.value = Math.min(1, activity*0.8);
+
+  // audiovisual coupling: bloom pulses + chromatic aberration flinches with activity
+  bloom.strength = 0.24 + activity*0.5 + (breath-0.94)*1.0;
+  grade.uniforms.ca.value = 0.0016 + activity*0.014; grade.uniforms.time.value=t;
+  if(soundOn&&actx&&master){ const target_g=Math.min(0.13, 0.02+activity*0.11); master.gain.setTargetAtTime(target_g, actx.currentTime, 0.12);
+    flt.frequency.setTargetAtTime(420+activity*2200, actx.currentTime, 0.15); oscs.forEach((o,i)=>o.detune.setTargetAtTime(Math.sin(t*0.5+i)*8*activity, actx.currentTime,0.2)); }
+
   composer.render();
-  fAcc+=dt; if(++fCnt>=15){ if(fpsEl) fpsEl.textContent=(fCnt/fAcc).toFixed(0); fAcc=0; fCnt=0; }
-  if (t>6 && titleEl) titleEl.style.opacity='0';
-  if (t>0.3){ const l=document.getElementById('loading'); if(l&&l.style.opacity!=='0'){ l.style.opacity='0'; setTimeout(()=>l.remove(),800);} }
+  if((now%180|0)<20){ moodEl.textContent = activity>0.8?'agitated':activity>0.35?'stirring':idle?'wandering':'resting'; vitEl.textContent=(Math.min(1,activity)*100|0)+'%'; }
+  if(t>0.3){ const l=document.getElementById('loading'); if(l&&l.style.opacity!=='0'){ l.style.opacity='0'; setTimeout(()=>l.remove(),800);} }
 }
 animate();
-window.__protocell = { ok:true, gpu:true };
+window.__protocell = { ok:true, gpu:true, interactive:true };
 </script>
 </body>
 </html>
