@@ -113,6 +113,23 @@ every client references them via `../assets/fonts/`. PRDs: `docs/PRD_ONTOGENY.md
   lockstep; it sits behind the CatSilPro `.param-lock` overlay for free users.
   CA engines live in `docs/lab/experiment/rules/*.js`; the bespoke 3D
   instruments in `docs/lab/apparatus/*.js`.
+- **Lab apparatus photoreal system** (`docs/lab/apparatus/lib.js` +
+  `docs/lab/scene.js`): the shared toolkit all 13 apparatus inherit. Glass is
+  transmission `MeshPhysicalMaterial` with a Fresnel edge rim (`addRim`, patched
+  via `onBeforeCompile` — compile-time only, invisible to the headless tests);
+  fluids use `liquidVolume(radius, level, mat)` (a real body + a flat rippling
+  meniscus disc — **no more `scale.y` squashed-sphere fakes**) and
+  `bubbleColumn(opts)` (a fixed pool of **opaque, emissive, rim-lit** rising
+  beads — opaque on purpose: r162 screen-space transmission only refracts the
+  opaque backbuffer, so transmissive bubbles vanish). `scene.js` adds `BokehPass`
+  DoF (focus tracked to `controls.target`) + a warm `OpticsShader` (CA/vignette/
+  grain, no cool white-balance) via a `composer.render` monkey-patch (no main.js
+  edit), and `scene.environmentIntensity` (not the `fromScene` sigma) drives IBL.
+  The `anim.mjs` gate measures kinetic motion over position/scale/opacity/color/
+  emissive, so fluid/bubble motion must keep mutating those while running and
+  **freeze on Stop** (`bubbleColumn.setRunning(false)` hides+freezes). The SEM
+  micrograph stays a distinct 2-D scientific view (CPU height-field → `SEM.render`),
+  not merged into the 3-D scene. See `miller_urey.js` as the worked example.
 - **Ontogeny growth plate** (the SEM specimen canvas) is rendered in
   `docs/ontogeny/render.js` — currently `BASE=168, SCALE=2` → a 336px offscreen
   buffer drawn to fit. Height-field primitives are grid-relative
