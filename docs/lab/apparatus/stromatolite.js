@@ -17,7 +17,7 @@
 // terminal specimen, not a reaction with a yield.
 
 import * as THREE from 'three';
-import { part, V, bakeliteMat, steelMat, makeDynamicTexture, labelSprite } from './lib.js';
+import { part, V, bakeliteMat, steelMat, bubbleColumn, makeDynamicTexture, labelSprite } from './lib.js';
 
 export function build() {
   const group = new THREE.Group();
@@ -168,34 +168,20 @@ export function build() {
   matLight.position.set(FACE.x, FACE.y + 0.2, FACE.z + 0.6);
   rock.add(matLight);
 
-  // O₂ bubbles peeling off the mat and rising through the water film.
-  const bubbleMat = new THREE.MeshPhysicalMaterial({
-    color: 0xbffff4, emissive: 0x3fe0d0, emissiveIntensity: 0.35,
-    roughness: 0.1, metalness: 0, transmission: 0.6, transparent: true, opacity: 0.0,
-    depthWrite: false,
+  // O₂ bubbles peeling off the mat and rising through the water film — the
+  // shared bubbleColumn (opaque Fresnel-rimmed emissive beads, fixed-count pool
+  // so Run/Stop stays honest). It is a child of `rock`, so it turns with the
+  // specimen; scale.z flattens the plume into a thin sheet hugging the face.
+  const boil = bubbleColumn({
+    center: V(0, FACE.y, 0.42), radius: FW * 0.38,
+    floorY: FACE.y - FH * 0.5, topY: FACE.y + FH * 0.46,
+    count: 13, rMin: 0.02, rMax: 0.045, rise: 0.2, lateral: 0.03, grow: 0.15,
+    color: 0xbffff4, emissive: 0.4, rim: 0.6, name: 'o2-bubbles',
   });
-  const bubbles = [];
-  function seedBubble(b, atBottom) {
-    b.userData.x = (Math.random() - 0.5) * FW * 0.82;
-    b.userData.y = atBottom ? -FH * 0.5 : (Math.random() - 0.5) * FH;
-    b.userData.amp = 0.02 + Math.random() * 0.05;     // sideways wobble
-    b.userData.ph = Math.random() * Math.PI * 2;
-    b.userData.v = 0.18 + Math.random() * 0.22;        // rise speed
-    b.userData.s = 0.6 + Math.random() * 0.9;          // size factor
-  }
-  // place a bubble on the face from its mat-local (x,y) coordinates
-  function placeBubble(b) {
-    const wob = Math.sin(b.userData.ph + b.userData.y * 6) * b.userData.amp;
-    b.position.set(FACE.x + b.userData.x + wob, FACE.y + b.userData.y, FACE.z + 0.05);
-    b.scale.setScalar(b.userData.s);
-  }
-  for (let i = 0; i < 14; i++) {
-    const b = new THREE.Mesh(new THREE.SphereGeometry(0.035, 10, 10), bubbleMat.clone());
-    seedBubble(b, false);
-    placeBubble(b);            // sit on the face from the start (still invisible)
-    b.visible = false;
-    rock.add(b); bubbles.push(b);
-  }
+  boil.group.scale.z = 0.12;
+  boil.group.position.z = 0.31;
+  rock.add(boil.group);
+  boil.setRunning(false);
 
   let running = true;
   let spin = 0;                 // accumulated slow turn (advances only when running)
@@ -206,11 +192,11 @@ export function build() {
     water.visible = false;
     waterMat.opacity = 0; waterMat.emissiveIntensity = 0;
     matLight.intensity = 0;
-    for (const b of bubbles) { b.visible = false; b.material.opacity = 0; }
+    boil.setRunning(false);
   }
 
   group.userData.anim = {
-    setRunning(on) { running = on; if (!on) { /* one-off settle handled in update */ } },
+    setRunning(on) { running = on; boil.setRunning(on); if (!on) { /* one-off settle handled in update */ } },
     getProgress() { return 0; },             // terminal specimen — no yield to report
     reset() { spin = 0; wphase = 0; life = 0; rock.rotation.y = 0; calm(); paint(0.3); paintCaustic(0); },
     update(dt, t) {
@@ -243,17 +229,8 @@ export function build() {
         calm();
       }
 
-      // O₂ bubbles rising off the mat
-      for (const b of bubbles) {
-        if (life <= 0.002) { b.visible = false; continue; }
-        b.visible = true;
-        b.material.opacity = 0.75 * life;
-        if (running) {
-          b.userData.y += b.userData.v * dt;
-          if (b.userData.y > FH * 0.5) seedBubble(b, true);
-        }
-        placeBubble(b);
-      }
+      // O₂ bubbles rising off the mat (the shared column; only while running)
+      if (running) boil.update(dt, t);
     },
   };
   return group;

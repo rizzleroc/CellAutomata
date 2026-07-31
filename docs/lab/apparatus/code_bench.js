@@ -16,7 +16,7 @@
 // peptide length alongside code-consensus.
 
 import * as THREE from 'three';
-import { part, steelMat, brassMat, glassMat, bakeliteMat, liquidMat, makeDynamicTexture, V } from './lib.js';
+import { part, steelMat, brassMat, glassMat, bakeliteMat, liquidMat, surfaceNormalMap, makeDynamicTexture, V } from './lib.js';
 
 const GRID = 4;                 // 4x4 codon-cell table
 const N = GRID * GRID;
@@ -114,6 +114,7 @@ export function build() {
 
   // ── Reaction tubes, some tinted ────────────────────────────────────────────
   const tints = [0xdedad0, 0x9fd9c4, 0xdedad0, 0xd9b0c8, 0xc8d0d9, 0xdedad0];
+  const wetNormal = surfaceNormalMap({ kind: 'fbm', freq: 5, strength: 0.4 });   // shared wet-cap ripple
   for (let i = 0; i < 6; i++) {
     const tx = -1.6 - 0.45 + (i % 3) * 0.45;
     const tz = (i < 3 ? -0.22 : 0.22);
@@ -123,6 +124,14 @@ export function build() {
     // liquid fill
     group.add(part(new THREE.CylinderGeometry(0.09, 0.06, 0.34, 16),
       liquidMat(tints[i], { transmission: 0.65, opacity: 0.85 }), `tube-${i}-fill`, V(tx, 0.5, tz)));
+    // flat wet meniscus glinting at the fill surface (a real surface, not a
+    // flat-topped cylinder): a clearcoat disc with the shared ripple normal map.
+    const men = part(new THREE.CircleGeometry(0.088, 20),
+      liquidMat(tints[i], { transmission: 0.65, clearcoat: 1.0, clearcoatRoughness: 0.05,
+        roughness: 0.04, normalMap: wetNormal, normalScale: new THREE.Vector2(0.2, 0.2) }),
+      `tube-${i}-meniscus`, V(tx, 0.671, tz));
+    men.rotation.x = -Math.PI / 2;
+    group.add(men);
   }
 
   // ── Codon-table card (upright panel) ───────────────────────────────────────
