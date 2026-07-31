@@ -7,7 +7,7 @@
 // glass pipette rests alongside. Every part is named for the parts panel.
 
 import * as THREE from 'three';
-import { glassMat, steelMat, brassMat, liquidMat, part, makeDynamicTexture, V } from './lib.js';
+import { glassMat, steelMat, brassMat, liquidMat, bubbleColumn, liquidVolume, part, makeDynamicTexture, V } from './lib.js';
 
 export function build() {
   const group = new THREE.Group();
@@ -33,6 +33,19 @@ export function build() {
   const film = part(new THREE.CylinderGeometry(R * 0.96, R * 0.96, 0.07, 64), filmMat,
     'reagent-film', V(cx, cy - 0.06, 0));
   group.add(film);
+
+  // ── Wet skin: a thin, highly-transmissive liquid volume whose rippling
+  //    clearcoat meniscus sells the film as WET liquid rather than a printed
+  //    disc — the BZ pattern below reads straight through it. The cylinder
+  //    helper ties fill to 2·radius, so scale.y flattens it to a thin sheet.
+  const filmR = R * 0.96;
+  const wetFilmTop = cy - 0.06 + 0.035;
+  const wet = liquidVolume(filmR, 1.0,
+    liquidMat(0xcfe6de, { transmission: 0.92, thickness: 0.15, attenuationDistance: 8.0, roughness: 0.06 }),
+    { shape: 'cylinder', name: 'wet-film' });
+  wet.group.scale.y = 0.08 / (2 * filmR);
+  wet.group.position.set(cx, wetFilmTop + 0.01, 0);
+  group.add(wet.group);
 
   // ── Petri lid: set slightly ajar, resting half on the rim ─────────────────
   const lid = part(new THREE.CylinderGeometry(R * 1.04, R * 1.04, 0.24, 64, 1, true), glassMat(),
@@ -91,30 +104,15 @@ export function build() {
   // the thin film, then re-seed — small, translucent, physical (no emissive).
   const filmTop = cy - 0.06 + 0.035;      // top surface of the reagent film
   const filmBottom = cy - 0.06 - 0.035;
-  const bubbleMat = new THREE.MeshPhysicalMaterial({
-    color: 0xffffff, roughness: 0.15, transmission: 0.85,
-    thickness: 0.1, ior: 1.2, transparent: true, opacity: 0.6,
+  // CO₂ effervescence rising through the thin film — the shared bubbleColumn
+  // (opaque Fresnel-rimmed beads, fixed-count pool so Run/Stop stays honest).
+  const boil = bubbleColumn({
+    center: V(cx, cy - 0.06, 0), radius: R * 0.85,
+    floorY: filmBottom, topY: filmTop + 0.02,
+    count: 12, rMin: 0.02, rMax: 0.035, rise: 0.06, lateral: 0.02, grow: 0.15,
+    color: 0xeaf6fb, name: 'co2-bubbles',
   });
-  const bubbles = [];
-  for (let i = 0; i < 7; i++) {
-    const b = new THREE.Mesh(new THREE.SphereGeometry(0.03, 10, 8), bubbleMat);
-    b.userData.reset = () => {
-      const a = Math.random() * Math.PI * 2;
-      const rad = Math.random() * R * 0.9;
-      b.userData.bx = cx + Math.cos(a) * rad;
-      b.userData.bz = Math.sin(a) * rad;
-      b.position.set(b.userData.bx, filmBottom, b.userData.bz);
-      b.userData.v = 0.10 + Math.random() * 0.14;     // rise speed
-      b.userData.s = 0.7 + Math.random() * 0.8;        // size
-      b.scale.setScalar(b.userData.s);
-      b.userData.wob = Math.random() * Math.PI * 2;    // shimmer phase
-    };
-    b.userData.reset();
-    // stagger the initial heights so they don't all pop at once
-    b.position.y = filmBottom + Math.random() * (filmTop - filmBottom);
-    group.add(b);
-    bubbles.push(b);
-  }
+  group.add(boil.group);
 
   // ── Animation: paint expanding BZ rings into the film texture ─────────────
   const { ctx, size } = dyn;
@@ -167,7 +165,7 @@ export function build() {
     filmMat.color.copy(amber);
     film.position.y = filmBaseY;
     film.scale.set(1, 1, 1);
-    for (const b of bubbles) b.visible = false;
+    boil.setRunning(false);
   }
 
   group.userData.anim = {
@@ -175,6 +173,7 @@ export function build() {
       running = on;
       ringLight.intensity = on ? 2.2 : 0.6;
       ringInner.material.color.setHex(on ? 0xfff4d8 : 0x44403a);
+      boil.setRunning(on);
       if (!on) calm();
     },
     getProgress() { return progress; },
@@ -201,15 +200,10 @@ export function build() {
       film.position.y = filmBaseY + Math.sin(t * 2.2) * 0.012;
       const sh = 1 + Math.sin(t * 1.7) * 0.012;
       film.scale.set(sh, 1, sh);
+      wet.shimmer(t);                          // wet skin ripples with the film
 
-      // CO₂ bubbles nucleate at the floor and rise; wobble laterally a touch.
-      for (const b of bubbles) {
-        b.visible = true;
-        b.position.y += b.userData.v * dt;
-        b.position.x = b.userData.bx + Math.sin(t * 2.4 + b.userData.wob) * 0.02;
-        b.position.z = b.userData.bz + Math.cos(t * 2.1 + b.userData.wob) * 0.02;
-        if (b.position.y > filmTop) b.userData.reset();
-      }
+      // CO₂ bubbles nucleate at the floor and rise through the thin film.
+      boil.update(dt, t);
     },
   };
 

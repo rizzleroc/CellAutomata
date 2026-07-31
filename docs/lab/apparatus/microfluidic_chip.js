@@ -14,7 +14,7 @@
 // with fitness. Pressing Stop freezes every protocell, the front and the flow.
 
 import * as THREE from 'three';
-import { glassMat, steelMat, brassMat, rubberMat, part, V } from './lib.js';
+import { glassMat, steelMat, brassMat, rubberMat, liquidVolume, addRim, part, V } from './lib.js';
 
 // Emissive/light palette (teal / magenta / warm only).
 const TEAL = 0x3fe0d0, MAGENTA = 0xd77bff, WARM = 0xffb866;
@@ -39,9 +39,9 @@ export function build() {
 
   // ── Etched serpentine channel (thin dark glass tubes on the chip face) ────
   const channelGroup = new THREE.Group(); channelGroup.name = 'channel';
-  const chanMat = new THREE.MeshPhysicalMaterial({
+  const chanMat = addRim(new THREE.MeshPhysicalMaterial({
     color: 0x6fb6c8, roughness: 0.2, transmission: 0.5, thickness: 0.1, ior: 1.34, transparent: true,
-  });
+  }), { color: 0x8fe6ff, power: 3.0, intensity: 0.4 });
   const pts = [];
   const rows = 5, span = 3.4, top = cy + 0.17;
   for (let r = 0; r < rows; r++) {
@@ -77,19 +77,26 @@ export function build() {
   const wells = [];
   const wellArray = new THREE.Group(); wellArray.name = 'well-array';
   const wellY = cy + 0.18;
+  const WELL_R = 0.2, WELL_H = 0.08;
   for (let r = 0; r < ROWS; r++) {
     for (let c = 0; c < COLS; c++) {
-      const fitness = 0.05 + Math.random() * 0.15;        // start low (red)
+      const fitness = 0.05 + Math.random() * 0.15;        // start low (magenta)
+      // Each well is a real shallow droplet of medium: a thin liquidVolume whose
+      // flat rippling meniscus reads as WET liquid. The fitness colour rides the
+      // body + meniscus materials (the cylinder helper ties fill to 2·radius,
+      // so scale.y flattens the unit body to the well depth).
       const mat = new THREE.MeshStandardMaterial({
-        color: 0x000000, emissive: 0x000000, roughness: 0.3, metalness: 0.0,
+        color: 0x000000, emissive: 0x000000, roughness: 0.18, metalness: 0.0,
+        transparent: true, opacity: 0.95,
       });
       const wx = cx - 1.9 + c * 0.54;
       const wz = -1.1 + r * 0.55;
-      const w = part(new THREE.CylinderGeometry(0.2, 0.2, 0.08, 20), mat,
-        `well-${r}-${c}`, V(wx, wellY, wz));
-      w.userData = { fitness, x: c / (COLS - 1) };
-      wellArray.add(w);
-      wells.push(w);
+      const lv = liquidVolume(WELL_R, 1.0, mat, { shape: 'cylinder', name: `well-${r}-${c}` });
+      lv.group.scale.y = WELL_H / (2 * WELL_R);
+      lv.group.position.set(wx, wellY, wz);
+      lv.group.userData = { fitness, x: c / (COLS - 1), mats: [lv.body.material, lv.meniscus.material], lv };
+      wellArray.add(lv.group);
+      wells.push(lv.group);
     }
   }
   group.add(wellArray);
@@ -99,9 +106,11 @@ export function build() {
   function colorWell(w) {
     const f = w.userData.fitness;                          // magenta(0)→teal(1)
     const k = Math.min(1, Math.max(0, f));
-    w.material.color.copy(FIT_LO).lerp(FIT_HI, k);
-    w.material.emissive.copy(FIT_LO).lerp(FIT_HI, k);
-    w.material.emissiveIntensity = 0.3 * f;                // ≤ 0.3·f
+    for (const m of w.userData.mats) {
+      m.color.copy(FIT_LO).lerp(FIT_HI, k);
+      m.emissive.copy(FIT_LO).lerp(FIT_HI, k);
+      m.emissiveIntensity = 0.3 * f;                       // ≤ 0.3·f
+    }
   }
   wells.forEach(colorWell);
 
@@ -263,6 +272,8 @@ export function build() {
           }
         }
       }
+
+      for (const w of wells) w.userData.lv.shimmer(t);   // wet menisci ripple
 
       progress = Math.min(1, meanFitness());
     },

@@ -9,7 +9,7 @@
 // the phase-contrast vesicle scope, and the droplets merge rather than drift.
 
 import * as THREE from 'three';
-import { glassMat, steelMat, brassMat, bakeliteMat, part, makeDynamicTexture, V } from './lib.js';
+import { glassMat, steelMat, brassMat, bakeliteMat, addRim, part, makeDynamicTexture, V } from './lib.js';
 
 export function build() {
   const group = new THREE.Group();
@@ -106,11 +106,15 @@ export function build() {
     b.born = 0;                              // nucleation fade-in 0..1
   };
   for (let i = 0; i < NB; i++) {
-    const mat = new THREE.MeshPhysicalMaterial({
+    // "Watery blister": high transmission + high IOR + a whisper of iridescence
+    // and a Fresnel rim, so each coacervate droplet refracts the stage light and
+    // its edge catches the bloom — a real liquid–liquid droplet, not a flat blob.
+    const mat = addRim(new THREE.MeshPhysicalMaterial({
       color: 0x123028, emissive: 0x3fe0d0, emissiveIntensity: 0.35,
-      roughness: 0.15, transmission: 0.7, thickness: 0.4, ior: 1.36,
+      roughness: 0.05, transmission: 0.92, thickness: 0.4, ior: 1.42,
+      iridescence: 0.5, iridescenceIOR: 1.3,
       transparent: true, opacity: 0,
-    });
+    }), { color: 0x9fe8dd, power: 2.4, intensity: 0.6 });
     const m = new THREE.Mesh(blobGeo, mat);  // intentionally UNNAMED
     const b = { mesh: m, mat };
     newBlob(b);

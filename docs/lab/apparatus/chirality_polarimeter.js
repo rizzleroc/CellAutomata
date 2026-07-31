@@ -7,7 +7,7 @@
 // liquid tints and the polarimeter needle swings off zero.
 
 import * as THREE from 'three';
-import { part, flask, glassMat, liquidMat, brassMat, steelMat, emissiveMat, makeDynamicTexture, V } from './lib.js';
+import { part, flask, glassMat, liquidMat, liquidVolume, brassMat, steelMat, emissiveMat, makeDynamicTexture, V } from './lib.js';
 
 // Deterministic choice of winning handedness: (+) magenta in this build.
 const SIGN = +1;
@@ -53,10 +53,12 @@ function build() {
   const fl = flask(0.7, 'flask', 0.5);
   fl.position.set(-2.4, 0.75, 0);
   group.add(fl);
+  // Reaction sample — a REAL filled volume with a flat rippling meniscus (kills
+  // the squashed-sphere fake). liqMat tints toward the winner in apply().
   const liqMat = liquidMat(0xdedad0, { transmission: 0.7 });
-  const liquid = part(new THREE.SphereGeometry(0.6, 40, 28), liqMat, 'liquid', V(-2.4, 0.6, 0));
-  liquid.scale.y = 0.7;
-  group.add(liquid);
+  const sample = liquidVolume(0.56, 0.62, liqMat, { shape: 'sphere', name: 'liquid' });
+  sample.group.position.set(-2.4, 0.6, 0);
+  group.add(sample.group);
 
   // ── Polarimeter stand ─────────────────────────────────────────────────────
   const TUBE_Y = 1.7;
@@ -76,6 +78,13 @@ function build() {
     'sample-cell', V(0.5, TUBE_Y, 0));
   cell.rotation.z = Math.PI / 2;
   group.add(cell);
+  // The polarimeter cell is brim-full of the sample the beam passes through (a
+  // sealed cell has no air gap — hence a filled core, not a meniscus). It shares
+  // liqMat, so it tints toward the winning enantiomer alongside the flask.
+  const cellFluid = part(new THREE.CylinderGeometry(0.2, 0.2, 1.05, 28), liqMat,
+    'sample-fluid', V(0.5, TUBE_Y, 0));
+  cellFluid.rotation.z = Math.PI / 2;
+  group.add(cellFluid);
 
   // ── Light source at far (left) end ────────────────────────────────────────
   const lightHousing = part(new THREE.CylinderGeometry(0.4, 0.4, 0.5, 28), steelMat(),
@@ -198,6 +207,7 @@ function build() {
     needleMat.emissiveIntensity = 0.15 + (Math.abs(curDeg) / maxAbs) * 0.5;
     const f = Math.min(1, Math.abs(curDeg) / maxAbs);
     liqMat.color.copy(baseLiq.clone().lerp(TINT, f));
+    sample.meniscus.material.color.copy(liqMat.color);     // wet surface tracks the tint
   };
   apply();
 
@@ -228,6 +238,7 @@ function build() {
       if (running) {
         // sigmoidal symmetry breaking: slow start, sharp autocatalytic commit
         progress = Math.min(1, progress + dt / 12);
+        sample.shimmer(t);                               // flask surface ripples
         const s = 1 / (1 + Math.exp(-(progress - 0.4) * 11));
         // racemic jitter early, decaying as one handedness locks in
         const wobble = Math.sin(t * 6) * (1 - progress) * 2.0;
