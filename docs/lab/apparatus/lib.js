@@ -118,14 +118,33 @@ export function addRim(mat, { color = 0x9fd0ff, power = 2.6, intensity = 0.65 } 
 // ── Materials (fresh instance per call so meshes can diverge) ───────────────
 // Aged borosilicate: real transmission with a touch of volumetric attenuation
 // and a cool Fresnel rim so the glass edges light up against the obsidian void.
-export const glassMat = () => addRim(new THREE.MeshPhysicalMaterial({
-  color: 0xffffff, metalness: 0, roughness: 0.03,
-  transmission: 1.0, thickness: 0.6, ior: 1.5,
-  transparent: true, envMapIntensity: 2.2, clearcoat: 0.6, clearcoatRoughness: 0.06,
-  attenuationColor: new THREE.Color(0xeaf3f5), attenuationDistance: 6.0,
-}), { color: 0xbfe0ff, power: 3.2, intensity: 0.35 });
-export const steelMat = () => new THREE.MeshStandardMaterial({ color: 0x8c8f96, metalness: 0.95, roughness: 0.42 });
-export const brassMat = () => new THREE.MeshStandardMaterial({ color: 0xb8893f, metalness: 1.0, roughness: 0.32 });
+// A faint fbm normal + a low-contrast roughness variation give the glass real
+// micro-smudges — perfectly smooth glass is one of the biggest CG tells, so the
+// softbox highlights now break up subtly instead of reading as a clean mirror.
+export const glassMat = () => {
+  const smudge = surfaceNormalMap({ kind: 'fbm', freq: 8, strength: 0.35, seed: 3 });
+  const m = new THREE.MeshPhysicalMaterial({
+    color: 0xffffff, metalness: 0, roughness: 0.045,
+    transmission: 1.0, thickness: 0.6, ior: 1.5,
+    transparent: true, envMapIntensity: 2.2, clearcoat: 0.6, clearcoatRoughness: 0.06,
+    attenuationColor: new THREE.Color(0xeaf3f5), attenuationDistance: 6.0,
+    normalMap: smudge, roughnessMap: smudge,   // same fbm drives both — faint micro-relief + roughness
+  });
+  m.normalScale = new THREE.Vector2(0.045, 0.045);   // very subtle — smudges, not frosting
+  return addRim(m, { color: 0xbfe0ff, power: 3.2, intensity: 0.35 });
+};
+export const steelMat = () => {
+  const m = new THREE.MeshStandardMaterial({ color: 0x8c8f96, metalness: 0.95, roughness: 0.42 });
+  m.normalMap = surfaceNormalMap({ kind: 'ridges', freq: 10, strength: 0.4, seed: 11 });   // faint brushed grain
+  m.normalScale = new THREE.Vector2(0.12, 0.12);
+  return m;
+};
+export const brassMat = () => {
+  const m = new THREE.MeshStandardMaterial({ color: 0xb8893f, metalness: 1.0, roughness: 0.32 });
+  m.normalMap = surfaceNormalMap({ kind: 'ridges', freq: 9, strength: 0.4, seed: 13 });   // faint brushed grain
+  m.normalScale = new THREE.Vector2(0.1, 0.1);
+  return m;
+};
 export const darkMetalMat = () => new THREE.MeshStandardMaterial({ color: 0x1b1b1f, metalness: 0.7, roughness: 0.5 });
 export const copperMat = () => new THREE.MeshStandardMaterial({ color: 0xb5703a, metalness: 0.9, roughness: 0.35 });
 export const ceramicMat = () => new THREE.MeshStandardMaterial({ color: 0x141414, roughness: 0.85, metalness: 0.05 });
@@ -163,7 +182,8 @@ export function part(geo, material, name, pos = null) {
 // A round-bottom / boiling flask: bulb + neck + collar. Returns a Group.
 export function flask(radius = 0.85, name = 'flask', neckH = 0.5) {
   const g = new THREE.Group(); g.name = name;
-  const bulb = part(new THREE.SphereGeometry(radius, 48, 36), glassMat(), `${name}-bulb`);
+  // hero glass: high segment count for a smooth silhouette under the softboxes.
+  const bulb = part(new THREE.SphereGeometry(radius, 80, 56), glassMat(), `${name}-bulb`);
   g.add(bulb);
   g.add(part(new THREE.CylinderGeometry(radius * 0.22, radius * 0.16, neckH, 24), glassMat(),
     `${name}-neck`, V(0, radius + neckH * 0.4, 0)));

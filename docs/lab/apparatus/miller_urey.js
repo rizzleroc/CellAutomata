@@ -181,7 +181,7 @@ export function buildMillerUrey() {
   group.add(tube([v(1.5, 1.78, 0), v(1.5, 1.5, 0)], 0.085, 'collection-neck'));
   const collar = new THREE.Mesh(new THREE.CylinderGeometry(0.18, 0.13, 0.28, 24), glass());
   collar.name = 'collection-collar'; collar.position.set(1.5, 1.62, 0); group.add(collar);
-  const collFlask = new THREE.Mesh(new THREE.SphereGeometry(0.82, 48, 36), glass());
+  const collFlask = new THREE.Mesh(new THREE.SphereGeometry(0.82, 80, 56), glass());
   collFlask.name = 'collection-flask'; collFlask.position.copy(collC); collFlask.castShadow = true;
   group.add(collFlask);
   // dark organic liquid — a real filled volume with a flat rippling meniscus;
@@ -197,7 +197,7 @@ export function buildMillerUrey() {
   group.add(tube([v(boilC.x, 1.95, 0), v(boilC.x, 1.7, 0)], 0.085, 'boiling-neck'));
   const boilCollar = new THREE.Mesh(new THREE.CylinderGeometry(0.2, 0.15, 0.3, 24), glass());
   boilCollar.name = 'boiling-collar'; boilCollar.position.set(boilC.x, 1.78, 0); group.add(boilCollar);
-  const boilFlask = new THREE.Mesh(new THREE.SphereGeometry(0.95, 48, 36), glass());
+  const boilFlask = new THREE.Mesh(new THREE.SphereGeometry(0.95, 80, 56), glass());
   boilFlask.name = 'boiling-flask'; boilFlask.position.copy(boilC); boilFlask.castShadow = true;
   group.add(boilFlask);
   // Boiling water — a real filled volume with a flat rippling meniscus. The
