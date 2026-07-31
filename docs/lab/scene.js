@@ -82,7 +82,10 @@ export function createLab(container) {
   // single biggest flat-glass → real-glass win: the borosilicate now has real
   // surroundings to refract and reflect.
   const pmrem = new THREE.PMREMGenerator(renderer);
-  scene.environment = pmrem.fromScene(new RoomEnvironment(), 0.5).texture;
+  // fromScene's 2nd arg is blur SIGMA, not intensity — keep it tight for crisp
+  // glass reflections; drive IBL brightness with scene.environmentIntensity.
+  scene.environment = pmrem.fromScene(new RoomEnvironment(), 0.04).texture;
+  scene.environmentIntensity = 1.15;   // brighter image-based lighting (was the flat 0.04-sigma default)
   pmrem.dispose();   // the render target is only needed to bake the env map once
 
   const camera = new THREE.PerspectiveCamera(

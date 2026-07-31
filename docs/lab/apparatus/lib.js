@@ -250,11 +250,15 @@ export function bubbleColumn(opts = {}) {
   const group = new THREE.Group();
   group.name = opts.name || 'bubble-column';
   const geo = new THREE.SphereGeometry(1, 10, 10);
+  // Opaque + a whisper of emissive + a bright Fresnel rim: the beads live in the
+  // opaque pass the water's transmission samples, so they read as bright refracted
+  // beads (not a glowing froth) and their rims catch the bloom. Kept restrained so
+  // the boil reads as distinct bubbles rising through water, not a solid cloud.
   const mat = addRim(new THREE.MeshStandardMaterial({
-    color: opts.color ?? 0xf2fbff,
-    emissive: new THREE.Color(0xbfe8ff).multiplyScalar(0.35),
-    roughness: 0.12, metalness: 0,
-  }), { color: 0xffffff, power: 2.2, intensity: 0.8 });
+    color: opts.color ?? 0xeaf6fb,
+    emissive: new THREE.Color(0xbfe8ff).multiplyScalar(opts.emissive ?? 0.16),
+    roughness: 0.1, metalness: 0,
+  }), { color: 0xffffff, power: 2.6, intensity: opts.rim ?? 0.55 });
 
   const pool = [];
   const spawn = (b, atFloor) => {
