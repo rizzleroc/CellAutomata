@@ -7,7 +7,7 @@
 // mineral templating prebiotic polymerisation.
 
 import * as THREE from 'three';
-import { part, glassMat, liquidMat, brassMat, V } from './lib.js';
+import { part, glassMat, liquidMat, brassMat, bubbleColumn, liquidVolume, V } from './lib.js';
 
 const CLAY_Y = 0.55;       // top of the clay bed
 const SOLN_TOP = 3.4;      // supernatant surface
@@ -40,12 +40,16 @@ function build() {
     cy += h;
   }
 
-  // ── Translucent supernatant solution ──────────────────────────────────────
+  // ── Translucent supernatant — a REAL filled volume with a flat rippling
+  //    meniscus (the cylinder helper ties fill height to 2·radius, so a
+  //    non-uniform group scale.y stretches it up the beaker; radius stays true).
   const supH = SOLN_TOP - CLAY_Y;
-  const supernatant = part(new THREE.CylinderGeometry(R, R, supH, 48),
-    liquidMat(0xcfe2d4, { transmission: 0.78, opacity: 0.6 }),
-    'supernatant', V(0, CLAY_Y + supH / 2, 0));
-  group.add(supernatant);
+  const supernatant = liquidVolume(R, 0.98,
+    liquidMat(0xcfe2d4, { transmission: 0.78 }),
+    { shape: 'cylinder', name: 'supernatant' });
+  supernatant.group.scale.y = supH / (2 * R);
+  supernatant.group.position.set(0, CLAY_Y + supH / 2, 0);
+  group.add(supernatant.group);
 
   // ── Glass stopper on top ──────────────────────────────────────────────────
   group.add(part(new THREE.CylinderGeometry(R * 0.55, R * 0.62, 0.45, 32), glassMat(),
@@ -119,31 +123,16 @@ function build() {
     });
   }
 
-  // Bubbles / precipitation rising through the supernatant.
-  const bubbleMat = new THREE.MeshStandardMaterial({
-    color: 0xeaf4ec, roughness: 0.15, metalness: 0.0, transparent: true, opacity: 0.5,
+  // Mineral effervescence rising through the supernatant — the shared
+  // bubbleColumn (opaque Fresnel-rimmed beads the liquid refracts, fixed-count
+  // pool so Run/Stop stays a real state for the anim gate).
+  const boil = bubbleColumn({
+    center: V(0, (CLAY_Y + SOLN_TOP) / 2, 0), radius: R * 0.7,
+    floorY: CLAY_Y + 0.1, topY: SOLN_TOP - 0.1,
+    count: 24, rMin: 0.03, rMax: 0.06, rise: 0.4, lateral: 0.05, grow: 0.3,
+    color: 0xeaf4ec, name: 'mineral-bubbles',
   });
-  const NBUB = 22;
-  const bubbles = [];
-  const bubbleGeo = new THREE.SphereGeometry(0.045, 8, 8);
-  for (let i = 0; i < NBUB; i++) {
-    const b = new THREE.Mesh(bubbleGeo, bubbleMat);
-    const reset = () => {
-      const ang = Math.random() * Math.PI * 2, rad = Math.random() * R * 0.85;
-      b.userData.x = Math.cos(ang) * rad;
-      b.userData.z = Math.sin(ang) * rad;
-      b.position.set(b.userData.x, CLAY_Y + Math.random() * 0.25, b.userData.z);
-      b.userData.v = 0.3 + Math.random() * 0.5;
-      b.userData.s = 0.5 + Math.random() * 0.9;
-      b.scale.setScalar(b.userData.s);
-    };
-    b.userData.reset = reset;
-    reset();
-    b.position.y = CLAY_Y + Math.random() * (SOLN_TOP - CLAY_Y - 0.1);  // pre-spread
-    b.visible = false;
-    group.add(b);
-    bubbles.push(b);
-  }
+  group.add(boil.group);
 
   // A faint warm catalytic glow seated on the clay surface (grows with run).
   const clayGlow = new THREE.PointLight(0xffb866, 0, 3.2, 2);
@@ -152,7 +141,6 @@ function build() {
 
   // ── Animation ─────────────────────────────────────────────────────────────
   const stirRodBaseX = rod.position.x, stirRodBaseZ = rod.position.z;
-  const supBaseY = supernatant.position.y;
   let running = true, progress = 0;
 
   const applyChains = () => {
@@ -177,7 +165,7 @@ function build() {
   applyClumps();
 
   const anim = {
-    setRunning(on) { running = on; },
+    setRunning(on) { running = on; boil.setRunning(on); },
     getProgress() { return progress; },
     reset() {
       progress = 0;
@@ -186,7 +174,7 @@ function build() {
       polyMat.emissiveIntensity = 0;
       clayGlow.intensity = 0;
       rod.position.x = stirRodBaseX; rod.position.z = stirRodBaseZ;
-      supernatant.position.y = supBaseY;
+      supernatant.setLevel(0.98);
     },
     update(dt, t) {
       if (running) progress = Math.min(1, progress + dt / 40);
@@ -226,27 +214,18 @@ function build() {
         cl.mesh.position.z = cl.z + (running ? Math.cos(t * 1.5 + cl.phase) * 0.02 : 0);
       }
 
-      // Bubbles / precipitation rising through the supernatant (calm when stopped).
-      for (const b of bubbles) {
-        if (!running) { b.visible = false; continue; }
-        b.visible = true;
-        b.position.y += b.userData.v * dt;
-        // gentle helical drift on the way up
-        b.position.x = b.userData.x + Math.sin(t * 2.2 + b.userData.s * 6) * 0.05;
-        b.position.z = b.userData.z + Math.cos(t * 1.9 + b.userData.s * 6) * 0.05;
-        if (b.position.y > SOLN_TOP - 0.05) b.userData.reset();
-      }
+      // Mineral effervescence rising through the supernatant (calm when stopped).
+      if (running) boil.update(dt, t);
 
       // Slow convective stir: the glass rod sweeps a small circle while running;
-      // the supernatant surface bobs faintly with the convection.
+      // the supernatant surface ripples faintly with the convection.
       if (running) {
         rod.position.x = stirRodBaseX + Math.cos(t * 0.9) * 0.1;
         rod.position.z = stirRodBaseZ + Math.sin(t * 0.9) * 0.1;
-        supernatant.position.y = supBaseY + Math.sin(t * 1.3) * 0.015;
+        supernatant.shimmer(t);
       } else {
         rod.position.x = stirRodBaseX;
         rod.position.z = stirRodBaseZ;
-        supernatant.position.y = supBaseY;
       }
     },
   };

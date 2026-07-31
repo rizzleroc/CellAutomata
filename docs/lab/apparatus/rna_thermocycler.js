@@ -8,7 +8,7 @@
 // tracks cycle count — RNA replicating below the error threshold ε_c.
 
 import * as THREE from 'three';
-import { part, steelMat, bakeliteMat, glassMat, darkMetalMat, brassMat, makeDynamicTexture, V } from './lib.js';
+import { part, steelMat, bakeliteMat, glassMat, darkMetalMat, brassMat, bubbleColumn, makeDynamicTexture, V } from './lib.js';
 
 const PROGRAM = [95, 55, 72]; // denature / anneal / extend (°C)
 const STEP_T = 1.6;           // seconds per thermal step
@@ -88,6 +88,12 @@ export function build() {
     const fluid = new THREE.Mesh(new THREE.CylinderGeometry(0.075, 0.045, 0.28, 14), rMat);
     fluid.position.set(tx, 1.71, 0);
     group.add(fluid);
+    // small flat meniscus glinting at the fluid surface — shares rMat so it
+    // rides the same teal→warm thermal emissive ramp (the science) for free.
+    const men = new THREE.Mesh(new THREE.CircleGeometry(0.072, 18), rMat);
+    men.rotation.x = -Math.PI / 2;
+    men.position.set(tx, 1.85, 0);
+    group.add(men);
     reactMats.push(rMat);
     // cap
     group.add(part(new THREE.CylinderGeometry(0.12, 0.1, 0.08, 16), darkMetalMat(), `tube-cap-${i}`, V(tx, 2.0, 0)));
@@ -144,31 +150,21 @@ export function build() {
   group.add(part(new THREE.TorusGeometry(0.68, 0.04, 10, 40), steelMat(), 'gel-bezel', V(2.2, 1.4, 0.62)));
 
   // ── Bubbles inside the reaction tubes (rise during the hot/denature phase) ──
-  // Unnamed dynamic meshes; each is bound to a tube column and resets to the
-  // bottom of the fluid once it reaches the surface.
-  const bubbleGeo = new THREE.SphereGeometry(0.022, 8, 8);
-  const bubbleMat = new THREE.MeshStandardMaterial({
-    color: 0xeafff8, roughness: 0.2, metalness: 0.0, transparent: true, opacity: 0.7,
-  });
+  // One small shared bubbleColumn per tube: opaque Fresnel-rimmed beads (a
+  // fixed-count pool so Run/Stop stays a real state for the anim gate), gated
+  // on the boiling flag each frame so bubbles only rise during the hot phase.
   const TUBE_BASE = 1.60, TUBE_TOP = 1.86;   // fluid span inside a tube
-  const bubbles = [];
-  for (let i = 0; i < 8; i++) {
-    const tx = tubeXs[i];
-    for (let k = 0; k < 4; k++) {
-      const b = new THREE.Mesh(bubbleGeo, bubbleMat);
-      b.userData.tx = tx;
-      b.userData.reset = () => {
-        b.position.set(tx + (Math.random() - 0.5) * 0.06, TUBE_BASE + Math.random() * 0.04,
-          (Math.random() - 0.5) * 0.06);
-        b.userData.v = 0.10 + Math.random() * 0.16;
-        b.userData.wob = Math.random() * Math.PI * 2;
-      };
-      b.userData.reset();
-      b.visible = false;
-      group.add(b);
-      bubbles.push(b);
-    }
-  }
+  const tubeBoils = tubeXs.map((tx, i) => {
+    const col = bubbleColumn({
+      center: V(tx, (TUBE_BASE + TUBE_TOP) / 2, 0), radius: 0.05,
+      floorY: TUBE_BASE, topY: TUBE_TOP,
+      count: 4, rMin: 0.012, rMax: 0.026, rise: 0.13, lateral: 0.012, grow: 0.2,
+      color: 0xeafff8, name: `tube-boil-${i}`, seed: 0x51ed270 + i * 7919,
+    });
+    col.setRunning(false);
+    group.add(col.group);
+    return col;
+  });
 
   group.position.y = 0;
 
@@ -197,7 +193,7 @@ export function build() {
   }
 
   group.userData.anim = {
-    setRunning(on) { running = on; },
+    setRunning(on) { running = on; if (!on) for (const c of tubeBoils) c.setRunning(false); },
     getProgress() { return progress; },
     reset() {
       progress = 0; clock = 0; cycle = 1; gelOffset = 0; phaseClock = 0; heat = 0;
@@ -208,7 +204,7 @@ export function build() {
       blockMat.emissiveIntensity = 0; lidFaceMat.emissiveIntensity = 0;
       blockMat.color.copy(BLOCK_BASE_C);
       for (const rMat of reactMats) rMat.emissiveIntensity = 0;
-      for (const b of bubbles) b.visible = false;
+      for (const c of tubeBoils) c.setRunning(false);
     },
     update(dt, t) {
       if (!running) {
@@ -220,7 +216,7 @@ export function build() {
         lidFaceMat.emissiveIntensity *= 0.9;
         blockMat.color.lerp(BLOCK_BASE_C, 0.1);
         for (const rMat of reactMats) rMat.emissiveIntensity *= 0.9;
-        for (const b of bubbles) b.visible = false;
+        for (const c of tubeBoils) c.setRunning(false);
         return;
       }
       clock += dt;
@@ -254,15 +250,12 @@ export function build() {
         rMat.emissive.copy(TEAL_C).lerp(HOT_C, heat * 0.7);
       }
 
-      // Bubbles boil up the tubes during the hot phase (heat > ~0.4).
+      // Bubbles boil up the tubes during the hot phase (heat > ~0.4): each
+      // per-tube column runs only while boiling, frozen + hidden otherwise.
       const boiling = heat > 0.4;
-      for (const b of bubbles) {
-        if (!boiling) { b.visible = false; continue; }
-        b.visible = true;
-        b.userData.wob += dt * 6;
-        b.position.y += b.userData.v * heat * dt;
-        b.position.x = b.userData.tx + Math.sin(b.userData.wob) * 0.012;
-        if (b.position.y > TUBE_TOP) b.userData.reset();
+      for (const c of tubeBoils) {
+        if (boiling) { c.setRunning(true); c.update(dt, t); }
+        else c.setRunning(false);
       }
 
       // Gel bands migrate downward (driven by replication over cycles).

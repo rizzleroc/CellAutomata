@@ -8,7 +8,7 @@
 // PMF (mV) and ΔG (kJ/mol) on a glowing CanvasTexture display. Parts are named.
 
 import * as THREE from 'three';
-import { glassMat, steelMat, brassMat, copperMat, bakeliteMat, liquidMat, ringStand, part, makeDynamicTexture, V } from './lib.js';
+import { glassMat, steelMat, brassMat, copperMat, bakeliteMat, liquidMat, bubbleColumn, liquidVolume, ringStand, part, makeDynamicTexture, V } from './lib.js';
 
 export function build() {
   const group = new THREE.Group();
@@ -24,9 +24,17 @@ export function build() {
   const column = part(new THREE.CylinderGeometry(colR, colR, colH, 48, 1, true), glassMat(),
     'reactor-column', V(cx, colMid, 0));
   group.add(column);
-  const fluid = part(new THREE.CylinderGeometry(colR * 0.95, colR * 0.95, colH * 0.92, 40),
-    liquidMat(0x1c3a3a, { transmission: 0.7, roughness: 0.15, opacity: 0.8 }), 'reactor-fluid', V(cx, colMid, 0));
-  group.add(fluid);
+  // Alkaline reactor fluid — a REAL filled volume with a flat rippling meniscus.
+  // The cylinder helper ties fill height to 2·radius, so a non-uniform group
+  // scale.y stretches the unit body up the tall column (radius stays true).
+  const fluidR = colR * 0.95;
+  const fluidFullH = colH * 0.92;
+  const reactorFluid = liquidVolume(fluidR, 0.9,
+    liquidMat(0x1c3a3a, { transmission: 0.7, roughness: 0.15 }),
+    { shape: 'cylinder', name: 'reactor-fluid' });
+  reactorFluid.group.scale.y = fluidFullH / (2 * fluidR);
+  reactorFluid.group.position.set(cx, colBot + fluidFullH / 2, 0);
+  group.add(reactorFluid.group);
   const capTop = part(new THREE.CylinderGeometry(colR + 0.06, colR + 0.06, 0.28, 48), steelMat(),
     'end-cap-top', V(cx, colBot + colH + 0.08, 0));
   group.add(capTop);
@@ -92,18 +100,16 @@ export function build() {
 
   group.position.y = 0;
 
-  // ── Bubbles rising through the column ─────────────────────────────────────
-  const bubbleMat = new THREE.MeshStandardMaterial({ color: 0xddf2f0, transparent: true, opacity: 0.5, roughness: 0.2 });
-  const bubbles = [];
-  for (let i = 0; i < 22; i++) {
-    const b = part(new THREE.SphereGeometry(0.03 + Math.random() * 0.03, 8, 8), bubbleMat, `bubble-${i}`);
-    b.userData.reset = () => {
-      b.position.set(cx + (Math.random() - 0.5) * colR * 1.2, colBot + Math.random() * 0.3, (Math.random() - 0.5) * colR * 1.2);
-      b.userData.v = 0.5 + Math.random() * 0.8;
-    };
-    b.userData.reset();
-    group.add(b); bubbles.push(b);
-  }
+  // ── Alkaline percolation: rolling bubble column rising through the fluid ───
+  // Opaque Fresnel-rimmed beads (the transmissive fluid refracts them) — the
+  // shared helper's fixed-count pool, so the Run/Stop anim gate stays honest.
+  const boil = bubbleColumn({
+    center: V(cx, colMid, 0), radius: colR * 0.72,
+    floorY: colBot + 0.35, topY: colBot + colH * 0.86,
+    count: 34, rMin: 0.025, rMax: 0.07, rise: 0.55, lateral: 0.05, grow: 0.3,
+    color: 0xdff2ea, name: 'vent-bubbles',
+  });
+  group.add(boil.group);
 
   // ── Thin mineral-precipitate plume rising off the chimney top (unnamed) ───
   // Fresh FeS precipitates in the alkaline upwelling: a faint warm thread of
@@ -146,7 +152,7 @@ export function build() {
         running = on;
         glowLight.intensity = on ? 5 : 0;
         ventGlow.visible = on;
-        for (const b of bubbles) b.visible = on;
+        boil.setRunning(on);
         for (const p of plume) p.visible = on;
         if (!on) {
           // settle to a calm, un-pulsing baseline
@@ -160,18 +166,14 @@ export function build() {
       reset() { progress = 0; pmf = 150; dG = -20; paintDisplay(); },
       update(dt, t) {
         if (!running) {
-          for (const b of bubbles) b.visible = false;
           for (const p of plume) p.visible = false;
           ventGlow.visible = false;
           return;
         }
         progress = Math.min(1, progress + dt / 40);
-        // bubbles rise
-        for (const b of bubbles) {
-          b.visible = true;
-          b.position.y += b.userData.v * dt;
-          if (b.position.y > colBot + colH * 0.9) b.userData.reset();
-        }
+        // alkaline percolation column + a faint rippling fluid surface
+        boil.update(dt, t);
+        reactorFluid.shimmer(t);
         // warm flicker + shimmer: the vent breathes via slow thermal convection,
         // wavering gently in intensity and drifting as the warm plume rolls.
         const flick = 0.9 + Math.random() * 0.2;

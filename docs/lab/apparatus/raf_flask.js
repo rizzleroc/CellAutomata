@@ -7,7 +7,7 @@
 // Kauffman / Hordijk-Steel reflexively-autocatalytic set. Every part is named.
 
 import * as THREE from 'three';
-import { glassMat, steelMat, brassMat, bakeliteMat, liquidMat, emissiveMat, flask, part, V } from './lib.js';
+import { glassMat, steelMat, brassMat, bakeliteMat, liquidMat, emissiveMat, bubbleColumn, liquidVolume, flask, part, V } from './lib.js';
 
 export function build() {
   const group = new THREE.Group();
@@ -39,10 +39,14 @@ export function build() {
   const fl = flask(R, 'flask', 0.6);
   fl.position.copy(flaskC);
   group.add(fl);
-  const sol = part(new THREE.SphereGeometry(R * 0.9, 40, 28),
-    liquidMat(0xcfe0d8, { transmission: 0.7, roughness: 0.12, opacity: 0.85 }), 'solution', flaskC.clone());
-  sol.scale.y = 0.62; sol.position.y = flaskC.y - 0.34;
-  group.add(sol);
+  // Opalescent solution — a REAL filled volume with a flat rippling meniscus
+  // (kills the squashed-sphere fake). Its surface dips slightly with the vortex.
+  const BASE_LEVEL = 0.61;
+  const solution = liquidVolume(R * 0.9, BASE_LEVEL,
+    liquidMat(0xcfe0d8, { transmission: 0.7, roughness: 0.12 }),
+    { shape: 'sphere', name: 'solution' });
+  solution.group.position.copy(flaskC);
+  group.add(solution.group);
 
   // ── Stir bar (PTFE) at the flask floor ────────────────────────────────────
   const barPivot = new THREE.Group();
@@ -111,28 +115,17 @@ export function build() {
   swirl.rotation.x = Math.PI / 2;
   vortexPivot.add(swirl);
 
-  // Rising reaction BUBBLES, born at the stir bar, lofting to the surface.
-  const bubbleMat = new THREE.MeshBasicMaterial({ color: 0xffb866, transparent: true, opacity: 0.0 });
+  // Rising reaction BUBBLES, born at the stir bar and spiralling to the surface.
+  // The shared bubbleColumn: opaque Fresnel-rimmed beads the liquid refracts,
+  // a fixed-count pool so Run/Stop stays a real state for the anim gate.
   const bubbleFloorY = flaskC.y - R * 0.7;
-  const bubbles = [];
-  for (let i = 0; i < 22; i++) {
-    const b = new THREE.Mesh(new THREE.SphereGeometry(0.026 + Math.random() * 0.022, 8, 6), bubbleMat.clone());
-    b.userData.reset = () => {
-      const a = Math.random() * Math.PI * 2;
-      const rr = Math.random() * solSurfR * 0.7;
-      b.userData.x = flaskC.x + Math.cos(a) * rr;
-      b.userData.z = flaskC.z + Math.sin(a) * rr;
-      b.userData.swirlA = a;
-      b.userData.rad = rr;
-      b.position.set(b.userData.x, bubbleFloorY, b.userData.z);
-      b.userData.v = 0.35 + Math.random() * 0.5;
-      b.userData.wob = Math.random() * Math.PI * 2;
-    };
-    b.userData.reset();
-    b.position.y = bubbleFloorY + Math.random() * (solTopY - bubbleFloorY);  // pre-fill column
-    group.add(b);
-    bubbles.push(b);
-  }
+  const boil = bubbleColumn({
+    center: V(flaskC.x, (bubbleFloorY + solTopY) / 2, flaskC.z), radius: solSurfR * 0.6,
+    floorY: bubbleFloorY, topY: solTopY,
+    count: 24, rMin: 0.02, rMax: 0.05, rise: 0.42, lateral: 0.06, grow: 0.35,
+    color: 0xffe4c0, emissive: 0.1, name: 'raf-bubbles',
+  });
+  group.add(boil.group);
 
   group.position.y = 0;
 
@@ -147,10 +140,10 @@ export function build() {
       for (const n of nodes) n.visible = v;
       for (const l of links) l.visible = v;
       vortexPivot.visible = v;
-      for (const b of bubbles) b.visible = v;
+      boil.setRunning(on);
       if (!on) {
         // settle the surface flat and rest the nodes at their base glow
-        sol.scale.y = 0.62;
+        solution.setLevel(BASE_LEVEL);
         for (let i = 0; i < nodes.length; i++) {
           nodes[i].scale.setScalar(1);
           nodes[i].material.color.copy(nodeBase[i]);
@@ -163,8 +156,7 @@ export function build() {
       barPivot.rotation.y = 0;
       nodePivot.rotation.y = 0;
       vortexPivot.rotation.y = 0;
-      sol.scale.y = 0.62;
-      for (const b of bubbles) b.userData.reset();
+      solution.setLevel(BASE_LEVEL);
     },
     update(dt, t) {
       if (!running) return;
@@ -173,26 +165,17 @@ export function build() {
       nodePivot.rotation.y += dt * 0.5;        // slow node rotation
       vortexPivot.rotation.y += dt * 4.5;      // swirl tracks the stir bar
 
-      // vortex dimple: deepen as stir spins up, with a small surface wobble
+      // vortex dimple: deepen as stir spins up, dipping the real liquid level a
+      // touch and rippling the meniscus, with the cone dimple riding the surface
       const dip = 0.04 + 0.03 * Math.abs(Math.sin(t * 3.5));
-      sol.scale.y = 0.62 - dip;
+      solution.setLevel(BASE_LEVEL - dip * 0.12);
+      solution.shimmer(t);
       vortexPivot.position.y = solTopY - dip * R * 0.9 * 0.55;
       vortex.scale.y = 1 + dip * 4;            // dimple grows with the dip
       swirlMat.opacity = 0.25 + 0.2 * Math.abs(Math.sin(t * 3.5));
 
-      // rising reaction bubbles, spiralling up the vortex toward the surface
-      for (const b of bubbles) {
-        b.userData.wob += dt * 3;
-        b.userData.swirlA += dt * 1.75;         // curl with the swirl
-        b.position.y += b.userData.v * dt;
-        const climb = (b.position.y - bubbleFloorY) / Math.max(0.001, solTopY - bubbleFloorY);
-        const rad = b.userData.rad * (0.4 + 0.6 * climb);
-        b.position.x = flaskC.x + Math.cos(b.userData.swirlA) * rad + Math.sin(b.userData.wob) * 0.012;
-        b.position.z = flaskC.z + Math.sin(b.userData.swirlA) * rad + Math.cos(b.userData.wob) * 0.012;
-        const mat = b.material;
-        mat.opacity = 0.55 * Math.min(1, climb * 2) * (1 - Math.max(0, climb - 0.85) / 0.15);
-        if (b.position.y > solTopY) b.userData.reset();
-      }
+      // rising reaction bubbles spiralling up toward the surface
+      boil.update(dt, t);
 
       // node glow pulses, staggered, brightening toward catalytic closure
       const closeGlow = 0.4 + 0.6 * progress;   // whole set brightens as it closes
