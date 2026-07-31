@@ -124,6 +124,20 @@ const scene = read("scene.js");
 assert(/ACESFilmicToneMapping/.test(scene), "scene.js does not use ACES tone-mapping");
 assert(/RoomEnvironment/.test(scene), "scene.js does not set up image-based lighting");
 assert(/UnrealBloomPass/.test(scene), "scene.js does not add bloom (spark glow)");
+// 6b. The photoreal upgrade: DoF + warm optics pass, and the shared apparatus
+//     lib exporting the rim/normal-map + bubble/liquid helpers.
+assert(/BokehPass/.test(scene), "scene.js does not add depth-of-field (BokehPass)");
+assert(/ShaderPass/.test(scene), "scene.js does not add the warm optics pass (ShaderPass)");
+const lib = read("apparatus/lib.js");
+for (const fn of ["addRim", "surfaceNormalMap", "bubbleColumn", "liquidVolume"]) {
+  assert(new RegExp(`export\\s+function\\s+${fn}\\b`).test(lib),
+    `apparatus/lib.js does not export function ${fn}`);
+}
+// 6c. Miller–Urey must import the shared lib (no inline material duplication).
+const mu = read("apparatus/miller_urey.js");
+const libSpec = ["'", '"'].map((q) => `from ${q}./lib.js${q}`).find((s) => mu.includes(s));
+assert(!!libSpec, "miller_urey.js must import the shared apparatus lib");
+assert(!/const\s+glass\s*=/.test(mu), "miller_urey.js still defines its own inline glass()");
 
 // ── 7. Live SEM experiment integration ──────────────────────────────────────
 // This is the split-screen lab→experiment feature. It bridges ES modules and

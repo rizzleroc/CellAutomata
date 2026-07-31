@@ -16,8 +16,54 @@ import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
 import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
 import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
+import { BokehPass } from 'three/addons/postprocessing/BokehPass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
+import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
+
+// A warm screen-space "optics" pass: radial chromatic aberration that grows
+// toward the edge, a soft vignette, and animated sensor grain. Unlike the
+// pondwater dark-field scope this keeps the tungsten warmth (no cool white
+// balance) so the 1953 bench reads like warm film, not a microscope feed.
+const OpticsShader = {
+  uniforms: {
+    tDiffuse: { value: null },
+    uTime: { value: 0 },
+    uAberration: { value: 1.4 },
+    uVignette: { value: 0.4 },
+    uGrain: { value: 0.03 },
+    uResolution: { value: new THREE.Vector2(1, 1) },
+  },
+  vertexShader: /* glsl */`
+    varying vec2 vUv;
+    void main() { vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }
+  `,
+  fragmentShader: /* glsl */`
+    varying vec2 vUv;
+    uniform sampler2D tDiffuse;
+    uniform float uTime, uAberration, uVignette, uGrain;
+    uniform vec2 uResolution;
+    float hash(vec2 p) { return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453); }
+    void main() {
+      vec2 c = vUv - 0.5;
+      float r = length(c);
+      // radial chromatic aberration — clean at centre, fringed at the rim
+      vec2 shift = c * r * (uAberration * 4.0 / uResolution.x);
+      float cr = texture2D(tDiffuse, vUv + shift).r;
+      float cg = texture2D(tDiffuse, vUv).g;
+      float cb = texture2D(tDiffuse, vUv - shift).b;
+      vec3 col = vec3(cr, cg, cb);
+      // a hair of desaturation — keep the warmth, don't cool it
+      float l = dot(col, vec3(0.299, 0.587, 0.114));
+      col = mix(vec3(l), col, 0.92);
+      // vignette
+      col *= 1.0 - smoothstep(0.32, 0.82, r) * uVignette;
+      // animated sensor grain
+      col += (hash(vUv * uResolution + uTime) - 0.5) * uGrain;
+      gl_FragColor = vec4(col, 1.0);
+    }
+  `,
+};
 
 export function createLab(container) {
   const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false });
@@ -32,9 +78,11 @@ export function createLab(container) {
   const scene = new THREE.Scene();
   scene.background = new THREE.Color(0x07090d); // obsidian — the same receiving dark as the shell
 
-  // Neutral IBL for crisp glass reflections/refractions.
+  // Neutral IBL for crisp glass reflections/refractions. A brighter env is the
+  // single biggest flat-glass → real-glass win: the borosilicate now has real
+  // surroundings to refract and reflect.
   const pmrem = new THREE.PMREMGenerator(renderer);
-  scene.environment = pmrem.fromScene(new RoomEnvironment(), 0.04).texture;
+  scene.environment = pmrem.fromScene(new RoomEnvironment(), 0.5).texture;
   pmrem.dispose();   // the render target is only needed to bake the env map once
 
   const camera = new THREE.PerspectiveCamera(
@@ -96,15 +144,40 @@ export function createLab(container) {
   scene.add(wall);
   scene.add(makeBackdrop());
 
-  // ── Postprocessing: bloom tuned so only the spark blooms ────────────────
+  // ── Postprocessing: DoF → bloom → tone → warm optics ────────────────────
+  // Depth of field seats the apparatus in a real photographic focal plane;
+  // bloom still lets only the spark halo; the optics pass adds warm-film
+  // aberration/vignette/grain so it reads as a 1953 photograph, not clean CG.
   const composer = new EffectComposer(renderer);
   composer.addPass(new RenderPass(scene, camera));
+
+  const bokeh = new BokehPass(scene, camera, {
+    focus: camera.position.distanceTo(controls.target),
+    aperture: 0.00025, maxblur: 0.004,
+    width: container.clientWidth, height: container.clientHeight,
+  });
+  composer.addPass(bokeh);
+
   const bloom = new UnrealBloomPass(
     new THREE.Vector2(container.clientWidth, container.clientHeight),
     0.75, 0.5, 0.82,
   );
   composer.addPass(bloom);
   composer.addPass(new OutputPass());
+
+  const optics = new ShaderPass(OpticsShader);
+  optics.uniforms.uResolution.value.set(container.clientWidth, container.clientHeight);
+  composer.addPass(optics);
+
+  // Retarget the focal plane onto whatever the camera is looking at, and advance
+  // the grain — done here so main.js's render call needs no change.
+  const _render = composer.render.bind(composer);
+  let frame = 0;
+  composer.render = (deltaTime) => {
+    bokeh.uniforms.focus.value = camera.position.distanceTo(controls.target);
+    optics.uniforms.uTime.value = (frame = (frame + 1) % 100000);
+    _render(deltaTime);
+  };
 
   function setSize() {
     const w = container.clientWidth, h = container.clientHeight;
@@ -115,11 +188,12 @@ export function createLab(container) {
     camera.aspect = w / h;
     camera.updateProjectionMatrix();
     renderer.setSize(w, h);
-    composer.setSize(w, h);
+    composer.setSize(w, h);      // cascades to bokeh + bloom + optics render targets
+    optics.uniforms.uResolution.value.set(w, h);
   }
   window.addEventListener('resize', setSize);
 
-  return { THREE, renderer, scene, camera, controls, composer, setSize };
+  return { THREE, renderer, scene, camera, controls, composer, bokeh, optics, setSize };
 }
 
 // A quiet, stage-agnostic Catalytic-Silence backdrop: an obsidian field with a
