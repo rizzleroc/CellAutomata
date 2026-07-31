@@ -6,20 +6,29 @@
 // design language asks for. Three things still make it read as a real 1953
 // photograph rather than "generated" CG:
 //   1. Physically based glass (MeshPhysicalMaterial transmission, IOR 1.5).
-//   2. Image-based lighting from a neutral RoomEnvironment, plus a warm
-//      tungsten key light (kept — it is what makes the glass glow).
-//   3. ACES Filmic tone-mapping + UnrealBloom so the electric spark blooms
-//      the way a plasma discharge does on film.
+//   2. STUDIO SOFTBOX LIGHTING — warm RectAreaLight key panels (upper-L/-R) and
+//      a cool rim panel behind roll crisp rectangular reflections across the
+//      glass, the single biggest "real photo shoot" tell. IBL is now a bespoke
+//      softbox env (tight PMREM sigma → crisp reflections) with a RoomEnvironment
+//      fallback; the warm tungsten DirectionalLight stays the shadow-caster.
+//   3. A photographic post chain: GTAO contact shadows, DoF, restrained
+//      UnrealBloom, SMAA clean edges, AgX filmic tone-mapping + a warm optics grade.
 
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+// RoomEnvironment is kept as a graceful FALLBACK for the studio env below (and so
+// older presets still resolve); the primary IBL is now a bespoke softbox scene.
 import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
+import { RectAreaLightUniformsLib } from 'three/addons/lights/RectAreaLightUniformsLib.js';
 import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
 import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
+import { GTAOPass } from 'three/addons/postprocessing/GTAOPass.js';
 import { BokehPass } from 'three/addons/postprocessing/BokehPass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
+import { SMAAPass } from 'three/addons/postprocessing/SMAAPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
+import { surfaceNormalMap } from './apparatus/lib.js';
 
 // A warm screen-space "optics" pass: radial chromatic aberration that grows
 // toward the edge, a soft vignette, and animated sensor grain. Unlike the
@@ -65,27 +74,48 @@ const OpticsShader = {
   `,
 };
 
+// RectAreaLight needs its BRDF LUTs uploaded once before any area light is used.
+// Runs only in the browser (needs a GL context); the headless tests never call
+// createLab(), so this is import-safe.
+RectAreaLightUniformsLib.init();
+
 export function createLab(container) {
   const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false });
   renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
   renderer.setSize(container.clientWidth, container.clientHeight);
-  renderer.toneMapping = THREE.ACESFilmicToneMapping;
-  renderer.toneMappingExposure = 0.9;
+  // AgX is a more photographic, gently-rolled filmic curve than ACES — it holds
+  // highlight detail in the softbox reflections instead of clipping them white.
+  // AgX renders darker than ACES, so exposure is nudged up to compensate.
+  renderer.toneMapping = THREE.AgXToneMapping;
+  renderer.toneMappingExposure = 1.15;
   renderer.shadowMap.enabled = true;
   renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+  // low-power proxy: SwiftShader / weak GPUs report a small max texture size; we
+  // drop the two heaviest passes (GTAO + DoF) on those to keep the lab smooth.
+  const lowPower = renderer.capabilities.maxTextureSize < 8192;
   container.appendChild(renderer.domElement);
 
   const scene = new THREE.Scene();
   scene.background = new THREE.Color(0x07090d); // obsidian — the same receiving dark as the shell
 
-  // Neutral IBL for crisp glass reflections/refractions. A brighter env is the
-  // single biggest flat-glass → real-glass win: the borosilicate now has real
-  // surroundings to refract and reflect.
+  // ── Studio softbox IBL ──────────────────────────────────────────────────
+  // The single biggest flat-glass → real-glass win is what the glass has to
+  // reflect. Instead of a neutral RoomEnvironment we bake a bespoke STUDIO: a
+  // black room with a few emissive softbox panels (warm keys + a cool back
+  // panel). Baked at a TIGHT PMREM sigma (0.02) so the panels stay crisp
+  // rectangles rolling across the borosilicate — the studio-photo signature.
+  // RoomEnvironment is retained as a graceful fallback if the bake ever fails.
   const pmrem = new THREE.PMREMGenerator(renderer);
-  // fromScene's 2nd arg is blur SIGMA, not intensity — keep it tight for crisp
-  // glass reflections; drive IBL brightness with scene.environmentIntensity.
-  scene.environment = pmrem.fromScene(new RoomEnvironment(), 0.04).texture;
-  scene.environmentIntensity = 1.15;   // brighter image-based lighting (was the flat 0.04-sigma default)
+  pmrem.compileEquirectangularShader();
+  let envTex;
+  try {
+    envTex = pmrem.fromScene(makeStudioEnv(), 0.02).texture;
+  } catch (e) {
+    // fromScene's 2nd arg is blur SIGMA, not intensity — RoomEnvironment fallback.
+    envTex = pmrem.fromScene(new RoomEnvironment(), 0.04).texture;
+  }
+  scene.environment = envTex;
+  scene.environmentIntensity = 1.2;   // crisp, slightly brighter image-based lighting
   pmrem.dispose();   // the render target is only needed to bake the env map once
 
   const camera = new THREE.PerspectiveCamera(
@@ -127,13 +157,31 @@ export function createLab(container) {
   lamp.position.set(-4.2, 1.6, 2.2);
   scene.add(lamp);
 
+  // ── Softbox area lights: the crisp rectangular reflections that read as a
+  //    real studio shoot. RectAreaLight casts no shadow (the DirectionalLight
+  //    above stays the shadow-caster) but delivers physically-soft panel
+  //    reflections rolling across the glass and steel. Each faces the specimen.
+  const softbox = (color, intensity, w, h, pos) => {
+    const l = new THREE.RectAreaLight(color, intensity, w, h);
+    l.position.set(pos[0], pos[1], pos[2]);
+    l.lookAt(0, 2.6, 0);
+    scene.add(l);
+    return l;
+  };
+  const keyL = softbox(0xfff2e0, 11, 6, 4, [-6.5, 6.5, 4.5]);   // warm upper-left key
+  const keyR = softbox(0xfff2e0, 9,  6, 4, [ 6.5, 6.0, 4.0]);   // warm upper-right key
+  const rimBack = softbox(0xbfd4ff, 6, 5, 3.5, [0, 5.2, -5.5]); // cool rim from behind
+
   // ── Bench + backdrop so the glass has a real environment to refract ─────
   // Cooled toward obsidian so the surfaces recede into the void; the warm key
   // + lamp still pool on the bench, defining the glass without a brown stage.
-  const bench = new THREE.Mesh(
-    new THREE.BoxGeometry(40, 0.4, 24),
-    new THREE.MeshStandardMaterial({ color: 0x14110d, roughness: 0.78, metalness: 0.05 }),
-  );
+  const benchMat = new THREE.MeshStandardMaterial({ color: 0x14110d, roughness: 0.78, metalness: 0.05 });
+  // a micro-grain normal so the bench catches the softboxes as a textured wood
+  // surface, not a mirror-flat plane (the flat-PBR CG tell). Faint + broad.
+  benchMat.normalMap = surfaceNormalMap({ kind: 'fbm', freq: 3, strength: 0.5, seed: 7 });
+  benchMat.normalMap.repeat.set(8, 5);
+  benchMat.normalScale = new THREE.Vector2(0.15, 0.15);
+  const bench = new THREE.Mesh(new THREE.BoxGeometry(40, 0.4, 24), benchMat);
   bench.position.y = -0.2;
   bench.receiveShadow = true;
   scene.add(bench);
@@ -147,29 +195,45 @@ export function createLab(container) {
   scene.add(wall);
   scene.add(makeBackdrop());
 
-  // ── Postprocessing: DoF → bloom → tone → warm optics ────────────────────
-  // Depth of field seats the apparatus in a real photographic focal plane;
-  // bloom still lets only the spark halo; the optics pass adds warm-film
-  // aberration/vignette/grain so it reads as a 1953 photograph, not clean CG.
+  // ── Postprocessing: AO → DoF → bloom → AA → tone → warm optics ──────────
+  // RenderPass → GTAOPass (contact-shadow AO: the "grounded" cue) → BokehPass
+  // (real photographic focal plane) → UnrealBloomPass (restrained spark halo) →
+  // SMAAPass (clean edges — kills the jaggy CG tell) → OutputPass (AgX tone) →
+  // OpticsShader (warm-film aberration/vignette/grain). GTAO + DoF are the two
+  // heaviest passes and are skipped on the low-power path.
+  const W = container.clientWidth, H = container.clientHeight;
   const composer = new EffectComposer(renderer);
   composer.addPass(new RenderPass(scene, camera));
 
-  const bokeh = new BokehPass(scene, camera, {
-    focus: camera.position.distanceTo(controls.target),
-    aperture: 0.00025, maxblur: 0.004,
-    width: container.clientWidth, height: container.clientHeight,
-  });
-  composer.addPass(bokeh);
+  let gtao = null;
+  if (!lowPower) {
+    gtao = new GTAOPass(scene, camera, W, H);
+    gtao.output = GTAOPass.OUTPUT.Default;
+    gtao.blendIntensity = 0.9;
+    gtao.updateGtaoMaterial({ radius: 0.5, distanceExponent: 1.0, thickness: 1.0, scale: 1.0, samples: 16 });
+    composer.addPass(gtao);
+  }
 
-  const bloom = new UnrealBloomPass(
-    new THREE.Vector2(container.clientWidth, container.clientHeight),
-    0.75, 0.5, 0.82,
-  );
+  let bokeh = null;
+  if (!lowPower) {
+    bokeh = new BokehPass(scene, camera, {
+      focus: camera.position.distanceTo(controls.target),
+      aperture: 0.00025, maxblur: 0.004,
+      width: W, height: H,
+    });
+    composer.addPass(bokeh);
+  }
+
+  const bloom = new UnrealBloomPass(new THREE.Vector2(W, H), 0.75, 0.5, 0.82);
   composer.addPass(bloom);
+
+  const smaa = new SMAAPass(W, H);
+  composer.addPass(smaa);
+
   composer.addPass(new OutputPass());
 
   const optics = new ShaderPass(OpticsShader);
-  optics.uniforms.uResolution.value.set(container.clientWidth, container.clientHeight);
+  optics.uniforms.uResolution.value.set(W, H);
   composer.addPass(optics);
 
   // Retarget the focal plane onto whatever the camera is looking at, and advance
@@ -177,7 +241,7 @@ export function createLab(container) {
   const _render = composer.render.bind(composer);
   let frame = 0;
   composer.render = (deltaTime) => {
-    bokeh.uniforms.focus.value = camera.position.distanceTo(controls.target);
+    if (bokeh) bokeh.uniforms.focus.value = camera.position.distanceTo(controls.target);
     optics.uniforms.uTime.value = (frame = (frame + 1) % 100000);
     _render(deltaTime);
   };
@@ -191,12 +255,42 @@ export function createLab(container) {
     camera.aspect = w / h;
     camera.updateProjectionMatrix();
     renderer.setSize(w, h);
-    composer.setSize(w, h);      // cascades to bokeh + bloom + optics render targets
+    composer.setSize(w, h);      // cascades to bloom + smaa + optics render targets
+    if (gtao) gtao.setSize(w, h);
+    if (smaa && typeof smaa.setSize === 'function') smaa.setSize(w, h);
     optics.uniforms.uResolution.value.set(w, h);
   }
   window.addEventListener('resize', setSize);
 
-  return { THREE, renderer, scene, camera, controls, composer, bokeh, optics, setSize };
+  return { THREE, renderer, scene, camera, controls, composer, gtao, bokeh, smaa, optics, setSize };
+}
+
+// ── Studio softbox environment (baked to the IBL via PMREM) ─────────────────
+// A black room with a handful of bright emissive panels — the studio the glass
+// reflects. Warm key panels upper-left/-right, a cool fill panel behind, and a
+// dim floor/ceiling so reflections have vertical structure. Baked at a tight
+// PMREM sigma so each panel reads as a crisp rectangle on the borosilicate.
+function makeStudioEnv() {
+  const env = new THREE.Scene();
+  env.background = new THREE.Color(0x000000);
+  const panel = (color, intensity, w, h, pos, look) => {
+    const m = new THREE.Mesh(
+      new THREE.PlaneGeometry(w, h),
+      new THREE.MeshBasicMaterial({ color: new THREE.Color(color).multiplyScalar(intensity), side: THREE.DoubleSide }),
+    );
+    m.position.set(pos[0], pos[1], pos[2]);
+    if (look) m.lookAt(look[0], look[1], look[2]);
+    env.add(m);
+  };
+  // warm key softboxes
+  panel(0xfff2e0, 3.2, 8, 5, [-7, 6, 5], [0, 2.6, 0]);
+  panel(0xfff0dc, 2.4, 8, 5, [ 7, 5.5, 4.5], [0, 2.6, 0]);
+  // cool rim/fill from behind
+  panel(0xbfd4ff, 1.8, 7, 4, [0, 5, -6], [0, 2.6, 0]);
+  // faint warm ground bounce + a soft ceiling wash for vertical reflection structure
+  panel(0x2a2016, 0.9, 20, 20, [0, -2, 0], [0, 1, 0]);
+  panel(0x141821, 0.6, 20, 20, [0, 12, 0], [0, 1, 0]);
+  return env;
 }
 
 // A quiet, stage-agnostic Catalytic-Silence backdrop: an obsidian field with a

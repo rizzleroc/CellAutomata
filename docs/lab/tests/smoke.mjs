@@ -119,13 +119,19 @@ if (stageBlock) {
   assert(names.length === 13, `expected 13 stages in registry, found ${names.length}`);
 }
 
-// 6. scene.js sets up the photoreal pillars (PBR env + ACES + bloom).
+// 6. scene.js sets up the photoreal pillars (PBR env + filmic tonemap + bloom).
 const scene = read("scene.js");
-assert(/ACESFilmicToneMapping/.test(scene), "scene.js does not use ACES tone-mapping");
+// A filmic tonemap — AgX (the current photoreal grade), ACES, or Neutral all qualify.
+assert(/AgXToneMapping|ACESFilmicToneMapping|NeutralToneMapping/.test(scene),
+  "scene.js does not use a filmic tone-mapping (AgX/ACES/Neutral)");
+// RoomEnvironment must stay present (now as the PMREM studio-env fallback) so IBL
+// always resolves even if the bespoke softbox bake fails.
 assert(/RoomEnvironment/.test(scene), "scene.js does not set up image-based lighting");
 assert(/UnrealBloomPass/.test(scene), "scene.js does not add bloom (spark glow)");
-// 6b. The photoreal upgrade: DoF + warm optics pass, and the shared apparatus
-//     lib exporting the rim/normal-map + bubble/liquid helpers.
+// 6b. The photoreal render pass: softbox area lights + AO + AA + DoF + warm optics.
+assert(/RectAreaLight/.test(scene), "scene.js does not add softbox RectAreaLight studio lighting");
+assert(/GTAOPass/.test(scene), "scene.js does not add ambient occlusion (GTAOPass contact shadows)");
+assert(/SMAAPass/.test(scene), "scene.js does not add anti-aliasing (SMAAPass clean edges)");
 assert(/BokehPass/.test(scene), "scene.js does not add depth-of-field (BokehPass)");
 assert(/ShaderPass/.test(scene), "scene.js does not add the warm optics pass (ShaderPass)");
 const lib = read("apparatus/lib.js");
