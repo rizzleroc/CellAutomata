@@ -13,30 +13,13 @@
 // Every part is named so the right-hand parts panel and the exploded view can
 // address it individually (à la a real exploded lab diagram).
 
-import * as THREE from 'three';
-
-// ── Shared materials ────────────────────────────────────────────────────────
-const glass = () => new THREE.MeshPhysicalMaterial({
-  color: 0xffffff, metalness: 0, roughness: 0.04,
-  transmission: 1.0, thickness: 0.35, ior: 1.5,
-  transparent: true, envMapIntensity: 1.4, clearcoat: 0.3, clearcoatRoughness: 0.1,
-});
-const steel = () => new THREE.MeshStandardMaterial({ color: 0x8c8f96, metalness: 0.95, roughness: 0.42 });
-const brass = () => new THREE.MeshStandardMaterial({ color: 0xb8893f, metalness: 1.0, roughness: 0.32 });
-const darkMetal = () => new THREE.MeshStandardMaterial({ color: 0x1b1b1f, metalness: 0.7, roughness: 0.5 });
-const copper = () => new THREE.MeshStandardMaterial({ color: 0xb5703a, metalness: 0.9, roughness: 0.35 });
-const ceramic = () => new THREE.MeshStandardMaterial({ color: 0x141414, roughness: 0.85, metalness: 0.05 });
-
-function v(x, y, z = 0) { return new THREE.Vector3(x, y, z); }
-
-// A swept glass tube along a polyline.
-function tube(points, radius = 0.085, name = 'tube') {
-  const curve = new THREE.CatmullRomCurve3(points);
-  const geo = new THREE.TubeGeometry(curve, Math.max(24, points.length * 12), radius, 20, false);
-  const m = new THREE.Mesh(geo, glass());
-  m.name = name; m.castShadow = true;
-  return m;
-}
+// Materials + helpers come from the shared photoreal lib so the whole bench
+// reads as one photograph (and the rim/normal-map upgrades lift this stage too).
+import {
+  THREE, V as v, glassMat as glass, steelMat as steel, brassMat as brass,
+  darkMetalMat as darkMetal, copperMat as copper, ceramicMat as ceramic,
+  tube, liquidMat, bubbleColumn, liquidVolume, addRim,
+} from './lib.js';
 
 export function buildMillerUrey() {
   const group = new THREE.Group();
@@ -201,15 +184,11 @@ export function buildMillerUrey() {
   const collFlask = new THREE.Mesh(new THREE.SphereGeometry(0.82, 48, 36), glass());
   collFlask.name = 'collection-flask'; collFlask.position.copy(collC); collFlask.castShadow = true;
   group.add(collFlask);
-  // dark organic liquid (a clipped sphere cap, level rises + darkens)
-  const liquidMat = new THREE.MeshPhysicalMaterial({
-    color: 0x3a1d08, roughness: 0.25, transmission: 0.55, thickness: 1.2, ior: 1.35, transparent: true,
-  });
-  const liquid = new THREE.Mesh(new THREE.SphereGeometry(0.78, 40, 28), liquidMat);
-  liquid.name = 'organic-liquid';
-  liquid.position.copy(collC);
-  liquid.scale.y = 0.5; liquid.position.y = collC.y - 0.34;
-  group.add(liquid);
+  // dark organic liquid — a real filled volume with a flat rippling meniscus;
+  // its level rises and its body darkens as amino acids accumulate.
+  const collection = liquidVolume(0.78, 0.42, liquidMat(0x3a1d08), { name: 'organic-liquid' });
+  collection.group.position.copy(collC);
+  group.add(collection.group);
   // bottom stopcock
   const drain = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.05, 0.32, 12), glass());
   drain.name = 'drain-stopcock'; drain.position.set(1.5, 0.05, 0); group.add(drain);
@@ -221,14 +200,14 @@ export function buildMillerUrey() {
   const boilFlask = new THREE.Mesh(new THREE.SphereGeometry(0.95, 48, 36), glass());
   boilFlask.name = 'boiling-flask'; boilFlask.position.copy(boilC); boilFlask.castShadow = true;
   group.add(boilFlask);
-  // Boiling water — saturated and bodied (lower transmission + volume
-  // attenuation) so the liquid unmistakably reads as water, not empty glass.
-  const water = new THREE.Mesh(new THREE.SphereGeometry(0.9, 40, 28),
-    new THREE.MeshPhysicalMaterial({ color: 0x6fb8d6, roughness: 0.08, transmission: 0.6,
-      thickness: 1.4, ior: 1.33, transparent: true,
-      attenuationColor: new THREE.Color(0x2f6f86), attenuationDistance: 1.4 }));
-  water.name = 'boiling-water'; water.position.copy(boilC); water.scale.y = 0.62; water.position.y = boilC.y - 0.38;
-  group.add(water);
+  // Boiling water — a real filled volume with a flat rippling meniscus. The
+  // attenuation is kept LIGHT so the rising bubble column reads through the
+  // water instead of being muddied by it.
+  const water = liquidVolume(0.9, 0.55, liquidMat(0x6fb8d6, {
+    attenuationColor: new THREE.Color(0x4f97ad), attenuationDistance: 2.2, transmission: 0.55,
+  }), { name: 'boiling-water' });
+  water.group.position.copy(boilC);
+  group.add(water.group);
   const mantle = new THREE.Mesh(new THREE.CylinderGeometry(0.95, 1.05, 0.85, 40), ceramic());
   mantle.name = 'heating-mantle'; mantle.position.set(boilC.x, 0.1, 0); mantle.castShadow = true; mantle.receiveShadow = true;
   group.add(mantle);
@@ -266,19 +245,13 @@ export function buildMillerUrey() {
   group.position.y = 0; // sits on bench
 
   // ── Animation state ───────────────────────────────────────────────────────
-  // bubbles in the boiling flask
-  const bubbleGeo = new THREE.SphereGeometry(0.05, 8, 8);
-  const bubbleMat = new THREE.MeshStandardMaterial({ color: 0xeaf6fb, transparent: true, opacity: 0.62, roughness: 0.2 });
-  const bubbles = [];
-  for (let i = 0; i < 36; i++) {
-    const b = new THREE.Mesh(bubbleGeo, bubbleMat);
-    b.userData.reset = () => {
-      b.position.set(boilC.x + (Math.random() - 0.5) * 1.1, boilC.y - 0.7, (Math.random() - 0.5) * 1.1);
-      b.userData.v = 0.4 + Math.random() * 0.6;
-    };
-    b.userData.reset();
-    group.add(b); bubbles.push(b);
-  }
+  // Rolling boil — bright OPAQUE Fresnel-rimmed beads (see bubbleColumn: they
+  // MUST be opaque so the transmissive water refracts them into visible beads).
+  const boil = bubbleColumn({
+    center: boilC, radius: 0.8, floorY: boilC.y - 0.72, topY: boilC.y + 0.18,
+    count: 44, rMin: 0.03, rMax: 0.085, rise: 0.5, lateral: 0.03, grow: 0.4,
+  });
+  group.add(boil.group);
   // falling condensate droplets below the condenser
   const drops = [];
   for (let i = 0; i < 8; i++) {
@@ -291,10 +264,10 @@ export function buildMillerUrey() {
   // occasional fat condensate/organic drip that beads at the condenser mouth and
   // falls the whole way down the neck into the collection flask (unnamed). These
   // are staggered and mostly idle, so only one is usually in flight at a time.
-  const dripMat = new THREE.MeshPhysicalMaterial({
-    color: 0xc8d8dd, transmission: 0.85, roughness: 0.12, thickness: 0.3,
-    ior: 1.33, transparent: true,
-  });
+  const dripMat = addRim(new THREE.MeshPhysicalMaterial({
+    color: 0xdfefff, transmission: 0.92, ior: 1.42, roughness: 0.05, thickness: 0.3,
+    iridescence: 0.5, iridescenceIOR: 1.3, transparent: true,
+  }), { color: 0xd6f6ff, power: 2, intensity: 0.7 });
   const drips = [];
   for (let i = 0; i < 3; i++) {
     const d = new THREE.Mesh(new THREE.SphereGeometry(0.045, 10, 10), dripMat);
@@ -315,7 +288,7 @@ export function buildMillerUrey() {
 
   let running = true;
   let progress = 0; // 0..1 organic accumulation
-  anim.setRunning = (on) => { running = on; };
+  anim.setRunning = (on) => { running = on; boil.setRunning(on); };
   anim.getProgress = () => progress;
   anim.reset = () => { progress = 0; };
 
@@ -338,15 +311,10 @@ export function buildMillerUrey() {
       sparkLight.intensity = 0;
       swirlMat.opacity = Math.max(0, swirlMat.opacity - dt * 0.6);  // settle to clear
     }
-    // boiling bubbles
-    for (const b of bubbles) {
-      if (!running) { b.visible = false; continue; }
-      b.visible = true;
-      b.position.y += b.userData.v * dt;
-      if (b.position.y > boilC.y + 0.2) b.userData.reset();
-    }
-    // boiling water: a gentle surface shimmer so the liquid reads as alive
-    if (running) water.scale.x = water.scale.z = 1 + Math.sin(t * 6) * 0.006;
+    // rolling boil: the bubble column rises while running, freezes on Stop
+    if (running) boil.update(dt, t);
+    // boiling water: a faint rippling meniscus so the surface reads as alive
+    if (running) water.shimmer(t);
     // condensate drops
     for (const d of drops) {
       if (!running) { d.visible = false; continue; }
@@ -373,12 +341,13 @@ export function buildMillerUrey() {
         if (d.position.y < u.land) u.arm();     // splashed onto the liquid → re-arm
       }
     }
-    // organic accumulation: liquid rises + darkens
-    if (running) progress = Math.min(1, progress + dt / 45);
-    const fill = 0.42 + progress * 0.42;              // sphere-scale of liquid level
-    liquid.scale.y = fill;
-    liquid.position.y = collC.y - 0.78 * (1 - fill * 0.5);
-    liquidMat.color.setRGB(0.23 * (1 - progress * 0.5), 0.11 * (1 - progress * 0.4), 0.03);
+    // organic accumulation: collection liquid rises + darkens as it fills
+    if (running) {
+      progress = Math.min(1, progress + dt / 45);
+      collection.setLevel(0.42 + progress * 0.42);
+      collection.body.material.color.setRGB(
+        0.23 * (1 - progress * 0.5), 0.11 * (1 - progress * 0.4), 0.03);
+    }
   };
 
   group.userData.anim = anim;
