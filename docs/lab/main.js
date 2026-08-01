@@ -64,6 +64,30 @@ try {
 let current = null;
 let currentMeta = null;
 
+// ── Photo-develop mode ──────────────────────────────────────────────────────
+// The real GPU path tracer (true refraction/caustics/GI). Loaded lazily and kept
+// in its own module so the zero-dep test gates never touch the extra CDN deps.
+// It stays dormant until you stop the sim and hold the camera still, then it
+// "develops" the apparatus into a photographic still; any interaction reverts to
+// the fast raster view. `photo` is null until the module resolves (and on any
+// unsupported GPU it self-gates to a no-op).
+let photo = null;
+if (lab) {
+  import('./photomode.js')
+    .then((m) => m.createPhotoMode({
+      lab,
+      mount: $('viewport'),
+      getView: currentView,
+      isRunning: () => apparatusRunning,
+    }))
+    .then((p) => {
+      photo = p;
+      // Opt-in debug hook (append ?ptdebug to the URL) for headless verification.
+      if (/[?&]ptdebug\b/.test(location.search)) window.__photoDebug = p;
+    })
+    .catch((err) => console.warn('[cellauto] photo-develop mode unavailable:', err));
+}
+
 // ── Live SEM experiment driver (verbatim engine semantics from web6) ────────
 const expCanvas  = $('expCanvas');
 const expCtx     = expCanvas.getContext('2d');
@@ -759,11 +783,23 @@ let lastReadout = '';
 function tick() {
   const inExp = currentView() === 'exp';
   const dt = Math.min(clock.getDelta(), 0.05);
-  current?.userData?.anim?.update(dt, clock.elapsedTime);
+  // While a photoreal plate is developing the scene must be perfectly still, so
+  // the path tracer can accumulate — freeze the apparatus anim for that window.
+  const developing = !!(photo && photo.isDeveloping());
+  if (!developing) current?.userData?.anim?.update(dt, clock.elapsedTime);
+  // Let photo-develop mode arm/disarm from the current view + camera + run state
+  // (it self-gates: no-op unless in LAB view, stopped, and the camera is still).
+  photo?.update(dt);
   // In Micrograph view the 3-D pane is hidden → skip controls damping + the
   // (expensive) WebGL composer pass entirely; the apparatus anim still advances
   // so the progress readout stays live.
-  if (!inExp) { lab.controls.update(); lab.composer.render(); }
+  if (!inExp) {
+    lab.controls.update();
+    // When developing, accumulate a path-traced sample instead of the raster
+    // composer; otherwise render the live rasterized view as before.
+    if (photo && photo.active()) photo.render();
+    else lab.composer.render();
+  }
   const isSpecimen = currentMeta?.id?.startsWith('capstone');
   let txt = '';
   if (!currentMeta?.placeholder && !isSpecimen) {
