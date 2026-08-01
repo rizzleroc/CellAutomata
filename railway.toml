@@ -5,10 +5,10 @@
 # needs to serve docs/, not run the simulator.
 #
 # Route map (served from docs/):
-#   /            → docs/index.html       (redirects to /web2/)
-#   /web2/       → web 2.0 multi-rule sandbox  (headline)
-#   /web/        → web 1.0 Gray-Scott museum plate  (preserved)
-#   /generated/  → static stage plates referenced by both demos
+#   /            → docs/index.html       (the Catalytic Silence hub — the front door)
+#   /lab/        → the flagship origin-of-life lab
+#   /studio/, /slime/, /murmuration/, /ontogeny/, /pondwater/  → the other clients
+#   /generated/  → static stage plates the hub gallery references
 
 [build]
 builder = "dockerfile"
@@ -17,5 +17,5 @@ dockerfilePath = "Dockerfile"
 [deploy]
 restartPolicyType = "on_failure"
 restartPolicyMaxRetries = 3
-healthcheckPath = "/web2/"
+healthcheckPath = "/"
 healthcheckTimeout = 30

@@ -37,7 +37,7 @@ ok(/<canvas[^>]*id="stage"/.test(html) && /<canvas[^>]*id="membranes"/.test(html
 const css = read('styles.css');
 ok(/--teal:\s*#3fe0d0/.test(css) && /--magenta:\s*#d77bff/.test(css), 'palette tokens (teal + magenta) present');
 ok(/@font-face/.test(css) && /Italiana/.test(css) && /IBM Plex Mono/.test(css), 'museum type pack declared');
-ok(/web8\/assets\/fonts/.test(css), 'reuses web8 self-hosted fonts (no new binaries)');
+ok(/\.\.\/assets\/fonts/.test(css), 'reuses the shared self-hosted fonts (no new binaries)');
 ok(/prefers-reduced-motion/.test(css), 'reduced-motion path present');
 
 // 4 · engine wired into the page ----------------------------------------------

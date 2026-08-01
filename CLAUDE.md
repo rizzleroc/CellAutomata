@@ -24,42 +24,50 @@ multiples → stages of life).
 
 | Dir | What it is | Status |
 |---|---|---|
-| `web7/` | **The canonical lab** ("Catalytic Silence") — 13 abiogenesis stages, each a photoreal Three.js apparatus + a live SEM micrograph | active |
-| `web8/` | **The Guided Colony** = web7 + a living-amoeba guide creature (`guide.js`, `guide.css`, `blobgeom.js`) | active |
-| `web9/` | **The Instrument** = web8 (guide/"slime" layer included) + a live measurement layer (`observables.js`): per-step observable sparkline (roughness σ²/⟨h⟩), CSV export, and a shareable run-URL (stage/view/palette in the hash). A **Pro paywall** (`paywall.js`/`paywall.css`) gates the Parameters rail (tweak knobs · step/reset transport · CSV/link export) behind a one-tap `$1`/`$9.99` unlock **or a redeemable access token**; watching the live specimen is free. The landing links to the on-site full-feed **Studio** (`../studio/`), **Slime Studio** (`../slime/`), and the **Murmuration** simulator (`../murmuration/`) | active |
-| `web10/` | **"Mark X"** — a re-shell of web7 (own engine copies) with a refined identity: MK X build tag + magenta accent, a hero-art plate rail (`generated/web10/stageNN_*.png`), a 13-node timeline scrubber + run provenance, and a **token-gated Pro export** (`pro.js`) that renders the current stage's SEM micrograph in-page up to **4000²** | active |
+| `lab/` | **The Lab** ("Mark X") — THE flagship, the consolidation of the former web7 (base) / web8 (+guide) / web9 (+instrument) / web10 (shell) lineage: 13 abiogenesis stages, each a photoreal Three.js apparatus + live SEM micrograph, in the Mark X shell (MK X build tag, hero-art plate rail from `generated/web10/stageNN_*.png`, 13-node timeline scrubber + provenance), with the **amoeba guide** (`guide.js`/`narration.js`/`intents.js` — narrates every stage, free) and the **instrument layer** (`observables.js`: per-step σ²/⟨h⟩ sparkline, CSV, shareable run hash). **Pro (CatSilPro)** gates the Parameters rail, observable CSV/run-link export, and the in-page SEM plate export up to **4000²**. **Photo-develop mode** (`photomode.js`) drops in a real **GPU path tracer** when the sim is stopped + the camera is still — the apparatus "develops" into a genuinely photographic still (true refraction/caustics/GI), reverting to the fast raster view on any interaction. Seven gates: `lab/tests/{smoke,design,runtime,anim,controls,intents,pro}.mjs` | active |
+| `web7/` `web8/` `web9/` `web10/` | hash-preserving redirect stubs → `lab/` (each dir is a single index.html) | retired |
 | `ontogeny/` | **Part II — the origin of an individual.** Pure canvas + `sem.js`; engine `sim.js`, renderer `render.js`, controller `app.js` | active |
 | `pondwater/` | **The Pond Water Analyzer** — a dark-field microscope of virtual pond water. Six procedurally-grown organisms (`organisms/*.js`) from bacterium → water flea, each with true-to-life internal organs; a continuous **infinite-zoom engine** (`main.js`) dives from the whole drop to organ level, fading in organ callout labels by scale. Three.js via importmap, `scene.js` for the wet-mount look | active |
 | `slime/` | **Slime Studio** — interactive *Physarum* lab (`slime.js`): place nutrients, watch it grow paths, with a live SEM-micrograph feed beside the interactive view. Adjustable **Colony** (up to 60k plasmodia) and **Detail** (200²–360² grid, live `setGrid` realloc) controls for larger/higher-res colonies, plus a Pro paywall (shared `pro.js` token) gating a 4000² SEM plate export. Zero-dep canvas | active |
-| `studio/` | **The Studio** — the full-feed generative desk: **13 engines** (flow, reaction–diffusion, Physarum incl. cosmic/kaleido/growth presets, boids murmuration, Lenia, cymatics, DLA, starling murmuration, fractal worlds), each a live tile with its own control desk, 🎲 randomize, and shareable-settings hash. Free to watch; **Pro** (shared `pro.js` token) unlocks every control desk + **real 4K video/still export** (in-browser `MediaRecorder`/`toBlob`). Single self-contained page; brought **on-site** from the former claude.ai artifact. Smoke-gated by `studio/tests/smoke.mjs` | active |
+| `studio/` | **The Studio** ("MK I") — the full-feed generative desk in the Catalytic Silence shell: **13 engines** (flow, reaction–diffusion, Physarum incl. cosmic/kaleido/growth presets, boids murmuration, Lenia, cymatics, DLA, starling murmuration, fractal worlds), each a live HiDPI tile with its own control desk, 🎲 randomize, and a **versioned share hash** (`#v=2` keyed by stable per-control `key`s; legacy label links still restore). Kernels live in `engines.js` (`window.StudioEngines`, classic script — vm-testable); the page is `index.html` + `engines.js` + `pro.js`. Free to watch; **Pro** (shared `pro.js` token) unlocks every control desk + **true-detail 4K video/still export** — per-engine `fidelity`/`warmPlan`/`still()` hooks compute finer fields at export size (fractal stills iterate every output pixel; a REC HUD + fidelity note keep the promise honest). Three gates: `studio/tests/{smoke,design,controls}.mjs` | active |
 | `murmuration/` | **Murmuration** — a full starling-flocking simulator after Hoetzlein's *Flock2* (arXiv:2404.17804). **Orientation-based social flocking** (avoidance/alignment/cohesion as *turning* pressures through a limited visual field) drives a **single-body fixed-wing flight model** (`flock.js` — lift/drag/gravity/banking/stall; birds lose altitude in turns, speed up in dives). Framework-free engine (spatial-hash neighbours, seeded RNG) → InstancedMesh birds with a GPU wingbeat (`bird.js`); dusk-sky scope (`scene.js`); controller (`main.js`) with six regimes (`presets.js`), a stooping peregrine, order-parameter telemetry, three camera modes, and a shareable URL hash | active |
-| `web`, `web2`, `web3`, `web6` | earlier clients, retained for comparison | legacy |
+| `web`, `web2`, `web3`, `web6` | v1-era clients, retained on disk for comparison — unlinked from the catalog/front door and **no longer CI-gated** | legacy |
 
-Self-hosted fonts live in `web8/assets/fonts/`; ontogeny reuses them via
-`../web8/assets/fonts/`. PRDs: `docs/PRD_ONTOGENY.md`,
+Self-hosted fonts live in **`docs/assets/fonts/`** (the neutral shared home);
+every client references them via `../assets/fonts/`. PRDs: `docs/PRD_ONTOGENY.md`,
 `docs/PRD_SEM_VISUALIZATION.md`, `docs/PRD_LIFE_DIGITAL_ORGANISMS.md`.
 
 ## Architecture notes
 
 - **Zero-dependency ES modules.** No build step. Labs load **Three.js via a CDN
   importmap**; ontogeny is pure `<canvas>` + `sem.js` (classic script) + ES
-  modules. Everything opens from `file://` or any static server.
-- **Pro unlock — client-side token** (`pro.js`, copies in `web10/`, `slime/`, `studio/`, and the hub root `docs/pro.js`).
+  modules. Everything opens from `file://` or any static server. The Lab's
+  importmap also carries **`three-mesh-bvh@0.7.6` + `three-gpu-pathtracer@0.0.23`**
+  (the r162-compatible release — 0.0.24 needs three ≥0.180) and a raw
+  `three/examples/jsm/` alias, but the path-tracer bundle is only ever pulled in
+  by a **lazy dynamic `import()`** inside `photomode.js` (see below) — nothing
+  heavy loads at page start.
+- **Pro unlock — client-side token** (`pro.js`, copies in `lab/`, `slime/`, `studio/`, and the hub root `docs/pro.js`).
   The site is static (GitHub Pages), so "Pro" is a **client-side unlock keyed by a
   shareable token** (`CATSIL-XXXX-XXXX-CKSUM`, FNV-1a checksum) persisted in
   `localStorage['catsil.pro.token']`. Because localStorage is per-origin,
   redeeming a token in any client unlocks Pro in **all** of them and survives a
   reload. It exposes `window.CatSilPro` (`isUnlocked`/`showPaywall`/`redeem`/
   `grantDemo`/`clear`/`onChange`) and injects its own paywall modal (demo unlock +
-  redeem-token field). It gates the **hi-res SEM plate export** (web10's `PRO ·
-  4000²` pill renders the current stage in-page up to 4000²; slime's `Export 4K`
-  button; **studio's** every control desk + real 4K video/still export; and the
-  hub's `Go Pro` button, which unlocks site-wide from the front door). **Not a
-  security boundary** — a client-side gate never is; it is the "free taste →
-  unlock with a token" model (cf. `docs/PRICING.md`). The unmerged PR #76 (web9
-  Clerk/Stripe server) is the server-side alternative, undeployable on Pages.
-  web9 still ships its **own** `paywall.js` (token `CATALYST-SILENCE`); the other
-  four share `pro.js` — propagate `pro.js` fixes to **all four copies**.
+  redeem-token field); `showPaywall({title, reason, onUnlock})` takes an optional
+  text-escaped `title` so each client speaks its own product language in the
+  heading (the Studio passes "Unlock every desk"; the Lab passes "Unlock the
+  Instrument"; the default stays the SEM-plate heading). It gates **the lab's**
+  Parameters rail + observable CSV/run-link export + `PRO · 4000²` plate pill;
+  slime's `Export 4K` button; **studio's** every control desk + true-detail 4K
+  video/still export; and the hub's `Go Pro` button, which unlocks site-wide
+  from the front door. **Not a security boundary** — a client-side gate never
+  is; it is the "free taste → unlock with a token" model (cf.
+  `docs/PRICING.md`). The unmerged PR #76 (a web9-era Clerk/Stripe server) is
+  the server-side alternative, undeployable on Pages. This is the **only** Pro
+  system — web9's bespoke `paywall.js` retired with its client. Propagate
+  `pro.js` fixes to **all four copies** (`docs/`, `lab/`, `slime/`, `studio/`
+  — the parity gate and the Studio smoke gate fail CI on drift).
 - **Front door & free/paid catalog.** `docs/index.html` is the front door: a
   hero clip (`media/hero_loop.mp4`), category-organized **tool cards each carrying
   a Free/Pro tier chip**, a plans surface with a working `Go Pro` unlock, the reel
@@ -72,8 +80,10 @@ Self-hosted fonts live in `web8/assets/fonts/`; ontogeny reuses them via
 - **SEM depth-shading pipeline** (`sem.js`, one copy per client): a Float32
   height field `[0,1]` → depth-shaded RGBA. `window.SEM.render(height, w, h,
   rgba, { palette, scale, relief, noise })`. Palettes `warm-sepia` / `cool-mono`;
-  optional `noise` overrides substrate-grain opacity (default `0.045`; web8 copy).
-  **`scale` (supersample) is capped 1–4** (`sem.js:144`). Self-contained.
+  optional `noise` overrides substrate-grain opacity (default `0.045`).
+  **`scale` (supersample) is capped 1–4** (`sem.js:144`). Self-contained. The
+  two live copies (`lab/experiment/sem.js`, `ontogeny/sem.js`) are pinned
+  byte-identical by `docs/tests/parity.mjs`.
 - **Pond Water material/geometry grammar** (`docs/pondwater/organisms/lib.js`):
   the shared toolkit every organism inherits. `cuticle`/`organ`/`nucleus` are
   now `MeshPhysicalMaterial` (transmission + thickness + `attenuationColor`/
@@ -101,12 +111,50 @@ Self-hosted fonts live in `web8/assets/fonts/`; ontogeny reuses them via
   focus (`camera.distanceTo(controls.target)`) and grain seed, so `main.js`
   stays untouched. Keep `ACESFilmicToneMapping` / `RoomEnvironment` /
   `UnrealBloomPass` / `FogExp2` present — `tests/smoke.mjs` asserts them.
-- **Lab control panel** is built in `docs/web7/main.js:321-433` (web8 shares the
-  rules) from each rule's **own `params` schema** plus its **regime picker**
+- **Lab control panel** is built in `docs/lab/main.js` (`buildParamPanel`) from
+  each rule's **own `params` schema** plus its **regime picker**
   (`rule.presets` array, or an `enum` param), with two globals (speed, palette).
   The same panel drives the **LAB / SPLIT / LIVE·SEM (micrograph)** views in
-  lockstep. CA engines live in `docs/web7/experiment/rules/*.js`; the bespoke 3D
-  instruments in `docs/web7/apparatus/*.js`.
+  lockstep; it sits behind the CatSilPro `.param-lock` overlay for free users.
+  CA engines live in `docs/lab/experiment/rules/*.js`; the bespoke 3D
+  instruments in `docs/lab/apparatus/*.js`.
+- **Lab apparatus photoreal system** (`docs/lab/apparatus/lib.js` +
+  `docs/lab/scene.js`): the shared toolkit all 13 apparatus inherit. Glass is
+  transmission `MeshPhysicalMaterial` with a Fresnel edge rim (`addRim`, patched
+  via `onBeforeCompile` — compile-time only, invisible to the headless tests);
+  fluids use `liquidVolume(radius, level, mat)` (a real body + a flat rippling
+  meniscus disc — **no more `scale.y` squashed-sphere fakes**) and
+  `bubbleColumn(opts)` (a fixed pool of **opaque, emissive, rim-lit** rising
+  beads — opaque on purpose: r162 screen-space transmission only refracts the
+  opaque backbuffer, so transmissive bubbles vanish). `scene.js` adds `BokehPass`
+  DoF (focus tracked to `controls.target`) + a warm `OpticsShader` (CA/vignette/
+  grain, no cool white-balance) via a `composer.render` monkey-patch (no main.js
+  edit), and `scene.environmentIntensity` (not the `fromScene` sigma) drives IBL.
+  The `anim.mjs` gate measures kinetic motion over position/scale/opacity/color/
+  emissive, so fluid/bubble motion must keep mutating those while running and
+  **freeze on Stop** (`bubbleColumn.setRunning(false)` hides+freezes). The SEM
+  micrograph stays a distinct 2-D scientific view (CPU height-field → `SEM.render`),
+  not merged into the 3-D scene. See `miller_urey.js` as the worked example.
+- **Photo-develop mode** (`docs/lab/photomode.js`): the realism ceiling. The 13
+  apparatus are rasterized (fast, but rasterization *fakes* refraction + caustics —
+  the CG tell on glassware). This module drops in a real **GPU path tracer**
+  (`three-gpu-pathtracer`/`WebGLPathTracer` on `three-mesh-bvh`) that computes true
+  light transport. **Hybrid "photo-develop":** raster while running/orbiting; when
+  the sim is **stopped** and the camera **settles**, it accumulates path-traced
+  samples (`renderSample()`) into a photographic still (a `◉ developing… → ✓
+  photoreal plate` chip tracks it), reverting instantly on any interaction. The
+  environment is a **procedural studio equirect** (`GradientEquirectTexture` +
+  softbox rectangles — zero HDRI asset), swapped into `scene.environment` only for
+  the trace. Wiring is minimal: `main.js` dynamic-`import()`s `createPhotoMode`,
+  freezes the apparatus anim while `isDeveloping()`, and calls `photo.render()` in
+  place of `lab.composer.render()` while `active()` (`main.js` render loop). It
+  **self-gates** off on WebGL1 / low-power GPUs and hard-fails safe to raster on any
+  tracer error (`broken`). `scene.js` is untouched. Deliberately isolated: it is the
+  ONLY module that references the tracer, and it lazy-imports the bundle — so the
+  zero-dep gates (which import the *apparatus* modules) never resolve the extra deps.
+  `smoke.mjs` asserts the importmap deps + the lazy-import discipline. **Caveat:**
+  headless SwiftShader can't fairly render a GPU path trace (the settle counter
+  crawls at ~0.4 fps and each sample is minutes) — verify realism on a real GPU.
 - **Ontogeny growth plate** (the SEM specimen canvas) is rendered in
   `docs/ontogeny/render.js` — currently `BASE=168, SCALE=2` → a 336px offscreen
   buffer drawn to fit. Height-field primitives are grid-relative
@@ -122,21 +170,17 @@ so a broken client can't reach main. Python CI is `.github/workflows/ci.yml`.
 Run the JS gates locally (zero-dep, Node 20) — these mirror CI exactly:
 
 ```bash
-# Web7 (canonical lab)
-node docs/web7/tests/smoke.mjs
-node docs/web7/tests/design.mjs
-node docs/web7/tests/runtime.mjs      # needs: npm i three@0.162.0 --no-save
-node docs/web7/tests/anim.mjs
-node docs/web7/tests/controls.mjs     # presets wired to real params
+# The Lab (flagship — engine + guide + instrument, Mark X shell)
+node docs/lab/tests/smoke.mjs         # importmap/modules/STAGE_MAP + merged layers parse & wire
+node docs/lab/tests/design.mjs        # Catalytic Silence + Mark X contract + shared fonts + a11y
+node docs/lab/tests/runtime.mjs       # needs: npm i three@0.162.0 --no-save
+node docs/lab/tests/anim.mjs          # proves each experiment visibly runs
+node docs/lab/tests/controls.mjs      # presets wired to real params
+node docs/lab/tests/intents.mjs       # ask-the-amoeba request -> action mapping
+node docs/lab/tests/pro.mjs           # CatSilPro gates rail/CSV/plate; token checksum verifies
 
-# Web8 (guided lab) — same five gates
-node docs/web8/tests/{smoke,design,runtime,anim,controls}.mjs
-
-# Web10 (Mark X) — same five gates; design also locks the token-gated Pro export
-node docs/web10/tests/{smoke,design,runtime,anim,controls}.mjs
-
-# Web6 (legacy, still gated)
-node docs/web6/tests/{smoke,colony,runtime}.mjs
+# Shared-file parity (sem.js lab↔ontogeny · pro.js ×4)
+node docs/tests/parity.mjs
 
 # Ontogeny
 node docs/ontogeny/tests/ontogeny.mjs # the science (split-day, presets, calibration)
@@ -147,7 +191,9 @@ node docs/pondwater/tests/smoke.mjs   # importmap + module parse + roster/anatom
 node docs/pondwater/tests/life.mjs    # needs three: each organism builds, has organs, visibly moves
 
 # The Studio (on-site, 13 engines) + the front-door free/paid catalog
-node docs/studio/tests/smoke.mjs      # 13 engines + shared Pro-token wiring + app parses
+node docs/studio/tests/smoke.mjs      # engines.js registry + Pro wiring + 4-way pro.js byte-identity
+node docs/studio/tests/design.mjs     # Catalytic Silence design contract (fonts/tokens/shell/a11y)
+node docs/studio/tests/controls.mjs   # vm-driven kernels: controls sound, science moves, export fidelity real
 node docs/tests/catalog.mjs           # catalog.js↔.json mirror + front door links/tiers every tool
 
 # Murmuration (Flock2 simulator)
@@ -168,13 +214,11 @@ pytest -q
   bust ES-module imports (`./sim.js`). To verify *deployed* code in a live eval,
   re-import with a fresh query: `await import('./sim.js?b=' + Date.now())`.
 - **Each client owns its copy** of `sem.js` (and other shared helpers). A fix in
-  one is not a fix in all — propagate deliberately.
-- **web7 and web8 are *supposed* to share the experiment rules**
-  (`experiment/rules/*.js`), but parity is maintained **by hand-copy and is not
-  enforced** — no test diffs the two clients, and the per-client `sem.js` has
-  **already drifted** (web7 runs an older copy than web8/ontogeny, with
-  different shading constants). Propagate changes to both deliberately; a
-  parity gate is an open gap.
+  one is not a fix in all — propagate deliberately. The copies that are meant to
+  be identical are now **machine-enforced**: `docs/tests/parity.mjs` fails CI on
+  any byte drift of `sem.js` (`lab/` ↔ `ontogeny/`) or `pro.js` (hub root, `lab/`,
+  `slime/`, `studio/`). The old web7↔web8 hand-copy convention retired with those
+  clients — the lab lineage is one flagship now.
 
 ## Ontogeny engine — calibration (test-locked science)
 
@@ -214,15 +258,16 @@ them; track work against the linked issues.
    Assert *structure* (specimen relief > substrate) and that the sim evolves.
 4. **CI & shared-code integrity — issue #68.** Headless `pytest` is red (a SEM
    test pulls in `app.py` → `import tkinter`) but masked by the 80% coverage
-   gate; `pages.yml` skips the JS gate on root-only changes (`paths:["docs/**"]`);
-   there is **no** web7↔web8 parity gate and `sem.js` has already drifted.
-5. **Docs/repo drift — issue #69.** Stale version claims (PRD.md/README say
-   4.1.1 / "v4.0 alpha" / "12-stage"; reality is 4.2.0 / 13 stages), a
-   `railway.toml` healthcheck pointed at an orphaned client, and duplicated
-   committed assets. *Client sprawl is largely addressed:* the reorganized
-   front door (`docs/index.html`, driven by `catalog.js`) now links **every**
-   active client — web8 included — organized Free vs Pro, and `catalog.mjs`
-   fails if a client is dropped from it.
+   gate; `pages.yml` skips the JS gate on root-only changes (`paths:["docs/**"]`).
+   *Done:* the sem.js drift + missing parity gate are resolved — the lab lineage
+   consolidated into `lab/` and `docs/tests/parity.mjs` now fails CI on byte
+   drift of the shared copies.
+5. **Docs/repo drift — issue #69.** *Largely done:* the four lab variants
+   consolidated into `lab/` (~39 MB of duplication removed, web7/web9's
+   duplicate font copies included), README/PRD version claims corrected to
+   4.2.0 / 13 stages, and the `railway.toml` healthcheck repointed off the
+   orphaned client. Remaining: the duplicated committed assets under
+   `docs/generated/` (stale versioned renders) are still uncurated.
 6. **Security audit tracker — issues #44 / #35–#43.** SEC-001 (pickle RCE in
    `engine.py` snapshot load) is fixed; the input-validation Highs (snapshot
    dims/arrays #36/#37, path traversal #38, image-decode #39, dep pinning #41,

@@ -68,40 +68,24 @@ export const CATALOG = {
 
   tools: [
     // ── The origin-of-life labs ──────────────────────────────────────────
+    // ONE flagship. The former web7 (base) / web8 (+guide) / web9 (+instrument)
+    // / web10 (Mark X shell) variants consolidated here; their paths are
+    // redirect stubs into lab/.
     {
-      id: 'web7', name: 'The Lab', path: 'web7/', category: 'labs',
-      access: 'free', watch: 'free', create: 'free',
-      tagline: 'The canonical lab — Catalytic Silence',
-      blurb: 'Thirteen abiogenesis stages, each a photoreal 3-D apparatus beside its live SEM micrograph, with per-stage parameter controls.'
-    },
-    {
-      id: 'web8', name: 'The Guided Colony', path: 'web8/', category: 'labs',
-      access: 'free', watch: 'free', create: 'free',
-      tagline: 'The lab + a living guide',
-      blurb: 'Everything in the lab, joined by a living-amoeba guide creature that narrates the stages and takes requests.'
-    },
-    {
-      id: 'web10', name: 'Mark X', path: 'web10/', category: 'labs',
+      id: 'lab', name: 'The Lab', path: 'lab/', category: 'labs',
       access: 'freemium', watch: 'free', create: 'pro',
-      pro: ['SEM plate export up to 4000×4000'],
-      tagline: 'The refined shell · token-gated 4K plate',
-      blurb: 'A re-shell of the lab with a hero-art plate rail, a 13-node timeline scrubber and run provenance. Pro renders the current stage’s SEM micrograph in-page up to 4000×4000.'
-    },
-    {
-      id: 'web9', name: 'The Instrument', path: 'web9/', category: 'labs',
-      access: 'freemium', watch: 'free', create: 'pro',
-      pro: ['Parameters rail (tune · step · reset)', 'Observable sparkline', 'CSV export', 'Shareable run links'],
-      tagline: 'Guided + measured · Pro parameter rail',
-      blurb: 'The lab with living guides and a live measurement layer — per-step observables, CSV export and shareable run URLs. Pro unlocks the Parameters rail.'
+      pro: ['Parameters rail (tune · step · reset)', 'SEM plate export up to 4000×4000', 'Observable sparkline · CSV export', 'Shareable run links'],
+      tagline: 'The origin-of-life lab · Mark X',
+      blurb: 'Thirteen abiogenesis stages — each a photoreal 3-D apparatus beside its live SEM micrograph — with a living amoeba guide narrating every stage, a live measurement layer (per-step observables, CSV, shareable runs), a 13-node timeline scrubber, and hi-res Pro plate export up to 4000×4000.'
     },
 
     // ── Generative studios ───────────────────────────────────────────────
     {
       id: 'studio', name: 'The Studio', path: 'studio/', category: 'studios',
       access: 'freemium', watch: 'free', create: 'pro',
-      pro: ['Every control desk', 'Real 4K video + still export'],
+      pro: ['Every control desk', 'True-detail 4K video + still export'],
       tagline: 'Thirteen engines · one desk',
-      blurb: 'Flow fields, reaction–diffusion, Physarum, Lenia lifeforms, cymatics, crystal growth, a starling murmuration and morphing fractal worlds — all live. Open any tile for its control desk; Pro renders a real 4K video or still.'
+      blurb: 'Flow fields, reaction–diffusion, Physarum, Lenia lifeforms, cymatics, crystal growth, a starling murmuration and morphing fractal worlds — all live. Open any tile for its control desk; Pro renders true-detail 4K video and stills — computed at export resolution, not upscaled.'
     },
     {
       id: 'slime', name: 'Slime Studio', path: 'slime/', category: 'studios',

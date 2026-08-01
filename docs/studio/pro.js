@@ -148,7 +148,16 @@
     document.head.appendChild(style);
   }
 
-  function build(reason) {
+  // The heading is text-escaped; callers own the product language
+  // (e.g. the Studio passes title:'Unlock every desk', web10 keeps the
+  // default SEM-plate heading by passing nothing).
+  function escText(s) {
+    return String(s).replace(/[&<>"']/g, function (c) {
+      return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
+    });
+  }
+
+  function build(reason, title) {
     injectStyles();
     var scrim = document.createElement('div');
     scrim.className = 'catsil-pro-scrim';
@@ -159,7 +168,7 @@
       '<div class="catsil-pro-card">' +
         '<button class="catsil-pro-x" type="button" aria-label="Close">×</button>' +
         '<p class="catsil-pro-kick">Catalytic Silence · Pro</p>' +
-        '<h3>Unlock the hi-res plate</h3>' +
+        '<h3>' + (title ? escText(title) : 'Unlock the hi-res plate') + '</h3>' +
         '<p>' + (reason || 'Unlock the publication-quality <strong>SEM micrograph plate</strong> export — up to <strong>4000×4000</strong> — of any stage. One unlock covers every Catalytic Silence lab on this device.') + '</p>' +
         '<button class="catsil-pro-btn js-unlock" type="button">Unlock — demo checkout</button>' +
         '<div class="catsil-pro-or">or redeem a token</div>' +
@@ -203,7 +212,7 @@
     cbUnlock = opts.onUnlock || null;
     // Already unlocked? Honour it immediately.
     if (isUnlocked()) { finish(); return; }
-    modal = build(opts.reason);
+    modal = build(opts.reason, opts.title);
     document.body.appendChild(modal);
     var close = function () { hidePaywall(); };
     modal.querySelector('.catsil-pro-x').addEventListener('click', close);

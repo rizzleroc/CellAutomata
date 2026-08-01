@@ -153,7 +153,7 @@
     const specExp    = 56;
     const aoStrength = 0.17;
     const rimWeight  = 0.16;
-    const noiseGain  = 0.045;
+    const noiseGain  = (opts.noise != null ? opts.noise : 0.045);  // opts.noise overrides substrate-grain opacity (default unchanged)
     // Relief is computed on the supersampled field, so scale the gain by S to
     // keep grid-feature relief constant (and ~2.4× bolder than the old 6.0).
     const heightGain = (opts.relief || 14.0) * S;

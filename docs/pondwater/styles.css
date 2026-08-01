@@ -1,12 +1,12 @@
 /* Pond Water Analyzer — Catalytic-Silence shell over a dark-field microscope.
    Obsidian field, a single teal signal colour, museum-catalogue typography.
-   Self-hosted fonts are shared from web8 (../web8/assets/fonts/). */
+   Self-hosted fonts are shared from the site home (../assets/fonts/). */
 
-@font-face { font-family: "Italiana"; src: url("../web8/assets/fonts/Italiana-Regular.ttf") format("truetype"); font-weight: 400; font-display: swap; }
-@font-face { font-family: "Crimson Pro"; src: url("../web8/assets/fonts/CrimsonPro-Regular.ttf") format("truetype"); font-weight: 400; font-display: swap; }
-@font-face { font-family: "Crimson Pro"; src: url("../web8/assets/fonts/CrimsonPro-Italic.ttf") format("truetype"); font-weight: 400; font-style: italic; font-display: swap; }
-@font-face { font-family: "IBM Plex Mono"; src: url("../web8/assets/fonts/IBMPlexMono-Regular.ttf") format("truetype"); font-weight: 400; font-display: swap; }
-@font-face { font-family: "IBM Plex Mono"; src: url("../web8/assets/fonts/IBMPlexMono-Bold.ttf") format("truetype"); font-weight: 700; font-display: swap; }
+@font-face { font-family: "Italiana"; src: url("../assets/fonts/Italiana-Regular.ttf") format("truetype"); font-weight: 400; font-display: swap; }
+@font-face { font-family: "Crimson Pro"; src: url("../assets/fonts/CrimsonPro-Regular.ttf") format("truetype"); font-weight: 400; font-display: swap; }
+@font-face { font-family: "Crimson Pro"; src: url("../assets/fonts/CrimsonPro-Italic.ttf") format("truetype"); font-weight: 400; font-style: italic; font-display: swap; }
+@font-face { font-family: "IBM Plex Mono"; src: url("../assets/fonts/IBMPlexMono-Regular.ttf") format("truetype"); font-weight: 400; font-display: swap; }
+@font-face { font-family: "IBM Plex Mono"; src: url("../assets/fonts/IBMPlexMono-Bold.ttf") format("truetype"); font-weight: 700; font-display: swap; }
 
 :root {
   --obsidian: #030608;

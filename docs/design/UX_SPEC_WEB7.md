@@ -1,3 +1,5 @@
+> **Superseded** — this spec describes the retired `web7/` client; the flagship now lives at `docs/lab/`.
+
 # UX Specification — cellauto · web7
 
 **Catalytic Silence redesign of the CellAutomata web client**

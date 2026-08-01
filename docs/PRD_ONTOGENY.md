@@ -112,9 +112,9 @@ which parts are mechanistic vs representational. **No overclaiming.**
 
 ---
 
-## 4. Controls (wired to the web7 Parameters panel)
+## 4. Controls (wired to the lab Parameters panel)
 
-A new rule module (e.g. `docs/web7/experiment/rules/ontogeny.js`) exposing the
+A new rule module (e.g. `docs/lab/experiment/rules/ontogeny.js`) exposing the
 standard `params` / `controlConsequence` / `presets` contract `buildParamPanel`
 already renders. The knobs *are* "the different conditions":
 

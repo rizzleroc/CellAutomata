@@ -17,9 +17,8 @@ publication-scale exports, the data, and the larger colonies.
 Nothing to unlock. Open it and go.
 
 - Every live simulation on the site, running in your browser.
-- **The Lab** (`web7/`) — all thirteen origin-of-life stages, each beside its
-  live SEM micrograph, with per-stage controls.
-- **The Guided Colony** (`web8/`) — the lab plus a living guide creature.
+- **The Lab** (`lab/`) — watch all thirteen origin-of-life stages, each beside
+  its live SEM micrograph, with the amoeba guide narrating every plate.
 - **Ontogeny** (`ontogeny/`) and the **Pond Water Analyzer** (`pondwater/`),
   end to end.
 - The full **plate gallery** and the **studio reel**.
@@ -33,7 +32,8 @@ One unlock, redeemable on any device with a token. Pro grants:
 
 - **Every control desk and parameter rail** unlocked.
 - **Hi-res SEM plate export — up to 4000×4000.**
-- **Real 4K video + still export** from the Studio.
+- **True-detail 4K video + still export** from the Studio — computed at export
+  resolution (finer grids, larger colonies, uncapped fractal stills), not upscaled.
 - **Observable plots, CSV data and shareable run links.**
 - **Larger colonies and higher-detail grids.**
 - One unlock covers **every Pro tool on the device**.
@@ -42,10 +42,9 @@ One unlock, redeemable on any device with a token. Pro grants:
 
 | Tool | Path | Free (watch) | Pro (create) |
 |---|---|---|---|
-| **The Studio** | `studio/` | All 13 engines running live | Every control desk · real 4K video + still export |
+| **The Lab** | `lab/` | All 13 stages, guided + measured, live | Parameters rail (tune · step · reset) · observables CSV + shareable run links · SEM plate export up to 4000×4000 |
+| **The Studio** | `studio/` | All 13 engines running live | Every control desk · true-detail 4K video + still export |
 | **Slime Studio** | `slime/` | The live Physarum feed | 4K SEM plate export · colonies up to 60k · higher-detail grid |
-| **Mark X** | `web10/` | The full 13-stage lab | SEM plate export up to 4000×4000 |
-| **The Instrument** | `web9/` | The guided lab + live observables | Parameters rail (tune · step · reset) · CSV export · shareable run links |
 
 ## How the unlock works
 
@@ -57,23 +56,25 @@ boundary** (a client-side gate never is).
 - **Token format:** `CATSIL-XXXX-XXXX-CKSUM` — a short body plus an FNV-1a
   checksum that makes it verifiable offline (the checksum is not a secret).
 - **Storage:** persisted in `localStorage['catsil.pro.token']`. Because
-  localStorage is per-origin, redeeming a token in **any** client (Studio,
-  Slime, Mark X…) unlocks Pro in **all** of them, and it survives a reload.
+  localStorage is per-origin, redeeming a token in **any** client (The Lab,
+  Studio, Slime…) unlocks Pro in **all** of them, and it survives a reload.
 - **Redeem:** open any Pro tool, hit **Unlock Pro**, and either run the demo
   checkout (nothing is charged — it mints a token for you) or paste a token into
   the redeem field.
-- **The Instrument** (`web9/`) currently ships its own paywall
-  (`paywall.js`, token `CATALYST-SILENCE`); the rest share `pro.js`
-  (`window.CatSilPro`). Unifying the two is tracked as a follow-up.
+- **One paywall, site-wide.** The former Instrument (`web9/`) shipped its own
+  allow-list paywall; that client is retired into `lab/`, which speaks the
+  shared token like everything else. There is exactly one Pro system now.
 
 ### Implementation
 
 - `pro.js` — the shared unlock. Exposes `window.CatSilPro`
   (`isUnlocked` / `getToken` / `verify` / `redeem` / `grantDemo` / `clear` /
-  `showPaywall` / `onChange`) and injects its own paywall modal. Copies live in
-  `web10/`, `slime/` and `studio/` — **propagate fixes to all three.**
-- `web9/paywall.js` — the Instrument's separate paywall (token
-  `CATALYST-SILENCE`), gating the Parameters rail.
+  `showPaywall` / `onChange`) and injects its own paywall modal;
+  `showPaywall({title, reason, onUnlock})` lets each client speak its own
+  product language in the heading (the Studio says "Unlock every desk"; the
+  Lab says "Unlock the Instrument"). Copies live in `lab/`, `slime/` and
+  `studio/` beside the hub root's — **propagate fixes to all four** (the
+  parity gate and the Studio smoke gate fail CI if the copies drift).
 
 ### Getting a demo token
 

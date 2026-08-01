@@ -1,9 +1,10 @@
 // smoke.mjs — the on-site Studio gate.
 //
-// The Studio is a single self-contained page (13 generative engines) wired to
-// the shared client-side Pro unlock (pro.js / window.CatSilPro). This guards:
-// the page parses, all engines are present, the export path exists, and the
-// paywall is the SHARED token — not the old session-only "imaginary" unlock.
+// The Studio is one page + two classic scripts: engines.js (the 13 engines,
+// window.StudioEngines) and pro.js (the shared client-side Pro unlock,
+// window.CatSilPro). This guards: both scripts and the page parse, all
+// engines are present, the export path exists, and the paywall is the SHARED
+// token — not the old session-only "imaginary" unlock.
 //
 //   node docs/studio/tests/smoke.mjs
 
@@ -18,16 +19,35 @@ let fails = 0;
 const ok = (c, m) => { if (!c) { console.error('  ✗ ' + m); fails++; } else console.log('  ✓ ' + m); };
 
 const html = readFileSync(join(DIR, 'index.html'), 'utf8');
+const engines = readFileSync(join(DIR, 'engines.js'), 'utf8');
 
-// ── 1. the thirteen engines ──────────────────────────────────────────────────
+// ── 0. the document actually parses to a page ───────────────────────────────
+// A text-grep gate is blind to structural HTML breakage: an unclosed <style>
+// swallows the entire body (and every <script>) as CSS text, so the page renders
+// blank while every includes()/regex check below still passes. Balance the tags
+// and confirm the shell markup sits AFTER the style block closes, not inside it.
+console.log('document shell:');
+ok((html.match(/<style>/g) || []).length === (html.match(/<\/style>/g) || []).length,
+   '<style> tags are balanced (page body is not swallowed as CSS)');
+const styleClose = html.indexOf('</style>');
+ok(styleClose !== -1 && html.indexOf('<div class="wrap"') > styleClose,
+   '.wrap shell markup comes after </style> (real body content, not CSS text)');
+ok(html.indexOf('<script src="engines.js">') > styleClose,
+   'the engine scripts live in the body, after the style block closes');
+
+// ── 1. the thirteen engines (now in engines.js) ─────────────────────────────
 console.log('engines:');
-const m = html.match(/const TOOLS\s*=\s*\[([\s\S]*?)\];/);
-ok(!!m, 'TOOLS array present');
+const m = engines.match(/const TOOLS\s*=\s*\[([\s\S]*?)\];/);
+ok(!!m, 'TOOLS array present in engines.js');
 const toolCount = m ? (m[1].match(/\{name:'/g) || []).length : 0;
 ok(toolCount === 13, `13 engines declared (got ${toolCount})`);
 for (const kind of ['flow', 'rd', 'slime', 'boids', 'lenia', 'cymatics', 'dla', 'starling', 'fractal']) {
-  ok(html.includes(`kind:'${kind}'`), `engine kind: ${kind}`);
+  ok(engines.includes(`kind:'${kind}'`), `engine kind: ${kind}`);
 }
+ok(engines.includes('window.StudioEngines'), 'engines.js registers window.StudioEngines');
+ok(/<script src="engines\.js"><\/script>[\s\S]*<script src="pro\.js"><\/script>/.test(html),
+   'index.html loads engines.js before pro.js and the app');
+ok(html.includes('window.StudioEngines'), 'app consumes window.StudioEngines');
 
 // ── 2. shared Pro unlock (not the old imaginary one) ─────────────────────────
 console.log('pro wiring:');
@@ -42,15 +62,27 @@ for (const api of ['isUnlocked', 'showPaywall', 'redeem', 'grantDemo', 'onChange
   ok(proJs.includes(api + ':') || proJs.includes(api + ' :'), `pro.js exposes CatSilPro.${api}`);
 }
 ok(proJs.includes("'catsil.pro.token'"), 'pro.js uses the shared token key');
+// The four pro.js copies (hub root, web10, slime, studio) must stay byte-identical —
+// a fix in one that misses the others is exactly the drift CLAUDE.md warns about.
+for (const other of ['../pro.js', '../lab/pro.js', '../slime/pro.js']) {
+  ok(readFileSync(resolve(DIR, other), 'utf8') === proJs, `pro.js byte-identical to ${other.replace('../', 'docs/')}`);
+}
+ok(/showPaywall\(\{\s*title:/.test(html), 'paywall opened with Studio-voiced title');
+ok(!html.includes('\\U0001f3b2') && !engines.includes('\\U0001f3b2'), 'no broken \\U escape regression');
 
 // ── 3. real export + home link ───────────────────────────────────────────────
 console.log('exports + shell:');
 ok(html.includes('3840') && html.includes('MediaRecorder'), 'real 4K (3840) video export path present');
 ok(html.includes('toBlob') || html.includes('toDataURL'), 'still-export path present');
 ok(/class="home" href="\.\.\/"/.test(html), 'links back to the site (../)');
+ok(html.includes("'v=2'"), 'share links carry the v=2 stable-key scheme');
+ok(html.includes('devicePixelRatio'), 'HiDPI (devicePixelRatio) canvases');
+ok(html.includes('prepareExport') && html.includes('warmPlan'), 'export fidelity pipeline present');
 
-// ── 4. the app script parses ─────────────────────────────────────────────────
+// ── 4. both scripts parse ────────────────────────────────────────────────────
 console.log('syntax:');
+try { execFileSync('node', ['--check', join(DIR, 'engines.js')]); ok(true, 'engines.js parses'); }
+catch (e) { ok(false, 'engines.js parses — ' + String(e.stderr || e).slice(0, 200)); }
 const blocks = [...html.matchAll(/<script>([\s\S]*?)<\/script>/g)].map((x) => x[1]);
 const app = blocks[blocks.length - 1] || '';
 const tmp = join(tmpdir(), '_studio_app_check.js');
