@@ -63,7 +63,7 @@ const APPARATUS = [
   "coacervate_microscope", "microfluidic_chip", "luca_console", "stromatolite",
 ];
 const MODULES = [
-  "scene.js", "main.js", "apparatus/lib.js", "apparatus/placeholder.js", "tests/smoke.mjs",
+  "scene.js", "main.js", "photomode.js", "apparatus/lib.js", "apparatus/placeholder.js", "tests/smoke.mjs",
   // the flagship's merged layers: the web8 amoeba guide + the web9 instrument
   "guide.js", "blobgeom.js", "narration.js", "intents.js", "observables.js",
   ...APPARATUS.map((a) => `apparatus/${a}.js`),
@@ -134,6 +134,27 @@ assert(/GTAOPass/.test(scene), "scene.js does not add ambient occlusion (GTAOPas
 assert(/SMAAPass/.test(scene), "scene.js does not add anti-aliasing (SMAAPass clean edges)");
 assert(/BokehPass/.test(scene), "scene.js does not add depth-of-field (BokehPass)");
 assert(/ShaderPass/.test(scene), "scene.js does not add the warm optics pass (ShaderPass)");
+// 6c. Photo-develop mode — the real GPU path tracer, isolated + lazily loaded.
+//     The importmap must carry the tracer deps AND the raw three/examples path
+//     (the tracer imports Pass.js by that specifier); the module must use the
+//     WebGLPathTracer + accumulate samples; and it must be a LAZY dynamic import
+//     so the tracer bundle never loads at page start or leaks into the gates.
+const importmap = (html.match(/<script type="importmap">([\s\S]*?)<\/script>/) || [])[1] || "";
+assert(/three-gpu-pathtracer/.test(importmap) && /three-mesh-bvh/.test(importmap),
+  "index.html importmap missing the path-tracer deps (three-gpu-pathtracer + three-mesh-bvh)");
+assert(/three\/examples\/jsm\//.test(importmap),
+  "index.html importmap missing three/examples/jsm/ (the path tracer imports Pass.js by that path)");
+const photo = read("photomode.js");
+assert(/export\s+function\s+createPhotoMode\b/.test(photo), "photomode.js missing createPhotoMode export");
+assert(/WebGLPathTracer/.test(photo), "photomode.js does not use WebGLPathTracer");
+assert(/renderSample/.test(photo), "photomode.js never calls renderSample (no progressive accumulation)");
+assert(/import\(\s*["']three-gpu-pathtracer["']\s*\)/.test(photo),
+  "photomode.js must LAZY dynamic-import three-gpu-pathtracer (keep it off page-load + the test path)");
+assert(!/^\s*import[^\n]*three-gpu-pathtracer/m.test(photo),
+  "photomode.js must not statically import three-gpu-pathtracer (would load the heavy bundle eagerly)");
+assert(/import\(\s*["']\.\/photomode\.js["']\s*\)/.test(main),
+  "main.js must dynamically import ./photomode.js");
+
 const lib = read("apparatus/lib.js");
 for (const fn of ["addRim", "surfaceNormalMap", "bubbleColumn", "liquidVolume"]) {
   assert(new RegExp(`export\\s+function\\s+${fn}\\b`).test(lib),

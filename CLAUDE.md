@@ -24,7 +24,7 @@ multiples → stages of life).
 
 | Dir | What it is | Status |
 |---|---|---|
-| `lab/` | **The Lab** ("Mark X") — THE flagship, the consolidation of the former web7 (base) / web8 (+guide) / web9 (+instrument) / web10 (shell) lineage: 13 abiogenesis stages, each a photoreal Three.js apparatus + live SEM micrograph, in the Mark X shell (MK X build tag, hero-art plate rail from `generated/web10/stageNN_*.png`, 13-node timeline scrubber + provenance), with the **amoeba guide** (`guide.js`/`narration.js`/`intents.js` — narrates every stage, free) and the **instrument layer** (`observables.js`: per-step σ²/⟨h⟩ sparkline, CSV, shareable run hash). **Pro (CatSilPro)** gates the Parameters rail, observable CSV/run-link export, and the in-page SEM plate export up to **4000²**. Seven gates: `lab/tests/{smoke,design,runtime,anim,controls,intents,pro}.mjs` | active |
+| `lab/` | **The Lab** ("Mark X") — THE flagship, the consolidation of the former web7 (base) / web8 (+guide) / web9 (+instrument) / web10 (shell) lineage: 13 abiogenesis stages, each a photoreal Three.js apparatus + live SEM micrograph, in the Mark X shell (MK X build tag, hero-art plate rail from `generated/web10/stageNN_*.png`, 13-node timeline scrubber + provenance), with the **amoeba guide** (`guide.js`/`narration.js`/`intents.js` — narrates every stage, free) and the **instrument layer** (`observables.js`: per-step σ²/⟨h⟩ sparkline, CSV, shareable run hash). **Pro (CatSilPro)** gates the Parameters rail, observable CSV/run-link export, and the in-page SEM plate export up to **4000²**. **Photo-develop mode** (`photomode.js`) drops in a real **GPU path tracer** when the sim is stopped + the camera is still — the apparatus "develops" into a genuinely photographic still (true refraction/caustics/GI), reverting to the fast raster view on any interaction. Seven gates: `lab/tests/{smoke,design,runtime,anim,controls,intents,pro}.mjs` | active |
 | `web7/` `web8/` `web9/` `web10/` | hash-preserving redirect stubs → `lab/` (each dir is a single index.html) | retired |
 | `ontogeny/` | **Part II — the origin of an individual.** Pure canvas + `sem.js`; engine `sim.js`, renderer `render.js`, controller `app.js` | active |
 | `pondwater/` | **The Pond Water Analyzer** — a dark-field microscope of virtual pond water. Six procedurally-grown organisms (`organisms/*.js`) from bacterium → water flea, each with true-to-life internal organs; a continuous **infinite-zoom engine** (`main.js`) dives from the whole drop to organ level, fading in organ callout labels by scale. Three.js via importmap, `scene.js` for the wet-mount look | active |
@@ -41,7 +41,12 @@ every client references them via `../assets/fonts/`. PRDs: `docs/PRD_ONTOGENY.md
 
 - **Zero-dependency ES modules.** No build step. Labs load **Three.js via a CDN
   importmap**; ontogeny is pure `<canvas>` + `sem.js` (classic script) + ES
-  modules. Everything opens from `file://` or any static server.
+  modules. Everything opens from `file://` or any static server. The Lab's
+  importmap also carries **`three-mesh-bvh@0.7.6` + `three-gpu-pathtracer@0.0.23`**
+  (the r162-compatible release — 0.0.24 needs three ≥0.180) and a raw
+  `three/examples/jsm/` alias, but the path-tracer bundle is only ever pulled in
+  by a **lazy dynamic `import()`** inside `photomode.js` (see below) — nothing
+  heavy loads at page start.
 - **Pro unlock — client-side token** (`pro.js`, copies in `lab/`, `slime/`, `studio/`, and the hub root `docs/pro.js`).
   The site is static (GitHub Pages), so "Pro" is a **client-side unlock keyed by a
   shareable token** (`CATSIL-XXXX-XXXX-CKSUM`, FNV-1a checksum) persisted in
@@ -130,6 +135,26 @@ every client references them via `../assets/fonts/`. PRDs: `docs/PRD_ONTOGENY.md
   **freeze on Stop** (`bubbleColumn.setRunning(false)` hides+freezes). The SEM
   micrograph stays a distinct 2-D scientific view (CPU height-field → `SEM.render`),
   not merged into the 3-D scene. See `miller_urey.js` as the worked example.
+- **Photo-develop mode** (`docs/lab/photomode.js`): the realism ceiling. The 13
+  apparatus are rasterized (fast, but rasterization *fakes* refraction + caustics —
+  the CG tell on glassware). This module drops in a real **GPU path tracer**
+  (`three-gpu-pathtracer`/`WebGLPathTracer` on `three-mesh-bvh`) that computes true
+  light transport. **Hybrid "photo-develop":** raster while running/orbiting; when
+  the sim is **stopped** and the camera **settles**, it accumulates path-traced
+  samples (`renderSample()`) into a photographic still (a `◉ developing… → ✓
+  photoreal plate` chip tracks it), reverting instantly on any interaction. The
+  environment is a **procedural studio equirect** (`GradientEquirectTexture` +
+  softbox rectangles — zero HDRI asset), swapped into `scene.environment` only for
+  the trace. Wiring is minimal: `main.js` dynamic-`import()`s `createPhotoMode`,
+  freezes the apparatus anim while `isDeveloping()`, and calls `photo.render()` in
+  place of `lab.composer.render()` while `active()` (`main.js` render loop). It
+  **self-gates** off on WebGL1 / low-power GPUs and hard-fails safe to raster on any
+  tracer error (`broken`). `scene.js` is untouched. Deliberately isolated: it is the
+  ONLY module that references the tracer, and it lazy-imports the bundle — so the
+  zero-dep gates (which import the *apparatus* modules) never resolve the extra deps.
+  `smoke.mjs` asserts the importmap deps + the lazy-import discipline. **Caveat:**
+  headless SwiftShader can't fairly render a GPU path trace (the settle counter
+  crawls at ~0.4 fps and each sample is minutes) — verify realism on a real GPU.
 - **Ontogeny growth plate** (the SEM specimen canvas) is rendered in
   `docs/ontogeny/render.js` — currently `BASE=168, SCALE=2` → a 336px offscreen
   buffer drawn to fit. Height-field primitives are grid-relative
