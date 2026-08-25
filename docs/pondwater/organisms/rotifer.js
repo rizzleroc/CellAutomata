@@ -34,7 +34,7 @@ function build() {
   ];
   const bodyMat = cuticle(0xdff0f4, 0.16, {
     transmission: 0.68, thickness: 1.2,
-    rim: { color: 0xcfeeff, power: 2.6, intensity: 0.6 },
+    rim: { color: 0xd6f2ff, power: 2.9, intensity: 1.05 },
   });
   const body = tubeBody(
     spine,

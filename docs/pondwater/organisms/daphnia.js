@@ -23,7 +23,7 @@ function build() {
 
   // ── Carapace: a near-glass, faintly iridescent bivalved shell ────────────
   const shellGeo = new THREE.SphereGeometry(1.6, 56, 40);
-  shellGeo.scale(1.15, 1.25, 0.75);
+  shellGeo.scale(1.5, 1.05, 0.72);   // Daphnia is an oval — longer (head→tail) than tall
   const p = shellGeo.attributes.position;
   for (let i = 0; i < p.count; i++) {
     const x = p.getX(i), y = p.getY(i);
@@ -31,11 +31,15 @@ function build() {
     if (x < 0 && y < 0) { p.setX(i, x * (1 + Math.abs(y) * 0.25)); }
   }
   shellGeo.computeVertexNormals();
-  const shell = new THREE.Mesh(shellGeo, cuticle(0xe6f2f4, 0.1, {
-    transmission: 0.9, roughness: 0.1, thickness: 0.7, ior: 1.4,
-    iridescence: 0.65, iridescenceIOR: 1.3, iridescenceThicknessRange: [180, 680],
+  // Higher opacity than a bare glass shell: on a transparent material the
+  // Fresnel rim is multiplied by opacity during alpha-blending, so a near-zero
+  // opacity kills the bright dark-field edge. 0.2 keeps it see-through while
+  // letting the rim read as a crisp glowing outline.
+  const shell = new THREE.Mesh(shellGeo, cuticle(0xe6f2f4, 0.2, {
+    transmission: 0.84, roughness: 0.1, thickness: 0.7, ior: 1.4,
+    iridescence: 0.35, iridescenceIOR: 1.3, iridescenceThicknessRange: [180, 680],
     attenuationColor: new THREE.Color(0xbfe6ea), attenuationDistance: 4.0,
-    normal: false, rim: { color: 0xd6f2ff, power: 2.4, intensity: 0.7 },
+    normal: false, rim: { color: 0xeafaff, power: 2.6, intensity: 3.4 },
   }));
   shell.name = 'carapace';
   shell.renderOrder = 14;
@@ -101,7 +105,7 @@ function build() {
   brood.position.set(-0.5, 0.5, 0);
   const eggs = [];
   for (let i = 0; i < 6; i++) {
-    const e = blob(0.22, 0.22, 0.2, nucleus(0xcfe6b0, { emissive: new THREE.Color(0x24301a) }));
+    const e = blob(0.22, 0.22, 0.2, nucleus(0x9fb488, { emissive: new THREE.Color(0x10160c), roughness: 0.6 }));
     e.position.set((r() - 0.5) * 0.9, (r() - 0.5) * 0.5, (r() - 0.5) * 0.4);
     eggs.push(e); brood.add(e);
   }

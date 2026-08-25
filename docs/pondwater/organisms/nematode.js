@@ -33,7 +33,7 @@ function build() {
   const bodyMat = cuticle(0xefe9d8, 0.18, {
     transmission: 0.55, thickness: 1.4, normal: false,
     attenuationColor: new THREE.Color(0xcbb98a), attenuationDistance: 1.5,
-    rim: { color: 0xeadfc0, power: 2.6, intensity: 0.5 },
+    rim: { color: 0xf0ead2, power: 2.9, intensity: 1.0 },
   });
   const body = new THREE.Mesh(makeTube(RADIAL), bodyMat);
   body.name = 'body';
