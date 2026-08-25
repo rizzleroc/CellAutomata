@@ -12,6 +12,7 @@ export const meta = {
   taxon: 'Hypsibius sp.',
   kingdom: 'Animalia',
   micronLength: 420,
+  locomotion: 'crawl',        // a very slow eight-legged bumble, with pauses
   blurb: 'The "water bear" — eight clawed legs, a plump translucent body, and stylets that pierce algae. It can dry out completely and come back to life.',
   build,
 };
@@ -40,7 +41,7 @@ function build() {
     transmission: 0.55, thickness: 1.8,
     attenuationColor: new THREE.Color(0xdcae74), attenuationDistance: 1.3,
     normal: surfaceNormalMap({ freq: 10, strength: 0.7, kind: 'segments', seed: 8 }),
-    rim: { color: 0xffdca6, power: 2.2, intensity: 0.5 },
+    rim: { color: 0xffe4b8, power: 2.7, intensity: 0.95 },
   }));
   body.material.normalScale = new THREE.Vector2(0.4, 0.4);
   body.name = 'body';
@@ -53,7 +54,7 @@ function build() {
   const legMat = cuticle(0xecd9b4, 0.4, {
     transmission: 0.28, thickness: 1.0, normal: false,
     attenuationColor: new THREE.Color(0xd8b982), attenuationDistance: 0.8,
-    rim: { color: 0xffe6bc, power: 2.4, intensity: 0.4 },
+    rim: { color: 0xffe6bc, power: 2.6, intensity: 0.8 },
   });
   const clawMat = nucleus(0x6a5030, { emissive: new THREE.Color(0x1a1206), roughness: 0.4 });
   for (let pair = 0; pair < 4; pair++) {

@@ -115,7 +115,7 @@ export function surfaceNormalMap({ size = 128, freq = 6, strength = 1, kind = 'f
 // extra geometry, no extra draw call. Chains cleanly onto any existing
 // onBeforeCompile (e.g. a material that already carries one). Runs only at
 // shader-compile time in the browser, so it never touches the headless tests.
-export function addRim(mat, { color = 0x9fd0ff, power = 2.6, intensity = 0.65 } = {}) {
+export function addRim(mat, { color = 0xdcf0ff, power = 3.0, intensity = 1.05 } = {}) {
   const c = new THREE.Color(color);
   const prev = mat.onBeforeCompile;
   mat.onBeforeCompile = (shader, renderer) => {
@@ -166,7 +166,9 @@ export function cuticle(color = 0xdfeee6, opacity = 0.22, extra = {}) {
     sheenRoughness: 0.7,
     sheenColor: new THREE.Color(color).multiplyScalar(1.1),
     specularIntensity: 0.7,
-    envMapIntensity: 1.15,
+    // low IBL so the body stays dark (dark-field): it is the Fresnel rim and the
+    // refractile granules that glow, not a broadly-lit glassy surface.
+    envMapIntensity: 0.6,
     depthWrite: false,
     side: THREE.DoubleSide,
     ...matExtra,
@@ -236,7 +238,8 @@ export function nucleus(color = 0x8fb8ff, extra = {}) {
 export function refractileMaterial(tint = 0xeaf4ff) {
   return new THREE.MeshStandardMaterial({
     color: tint,
-    emissive: new THREE.Color(tint).multiplyScalar(0.55),
+    // bright but not a flood — discrete points of scatter, not a glowing cloud.
+    emissive: new THREE.Color(tint).multiplyScalar(0.42),
     roughness: 0.22,
     metalness: 0,
   });

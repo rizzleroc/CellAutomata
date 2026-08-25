@@ -49,10 +49,10 @@ assert(/<script\s+type="module"\s+src="\.\/main\.js"/.test(html), "index.html do
 // 3. Every JS module passes `node --check`, and its relative imports resolve.
 const ORGANISMS = ["bacterium", "paramecium", "rotifer", "tardigrade", "nematode", "daphnia"];
 const MODULES = [
-  "main.js", "scene.js",
+  "main.js", "scene.js", "locomotion.js",
   "organisms/lib.js", "organisms/index.js",
   ...ORGANISMS.map((o) => `organisms/${o}.js`),
-  "tests/smoke.mjs", "tests/life.mjs",
+  "tests/smoke.mjs", "tests/life.mjs", "tests/locomotion.mjs",
 ];
 for (const rel of MODULES) {
   assert(exists(rel), `module missing: ${rel}`);
@@ -88,6 +88,7 @@ for (const o of ORGANISMS) {
       `${o}.js meta missing field: ${field}`);
   }
   assert(/registerOrgan\s*\(/.test(src), `${o}.js registers no organs (no registerOrgan call)`);
+  assert(/\blocomotion\b\s*:/.test(src), `${o}.js meta declares no locomotion gait`);
   assert(/userData\.anim\s*=/.test(src), `${o}.js never installs an anim on userData`);
   for (const m of ["setRunning", "getProgress", "update", "reset"]) {
     assert(new RegExp(`\\b${m}\\b`).test(src), `${o}.js anim missing ${m}`);
@@ -112,6 +113,8 @@ assert(/FogExp2/.test(scene), "scene.js does not fog the medium (depth cue)");
 const main = read("main.js");
 assert(/from\s+["']\.\/scene\.js["']/.test(main), "main.js does not import scene.js");
 assert(/from\s+["']\.\/organisms\/index\.js["']/.test(main), "main.js does not import the roster");
+assert(/from\s+["']\.\/locomotion\.js["']/.test(main) && /makeSwimmer\s*\(/.test(main),
+  "main.js does not wire the locomotion swimmer");
 assert(/Raycaster/.test(main), "main.js has no raycaster (click-to-focus picking)");
 assert(/magAt\s*\(/.test(main) && /fieldMicrons\s*\(/.test(main), "main.js missing the magnification model");
 assert(/focusInstance\b/.test(main) && /function\s+surface\b/.test(main), "main.js missing focus/surface (the dive)");
