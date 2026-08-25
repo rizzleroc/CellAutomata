@@ -12,6 +12,7 @@ export const meta = {
   taxon: 'Rhabditis sp.',
   kingdom: 'Animalia',
   micronLength: 620,
+  locomotion: 'undulate',     // slow, meandering net progress along the S-wave thrash
   blurb: 'A roundworm — the most numerous animal alive. It thrashes in an S-shaped wave; a pumping pharynx feeds a straight gut running the whole body.',
   build,
 };

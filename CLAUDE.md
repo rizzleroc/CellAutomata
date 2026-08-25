@@ -92,6 +92,23 @@ Self-hosted fonts live in `web8/assets/fonts/`; ontogeny reuses them via
   geometry realloc). Tests: `smoke.mjs` guards the lib exports + anatomy
   contract; `life.mjs` builds each organism against real three and asserts it
   moves.
+- **Pond Water locomotion** (`docs/pondwater/locomotion.js`): the organism
+  builders animate *intrinsic* motion (cilia, heartbeat, S-wave); this module
+  animates how the whole animal *travels*. `main.js` wraps each organism in a
+  **carrier** group — the organism owns its own `root.rotation` (intrinsic
+  anim), the swimmer owns the carrier's position + a heading-aligned orientation
+  — so the two layers never fight. `makeSwimmer(meta.locomotion, …)` returns a
+  per-instance swimmer with `step(dt)` / `applyTo(carrier)`; each species picks
+  its gait via `meta.locomotion` (+ optional `meta.forwardAxis`, default `+x`;
+  the rotifer swims corona-first, `+y`): **run-tumble** (bacterium — runs +
+  abrupt tumbles + Brownian quiver), **ciliate-helix** (paramecium — smooth
+  spiral glide + avoiding reactions), **hop-sink** (daphnia — antennal
+  power-stroke up/forward, then a gravity+drag sink: the "flea" saw-tooth),
+  **undulate** (nematode), **creep** (rotifer), **crawl** (tardigrade). Pausing
+  life freezes the swimmers too. Tests: `tests/locomotion.mjs` drives every
+  gait headlessly and asserts its behavioural *signature* (bimodal run/tumble;
+  smooth-never-snapping helix; bursty hop-sink saw-tooth; bounded/finite; frozen
+  when paused) + the `applyTo`→carrier path; `smoke.mjs` guards the wiring.
 - **Pond Water optics post-chain** (`docs/pondwater/scene.js`): what sells the
   live-microscopy look is the *optics*. The composer is `RenderPass → BokehPass
   (depth-of-field, focus retargeted to the specimen every frame) → UnrealBloom
@@ -143,8 +160,9 @@ node docs/ontogeny/tests/ontogeny.mjs # the science (split-day, presets, calibra
 node docs/ontogeny/tests/smoke.mjs    # module parse + page wiring + SEM harness
 
 # Pond Water Analyzer
-node docs/pondwater/tests/smoke.mjs   # importmap + module parse + roster/anatomy contract + HUD wiring
+node docs/pondwater/tests/smoke.mjs   # importmap + module parse + roster/anatomy contract + HUD + locomotion wiring
 node docs/pondwater/tests/life.mjs    # needs three: each organism builds, has organs, visibly moves
+node docs/pondwater/tests/locomotion.mjs # needs three: each species' swim gait shows its real signature
 
 # The Studio (on-site, 13 engines) + the front-door free/paid catalog
 node docs/studio/tests/smoke.mjs      # 13 engines + shared Pro-token wiring + app parses

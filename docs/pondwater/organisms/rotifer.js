@@ -12,6 +12,8 @@ export const meta = {
   taxon: 'Philodina sp.',
   kingdom: 'Animalia',
   micronLength: 320,
+  locomotion: 'creep',        // slow corona-first glide broken by long anchored pauses
+  forwardAxis: [0, 1, 0],     // swims head-up: the corona (at +y) leads
   blurb: 'A true animal small enough to see through. Two ciliated "wheels" spin to sweep in food; a muscular jaw (the mastax) grinds it; a foot with two toes anchors it.',
   build,
 };

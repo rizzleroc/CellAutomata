@@ -11,6 +11,7 @@ export const meta = {
   taxon: 'Paramecium caudatum',
   kingdom: 'Protista',
   micronLength: 130,
+  locomotion: 'ciliate-helix',   // smooth spiral glide (rolls on its long axis) + avoiding reactions
   blurb: 'One enormous cell. Cilia row it through the water; an oral groove feeds a gullet; contractile vacuoles pump out the water that floods in.',
   build,
 };

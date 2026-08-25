@@ -12,6 +12,7 @@ export const meta = {
   taxon: 'Hypsibius sp.',
   kingdom: 'Animalia',
   micronLength: 420,
+  locomotion: 'crawl',        // a very slow eight-legged bumble, with pauses
   blurb: 'The "water bear" — eight clawed legs, a plump translucent body, and stylets that pierce algae. It can dry out completely and come back to life.',
   build,
 };

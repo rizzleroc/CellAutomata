@@ -11,6 +11,7 @@ export const meta = {
   taxon: 'Daphnia pulex',
   kingdom: 'Animalia',
   micronLength: 1500,
+  locomotion: 'hop-sink',     // antennal power-stroke throws it up/forward, then it sinks — the "flea" hop
   blurb: 'The water flea — a transparent crustacean. Through its shell you can watch a real heart beat, the gut churn, and eggs grow in the brood pouch.',
   build,
 };

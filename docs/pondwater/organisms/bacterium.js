@@ -10,6 +10,7 @@ export const meta = {
   taxon: 'Bacillus sp.',
   kingdom: 'Bacteria',
   micronLength: 2.4,
+  locomotion: 'run-tumble',   // flagellum-driven runs + abrupt tumbles + Brownian quiver
   blurb: 'A prokaryote — no nucleus, no organelles. DNA lies loose in the cytoplasm and a rotary flagellum drives it.',
   build,
 };
