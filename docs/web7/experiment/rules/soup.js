@@ -60,7 +60,7 @@
     let generation = 0;
     let rt = 0;                      // cosmetic render time (shimmer), advanced in render
 
-    const rnd = Math.random;
+    const rnd = () => Math.random();   // call through (not captured) so a host may seed it
     const clampX = (x) => x < WALL_L ? WALL_L : x > WALL_R ? WALL_R : x;
 
     function newMol(t, x, y) {

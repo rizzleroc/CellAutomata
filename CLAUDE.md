@@ -33,6 +33,7 @@ multiples → stages of life).
 | `slime/` | **Slime Studio** — interactive *Physarum* lab (`slime.js`): place nutrients, watch it grow paths, with a live SEM-micrograph feed beside the interactive view. Adjustable **Colony** (up to 60k plasmodia) and **Detail** (200²–360² grid, live `setGrid` realloc) controls for larger/higher-res colonies, plus a Pro paywall (shared `pro.js` token) gating a 4000² SEM plate export. Zero-dep canvas | active |
 | `studio/` | **The Studio** — the full-feed generative desk: **13 engines** (flow, reaction–diffusion, Physarum incl. cosmic/kaleido/growth presets, boids murmuration, Lenia, cymatics, DLA, starling murmuration, fractal worlds), each a live tile with its own control desk, 🎲 randomize, and shareable-settings hash. Free to watch; **Pro** (shared `pro.js` token) unlocks every control desk + **real 4K video/still export** (in-browser `MediaRecorder`/`toBlob`). Single self-contained page; brought **on-site** from the former claude.ai artifact. Smoke-gated by `studio/tests/smoke.mjs` | active |
 | `murmuration/` | **Murmuration** — a full starling-flocking simulator after Hoetzlein's *Flock2* (arXiv:2404.17804). **Orientation-based social flocking** (avoidance/alignment/cohesion as *turning* pressures through a limited visual field) drives a **single-body fixed-wing flight model** (`flock.js` — lift/drag/gravity/banking/stall; birds lose altitude in turns, speed up in dives). Framework-free engine (spatial-hash neighbours, seeded RNG) → InstancedMesh birds with a GPU wingbeat (`bird.js`); dusk-sky scope (`scene.js`); controller (`main.js`) with six regimes (`presets.js`), a stooping peregrine, order-parameter telemetry, three camera modes, and a shareable URL hash | active |
+| `automata/` | **The Automata Lab** — a *true* cellular-automata laboratory. Zero-dep ES-module engine (`engine/`): `grid.js` (seeded lattice, torus/dead/mirror), seven rule **families** behind one registry contract (`engine/rules/index.js`: `params` schema + `presets` + `make`/`validate`, optional value-dependent `schema()`): Life-like/Generations B/S/C (`lifelike.js`, 30-rule catalog, Langton λ), Larger than Life (`ltl.js`, summed-area counting), elementary/totalistic 1-D (`elementary.js`, space–time sheet), cyclic + Greenberg–Hastings (`cyclic.js`), Wireworld, turmites (`turmite.js`), and **Abiogenesis** (`abiogenesis.js`) — the 13 web7 stage rules **loaded by reference** from `../web7/experiment/rules/` (never copied; `Math.random` is swapped for the seeded RNG during `reset`/`step`/`renderHeight` so stage runs replay from a seed). Pattern library + RLE/plain codecs (`patterns.js`), instrument layer (`measure.js`: population, activity, 2×2 block entropy, period detector, estimated Wolfram class). The page (`app.js`) is one desk in four steps (Family → Rule → Lattice → Draw), lattice + SEM feed (`sem.js`, web8 copy), transport, instrument strip + sparkline, CSV/RLE/PNG (≤4000²) export, run-URL hash. Gates: `tests/engine.mjs` (the science: glider/gun/R-pentomino=116@1103, HighLife replicator, rule 30/90/184, cyclic spirals, Wireworld clock+diode, Langton highway, λ(Life)=140/512, all 13 stages + seeded replay) and `tests/smoke.mjs` | active |
 | `web`, `web2`, `web3`, `web6` | earlier clients, retained for comparison | legacy |
 
 Self-hosted fonts live in `web8/assets/fonts/`; ontogeny reuses them via
@@ -150,6 +151,10 @@ node docs/pondwater/tests/life.mjs    # needs three: each organism builds, has o
 node docs/studio/tests/smoke.mjs      # 13 engines + shared Pro-token wiring + app parses
 node docs/tests/catalog.mjs           # catalog.js↔.json mirror + front door links/tiers every tool
 
+# The Automata Lab (cellular-automata workbench + the 13 stages by reference)
+node docs/automata/tests/engine.mjs  # the SCIENCE: Life/HighLife/1-D/cyclic/Wireworld/turmite facts + all 13 abiogenesis stages replay from a seed
+node docs/automata/tests/smoke.mjs   # page wiring, by-reference rule scripts, module contract
+
 # Murmuration (Flock2 simulator)
 node docs/murmuration/tests/smoke.mjs # importmap + module parse + param-schema/regime + HUD wiring
 node docs/murmuration/tests/flock.mjs # the SCIENCE: order emerges, bounded/finite, banking, peregrine scatters
@@ -169,6 +174,12 @@ pytest -q
   re-import with a fresh query: `await import('./sim.js?b=' + Date.now())`.
 - **Each client owns its copy** of `sem.js` (and other shared helpers). A fix in
   one is not a fix in all — propagate deliberately.
+- **`automata/` loads web7's stage rules by reference** (`<script src="../web7/
+  experiment/rules/*.js">`), so a change to a web7 rule is *immediately* live in
+  the Automata Lab — keep web7's rule contract (`width/height`, `params`,
+  `presets`, `reset/step/renderHeight/population`, `onParamChange`) stable, and
+  keep rules calling `Math.random()` through (not capturing it at load — see
+  `soup.js` `rnd`) so the lab's seeded replay keeps working.
 - **web7 and web8 are *supposed* to share the experiment rules**
   (`experiment/rules/*.js`), but parity is maintained **by hand-copy and is not
   enforced** — no test diffs the two clients, and the per-client `sem.js` has

@@ -18,7 +18,7 @@
  */
 
 export const CATALOG = {
-  updated: '2026-07-16',
+  updated: '2026-09-09',
   live: 'https://rizzleroc.github.io/CellAutomata/',
 
   // One client-side unlock, shared across every Pro tool on the device.
@@ -37,6 +37,7 @@ export const CATALOG = {
       tagline: 'Watch every specimen. Run the labs.',
       includes: [
         'Every live simulation, running in your browser',
+        'The Automata Lab — every rule family, editor, pattern library and instrument',
         'The origin-of-life lab (13 stages) and the guided colony',
         'Ontogeny and the Pond Water Analyzer, end to end',
         'The full plate gallery and the studio reel'
@@ -60,6 +61,7 @@ export const CATALOG = {
   ],
 
   categories: [
+    { id: 'automata', name: 'The automata laboratory',  blurb: 'A true cellular-automata workbench — six classical rule families plus the thirteen abiogenesis stages, with a rule editor, a pattern library and a measuring instrument.' },
     { id: 'labs',    name: 'The origin-of-life labs',  blurb: 'Thirteen stages of abiogenesis — each a real experiment beside the electron micrograph it produces.' },
     { id: 'studios', name: 'Generative studios',        blurb: 'Open-ended engines you play with directly — grow, tune, and export.' },
     { id: 'life',    name: 'Life at every scale',       blurb: 'From a single individual’s origin to a whole drop of pond water.' },
@@ -67,6 +69,14 @@ export const CATALOG = {
   ],
 
   tools: [
+    // ── The automata laboratory ──────────────────────────────────────────
+    {
+      id: 'automata', name: 'The Automata Lab', path: 'automata/', category: 'automata',
+      access: 'free', watch: 'free', create: 'free',
+      tagline: 'A true cellular-automata laboratory',
+      blurb: 'Life-like B/S and Generations rules, Larger than Life, Wolfram’s elementary rules, cyclic and Greenberg–Hastings excitable media, Wireworld and turmites — and the thirteen abiogenesis stages loaded from the lab itself. Write any rule, paint the lattice, load RLE patterns, and read population, activity, block entropy, Langton’s λ and an estimated Wolfram class live, beside an SEM micrograph.'
+    },
+
     // ── The origin-of-life labs ──────────────────────────────────────────
     {
       id: 'web7', name: 'The Lab', path: 'web7/', category: 'labs',

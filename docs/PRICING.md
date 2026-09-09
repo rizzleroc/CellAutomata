@@ -17,6 +17,10 @@ publication-scale exports, the data, and the larger colonies.
 Nothing to unlock. Open it and go.
 
 - Every live simulation on the site, running in your browser.
+- **The Automata Lab** (`automata/`) — the cellular-automata workbench: every
+  rule family (Life-like, Larger than Life, elementary, cyclic/Greenberg–Hastings,
+  Wireworld, turmites, the thirteen abiogenesis stages), the rule editor, the
+  pattern library, the instrument and its CSV/RLE/PNG exports.
 - **The Lab** (`web7/`) — all thirteen origin-of-life stages, each beside its
   live SEM micrograph, with per-stage controls.
 - **The Guided Colony** (`web8/`) — the lab plus a living guide creature.

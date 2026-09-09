@@ -102,6 +102,10 @@ jobs:
         run: node docs/studio/tests/smoke.mjs   # on-site studio + shared Pro token
       - name: Front-door free/paid catalog gate
         run: node docs/tests/catalog.mjs        # catalog.js↔.json + index.html link/tier every tool
+      - name: Automata Lab engine science verification
+        run: node docs/automata/tests/engine.mjs   # Life/HighLife/rule 30-90-184/cyclic/Wireworld/Langton facts + the 13 abiogenesis stages by reference
+      - name: Automata Lab page smoke test
+        run: node docs/automata/tests/smoke.mjs
       - name: Murmuration smoke tests
         run: node docs/murmuration/tests/smoke.mjs
       - name: Murmuration flocking-science verification
