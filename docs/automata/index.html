@@ -1,0 +1,182 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>The Automata Lab · Catalytic Silence</title>
+<meta name="description" content="A true cellular-automata laboratory: Life-like B/S rules, Larger than Life, Wolfram's elementary rules, cyclic and Greenberg–Hastings excitable media, Wireworld, turmites, and the thirteen abiogenesis stages of the origin-of-life lab — with a rule editor, a pattern library (RLE), live measurements and an SEM micrograph feed.">
+<meta name="color-scheme" content="dark">
+<meta name="theme-color" content="#080b10">
+<link rel="icon" href="../icon_v2.png">
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<a class="skip" href="#plate">Skip to the lattice</a>
+
+<header class="top">
+  <div class="brand">
+    <a class="back" href="../index.html" aria-label="Back to Catalytic Silence">←</a>
+    <span class="mk">The Automata Lab</span>
+    <span class="crumb">automata · Catalytic Silence</span>
+  </div>
+  <p class="sub">Pick a rule family, choose or write a rule, seed the lattice, run — and read what the instrument measures.</p>
+  <div class="meta" aria-live="polite">
+    <span>rule <b id="mRule">B3/S23</b></span>
+    <span>generation <b id="mGen">0</b></span>
+    <span>lattice <b id="mSize">200×150</b></span>
+    <span>seed <b id="mSeed">1</b></span>
+  </div>
+</header>
+
+<main class="lab">
+  <!-- ── The specimen ─────────────────────────────────────────────────── -->
+  <section class="stage" aria-labelledby="plate-h">
+    <h2 class="vh" id="plate-h">The lattice</h2>
+    <div class="views">
+      <figure class="panel" id="plate">
+        <figcaption class="plabel"><span class="dot live"></span> Lattice · <span id="viewLabel">paint with the pointer</span></figcaption>
+        <canvas id="cells" aria-label="The cellular-automaton lattice. Click or drag to paint cells."></canvas>
+        <div class="ticks" aria-hidden="true"><i></i><i></i><i></i><i></i></div>
+      </figure>
+      <figure class="panel sem" id="semPanel">
+        <figcaption class="plabel"><span class="dot sem"></span> Live · SEM micrograph</figcaption>
+        <canvas id="feed" aria-label="Live scanning-electron-micrograph rendering of the same lattice"></canvas>
+        <div class="scalebar" aria-hidden="true"><span class="bar"></span>50 µm</div>
+      </figure>
+    </div>
+
+    <div class="transport" role="group" aria-label="Transport">
+      <button id="play" class="btn primary" aria-pressed="false">▶ Run</button>
+      <button id="stepBtn" class="btn">Step</button>
+      <button id="resetBtn" class="btn">Reset</button>
+      <button id="soupBtn" class="btn ghost">Soup</button>
+      <button id="clearBtn" class="btn ghost">Clear</button>
+      <label class="sl">Speed <b id="vSpeed">30 s⁻¹</b><input id="speed" type="range" min="1" max="120" step="1" value="30" aria-label="Generations per second"></label>
+      <label class="sl" id="densityWrap">Soup density <b id="vDensity">35%</b><input id="density" type="range" min="1" max="99" step="1" value="35" aria-label="Random soup density"></label>
+      <span class="kbd" aria-hidden="true">space · n · r · s · c</span>
+    </div>
+
+    <div class="instrument" aria-label="Measurements">
+      <div class="rd"><i>population</i><b id="rPop">0</b></div>
+      <div class="rd"><i>density</i><b id="rDens">0.0%</b></div>
+      <div class="rd"><i>activity</i><b id="rAct">0.0%</b></div>
+      <div class="rd"><i>block entropy</i><b id="rEnt">0.00 b</b></div>
+      <div class="rd"><i>Langton λ</i><b id="rLambda">—</b></div>
+      <div class="rd cls"><i>class · estimate</i><b id="rClass">—</b><small id="rWhy"></small></div>
+      <div class="rd stage" id="stageWrap" hidden><i>stage readout</i><b id="rStage">—</b></div>
+      <canvas id="spark" class="spark" width="480" height="56" aria-label="Sparkline: density (teal) and activity (magenta) over recent generations"></canvas>
+      <div class="exports">
+        <button id="csvBtn" class="btn ghost small">⤓ CSV</button>
+        <button id="pngBtn" class="btn ghost small">⤓ PNG plate</button>
+        <button id="rleBtn" class="btn ghost small">⤓ RLE</button>
+        <button id="linkBtn" class="btn ghost small">⛓ Run link</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── The desk ─────────────────────────────────────────────────────── -->
+  <aside class="desk" aria-label="Rule desk">
+    <section class="step">
+      <h3 class="dh"><span class="n">1</span>Family</h3>
+      <div class="famtabs" id="famTabs" role="tablist" aria-label="Rule family"></div>
+      <p class="hint" id="famBlurb"></p>
+    </section>
+
+    <section class="step">
+      <h3 class="dh"><span class="n">2</span>Rule</h3>
+      <label class="p"><span>Regime</span><select id="preset" aria-label="Named regime"></select></label>
+      <p class="hint" id="presetHint"></p>
+      <div id="paramList" class="params"></div>
+      <p class="err" id="ruleErr" role="alert"></p>
+      <div class="row">
+        <button id="applyBtn" class="btn primary small">Apply</button>
+        <button id="randomRuleBtn" class="btn small">🎲 Random rule</button>
+        <a id="labLink" class="btn small ghost" href="../web7/" hidden>Open in the Lab ↗</a>
+      </div>
+    </section>
+
+    <section class="step">
+      <h3 class="dh"><span class="n">3</span>Lattice</h3>
+      <div class="params">
+        <label class="p"><span>Size</span>
+          <select id="size" aria-label="Lattice size">
+            <option value="100x75">100 × 75</option>
+            <option value="200x150" selected>200 × 150</option>
+            <option value="320x240">320 × 240</option>
+            <option value="480x360">480 × 360</option>
+            <option value="640x480">640 × 480</option>
+          </select></label>
+        <label class="p"><span>Boundary</span>
+          <select id="boundary" aria-label="Boundary condition">
+            <option value="torus" selected>torus · wraps</option>
+            <option value="dead">dead · cold edge</option>
+            <option value="mirror">mirror</option>
+          </select></label>
+        <label class="p"><span>Seed</span><input id="seed" type="number" min="1" max="999999999" value="1" aria-label="Random seed"></label>
+        <label class="p"><span>Micrograph</span>
+          <select id="semMode" aria-label="SEM feed">
+            <option value="on" selected>warm-sepia</option>
+            <option value="cool">cool-mono</option>
+            <option value="off">off</option>
+          </select></label>
+        <label class="p"><span>Age tint</span>
+          <select id="ageTint" aria-label="Tint long-lived cells">
+            <option value="on" selected>on</option>
+            <option value="off">off</option>
+          </select></label>
+      </div>
+    </section>
+
+    <section class="step" id="drawStep">
+      <h3 class="dh"><span class="n">4</span>Draw</h3>
+      <div class="brushrow">
+        <div class="brush" id="brush" role="radiogroup" aria-label="Paint state"></div>
+        <label class="sl tight">Radius <b id="vRadius">1</b><input id="radius" type="range" min="1" max="12" step="1" value="1" aria-label="Brush radius"></label>
+      </div>
+      <label class="p"><span>Pattern</span><select id="pattern" aria-label="Pattern from the library"></select></label>
+      <p class="hint" id="patternNote"></p>
+      <div class="row">
+        <button id="placeBtn" class="btn small">Place at centre</button>
+        <button id="placeClearBtn" class="btn small ghost">Clear + place</button>
+      </div>
+      <details class="rle">
+        <summary>Paste RLE or plain text</summary>
+        <textarea id="rleIn" rows="4" spellcheck="false" placeholder="x = 3, y = 3, rule = B3/S23&#10;bo$2bo$3o!"></textarea>
+        <button id="rleLoadBtn" class="btn small">Load pattern</button>
+      </details>
+      <p class="hint">Left-drag paints the chosen state, right-drag erases, shift-click stamps the pattern.</p>
+    </section>
+
+    <p class="foot-note">Every automaton is a synchronous rule on a discrete lattice stepped by <code>engine/</code>. λ is Langton’s parameter (Life = 0.273). The class readout is an estimate from the activity series, not a proof. The abiogenesis family runs the canonical lab’s own stage rules by reference.</p>
+  </aside>
+</main>
+
+<footer class="foot">
+  <a href="../index.html">← Catalytic Silence</a>
+  <span>Conway 1970 · Wolfram 1983 · Langton 1986 · Silverman 1987 · Greenberg–Hastings 1978 · Fisch–Gravner–Griffeath 1991 · Evans 1996 · Miller–Urey 1953 → LUCA</span>
+</footer>
+
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<!-- Classic scripts first: the SEM depth-shader (window.SEM) and the canonical
+     lab's thirteen stage rules (window.CA.RULES), loaded BY REFERENCE from
+     web7 so this client can never drift from it. viridis.js precedes the rules
+     that read VIRIDIS_LUT. Then the lab itself as an ES module. -->
+<script src="sem.js"></script>
+<script src="../web7/experiment/viridis.js"></script>
+<script src="../web7/experiment/rules/soup.js"></script>
+<script src="../web7/experiment/rules/grayscott.js"></script>
+<script src="../web7/experiment/rules/raf.js"></script>
+<script src="../web7/experiment/rules/vesicles.js"></script>
+<script src="../web7/experiment/rules/vents.js"></script>
+<script src="../web7/experiment/rules/minerals.js"></script>
+<script src="../web7/experiment/rules/chirality.js"></script>
+<script src="../web7/experiment/rules/rna.js"></script>
+<script src="../web7/experiment/rules/code.js"></script>
+<script src="../web7/experiment/rules/coacervate.js"></script>
+<script src="../web7/experiment/rules/natural_selection.js"></script>
+<script src="../web7/experiment/rules/luca.js"></script>
+<script src="../web7/experiment/rules/life.js"></script>
+<script type="module" src="app.js"></script>
+</body>
+</html>
