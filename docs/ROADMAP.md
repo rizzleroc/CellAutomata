@@ -780,7 +780,7 @@ canonicalisation. **0 blocker · 11 major · 25 minor.**
 ### P1 — doc reconciliation (mostly mechanical)
 - [ ] **REV-12** PRD.md status banner + repoint dead `PHASE2_BRUTAL.md` links *(banner applied)*.
 - [ ] **REV-13/16** Create or repoint `docs/PRD_LAB_EXPERIMENTS.md` and `PHASE2_BRUTAL.md`.
-- [ ] **REV-14/17** Reconcile counts everywhere (13 stages · ≈318 tests · 91 % · six CI checks) *(current-state banner applied)*.
+- [x] **REV-14/17** Counts reconciled and the drift-prone one locked: the canonical stage count (13) is now derived from `len(EXTENDED_STAGE_CLASSES)` and pinned to the README by `tests/test_stage_count.py`. Brittle test/coverage numbers were removed from current-state prose (they belong in CI output, not docs); dated changelog entries were left intact.
 - [ ] **REV-29** Register `abiogenesis-life` in `rules/__init__.py`, or document the deliberate exclusion.
 
 ### P2 — web canonicalisation

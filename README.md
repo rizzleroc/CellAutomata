@@ -87,11 +87,12 @@ full S-item punchlist.
 
 A scientifically-grounded cellular sandbox exploring the **chemistry-to-life
 transition** — the abiogenesis problem — across a canonical five-stage
-pipeline *and* a **coupled 12-stage extended pipeline** that walks every
+pipeline *and* a **coupled 13-stage extended pipeline** that walks every
 major origin-of-life process (alkaline hydrothermal vents with real
 Wood-Ljungdahl chemistry, mineral catalysis, autocatalytic sets,
 homochirality, RNA world, genetic-code coevolution, coacervates, vesicles,
-protocell selection, and LUCA distillation) in scientific order.
+protocell selection, LUCA distillation, and a digital-life capstone —
+Stage XIII) in scientific order.
 
 In v3.5 every stage transition genuinely passes its output field forward
 to the next stage's initial condition, so the pipeline is now a single
@@ -131,7 +132,7 @@ Render script: [render_prima_materia.py](docs/design/render_prima_materia.py).*
 ![Genesis — twelve observations on the coalescence of chemistry into life](docs/genesis.png)
 
 *Genesis (Plate XIII, Series MMXXVI) — the v3.4 magnum opus. A single
-museum poster compressing the full 12-stage extended pipeline into one
+museum poster compressing the full extended pipeline (as it stood at v3.4) into one
 composition: the Stage 1 fission moment dominates as the hero, with the
 other 11 stages arrayed as supporting medallions (primordial soup → vent
 → minerals → autocatalytic sets → homochirality → RNA world → genetic
@@ -169,9 +170,9 @@ Every constant traces to a published measurement; see
 `abiogenesis-pipeline` rule walks all five stages end to end.
 
 Seven more origin-of-life processes ship as standalone selectable rules
-and together appear as the **12-stage `abiogenesis-pipeline-extended`** in
+and together appear as the **13-stage `abiogenesis-pipeline-extended`** in
 scientific order — soup → vent → RD → mineral → RAF → chirality → RNA →
-genetic code → coacervate → vesicles → selection → LUCA:
+genetic code → coacervate → vesicles → selection → LUCA → digital life:
 
 | Process | Science |
 |---|---|
@@ -246,7 +247,7 @@ than v1 in practice.
 | Rule name | Renderer | What it is |
 |---|---|---|
 | `abiogenesis-pipeline` | mixed | Canonical 5-stage pipeline, auto-promoting |
-| `abiogenesis-pipeline-extended` | mixed | **12-stage pipeline** walking *every* shipped origin-of-life process in scientific order |
+| `abiogenesis-pipeline-extended` | mixed | **13-stage pipeline** walking *every* shipped origin-of-life process in scientific order (12 chemistry stages + the Stage XIII digital-life capstone) |
 | `abiogenesis-stage0-soup` | discrete | Primordial soup; init weighted by Miller's 1953 yields |
 | `abiogenesis-stage1-grayscott` | field | Gray-Scott reaction-diffusion |
 | `abiogenesis-stage2-raf` | field | Kauffman RAF autocatalytic chemistry |
@@ -445,7 +446,7 @@ The project's history is its own gap analysis:
   See [docs/PRD_SEM_VISUALIZATION.md](docs/PRD_SEM_VISUALIZATION.md) and
   [docs/ROADMAP.md §6](docs/ROADMAP.md).
 
-**141 tests, all passing.** See [docs/science.md](docs/science.md) for the
+**The full test suite runs headless** (`pytest -q`). See [docs/science.md](docs/science.md) for the
 math and citations, and [docs/ROADMAP.md](docs/ROADMAP.md) for the feature
 inventory, mandated UI toolset, and remaining roadmap. Full version history in
 [CHANGELOG.md](CHANGELOG.md).
