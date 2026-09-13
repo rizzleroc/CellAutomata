@@ -10,6 +10,7 @@ export const meta = {
   taxon: 'Bacillus sp.',
   kingdom: 'Bacteria',
   micronLength: 2.4,
+  locomotion: 'run-tumble',   // flagellum-driven runs + abrupt tumbles + Brownian quiver
   blurb: 'A prokaryote — no nucleus, no organelles. DNA lies loose in the cytoplasm and a rotary flagellum drives it.',
   build,
 };
@@ -25,10 +26,10 @@ function build() {
   // dark field the way a live bacillus does under a condenser.
   const wall = new THREE.Mesh(
     new THREE.CapsuleGeometry(0.42, 1.5, 24, 48),
-    cuticle(0xbfe9c8, 0.28, {
+    cuticle(0xd2ead9, 0.28, {
       transmission: 0.72, roughness: 0.16, thickness: 0.6,
-      attenuationColor: new THREE.Color(0x3fb27a), attenuationDistance: 1.6,
-      rim: { color: 0xbaffd8, power: 2.2, intensity: 0.85 },
+      attenuationColor: new THREE.Color(0x5f9484), attenuationDistance: 1.6,
+      rim: { color: 0xdafff0, power: 2.6, intensity: 1.15 },
     }),
   );
   wall.name = 'cell-wall';

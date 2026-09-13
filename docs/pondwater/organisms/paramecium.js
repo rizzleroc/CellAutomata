@@ -11,6 +11,7 @@ export const meta = {
   taxon: 'Paramecium caudatum',
   kingdom: 'Protista',
   micronLength: 130,
+  locomotion: 'ciliate-helix',   // smooth spiral glide (rolls on its long axis) + avoiding reactions
   blurb: 'One enormous cell. Cilia row it through the water; an oral groove feeds a gullet; contractile vacuoles pump out the water that floods in.',
   build,
 };
@@ -33,10 +34,10 @@ function build() {
   }
   bodyGeo.computeVertexNormals();
   // ridged pellicle: the regular rows of alveoli every cilium sprouts from
-  const body = new THREE.Mesh(bodyGeo, cuticle(0xd6f0e2, 0.19, {
-    transmission: 0.66, thickness: 1.1,
+  const body = new THREE.Mesh(bodyGeo, cuticle(0xd6f0e2, 0.17, {
+    transmission: 0.64, thickness: 1.1,
     normal: surfaceNormalMap({ freq: 26, strength: 0.9, kind: 'ridges', seed: 5 }),
-    rim: { color: 0xd8fff0, power: 2.6, intensity: 0.6 },
+    rim: { color: 0xdafff4, power: 3.0, intensity: 1.0 },
   }));
   body.material.normalScale = new THREE.Vector2(0.5, 0.5);
   body.name = 'pellicle';
@@ -47,14 +48,14 @@ function build() {
   // ── Endoplasm: the dense field of bright refractile granules (food
   //    vacuoles, storage bodies, crystals) that scatter the condenser light —
   //    the galaxy of white points inside a live protist ─────────────────────
-  const endo = granuleField(2.0, 0.72, 0.72, 520, 0.032, refractileMaterial(0xdfeeff), { seed: 77 });
+  const endo = granuleField(2.0, 0.72, 0.72, 300, 0.03, refractileMaterial(0xdfeeff), { seed: 77 });
   endo.name = 'endoplasm';
   g.add(endo);
 
   // ── Cilia coat: a soft fine fringe (real cilia are a faint shimmer at the
   //    rim, not a bright spiky halo) ─────────────────────────────────────────
-  const coat = ciliaCoat(2.2, 0.85, 0.85, 1100, 0.13,
-    organ(0xdfeee6, { emissive: new THREE.Color(0x0e120f), transparent: true, opacity: 0.4, roughness: 0.5, rim: false }));
+  const coat = ciliaCoat(2.2, 0.85, 0.85, 1100, 0.085,
+    organ(0xcfe2da, { emissive: new THREE.Color(0x090c0a), transparent: true, opacity: 0.26, roughness: 0.6, rim: false }));
   coat.name = 'cilia';
   g.add(coat);
   registerOrgan(g, coat, 'Cilia', 'Thousands of hair-like cilia beat in metachronal waves, rowing the cell and sweeping food to the mouth.', 0.15);

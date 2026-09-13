@@ -12,6 +12,8 @@ export const meta = {
   taxon: 'Philodina sp.',
   kingdom: 'Animalia',
   micronLength: 320,
+  locomotion: 'creep',        // slow corona-first glide broken by long anchored pauses
+  forwardAxis: [0, 1, 0],     // swims head-up: the corona (at +y) leads
   blurb: 'A true animal small enough to see through. Two ciliated "wheels" spin to sweep in food; a muscular jaw (the mastax) grinds it; a foot with two toes anchors it.',
   build,
 };
@@ -32,7 +34,7 @@ function build() {
   ];
   const bodyMat = cuticle(0xdff0f4, 0.16, {
     transmission: 0.68, thickness: 1.2,
-    rim: { color: 0xcfeeff, power: 2.6, intensity: 0.6 },
+    rim: { color: 0xd6f2ff, power: 2.9, intensity: 1.05 },
   });
   const body = tubeBody(
     spine,

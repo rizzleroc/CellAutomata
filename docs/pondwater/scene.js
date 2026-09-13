@@ -32,9 +32,9 @@ const OpticsShader = {
   uniforms: {
     tDiffuse: { value: null },
     uTime: { value: 0 },
-    uAberration: { value: 2.2 },
-    uVignette: { value: 0.55 },
-    uGrain: { value: 0.055 },
+    uAberration: { value: 1.05 },
+    uVignette: { value: 0.6 },
+    uGrain: { value: 0.05 },
     uResolution: { value: new THREE.Vector2(1, 1) },
   },
   vertexShader: /* glsl */`
@@ -59,7 +59,7 @@ const OpticsShader = {
       // cool white balance + desaturation — real dark-field footage is nearly
       // monochrome cool-grey, not saturated glass
       float l = dot(col, vec3(0.299, 0.587, 0.114));
-      col = mix(vec3(l), col, 0.78) * vec3(0.97, 1.0, 1.05);
+      col = mix(vec3(l), col, 0.62) * vec3(0.98, 1.0, 1.04);
       // vignette
       col *= 1.0 - smoothstep(0.32, 0.82, r) * uVignette;
       // animated sensor grain
@@ -74,13 +74,13 @@ export function createScope(container) {
   renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
   renderer.setSize(container.clientWidth, container.clientHeight);
   renderer.toneMapping = THREE.ACESFilmicToneMapping;
-  renderer.toneMappingExposure = 0.9;   // specimens sit dark against the field
+  renderer.toneMappingExposure = 0.72;  // specimens sit dark against the field; only edges + specks glow
   renderer.outputColorSpace = THREE.SRGBColorSpace;
   container.appendChild(renderer.domElement);
 
   const scene = new THREE.Scene();
-  scene.background = new THREE.Color(0x030608);   // the dark-field: near-black water
-  scene.fog = new THREE.FogExp2(0x04080c, 0.028); // the medium recedes into depth
+  scene.background = new THREE.Color(0x010203);   // the dark-field: essentially black water
+  scene.fog = new THREE.FogExp2(0x02050a, 0.014); // the medium recedes into depth (light, so black stays black)
 
   // Neutral IBL for the wet, glassy sheen on cuticles and shells.
   const pmrem = new THREE.PMREMGenerator(renderer);
@@ -103,19 +103,21 @@ export function createScope(container) {
   // ── Dark-field lighting ─────────────────────────────────────────────────
   // A cool condenser key from below-left (dark-field light rakes in at a low
   // angle), a warm fill, and a rim to pull glassy edges out of the black.
-  const key = new THREE.DirectionalLight(0xcfe8ff, 2.2);
+  const key = new THREE.DirectionalLight(0xcfe8ff, 1.5);
   key.position.set(-4, -3, 6);
   scene.add(key);
 
-  const rim = new THREE.DirectionalLight(0x9fd0ff, 1.1);
+  const rim = new THREE.DirectionalLight(0xbfe2ff, 1.5);
   rim.position.set(5, 4, -4);
   scene.add(rim);
 
-  const fill = new THREE.HemisphereLight(0x3a5a7a, 0x02040a, 0.55);
+  // Deliberately low ambient/fill so bodies stay dark and only their scattering
+  // edges + refractile granules read — the essence of a dark-field field.
+  const fill = new THREE.HemisphereLight(0x28405a, 0x010208, 0.3);
   scene.add(fill);
 
   // A moving specular "hotspot" — the condenser aperture catching the specimen.
-  const spot = new THREE.PointLight(0xbfe6ff, 8, 30, 2);
+  const spot = new THREE.PointLight(0xbfe6ff, 5, 30, 2);
   spot.position.set(2, 3, 5);
   scene.add(spot);
 
@@ -137,7 +139,8 @@ export function createScope(container) {
 
   const bloom = new UnrealBloomPass(
     new THREE.Vector2(container.clientWidth, container.clientHeight),
-    0.6, 0.8, 0.82,           // only the brightest — edges + refractile specks — halo
+    0.42, 0.45, 0.9,          // tight, high threshold: ONLY the brightest edges + refractile
+                              // specks bloom — the body itself must not wash into a milky haze
   );
   composer.addPass(bloom);
   composer.addPass(new OutputPass());
@@ -177,10 +180,12 @@ function createMedium() {
   const group = new THREE.Group();
   group.name = 'medium';
 
+  // Neutral cool-grey particulate — real suspended debris scatters white/grey,
+  // not saturated cyan. Additive on black reads as faint dust specks.
   const layers = [
-    { n: 900, spread: 55, size: 0.09, color: 0x2b4a5e, opacity: 0.5, drift: 0.4 },
-    { n: 600, spread: 22, size: 0.05, color: 0x3f7088, opacity: 0.35, drift: 0.8 },
-    { n: 400, spread: 8, size: 0.03, color: 0x6fb0c8, opacity: 0.6, drift: 1.4 },
+    { n: 900, spread: 55, size: 0.085, color: 0x40474c, opacity: 0.45, drift: 0.4 },
+    { n: 600, spread: 22, size: 0.05, color: 0x5a6268, opacity: 0.32, drift: 0.8 },
+    { n: 400, spread: 8, size: 0.03, color: 0x8b9298, opacity: 0.5, drift: 1.4 },
   ];
 
   for (const L of layers) {

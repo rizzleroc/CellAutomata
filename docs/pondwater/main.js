@@ -17,6 +17,7 @@
 
 import { createScope } from './scene.js';
 import { ROSTER, BY_ID } from './organisms/index.js';
+import { makeSwimmer } from './locomotion.js';
 import * as THREE from 'three';
 
 const container = document.getElementById('stage');
@@ -36,7 +37,7 @@ function magAt(dist, micronPerWorld) {
 }
 
 // ── Sample state ────────────────────────────────────────────────────────────
-const instances = [];      // { root, meta, anim, organs, vel, spin, baseScale }
+const instances = [];      // { root(carrier), body, meta, anim, organs, swimmer, baseScale }
 let focus = null;          // the focused instance, or null in drop view
 let sampleSeed = 1;
 let running = true;
@@ -72,24 +73,35 @@ function loadSample(seed) {
 
   for (const id of draws) {
     const meta = BY_ID[id];
-    const root = meta.build();
+    // The organism owns its intrinsic anim (it writes its own root.rotation for
+    // cilia/heartbeat/S-wave). We wrap it in a *carrier* the swimmer navigates —
+    // position + a heading-aligned orientation — so the two layers never fight:
+    // the animal swims its species' gait while its organs keep beating inside it.
+    const body = meta.build();
     // log-compressed relative size so every organism is findable in the drop
     const rel = 0.55 + 0.55 * Math.log10(meta.micronLength / 2.0);
     const baseScale = 0.16 * rel;
+    const root = new THREE.Group();
+    root.add(body);
     root.scale.setScalar(baseScale);
     root.position.set((rnd() - 0.5) * 26, (rnd() - 0.5) * 18, (rnd() - 0.5) * 22);
-    root.rotation.set(rnd() * 6.28, rnd() * 6.28, rnd() * 6.28);
     root.userData.instance = true;
     root.userData.meta = meta;
     scene.add(root);
+    const swimmer = makeSwimmer(meta.locomotion || 'drift', {
+      rand: rnd,
+      start: root.position.clone(),
+      forwardAxis: meta.forwardAxis ? new THREE.Vector3(...meta.forwardAxis) : undefined,
+      // the smallest cells visibly quiver with Brownian motion; big animals don't
+      brownian: meta.micronLength < 20 ? 0.35 : 0,
+    });
+    swimmer.applyTo(root, 1);   // snap to the spawn heading
     instances.push({
-      root, meta,
-      anim: root.userData.anim,
-      organs: root.userData.organs || [],
-      focusRadius: root.userData.focusRadius || 6,
-      baseScale,
-      vel: new THREE.Vector3((rnd() - 0.5) * 0.5, (rnd() - 0.5) * 0.3, (rnd() - 0.5) * 0.4),
-      spin: new THREE.Vector3((rnd() - 0.5) * 0.2, (rnd() - 0.5) * 0.2, (rnd() - 0.5) * 0.2),
+      root, body, meta,
+      anim: body.userData.anim,
+      organs: body.userData.organs || [],
+      focusRadius: body.userData.focusRadius || 6,
+      baseScale, swimmer,
     });
   }
   surface(true);
@@ -258,22 +270,17 @@ function tick() {
   scope.spot.position.x = Math.sin(t * 0.3) * 6;
   scope.spot.position.y = Math.cos(t * 0.24) * 5;
 
-  // animate + drift every organism
+  // animate the intrinsic body + swim each organism its species' gait
   for (const inst of instances) {
     if (inst.anim) { inst.anim.setRunning(running); inst.anim.update(running ? dt : 0, t); }
     if (inst !== focus) {
-      // gentle brownian drift + tumble in the drop; wrap in a soft box
-      inst.root.position.addScaledVector(inst.vel, dt);
-      inst.root.rotation.x += inst.spin.x * dt;
-      inst.root.rotation.y += inst.spin.y * dt;
-      const p = inst.root.position;
-      for (const ax of ['x', 'y', 'z']) {
-        const lim = ax === 'y' ? 11 : 15;
-        if (p[ax] > lim) p[ax] = -lim; else if (p[ax] < -lim) p[ax] = lim;
-      }
-      // fade non-focused down when diving
-      const fade = focus ? 0.12 : 1;
-      setOpacity(inst.root, fade);
+      // the focused specimen holds still for inspection; the rest swim the drop,
+      // each by its own gait (run-tumble, hop-sink, helix, creep…) — and freeze
+      // when life is paused, so Pause stops the whole field, not just the organs.
+      inst.swimmer.setRunning(running);
+      inst.swimmer.step(running ? dt : 0);
+      inst.swimmer.applyTo(inst.root);
+      setOpacity(inst.root, focus ? 0.12 : 1);   // fade the field back when diving
     } else {
       setOpacity(inst.root, 1);
     }
