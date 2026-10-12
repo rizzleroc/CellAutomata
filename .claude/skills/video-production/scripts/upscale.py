@@ -31,7 +31,7 @@ def load_pth(path):
                 return name
             if mod == "collections" and name == "OrderedDict":
                 return collections.OrderedDict
-            return super().find_class(mod, name)
+            raise pickle.UnpicklingError(f"blocked global {mod}.{name}")   # strict allowlist: never import arbitrary code
 
         def persistent_load(self, pid):
             _, stype, key, loc, numel = pid
