@@ -23,7 +23,7 @@ CH=$(ls -d /opt/pw-browsers/chromium-*/chrome-linux 2>/dev/null | head -1)
 LD_LIBRARY_PATH="$B/lib" python3 -c "import skia, soundfile, imageio_ffmpeg, PIL, numpy" 2>/dev/null || \
   python3 -m pip install -q "skia-python==144.0.post2" numpy soundfile pillow imageio-ffmpeg 2>&1 | tail -2
 cd "$B"
-LD_LIBRARY_PATH="$B/lib" python3 -c "from eng import core, letters, world, zee, cast, sets, acting, lipsync, shots_ep2; print('BOXED engine OK')" 2>&1 | grep -v Fontconfig
+LD_LIBRARY_PATH="$B/lib" python3 -c "from eng import core, letters, world, zee, cast, sets, acting, lipsync, shots_ep2, gary; print('BOXED engine OK')" 2>&1 | grep -v Fontconfig
 echo "B=$B"
 echo "ffmpeg: $(python3 -c 'import imageio_ffmpeg; print(imageio_ffmpeg.get_ffmpeg_exe())')"
 echo "Next: mkdir -p \$B/ep<N>/{tools,audio,vo,out} and copy .claude/skills/boxed-episode/templates/* into place (see references/pipeline.md)."

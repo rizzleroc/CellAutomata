@@ -19,11 +19,15 @@ per 1920×1080 sheet (`scripts/sheet.py dir dir/sheet`), and READ the sheets. Fi
 - [ ] Render time per drawing within budget (~1.2 s).
 
 ## Sound (inspect levels/plots; you cannot listen)
-- [ ] Every line present once, in order; nothing clipped (peaks < −1 dBTP); speakers level-matched.
+- [ ] Every line present once, in order; nothing clipped; speakers level-matched.
+- [ ] True peak <= −1 dBTP on the ENCODED parts (`qc_parts.py`), not just on the mix (AAC adds up to ~2.3 dB).
 - [ ] Music under dialogue ducked; music not wall-to-wall where silence plays better; cue boundaries faded.
 - [ ] SFX timed to the visual beats; beds not masking speech.
 - [ ] Integrated loudness at target (−15 LUFS episodes / −14 music-led).
-- [ ] Subtitles match the dialogue text and timing.
+- [ ] Subtitles match the dialogue text and timing; no cue overlaps the next.
 
 ## Delivery
-- [ ] Each file < 30 MiB; parts split at cuts; durations sum to the runtime; one frame from each encoded part checked.
+- [ ] Each file < 30 MiB; durations sum to the runtime; >= ~2 Mbps video per part (add a part rather than starve it).
+- [ ] No part starts or ends mid-line (`plan_parts.py` picks the cuts); every cut is a hard cut on a drawing boundary.
+- [ ] Start / 25 / 50 / 75 / end frames of every encoded part checked on contact sheets (`qc_parts.py`).
+- [ ] Agents' reports verified, not trusted: render your own stills of every montage shot before rendering it.

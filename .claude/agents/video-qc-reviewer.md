@@ -21,7 +21,10 @@ timeline file (shots + lines), the final files if any (video parts, mix, subtitl
    jumps > 40° (modulo 360) between drawings.
 4. Sound: measure per-line RMS, peaks (< −1 dBTP), integrated loudness (ffmpeg `loudnorm print_format=json` or
    `ebur128`), music level under dialogue vs. gaps; check every line appears once and in order.
-5. Delivery: file sizes < 30 MiB, durations sum to the runtime, subtitles match lines and timings.
+5. Delivery: run `.claude/skills/video-production/scripts/qc_parts.py <out_dir> <prefix>` (sizes < 30 MiB, durations
+   sum to the runtime, loudness, true peak <= −1 dBTP on the encoded audio, contact sheets of every part's start /
+   25 / 50 / 75 / end); check no part starts or ends while a line is running (part boundaries vs the timeline's line
+   times); subtitles match lines and timings, with no overlapping cues.
 
 ## Report
 A ranked list (blockers → major → minor). Each item: timestamp or shot id, what is wrong (concrete — "the GAME SHOW

@@ -17,7 +17,8 @@ description: The house playbook for making finished videos in this workspace —
 - **Quality bar:** the user wants "insanely high quality". Considered composition, dense backgrounds, strong
   silhouettes, everything moving, legible text, no dead frames. You LOOK at stills of every shot before rendering.
 - **Deliver files, not promises:** every deliverable is an MP4 < 30 MiB (SendUserFile's cap) — split long videos into
-  parts at shot cuts — plus an `.srt` when there is dialogue. Send drafts early when they are meaningful.
+  parts at hard cuts where no line is running (`scripts/plan_parts.py`) — plus an `.srt` when there is dialogue. Send
+  drafts early when they are meaningful.
 - **Persist the toolchain:** the container resets without warning and wipes the scratchpad. Keep reusable engines and
   scripts inside a skill folder; offer to commit them (only with the user's OK, feature branch, never `main`).
 - **Honesty:** report the real runtime, what is placeholder, what failed. No model names/IDs in commits or PRs.
@@ -33,7 +34,8 @@ description: The house playbook for making finished videos in this workspace —
 7. **Stills QC** → contact sheets of start/mid/end of every shot; fix; repeat. → `references/qc-checklist.md`
 8. **Render** → per-shot segments in the background (resumable), concat → `video.mp4`. → `references/render-and-delivery.md`
 9. **Mix** → `mix.wav` (per-voice chains, music + SFX ducked under dialogue, loudnorm −15 LUFS) + `.srt`.
-10. **Encode + deliver** → parts < 29.5 MB, contact-sheet QC of the encoded parts, SendUserFile, short report.
+10. **Encode + deliver** → `plan_parts.py` cut list, `split_parts.sh` (true-peak-limited audio, parts < 29.5 MB),
+    `qc_parts.py` on the encoded parts (sizes, loudness, true peak, contact sheets), SendUserFile, short report.
 
 ## 4. Multi-agent shot production
 Use parallel subagents when the video has more than ~3 minutes of distinct set pieces:
@@ -58,4 +60,9 @@ Use parallel subagents when the video has more than ~3 minutes of distinct set p
 ## Scripts
 - `scripts/grab.py <dest> <prefix> [--rate 24000|48000]` — harvest whip/ElevenLabs spills into mp3/wav files.
 - `scripts/sheet.py <dir> <out_prefix> [files...]` — 2×2 labelled contact sheets of stills.
-- `scripts/split_parts.sh <video> <audio> <out_prefix> "a b name" ...` — 2-pass encode into parts < 29.5 MB.
+- `scripts/plan_parts.py <timeline.json> [--video video.mp4]` — choose delivery cut points: never mid-line, on hard
+  cuts (shot starts, or isolated cuts inside music-only montages), the fewest parts that keep >= ~2 Mbps video.
+- `scripts/split_parts.sh <video> <audio> <out_prefix> "a b name" ...` — true-peak-limits the audio, then 2-pass
+  encodes into parts < 29.5 MB (20 ms audio edge fades).
+- `scripts/qc_parts.py <out_dir> <prefix>` — size vs cap, durations, loudness + true peak of the ENCODED parts, and
+  frames from each part on contact sheets; exits 1 on a failure.

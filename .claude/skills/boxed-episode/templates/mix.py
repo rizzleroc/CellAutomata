@@ -56,9 +56,13 @@ def srt(tl, path):
     def ts(s):
         h = int(s // 3600); m = int(s % 3600 // 60); sec = s % 60
         return f"{h:02d}:{m:02d}:{int(sec):02d},{int((sec % 1) * 1000):03d}"
+    lines = tl["lines"]
     with open(path, "w") as f:
-        for i, ln in enumerate(tl["lines"], 1):
-            f.write(f"{i}\n{ts(ln['t0'])} --> {ts(ln['t1'] + 0.2)}\n{NAMES[ln['spk']]}: {display_text(ln['text'])}\n\n")
+        for i, ln in enumerate(lines, 1):
+            end = ln['t1'] + 0.2                                       # a short tail so a cue doesn't vanish mid-word
+            if i < len(lines):
+                end = min(end, lines[i]['t0'] - 0.05)                  # ...but never overlap the next cue (Ep4 had one)
+            f.write(f"{i}\n{ts(ln['t0'])} --> {ts(end)}\n{NAMES[ln['spk']]}: {display_text(ln['text'])}\n\n")
 
 
 def main():

@@ -59,4 +59,8 @@ mouths, nods and brows; `vis_at` / `loud_at` drive characters without acting tra
 - Music sidechain-ducked under dialogue (threshold 0.05, ratio 3.5, attack 25, release 600); SFX ducked lightly
   (0.06 / 2.2 / 8 / 220); `amix normalize=0`; `loudnorm=I=-15:TP=-1.5:LRA=11` (episodes) or two-pass linear loudness
   (`scripts/loud.sh`, −14 LUFS for music-led pieces).
-- Write an `.srt` from the timeline (speaker-labelled lines, +0.2 s tail).
+- Write an `.srt` from the timeline (speaker-labelled lines, +0.2 s tail, clamped to end 50 ms before the next cue
+  so cues never overlap).
+- The loudnorm true-peak target is not the delivered peak: ffmpeg's AAC encoder overshoots sharp transients by up to
+  ~2.3 dB (Ep4: a −1.5 dBTP mix encoded to +0.8 dBTP in the loudest part). Delivery therefore limits the mix at 4×
+  oversampling to −3.5 dBFS before encoding (`split_parts.sh` / the BOXED `finalize.sh`); measure the encoded parts.

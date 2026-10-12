@@ -7,6 +7,9 @@ Shot functions are named T###_slug (see ep4/timeline.json["shots"]) with signatu
   cv  skia canvas 1920x1080      t  seconds since the shot started      T  episode time (s)
   A   acting channels for this drawing: A["HOST"], A["GUEST"] (dicts for draw_host / draw_zee)
 
+GARY: gary(cv, x, y_eye, s, T) = the seated audience Gary (eyeball_creature); gary_full(cv, x, floor_y, s, T, **pose)
+  = the standard full-body Gary (eng/gary.py: legs, walk, turns, posable arms, every expression), lip-synced.
+
 THE CAVE KIT (use it so every cave shot in the episode matches):
   cave_side(cv, T, ...)        the classic cross-section: shadow wall (left) | chained prisoners | low puppet wall +
                                carriers | fire | the steep path up to the sunlit cave mouth (top right)
@@ -28,6 +31,7 @@ from .zee import draw_zee, _hand
 from .cast import draw_host, agent, alien, ai_blob, cosmic_hand, melting_clock, gauge
 from .shots_a import ease, pop, lerp, Hh, G, CAM_HOST, CAM_ZEE, tag, guest_prop, host_prop, HOST_POS, GUEST_POS, ribbon_wipe
 from .shots_ep2 import eyeball_creature, audience_rows, glow_square, pixel_text, social_glyph
+from .gary import draw_gary
 
 P_ = PAL
 EPN = "ep5"   # <- this episode's folder under $B
@@ -95,6 +99,14 @@ def spk_loud(spk, T):
 def gary(cv, x, y, s, T, seed=4400, mic=False, wave=0.0, loud=None):
     """Gary the eyeball (y = centre of his eye; his sweater hangs ~360*s below). Mouth follows his AUD lines."""
     eyeball_creature(cv, x, y, s, T, spk_loud("AUD", T) if loud is None else loud, seed=seed, mic=mic, wave=wave)
+
+
+def gary_full(cv, x, fy, s, T, **pose):
+    """Gary with legs, arms, turns and the full expression set (eng.gary.draw_gary): fy = the floor under him
+    (seated his eye sits 360*s above it). Mouth follows his AUD lines unless loud=/mouth= is given. Use this, not a
+    home-made copy, whenever he stands, walks, turns, gestures or emotes beyond the seated audience pose."""
+    pose.setdefault("loud", spk_loud("AUD", T))
+    return draw_gary(cv, x, fy, s, T, **pose)
 
 
 def studio(cv, T, A, cam, t=0.0, host=None, guest=None, sign=1.0):

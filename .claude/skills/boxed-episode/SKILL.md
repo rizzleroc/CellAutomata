@@ -56,20 +56,25 @@ module as worked examples of the idioms (cameras, light masks, an episode "world
     by `templates/sfx.py`; `templates/mix.py` → `mix.wav` (per-voice chains, ducking, loudnorm −15 LUFS) + `.srt`.
 11. **Render** — `templates/render_segs.py` renders shot-by-shot segments in the background (resumable), then
     `--concat` → `video.mp4`. Start the main unit early; render agent shots as soon as each module is approved.
-12. **Deliver** — `templates/finalize.sh` → ~6 parts, each < 29.5 MB (SendUserFile caps files at 30 MiB), QC the
-    encoded parts on a contact sheet, send them + the `.srt`, and tell the user the runtime and what changed.
+12. **Deliver** — cut list from `video-production/scripts/plan_parts.py` (never mid-line, hard cuts only, >= ~2 Mbps
+    per part: Ep4 = 7 parts), then `templates/finalize.sh` (true-peak-limited mix, each part < 29.5 MB: SendUserFile
+    caps files at 30 MiB), then `video-production/scripts/qc_parts.py` (sizes, durations, loudness, true peak on the
+    encoded audio, contact sheets you READ); send the parts + the `.srt`, and tell the user the runtime and what changed.
 
 ## Hard-won rules (the full list with fixes: `references/lessons.md`)
 - **Arms:** natural-elbow IK with a fixed bend sign per gesture and duration-scaled moves; never snap a joint >40°
   between drawings. Check `acting.json` for jumps after every cue edit. (The user noticed bad arms in Ep2.)
-- **Characters stay on-model** — use `draw_zee` / `draw_host` / `gary()` from the acting dict (`dict(A["HOST"])`
-  then override placement) so mouths stay in sync; never redraw the cast from scratch.
+- **Characters stay on-model** — use `draw_zee` / `draw_host` from the acting dict (`dict(A["HOST"])` then override
+  placement) so mouths stay in sync; Gary = `gary()` seated or `gary_full()` (`eng/gary.py`: legs, turns, arms, every
+  expression) — never redraw the cast from scratch or let a shot author build a private copy.
 - **Text never covers a face**, stays inside the 5% title-safe margin, always has ink + shadow.
 - **Darkness is a multiplied light map** (`light_mask`), not a black overlay — a silhouette on a wall needs a lit spot
   behind it to read.
 - **Persistence:** the container resets without warning. Keep the engine in this skill, keep `ep<N>/` data small and
   reproducible, and offer to commit engine/skill changes (only with the user's OK; never push to `main`).
-- **Delivery:** every file < 30 MiB; parts split at shot cuts; always include the `.srt`.
+- **Verify agents, don't trust their reports:** render your own stills of every montage module before rendering it.
+- **Delivery:** every file < 30 MiB; never cut a part mid-line; true peak <= −1 dBTP measured on the encoded parts;
+  always include the `.srt`.
 
 ## References
 - `references/series-bible.md` — show format, cast designs + voice IDs, sets, palette, fonts, running gags, episode log.

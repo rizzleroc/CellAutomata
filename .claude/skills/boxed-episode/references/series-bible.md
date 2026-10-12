@@ -16,7 +16,7 @@
 | 1 | How to Hack the Simulation | Roman Yampolskiy on Lex Fridman (host/guest roles) | short | the format is born; Zee's paper/jar/box props |
 | 2 | One in Billions | Elon Musk, Code Conference 2016 ("one in billions" answer) | ~5 min | Gary debuts (audience mic); Pong/evolution montage; vertical cut + SRT; arms IK rewrite after user feedback |
 | 3 | The Dream of Life | Alan Watts' thought experiment, hide-and-seek, "you were supposed to dance" | 10:00 | cold open with sleeping host; dream montages; infomercial ad break; the planet speaks; dance finale; 6 parts |
-| 4 | The Cave | Plato, *Republic* VII (c. 375 BC), quotes after Jowett (1871) | 11:00 | dark-studio cold open + hand-shadow BUNNY gag; "Guess That Shadow!" game show; Cave Phone Pro ad; host realises he IS the cave wall; Socrates; sunrise finale; post-credits bunny |
+| 4 | The Cave | Plato, *Republic* VII (c. 375 BC), quotes after Jowett (1871) | 11:00 | dark-studio cold open + hand-shadow BUNNY gag; "Guess That Shadow!" game show; Cave Phone Pro ad; host realises he IS the cave wall (PROPERTY OF THE CAVE sticker on his back); Socrates on a Greek vase; sunrise flower parade; post-credits bunny; 7 montage authors + main unit; delivered in 7 dialogue-safe parts |
 
 ## Episode structure (Ep3/Ep4 shape — reuse it)
 | Block | Length | Notes |
@@ -59,7 +59,10 @@
 ### GARY (spk `AUD`)
 - **Design:** a big eyeball (white with red veins, teal iris, black pupil, violet lid) on a **striped cream sweater
   (orange stripes) with a red "G"**; little mouth under the iris; sits in the eyeball audience; mic optional.
-  `eyeball_creature` in `eng/shots_ep2.py`; use `gary(cv, x, y, s, T)` from the episode base (mouth auto-synced).
+  When he stands or walks: **cream rubber-hose legs and red sneakers** (the standard since Ep4), white four-finger
+  hands. Seated in the audience: `gary(cv, x, y_eye, s, T)` (`eyeball_creature`, mouth auto-synced). Anything more
+  (standing, walking, turning, gestures, tears, spiral/heart/$ eyes, sunglasses): `gary_full(cv, x, floor_y, s, T,
+  **pose)` = `eng/gary.py draw_gary`. Never a home-made copy (Ep4's authors built five, with five kinds of legs).
 - **Voice:** `rHWSYoq8UlV0YIBKMryp` (earnest, excitable). Chain = handheld audience mic + room echo.
 - **Character:** sweet, literal, over-invested; gets the episode's guest role when the idea needs a "volunteer"
   (Ep4: the freed prisoner; sunglasses at the end).

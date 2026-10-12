@@ -14,7 +14,8 @@ those shots look insanely good in rendered stills.
    `$B/ep<N>/SHOTS_BY_OWNER.md` (your shots, their exact start/end times, and every dialogue line inside them with
    shot-relative timings). The showrunner's prompt adds per-shot creative direction — follow it.
 2. Study the engine you will call: `eng/core.py`, `eng/world.py`, `eng/sets.py`, `eng/letters.py`, `eng/zee.py`,
-   `eng/cast.py`, `eng/acting.py` (`ik`), `eng/shots_a.py`, `eng/shots_ep2.py` (Gary), the episode base module
+   `eng/cast.py`, `eng/acting.py` (`ik`), `eng/shots_a.py`, `eng/shots_ep2.py` (seated Gary), `eng/gary.py`
+   (`draw_gary`, the full-body Gary), the episode base module
    `eng/shots_ep<N>_base.py` (helpers + the episode's WORLD KIT), and the repo's
    `.claude/skills/boxed-episode/references/{series-bible,engine-api,lessons}.md`.
 3. Look at the series' look: `.claude/skills/boxed-episode/engine/examples/shots_ep4.py` and any reference stills
@@ -35,8 +36,10 @@ motion), legible hand-painted text. Never realistic, never brown/grey, never emp
 - Plan each shot as beats keyed to the words (what appears on which phrase), then build it in layers with
   `sets.Cam(cv, cam).layer(parallax)` for depth and camera moves.
 - The cast: draw the host/Zee from the acting dict (`h = dict(A["HOST"]); h.update(x=..., y=..., s=...)`) so lip sync,
-  blinks and gestures stay alive; Gary with `gary(...)` (mouth auto-synced to his lines); the planet/announcer mouths
-  from `vis_at`/`loud_at`. Extend expressions inside your module; keep everyone on-model.
+  blinks and gestures stay alive; Gary seated with `gary(...)`, and whenever he stands, walks, turns, gestures or
+  emotes with `gary_full(...)` (eng/gary.py: legs, arms, tears, spiral/heart/$ eyes, sunglasses...; both mouth
+  auto-synced) — never write your own Gary; if he needs something it lacks, add it via a pose wrapper in your module
+  and tell the showrunner. The planet/announcer mouths from `vis_at`/`loud_at`. Keep everyone on-model.
 - Reuse the world kit for any shared environment so your shots match the other authors'. Extend it in your module if
   needed, keeping its palette and ink.
 - Determinism: no unseeded randomness (`hsh`, rngs keyed on `core.D` or t). Compensate `core.INKMUL` when you scale

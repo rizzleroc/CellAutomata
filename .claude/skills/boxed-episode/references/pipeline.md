@@ -111,7 +111,15 @@ python3 render_segs.py --concat                               # -> ep$N/out/vide
 ≈1 s per drawing per worker; 11:00 = 7,920 drawings. Watch `df` (segments are ~1–2 MB/s of video).
 
 ## 11. Deliver
-`bash finalize.sh ep$N "0 113.66 part1" "113.66 219.35 part2" ...` (split at shot starts, ~110 s per part) →
-`boxed_ep<N>_part*.mp4` each < 29.5 MB. Extract a frame from each part into a contact sheet and LOOK. Send with
+```bash
+VP=/home/user/CellAutomata/.claude/skills/video-production    # absolute path of the repo checkout's scripts
+cd $B
+python3 $VP/scripts/plan_parts.py ep$N/timeline.json --video ep$N/out/video.mp4   # cut list (scan cached)
+bash finalize.sh ep$N "0 91.166667 part1" "91.166667 195.916667 part2" ...       # paste the planner's args
+python3 $VP/scripts/qc_parts.py ep$N/out boxed_ep$N   # sizes, durations, LUFS, true peak, contact sheets
+```
+The planner never cuts mid-line and keeps >= ~2 Mbps per part (Ep4: 7 parts for 11:00); `finalize.sh` true-peak
+limits the mix (`mix_tp.wav`, rebuilt when `mix.wav` changes) and fades each part's audio edges by 20 ms. Fix any
+part `qc_parts.py` flags (an audio-only remux with `-c:v copy` takes seconds), READ its contact sheets, then send with
 `SendUserFile` (all parts + `.srt`, `display: "attach"` for the srt), give runtime + highlights, offer revisions,
 and offer to commit engine/skill improvements (ask first; feature branch only; draft PR).

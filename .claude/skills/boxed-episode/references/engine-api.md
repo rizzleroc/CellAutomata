@@ -70,14 +70,31 @@ gestures (anticipation/overshoot, duration-scaled), blinks, saccades, nods, emph
 t, t0, t1, color, align)` lower-third name tag, `ribbon_wipe(cv, u)` full-frame striped wipe, `page`, `jar`,
 `small_box`, `thought_bubble`, `cosmic_brain`.
 
+## eng/gary.py — the standard full-body Gary
+`draw_gary(cv, x, floor_y, s, T, **pose)` → anchors `dict(eye, r, iris, hip, shL, shR)`. The classic design (same seed
+4400 as the audience Gary) plus cream rubber-hose legs and red sneakers. Seated his eye sits 360·s above `floor_y`
+(placing by the eye: `floor_y = y_eye + 360*s`). Pose keys:
+- body: `stand` 0 (sitting) .. 1 (on his legs, +108·s), `step` walk phase (rad), `feet=[(X,Y),(X,Y)]` dangling/dragged,
+  `lean` (deg), `knees` wobble, `yaw` 0 front / ±90 profile (use ±75 for a readable three-quarter) / 180 back,
+  `hyaw` eye-only turn, `bob`, `eye_scale`
+- arms: `arms=dict(L=dict(hand=(hx, hy[, hz]) | world=(X, Y), pose, ang, bend, behind, elbow, reach), R=...)`, hand
+  coords in s-units relative to the eye centre (hanging default ±140, 330); `arms_only` / `arms_off` for held props
+- face: `look`, `lid` (default breathing), `tilt`, `squint`, `shut`, `crinkle`, `pupil` (fraction 0.07..0.8 or
+  'pin' | 'spiral' | 'x' | 'heart' | 'dollar'), `iris`, `shock`, `mouth` ('auto' talk from `loud`, smile, frown, flat,
+  wobbly, grin, scream, pout, o) + `mo`, `tears` (+`tear_dir`, `tear_up`), `sweat`, `veins`, `shades` (None, or
+  0 = sunglasses on .. 1 = slid down, peeking over)
+- look/dev: `light=dict(dir, a, rgb)` cel crescent + warm glaze, `bleach` (glare wash-out), `collar=True |
+  dict(open, lock)` (Ep4's prisoner collar)
+
 ## eng/shots_ep2.py — reusable helpers inside Ep2's module
-`eyeball_creature(cv, x, y_eye, s, t, loud, seed, mic, wave)` (GARY), `audience_rows(cv, t, raise_k, hi_x, loud)`
+`eyeball_creature(cv, x, y_eye, s, t, loud, seed, mic, wave)` (the seated audience GARY), `audience_rows(cv, t, raise_k, hi_x, loud)`
 (foreground eyeball audience), `glow_square`, `pixel_text`, `social_glyph`, `screen_sea`, `mini_world`, `bezel`,
 `wireframe`, `hud`.
 
 ## Episode base module (`templates/shots_epN_base.py` → `eng/shots_ep<N>_base.py`)
 `TL, LINES, SLOTS, SHOTS` from the timeline · `loud_at(line, T)`, `vis_at(line, T)`, `line_at(T)`,
-`spk_loud(spk, T)` · `gary(cv, x, y, s, T, mic, wave)` · `studio(cv, T, A, cam, t, host={...}, guest={...})` ·
+`spk_loud(spk, T)` · `gary(cv, x, y, s, T, mic, wave)` (seated) · `gary_full(cv, x, floor_y, s, T, **pose)` (lip-synced
+`draw_gary`) · `studio(cv, T, A, cam, t, host={...}, guest={...})` ·
 `caption(cv, text, x, y, t, t0, size, fill, font)` · `thought_bubble` · `vignette(cv, a, inner)` · `darkness(cv, a)` ·
 `firelight(cv, x, y, r, T, a, rgb)` · `R(x0, y0, x1, y1)` · `CAM_WIDE`, `CAM_TWO` · plus the episode's world kit
 (Ep4: `cave_side`, `cave_wall_view`, `prisoner`, `carrier`, `statue`, `shadow_shape`, `cave_fire`, `rock_mass`,

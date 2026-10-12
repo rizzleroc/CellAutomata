@@ -24,14 +24,15 @@ crystals, a hot orange wall, neon fire — never brown/grey/realistic."}}
 
 ## Engine (read these files before writing — they are the API)
 - `eng/core.py`, `eng/world.py`, `eng/sets.py`, `eng/letters.py`, `eng/zee.py` (`draw_zee`), `eng/cast.py`
-  (`draw_host`), `eng/acting.py` (`ik`), `eng/shots_a.py`, `eng/shots_ep2.py` (Gary = `eyeball_creature`,
-  `audience_rows`). A one-page API summary: `.claude/skills/boxed-episode/references/engine-api.md` in the repo.
+  (`draw_host`), `eng/acting.py` (`ik`), `eng/shots_a.py`, `eng/shots_ep2.py` (seated Gary = `eyeball_creature`,
+  `audience_rows`), `eng/gary.py` (`draw_gary`: the standard full-body Gary with legs, turns, arms, expressions). A one-page API summary: `.claude/skills/boxed-episode/references/engine-api.md` in the repo.
 - The acting dict A["HOST"]/A["GUEST"] already has lip-sync + gestures for every line: when you draw the host or Zee
   in your own set, start from it (`dict(A["HOST"])`) and override x/y/s/legs etc so mouths stay in sync.
   For extra arm poses: `sh, el, _ = ik(SH_GUEST[side], (wx, wy), *L_GUEST, side)` (feet origin, y negative up,
   side −1 = screen-left arm aL). Elbows low/outward unless the hand is overhead.
 - **`eng/shots_ep{{N}}_base.py`** (`from .shots_ep{{N}}_base import *`): `TL, LINES, SLOTS, SHOTS`, `loud_at`, `vis_at`,
-  `line_at`, `spk_loud(spk, T)`, `gary(cv, x, y, s, T, mic, wave)` (mouth auto-synced), `studio(cv, T, A, cam, t,
+  `line_at`, `spk_loud(spk, T)`, `gary(cv, x, y, s, T, mic, wave)` (seated, mouth auto-synced), `gary_full(cv, x,
+  floor_y, s, T, **pose)` (standing / walking / emoting Gary, mouth auto-synced; never build your own), `studio(cv, T, A, cam, t,
   host={...}, guest={...})`, `caption`, `thought_bubble`, `vignette`, `darkness`, `firelight`, CAM_* / *_POS, `R()`.
   **THE {{WORLD}} KIT — use it so every {{world}} shot matches:** {{list the kit functions with one-line descriptions}}.
 - Look at `eng/shots_ep2.py` and `.claude/skills/boxed-episode/engine/examples/shots_ep4.py` for idioms (camera moves,
