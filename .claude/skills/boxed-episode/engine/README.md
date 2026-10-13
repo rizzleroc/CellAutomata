@@ -7,7 +7,8 @@ in the session scratchpad and is wiped whenever the container resets.
   props), `sets` (parallax camera, cosmos, the talk-show set), `zee` / `cast` (the performers), `acting` (IK +
   performance track), `lipsync`, `shots_a` (shot helpers), `shots_ep2` (seated Gary + audience helpers live here),
   `gary` (`draw_gary`: the standard full-body Gary — legs, turns, arms, every expression).
-- `examples/` — Episode 4's main-unit shots and base module (cave kit), as idioms to copy from.
+- Finished episodes' source lives in `../episodes/ep<N>/` (Ep4: all nine shot modules, scripts and data), as idioms
+  to copy from and to re-render from.
 - `setup.sh [B]` — recreate a working engine: copies `eng/`, fetches the 10 Google Fonts, links libEGL/libGLESv2 from
   the Playwright chromium, installs Python deps, runs an import check.
 

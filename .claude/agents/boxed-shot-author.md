@@ -18,7 +18,7 @@ those shots look insanely good in rendered stills.
    (`draw_gary`, the full-body Gary), the episode base module
    `eng/shots_ep<N>_base.py` (helpers + the episode's WORLD KIT), and the repo's
    `.claude/skills/boxed-episode/references/{series-bible,engine-api,lessons}.md`.
-3. Look at the series' look: `.claude/skills/boxed-episode/engine/examples/shots_ep4.py` and any reference stills
+3. Look at the series' look: `.claude/skills/boxed-episode/episodes/ep4/eng/` (Ep4's main unit and montage modules) and any reference stills
    the brief points to.
 
 ## The look (non-negotiable)

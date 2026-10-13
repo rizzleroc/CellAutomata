@@ -30,8 +30,10 @@ export B=<the path it printed>; cd $B                      # run python as: LD_L
 ```
 The snapshot in `engine/eng/` is the canonical engine (core, letters, world, zee, cast, sets, shots_a, acting, lipsync,
 shots_ep2 helpers). If you improve an engine module during an episode, copy it back into `engine/eng/` so the next
-episode starts from it, and ask the user before committing. `engine/examples/` holds Ep4's main-unit shots and base
-module as worked examples of the idioms (cameras, light masks, an episode "world kit").
+episode starts from it, and ask the user before committing. `episodes/ep<N>/` keeps each finished episode's
+source (shot modules, scripts, timeline, lip sync, cues; never media) — Ep4's is the worked example of the idioms
+(cameras, light masks, an episode "world kit", seven montage modules) and can be restored and re-rendered (its README).
+When an episode ships, save it there too (ask the user first).
 
 ## The pipeline (details + exact commands: `references/pipeline.md`)
 1. **Pick the idea** — something viral, public-domain or properly attributed, with a clear arc and quotable lines.

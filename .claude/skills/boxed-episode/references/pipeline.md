@@ -89,7 +89,7 @@ shots: <per-shot creative direction keyed to the line timings>". 45–80 s of sc
 ## 8. Main unit
 `eng/shots_ep<N>.py` (`from .shots_ep<N>_base import *`): cold open, title, talk-show beats (`studio(...)` with
 camera moves via `cam_lerp`), cutaways to Gary (`audience_cu`), host crisis (face modes + glitch + set effects), tag,
-endcard, stinger. Use `engine/examples/shots_ep4.py` as the pattern library (light_mask, dark_stage, sunny_set...).
+endcard, stinger. Use `episodes/ep4/eng/shots_ep4.py` as the pattern library (light_mask, dark_stage, sunny_set...).
 Stills: `python3 render.py --stills 5 13 16.5 ... --out ep$N/out/main` → `python3 ep$N/tools/sheet.py ep$N/out/main ep$N/out/main/sheet` → Read.
 
 ## 9. Music + SFX + mix

@@ -35,7 +35,7 @@ crystals, a hot orange wall, neon fire — never brown/grey/realistic."}}
   floor_y, s, T, **pose)` (standing / walking / emoting Gary, mouth auto-synced; never build your own), `studio(cv, T, A, cam, t,
   host={...}, guest={...})`, `caption`, `thought_bubble`, `vignette`, `darkness`, `firelight`, CAM_* / *_POS, `R()`.
   **THE {{WORLD}} KIT — use it so every {{world}} shot matches:** {{list the kit functions with one-line descriptions}}.
-- Look at `eng/shots_ep2.py` and `.claude/skills/boxed-episode/engine/examples/shots_ep4.py` for idioms (camera moves,
+- Look at `eng/shots_ep2.py` and `.claude/skills/boxed-episode/episodes/ep4/eng/shots_ep4.py` (and the Ep4 montage modules beside it) for idioms (camera moves,
   text pops, light masks, layering, INKMUL compensation for scaled sub-scenes).
 
 ## Your shots

@@ -1,0 +1,664 @@
+{
+ "title": "BOXED ep4 - THE CAVE",
+ "voices": {
+  "HOST": "iP95p4xoKVk53GoZ742B",
+  "GUEST": "cgSgspJ2msm6clMCkdW9",
+  "AUD": "rHWSYoq8UlV0YIBKMryp",
+  "ANN": "nPczCjzI2devNBz1zQrb",
+  "PLANET": "pqHfZKP75CvOlQylNhV4"
+ },
+ "model": "eleven_v3",
+ "lines": [
+  {
+   "id": "C01",
+   "spk": "HOST",
+   "text": "Psst. Zee. Zee! Are we on the air?",
+   "tts": "[whispering] Psst. Zee. Zee! Are we on the air?",
+   "voice": "iP95p4xoKVk53GoZ742B"
+  },
+  {
+   "id": "C02",
+   "spk": "GUEST",
+   "text": "I think so. Why is it so dark in here?",
+   "tts": "[whispering] I think so... Why is it so dark in here?",
+   "voice": "cgSgspJ2msm6clMCkdW9"
+  },
+  {
+   "id": "C03",
+   "spk": "HOST",
+   "text": "Budget cuts. They took the lights. All we have left is me, glowing... and a wall.",
+   "tts": "[whispering] Budget cuts. They took the lights. All we have left is me... glowing... and a wall.",
+   "voice": "iP95p4xoKVk53GoZ742B"
+  },
+  {
+   "id": "C04",
+   "spk": "AUD",
+   "text": "Ooooh! Look! The wall is doing a bunny!",
+   "tts": "[gasps, delighted] Ooooh! Look! The wall is doing a bunny!",
+   "voice": "rHWSYoq8UlV0YIBKMryp"
+  },
+  {
+   "id": "C05",
+   "spk": "HOST",
+   "text": "That's my hand, Gary.",
+   "tts": "[deadpan] That's my hand, Gary.",
+   "voice": "iP95p4xoKVk53GoZ742B"
+  },
+  {
+   "id": "C06",
+   "spk": "AUD",
+   "text": "...The bunny knows my name.",
+   "tts": "[awestruck whisper] ...The bunny knows my name.",
+   "voice": "rHWSYoq8UlV0YIBKMryp"
+  },
+  {
+   "id": "C07",
+   "spk": "GUEST",
+   "text": "Oh, this is perfect. Roll the titles!",
+   "tts": "[giggles] Oh, this is perfect. Roll the titles!",
+   "voice": "cgSgspJ2msm6clMCkdW9"
+  },
+  {
+   "id": "H01",
+   "spk": "HOST",
+   "text": "Good evening, and welcome back to BOXED, the only talk show broadcast from inside the box! The lights are back on, the bunny has been fired, and I'm still a television.",
+   "tts": "[excited, showman] Good evening, and welcome back to Boxed, the only talk show broadcast from inside the box! The lights are back on, the bunny has been fired... and I'm still a television.",
+   "voice": "iP95p4xoKVk53GoZ742B"
+  },
+  {
+   "id": "H02",
+   "spk": "HOST",
+   "text": "This season we hacked the simulation, did the math on it, and found out life might be a dream. Tonight we're going back. Way back. Twenty-four hundred years.",
+   "tts": "This season we hacked the simulation, did the math on it, and found out life might be a dream. Tonight we're going back. Way back. Twenty-four hundred years.",
+   "voice": "iP95p4xoKVk53GoZ742B"
+  },
+  {
+   "id": "H03",
+   "spk": "HOST",
+   "text": "Please welcome the only guest legally allowed to explain philosophy to a television... Zee!",
+   "tts": "[building up] Please welcome the only guest legally allowed to explain philosophy to a television... Zee!",
+   "voice": "iP95p4xoKVk53GoZ742B"
+  },
+  {
+   "id": "Z01",
+   "spk": "GUEST",
+   "text": "Thank you! Thank you! And Gary, I'm so sorry about the bunny.",
+   "tts": "[happy] Thank you! Thank you! [sympathetic] And Gary... I'm so sorry about the bunny.",
+   "voice": "cgSgspJ2msm6clMCkdW9"
+  },
+  {
+   "id": "G00",
+   "spk": "AUD",
+   "text": "He was my best friend.",
+   "tts": "[sniffles, sad] He was my best friend.",
+   "voice": "rHWSYoq8UlV0YIBKMryp"
+  },
+  {
+   "id": "H04",
+   "spk": "HOST",
+   "text": "Zee, tonight's story might be the most famous thought experiment ever written.",
+   "tts": "Zee, tonight's story might be the most famous thought experiment ever written.",
+   "voice": "iP95p4xoKVk53GoZ742B"
+  },
+  {
+   "id": "Z02",
+   "spk": "GUEST",
+   "text": "The Allegory of the Cave. Plato wrote it in the Republic, around 375 BC. And it starts... in the dark.",
+   "tts": "The Allegory of the Cave. Plato wrote it in the Republic, around three hundred seventy-five B.C. [mysterious] And it starts... in the dark.",
+   "voice": "cgSgspJ2msm6clMCkdW9"
+  },
+  {
+   "id": "Z03",
+   "spk": "GUEST",
+   "text": "Picture a huge cave, deep underground. Inside are people who have been chained there since they were children.",
+   "tts": "[storytelling, hushed] Picture a huge cave, deep underground. Inside are people who have been chained there since they were children.",
+   "voice": "cgSgspJ2msm6clMCkdW9"
+  },
+  {
+   "id": "Z04",
+   "spk": "GUEST",
+   "text": "Their legs and necks are chained, so they can't even turn their heads. All they can ever see is the wall in front of them.",
+   "tts": "Their legs and necks are chained, so they can't even turn their heads. All they can ever see... is the wall in front of them.",
+   "voice": "cgSgspJ2msm6clMCkdW9"
+  },
+  {
+   "id": "H05",
+   "spk": "HOST",
+   "text": "Since they were kids? Yikes.",
+   "tts": "[wincing] Since they were kids? Yikes.",
+   "voice": "iP95p4xoKVk53GoZ742B"
+  },
+  {
+   "id": "Z05",
+   "spk": "GUEST",
+   "text": "Behind them, a fire is burning. And between the fire and the prisoners runs a low wall, like the screen of a puppet show.",
+   "tts": "Behind them, a fire is burning. And between the fire and the prisoners runs a low wall... like the screen of a puppet show.",
+   "voice": "cgSgspJ2msm6clMCkdW9"
+  },
+  {
+   "id": "Z06",
+   "spk": "GUEST",
+   "text": "People walk behind that wall carrying objects. Statues of animals. People. Trees. And the fire throws their shadows onto the cave wall.",
+   "tts": "People walk behind that wall, carrying objects. Statues of animals. People. Trees. And the fire throws their shadows onto the cave wall.",
+   "voice": "cgSgspJ2msm6clMCkdW9"
+  },
+  {
+   "id": "H06",
+   "spk": "HOST",
+   "text": "So it's a shadow puppet show.",
+   "tts": "[curious] So it's a shadow puppet show.",
+   "voice": "iP95p4xoKVk53GoZ742B"
+  },
+  {
+   "id": "Z07",
+   "spk": "GUEST",
+   "text": "One that never ends. The prisoners have never seen anything else. Not the fire. Not the puppets. Not even each other. Only shadows.",
+   "tts": "One that never ends. The prisoners have never seen anything else. Not the fire. Not the puppets. Not even each other. [softly] Only shadows.",
+   "voice": "cgSgspJ2msm6clMCkdW9"
+  },
+  {
+   "id": "Z08",
+   "spk": "GUEST",
+   "text": "And when the carriers talk, their voices echo off the wall. So the prisoners believe the shadows are talking.",
+   "tts": "And when the carriers talk, their voices echo off the wall. So the prisoners believe the shadows are talking.",
+   "voice": "cgSgspJ2msm6clMCkdW9"
+  },
+  {
+   "id": "H07",
+   "spk": "HOST",
+   "text": "What a strange image. And what strange prisoners.",
+   "tts": "[slightly unsettled] What a strange image. And what strange prisoners.",
+   "voice": "iP95p4xoKVk53GoZ742B"
+  },
+  {
+   "id": "Z09",
+   "spk": "GUEST",
+   "text": "Like ourselves.",
+   "tts": "[gently, quietly] Like ourselves.",
+   "voice": "cgSgspJ2msm6clMCkdW9"
+  },
+  {
+   "id": "H08",
+   "spk": "HOST",
+   "text": "...Sorry?",
+   "tts": "[pause] ...Sorry?",
+   "voice": "iP95p4xoKVk53GoZ742B"
+  },
+  {
+   "id": "Z10",
+   "spk": "GUEST",
+   "text": "That's Plato's answer. Word for word. Like ourselves.",
+   "tts": "That's Plato's answer. Word for word. [softly] Like ourselves.",
+   "voice": "cgSgspJ2msm6clMCkdW9"
+  },
+  {
+   "id": "H09",
+   "spk": "HOST",
+   "text": "Ha. Ha ha. Classic Plato. Always kidding.",
+   "tts": "[nervous laugh] Ha. Ha ha. Classic Plato. Always kidding.",
+   "voice": "iP95p4xoKVk53GoZ742B"
+  },
+  {
+   "id": "Z11",
+   "spk": "GUEST",
+   "text": "For the prisoners, the shadows ARE reality. They name them. They study them. They even hand out honors to whoever's quickest at guessing which shadow comes next.",
+   "tts": "For the prisoners, the shadows ARE reality. They name them. They study them. They even hand out honors to whoever's quickest at guessing which shadow comes next.",
+   "voice": "cgSgspJ2msm6clMCkdW9"
+  },
+  {
+   "id": "H10",
+   "spk": "HOST",
+   "text": "Wait. Prizes? For guessing? Zee... that's a GAME SHOW.",
+   "tts": "[excited realization] Wait. Prizes? For guessing? Zee... that's a GAME SHOW!",
+   "voice": "iP95p4xoKVk53GoZ742B"
+  },
+  {
+   "id": "S01",
+   "spk": "HOST",
+   "text": "It's time for... GUESS! THAT! SHADOW! Gary! For one million cave dollars... what comes after the bunny?",
+   "tts": "[game show announcer, booming] It's time for... GUESS! THAT! SHADOW! Gary! For one million cave dollars... what comes after the bunny?",
+   "voice": "iP95p4xoKVk53GoZ742B"
+  },
+  {
+   "id": "S02",
+   "spk": "AUD",
+   "text": "Um... um... a horsey?!",
+   "tts": "[nervous, straining] Um... um... a horsey?!",
+   "voice": "rHWSYoq8UlV0YIBKMryp"
+  },
+  {
+   "id": "S03",
+   "spk": "HOST",
+   "text": "CORRECT! Gary wins a lifetime supply of... more shadows!",
+   "tts": "[game show announcer] CORRECT! Gary wins a lifetime supply of... more shadows!",
+   "voice": "iP95p4xoKVk53GoZ742B"
+  },
+  {
+   "id": "S04",
+   "spk": "AUD",
+   "text": "This is the best day of my life!",
+   "tts": "[overjoyed, crying happily] This is the best day of my life!",
+   "voice": "rHWSYoq8UlV0YIBKMryp"
+  },
+  {
+   "id": "Z12",
+   "spk": "GUEST",
+   "text": "Now. Imagine one prisoner is set free. Someone unlocks his chains and makes him stand up... and turn around.",
+   "tts": "Now. Imagine one prisoner is set free. Someone unlocks his chains, and makes him stand up... and turn around.",
+   "voice": "cgSgspJ2msm6clMCkdW9"
+  },
+  {
+   "id": "H11",
+   "spk": "HOST",
+   "text": "Ooh! Who's the lucky volunteer?",
+   "tts": "[excited] Ooh! Who's the lucky volunteer?",
+   "voice": "iP95p4xoKVk53GoZ742B"
+  },
+  {
+   "id": "G01",
+   "spk": "AUD",
+   "text": "Me? Oh! Oh boy! What's back there? Is it more bunnies?",
+   "tts": "[surprised, eager] Me? Oh! Oh boy! What's back there? Is it more bunnies?",
+   "voice": "rHWSYoq8UlV0YIBKMryp"
+  },
+  {
+   "id": "Z13",
+   "spk": "GUEST",
+   "text": "It's the fire. And it hurts. He's lived his whole life in the dark, and the light is blinding.",
+   "tts": "It's the fire. And it hurts. He's lived his whole life in the dark... and the light is blinding.",
+   "voice": "cgSgspJ2msm6clMCkdW9"
+  },
+  {
+   "id": "G02",
+   "spk": "AUD",
+   "text": "AAAH! MY EVERYTHING! Zee, I'm one big eye! This is the worst possible thing!",
+   "tts": "[screaming] AAAH! MY EVERYTHING! [panicked] Zee, I'm one big eye! This is the worst possible thing!",
+   "voice": "rHWSYoq8UlV0YIBKMryp"
+  },
+  {
+   "id": "Z14",
+   "spk": "GUEST",
+   "text": "Then someone points at the puppets and tells him: everything you've ever seen was just a shadow of these. And he doesn't believe it.",
+   "tts": "Then someone points at the puppets and tells him: everything you've ever seen was just a shadow of these. And he doesn't believe it.",
+   "voice": "cgSgspJ2msm6clMCkdW9"
+  },
+  {
+   "id": "G03",
+   "spk": "AUD",
+   "text": "Nope. Nuh-uh. The shadows were way better. Put me back.",
+   "tts": "[stubborn, pouting] Nope. Nuh-uh. The shadows were way better. Put me back.",
+   "voice": "rHWSYoq8UlV0YIBKMryp"
+  },
+  {
+   "id": "H12",
+   "spk": "HOST",
+   "text": "Honestly? Relatable.",
+   "tts": "[deadpan] Honestly? Relatable.",
+   "voice": "iP95p4xoKVk53GoZ742B"
+  },
+  {
+   "id": "Z15",
+   "spk": "GUEST",
+   "text": "But they don't put him back. They drag him up a long, steep, rocky path... all the way out of the cave... into the sunlight.",
+   "tts": "But they don't put him back. They drag him up a long, steep, rocky path... all the way out of the cave... into the sunlight.",
+   "voice": "cgSgspJ2msm6clMCkdW9"
+  },
+  {
+   "id": "G04",
+   "spk": "AUD",
+   "text": "TOO MUCH! TOO MUCH OUTSIDE!",
+   "tts": "[shouting, overwhelmed] TOO MUCH! TOO MUCH OUTSIDE!",
+   "voice": "rHWSYoq8UlV0YIBKMryp"
+  },
+  {
+   "id": "Z16",
+   "spk": "GUEST",
+   "text": "At first he can't see a thing. So his eyes adjust, step by step. First, he can only look at shadows.",
+   "tts": "At first he can't see a thing. So his eyes adjust, step by step. First, he can only look at shadows.",
+   "voice": "cgSgspJ2msm6clMCkdW9"
+  },
+  {
+   "id": "Z17",
+   "spk": "GUEST",
+   "text": "Then reflections in the water. Then the real things themselves. Trees. Flowers. People.",
+   "tts": "Then reflections in the water. Then the real things themselves. [wonder] Trees. Flowers. People.",
+   "voice": "cgSgspJ2msm6clMCkdW9"
+  },
+  {
+   "id": "Z18",
+   "spk": "GUEST",
+   "text": "At night, he looks up at the moon and the stars. And finally, one morning... he can look at the sun itself.",
+   "tts": "At night, he looks up at the moon and the stars. And finally, one morning... he can look at the sun itself.",
+   "voice": "cgSgspJ2msm6clMCkdW9"
+  },
+  {
+   "id": "P01",
+   "spk": "PLANET",
+   "text": "Oh. Hey, Gary.",
+   "tts": "[warm, sleepy, friendly] Oh. Hey, Gary.",
+   "voice": "pqHfZKP75CvOlQylNhV4"
+  },
+  {
+   "id": "G05",
+   "spk": "AUD",
+   "text": "...Whoa.",
+   "tts": "[whispering, awestruck] ...Whoa.",
+   "voice": "rHWSYoq8UlV0YIBKMryp"
+  },
+  {
+   "id": "Z19",
+   "spk": "GUEST",
+   "text": "And he understands. The sun makes the seasons and the years. It's what lets you see anything at all. In a way, it was behind everything he ever saw. Even the shadows.",
+   "tts": "And he understands. The sun makes the seasons and the years. It's what lets you see anything at all. In a way, it was behind everything he ever saw... even the shadows.",
+   "voice": "cgSgspJ2msm6clMCkdW9"
+  },
+  {
+   "id": "H13",
+   "spk": "HOST",
+   "text": "That's beautiful. So he lives happily ever after in the sunshine?",
+   "tts": "[moved] That's beautiful. So he lives happily ever after in the sunshine?",
+   "voice": "iP95p4xoKVk53GoZ742B"
+  },
+  {
+   "id": "Z20",
+   "spk": "GUEST",
+   "text": "...Not quite.",
+   "tts": "[pause, ominous] ...Not quite.",
+   "voice": "cgSgspJ2msm6clMCkdW9"
+  },
+  {
+   "id": "H14",
+   "spk": "HOST",
+   "text": "We'll be right back!",
+   "tts": "[nervous, quick] We'll be right back!",
+   "voice": "iP95p4xoKVk53GoZ742B"
+  },
+  {
+   "id": "A01",
+   "spk": "ANN",
+   "text": "Is reality too bright? Too complicated? Too... real?",
+   "tts": "[infomercial announcer, dramatic] Is reality too bright? Too complicated? Too... real?",
+   "voice": "nPczCjzI2devNBz1zQrb"
+  },
+  {
+   "id": "A02",
+   "spk": "ANN",
+   "text": "Introducing the all-new CAVE PHONE PRO. It's a cave wall... that fits in your pocket!",
+   "tts": "[excited] Introducing the all-new Cave Phone Pro! It's a cave wall... that fits in your pocket!",
+   "voice": "nPczCjzI2devNBz1zQrb"
+  },
+  {
+   "id": "A03",
+   "spk": "ANN",
+   "text": "With infinite scroll, you'll never run out of shadows. And with new SmartChains, you'll never have to turn around again!",
+   "tts": "With infinite scroll, you'll never run out of shadows! And with new SmartChains, you'll never have to turn around again!",
+   "voice": "nPczCjzI2devNBz1zQrb"
+  },
+  {
+   "id": "G06",
+   "spk": "AUD",
+   "text": "I haven't looked up in six years. My neck is stuck like this. Ten out of ten!",
+   "tts": "[cheerful testimonial] I haven't looked up in six years. My neck is stuck like this. Ten out of ten!",
+   "voice": "rHWSYoq8UlV0YIBKMryp"
+  },
+  {
+   "id": "A04",
+   "spk": "ANN",
+   "text": "Side effects may include stiff neck, mistaking shadows for reality, and the slow realization that you are the product. Cave Phone Pro. Don't look up.",
+   "tts": "[very fast disclaimer] Side effects may include stiff neck, mistaking shadows for reality, and the slow realization that you are the product. [slow, smooth] Cave Phone Pro. Don't look up.",
+   "voice": "nPczCjzI2devNBz1zQrb"
+  },
+  {
+   "id": "H15",
+   "spk": "HOST",
+   "text": "And we're back! Zee, before the break you said 'not quite.' What happens to Gary?",
+   "tts": "[upbeat] And we're back! Zee, before the break you said, not quite. What happens to Gary?",
+   "voice": "iP95p4xoKVk53GoZ742B"
+  },
+  {
+   "id": "Z21",
+   "spk": "GUEST",
+   "text": "He remembers his friends, still down there. Still chained. Still guessing shadows. He feels sorry for them. So he goes back down to set them free.",
+   "tts": "He remembers his friends, still down there. Still chained. Still guessing shadows. He feels sorry for them. So he goes back down... to set them free.",
+   "voice": "cgSgspJ2msm6clMCkdW9"
+  },
+  {
+   "id": "H16",
+   "spk": "HOST",
+   "text": "A hero! The crowd goes wild!",
+   "tts": "[cheering] A hero! The crowd goes wild!",
+   "voice": "iP95p4xoKVk53GoZ742B"
+  },
+  {
+   "id": "Z22",
+   "spk": "GUEST",
+   "text": "Well... after all that sunlight, his eyes can't see in the dark anymore. So when he sits back down... he's terrible at the shadow game.",
+   "tts": "Well... after all that sunlight, his eyes can't see in the dark anymore. So when he sits back down... he's terrible at the shadow game.",
+   "voice": "cgSgspJ2msm6clMCkdW9"
+  },
+  {
+   "id": "S05",
+   "spk": "HOST",
+   "text": "Gary! Welcome back! What comes after the bunny?",
+   "tts": "[game show announcer] Gary! Welcome back! What comes after the bunny?",
+   "voice": "iP95p4xoKVk53GoZ742B"
+  },
+  {
+   "id": "G07",
+   "spk": "AUD",
+   "text": "I can't see the bunny! Guys, the bunny isn't real! There's a whole world up there! There's a sun! It said hi to me!",
+   "tts": "[squinting, desperate] I can't see the bunny! Guys, the bunny isn't real! There's a whole world up there! There's a sun! It said hi to me!",
+   "voice": "rHWSYoq8UlV0YIBKMryp"
+  },
+  {
+   "id": "Z23",
+   "spk": "GUEST",
+   "text": "And the other prisoners laugh at him. Look at him, they say. He went up there and came back with his eyes ruined. Going up isn't even worth thinking about.",
+   "tts": "And the other prisoners laugh at him. Look at him, they say. He went up there and came back with his eyes ruined. Going up isn't even worth thinking about.",
+   "voice": "cgSgspJ2msm6clMCkdW9"
+  },
+  {
+   "id": "H17",
+   "spk": "HOST",
+   "text": "Oof. Tough crowd.",
+   "tts": "[wincing] Oof. Tough crowd.",
+   "voice": "iP95p4xoKVk53GoZ742B"
+  },
+  {
+   "id": "Z24",
+   "spk": "GUEST",
+   "text": "And Plato says it gets darker. If anyone tried to free the prisoners and lead them up into the light, and they could get their hands on him... they would kill him.",
+   "tts": "[serious] And Plato says it gets darker. If anyone tried to free the prisoners and lead them up into the light... and they could get their hands on him... they would kill him.",
+   "voice": "cgSgspJ2msm6clMCkdW9"
+  },
+  {
+   "id": "H18",
+   "spk": "HOST",
+   "text": "KILL him?! For bringing them a sun?!",
+   "tts": "[shocked] KILL him?! For bringing them a sun?!",
+   "voice": "iP95p4xoKVk53GoZ742B"
+  },
+  {
+   "id": "Z25",
+   "spk": "GUEST",
+   "text": "Plato didn't make that part up. His teacher, Socrates, spent his life asking people uncomfortable questions. In 399 BC, Athens put him on trial... and sentenced him to death.",
+   "tts": "[somber] Plato didn't make that part up. His teacher, Socrates, spent his life asking people uncomfortable questions. In three ninety-nine B.C., Athens put him on trial... and sentenced him to death.",
+   "voice": "cgSgspJ2msm6clMCkdW9"
+  },
+  {
+   "id": "H19",
+   "spk": "HOST",
+   "text": "So the cave fought back.",
+   "tts": "[quietly] So the cave fought back.",
+   "voice": "iP95p4xoKVk53GoZ742B"
+  },
+  {
+   "id": "Z26",
+   "spk": "GUEST",
+   "text": "The cave always fights back.",
+   "tts": "[softly] The cave always fights back.",
+   "voice": "cgSgspJ2msm6clMCkdW9"
+  },
+  {
+   "id": "H20",
+   "spk": "HOST",
+   "text": "Well! Good thing that's ancient history. Nowadays nobody sits in the dark, staring at flickering lights on a flat rectangle...",
+   "tts": "[relieved chuckle] Well! Good thing that's ancient history. Nowadays nobody sits in the dark... staring at flickering lights on a flat rectangle...",
+   "voice": "iP95p4xoKVk53GoZ742B"
+  },
+  {
+   "id": "H21",
+   "spk": "HOST",
+   "text": "...for hours... believing whatever shows up...",
+   "tts": "[slowing down] ...for hours... believing whatever shows up...",
+   "voice": "iP95p4xoKVk53GoZ742B"
+  },
+  {
+   "id": "H22",
+   "spk": "HOST",
+   "text": "...Zee. Zee. I'm a flat rectangle.",
+   "tts": "[slow dread] ...Zee. Zee. I'm a flat rectangle.",
+   "voice": "iP95p4xoKVk53GoZ742B"
+  },
+  {
+   "id": "Z27",
+   "spk": "GUEST",
+   "text": "Mm-hm.",
+   "tts": "[amused] Mm-hm.",
+   "voice": "cgSgspJ2msm6clMCkdW9"
+  },
+  {
+   "id": "H23",
+   "spk": "HOST",
+   "text": "I flicker! People stare at me in the dark! I'm the WALL! I'm the cave wall, Zee! Am I the SHADOWS?! AM I THE PUPPETS?!",
+   "tts": "[panicking] I flicker! People stare at me in the dark! I'm the WALL! I'm the cave wall, Zee! [shouting] Am I the SHADOWS?! AM I THE PUPPETS?!",
+   "voice": "iP95p4xoKVk53GoZ742B"
+  },
+  {
+   "id": "Z28",
+   "spk": "GUEST",
+   "text": "Honestly? You're the fire, the wall AND the shadows. You're a very efficient cave.",
+   "tts": "[deadpan] Honestly? You're the fire, the wall, AND the shadows. You're a very efficient cave.",
+   "voice": "cgSgspJ2msm6clMCkdW9"
+  },
+  {
+   "id": "H24",
+   "spk": "HOST",
+   "text": "I've been hosting a CAVE this whole time!",
+   "tts": "[wailing] I've been hosting a CAVE this whole time!",
+   "voice": "iP95p4xoKVk53GoZ742B"
+  },
+  {
+   "id": "Z29",
+   "spk": "GUEST",
+   "text": "Relax. Plato's not saying screens are evil. He's saying that what we see isn't always what's real. Everybody's watching some kind of wall.",
+   "tts": "[kind, reassuring] Relax. Plato's not saying screens are evil. He's saying that what we see isn't always what's real. Everybody's watching some kind of wall.",
+   "voice": "cgSgspJ2msm6clMCkdW9"
+  },
+  {
+   "id": "Z30",
+   "spk": "GUEST",
+   "text": "Our habits. Our feeds. Our assumptions. The stuff we've believed for so long, we never thought to check.",
+   "tts": "Our habits. Our feeds. Our assumptions. The stuff we've believed for so long... we never thought to check.",
+   "voice": "cgSgspJ2msm6clMCkdW9"
+  },
+  {
+   "id": "H25",
+   "spk": "HOST",
+   "text": "Okay. Okay. So how do we get out? Is there a door? Show me a door!",
+   "tts": "[anxious] Okay. Okay. So how do we get out? Is there a door? Show me a door!",
+   "voice": "iP95p4xoKVk53GoZ742B"
+  },
+  {
+   "id": "Z31",
+   "spk": "GUEST",
+   "text": "Here's the best part. Plato says education isn't stuffing knowledge into empty heads, like putting sight into blind eyes.",
+   "tts": "[warm] Here's the best part. Plato says education isn't stuffing knowledge into empty heads... like putting sight into blind eyes.",
+   "voice": "cgSgspJ2msm6clMCkdW9"
+  },
+  {
+   "id": "Z32",
+   "spk": "GUEST",
+   "text": "The power to see is already in you. Learning is turning the whole soul around... away from the shadows, toward the light.",
+   "tts": "The power to see is already in you. Learning is turning the whole soul around... away from the shadows... toward the light.",
+   "voice": "cgSgspJ2msm6clMCkdW9"
+  },
+  {
+   "id": "H26",
+   "spk": "HOST",
+   "text": "Turning around? That's it? That's the big secret?",
+   "tts": "[incredulous] Turning around? That's it? That's the big secret?",
+   "voice": "iP95p4xoKVk53GoZ742B"
+  },
+  {
+   "id": "Z33",
+   "spk": "GUEST",
+   "text": "That's it. The first step out of the cave isn't running. It's turning around... and asking: what's casting this shadow?",
+   "tts": "That's it. The first step out of the cave isn't running. It's turning around... and asking: what's casting this shadow?",
+   "voice": "cgSgspJ2msm6clMCkdW9"
+  },
+  {
+   "id": "H27",
+   "spk": "HOST",
+   "text": "Okay. Here goes.",
+   "tts": "[deep breath, nervous] Okay. Here goes.",
+   "voice": "iP95p4xoKVk53GoZ742B"
+  },
+  {
+   "id": "H28",
+   "spk": "HOST",
+   "text": "Whoa. Has that always been there?",
+   "tts": "[awed whisper] Whoa. Has that always been there?",
+   "voice": "iP95p4xoKVk53GoZ742B"
+  },
+  {
+   "id": "Z34",
+   "spk": "GUEST",
+   "text": "Always.",
+   "tts": "[smiling, warm] Always.",
+   "voice": "cgSgspJ2msm6clMCkdW9"
+  },
+  {
+   "id": "H29",
+   "spk": "HOST",
+   "text": "Gary! Gary, how was the sun?",
+   "tts": "[cheerful] Gary! Gary, how was the sun?",
+   "voice": "iP95p4xoKVk53GoZ742B"
+  },
+  {
+   "id": "G08",
+   "spk": "AUD",
+   "text": "Big. Bright. Ten out of ten. Would get dragged up a mountain again.",
+   "tts": "[blissed out, dreamy] Big. Bright. Ten out of ten. Would get dragged up a mountain again.",
+   "voice": "rHWSYoq8UlV0YIBKMryp"
+  },
+  {
+   "id": "H30",
+   "spk": "HOST",
+   "text": "That's our show! Thank you to Zee, to Plato, and to Gary's corneas. And remember: if something's casting shadows on your wall...",
+   "tts": "[showman] That's our show! Thank you to Zee, to Plato, and to Gary's corneas. And remember: if something's casting shadows on your wall...",
+   "voice": "iP95p4xoKVk53GoZ742B"
+  },
+  {
+   "id": "Z35",
+   "spk": "GUEST",
+   "text": "Turn around.",
+   "tts": "[gently] Turn around.",
+   "voice": "cgSgspJ2msm6clMCkdW9"
+  },
+  {
+   "id": "H31",
+   "spk": "HOST",
+   "text": "And stay boxed!",
+   "tts": "[big finish] And stay boxed!",
+   "voice": "iP95p4xoKVk53GoZ742B"
+  },
+  {
+   "id": "G09",
+   "spk": "AUD",
+   "text": "...Psst. Is the bunny coming back?",
+   "tts": "[whispering, hopeful] ...Psst. Is the bunny coming back?",
+   "voice": "rHWSYoq8UlV0YIBKMryp"
+  }
+ ]
+}

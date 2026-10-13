@@ -100,7 +100,7 @@ t, t0, t1, color, align)` lower-third name tag, `ribbon_wipe(cv, u)` full-frame 
 (Ep4: `cave_side`, `cave_wall_view`, `prisoner`, `carrier`, `statue`, `shadow_shape`, `cave_fire`, `rock_mass`,
 `chain`, `crystal`, `glow_mushroom`, `handprint`, `sun_rays`, `wall_surface`).
 
-## Main-unit idioms (see `engine/examples/shots_ep4.py`)
+## Main-unit idioms (see `episodes/ep4/eng/shots_ep4.py`)
 `cam_lerp(a, b, u)` eased camera moves · `shake(cam, amt, T)` · `host_screen(A, cam)` / `zee_eyes(A, cam)` screen
 positions · `light_mask(cv, [(x, y, r, k, rgb)], ambient)` multiplied light map (darkness that keeps faces readable) ·
 `glow(cv, x, y, r, rgb, a)` screen-blend glow · `dark_stage(...)` the set with the backdrop off · `audience_cu(...)`
