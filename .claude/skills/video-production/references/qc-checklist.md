@@ -15,19 +15,29 @@ per 1920×1080 sheet (`scripts/sheet.py dir dir/sheet`), and READ the sheets. Fi
 - [ ] Lighting reads: dark scenes keep faces/sources visible (multiplied light map), silhouettes have a lit ground.
 - [ ] Every shot moves (boil + camera drift + character motion); no dead frames, no blank/black frames except
       intended fades; shots start/end on usable frames.
-- [ ] Continuity across agents' shots (same world kit, same character scale conventions, consistent palette).
+- [ ] Continuity across agents' shots (same world kit, same character scale conventions, consistent palette); the
+      last drawing before and the first after every change of owner cut cleanly (hand-offs written in numbers).
+- [ ] Content rules: no real person's likeness, no real name lettered on a cartoon figure, no logos or brands, and for
+      BOXED no mushroom shapes or drug imagery — checked on every sheet, not only in the brief.
+- [ ] Signs, heads and captions not cropped at the frame edges by a camera move (BOXED's sign hides itself; others
+      don't).
 - [ ] Render time per drawing within budget (~1.2 s).
 
 ## Sound (inspect levels/plots; you cannot listen)
 - [ ] Every line present once, in order; nothing clipped; speakers level-matched.
+- [ ] Every stem in the mix (`STEMS: voices + music + sfx`); a music-only window well above silence; no dead air.
 - [ ] True peak <= −1 dBTP on the ENCODED parts (`qc_parts.py`), not just on the mix (AAC adds up to ~2.3 dB).
 - [ ] Music under dialogue ducked; music not wall-to-wall where silence plays better; cue boundaries faded.
 - [ ] SFX timed to the visual beats; beds not masking speech.
 - [ ] Integrated loudness at target (−15 LUFS episodes / −14 music-led).
-- [ ] Subtitles match the dialogue text and timing; no cue overlaps the next.
+- [ ] Subtitles match the dialogue text and timing in readable chunks (≤ 2 rows × 42 characters); no cue overlaps
+      the next.
+- [ ] No music cue enters as a step; the hottest and brightest windows test-encoded before the full encode.
 
 ## Delivery
 - [ ] Each file < 30 MiB; durations sum to the runtime; >= ~2 Mbps video per part (add a part rather than starve it).
 - [ ] No part starts or ends mid-line (`plan_parts.py` picks the cuts); every cut is a hard cut on a drawing boundary.
 - [ ] Start / 25 / 50 / 75 / end frames of every encoded part checked on contact sheets (`qc_parts.py`).
 - [ ] Agents' reports verified, not trusted: render your own stills of every montage shot before rendering it.
+- [ ] No placeholder frames and no stale segments (a segment older than the module or data it was rendered from).
+- [ ] After any fix that changed the mix, every part re-encoded and re-measured.

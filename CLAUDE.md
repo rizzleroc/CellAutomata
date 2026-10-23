@@ -171,12 +171,14 @@ Project skills + subagent definitions for Claude Code sessions in this repo:
 - `.claude/skills/video-production/` — the house video playbook (ElevenLabs voices/music/SFX through the whip MCP,
   render-on-twos in resumable segments, mixing, delivery as files < 30 MiB, contact-sheet QC). Routes CA reels to
   `tools/morphogenesis/` and BOXED work to the skill below.
-- `.claude/skills/boxed-episode/` — the BOXED animated series: series bible, step-by-step pipeline, templates and a
-  snapshot of the Python+skia engine (`engine/setup.sh` rebuilds a working copy in the scratchpad after a reset).
-- `.claude/agents/` — `boxed-shot-author`, `video-shot-author`, `video-qc-reviewer` (parallel shot production + QC).
+- `.claude/skills/boxed-episode/` — a pointer only: the BOXED animated series' skill (series bible, pipeline, season
+  one's lessons, templates and tools, the engine snapshot, every episode's source and the sound library) lives in the
+  **rizzleroc/boxed** repo. Attach it (`add_repo`, clone to `/home/user/boxed`) before any BOXED work, and save
+  episodes, sounds, lessons and engine changes there.
+- `.claude/agents/` — `boxed-shot-author`, `video-shot-author`, `video-qc-reviewer` (parallel shot production + QC);
+  copies of the boxed repo's definitions, like `video-production/` — update them there first, then here.
 
-CI lint/tests are scoped to `cellauto tests`, so nothing here affects the build. When an episode improves an engine
-module, copy it back into `engine/eng/` in the same PR.
+CI lint/tests are scoped to `cellauto tests`, so nothing here affects the build.
 
 ## Conventions & gotchas
 

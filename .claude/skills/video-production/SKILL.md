@@ -9,7 +9,7 @@ description: The house playbook for making finished videos in this workspace —
 | The ask | Pipeline | Read |
 |---------|----------|------|
 | BOXED (TV-headed host, Zee, Gary), "episode N", a viral idea as a cartoon talk show | Python+skia BOXED engine, ElevenLabs cast, parallel shot authors | `.claude/skills/boxed-episode/SKILL.md` |
-| A reel of the CellAutomata simulations (Gray–Scott morphogenesis, ontogeny, slime...) | Node generator → Python compositor, vertical 1080×1920 | `tools/morphogenesis/README.md`, `docs/web8/SOCIAL_MEDIA_HANDOFF.md` |
+| A reel of the CellAutomata simulations (Gray–Scott morphogenesis, ontogeny, slime...) | Node generator → Python compositor, vertical 1080×1920 | in the CellAutomata repo: `tools/morphogenesis/README.md`, `docs/web8/SOCIAL_MEDIA_HANDOFF.md` |
 | Animate a still (album cover, poster) | upscale (ONNX Real-ESRGAN via onnxruntime, no torch) → rectify/segment → 2.5D parallax layers + procedural motion → audio bed | `references/stills-to-motion.md` |
 | Anything else animated (explainer, short) | reuse the BOXED engine's drawing kit (`core`, `letters`, `world`, `sets.Cam`) without the cast | `.claude/skills/boxed-episode/references/engine-api.md` |
 
@@ -21,34 +21,47 @@ description: The house playbook for making finished videos in this workspace —
   drafts early when they are meaningful.
 - **Persist the toolchain:** the container resets without warning and wipes the scratchpad. Keep reusable engines and
   scripts inside a skill folder; offer to commit them (only with the user's OK, feature branch, never `main`).
+- **Facts and people:** every fact and quote comes from a checked source (BOXED keeps one `FACTS.md` per episode);
+  never draw a real person's likeness, a logo or a brand unless the user asks for it (BOXED's content rules are stricter).
+- **Write things down when they happen:** every generation prompt goes to a file when the call is made, every subagent's
+  full prompt before it is spawned — the session log can be compacted and the container reset at any time.
 - **Honesty:** report the real runtime, what is placeholder, what failed. No model names/IDs in commits or PRs.
 
 ## 3. The production line (each stage has a concrete output)
 1. **Brief + script** → script source (`make_script.py` → `script.json`): speakers, subtitle text, TTS text with tags.
    Budget speech at ≈2.3–2.5 words/s (eleven_v3 with tags); plan the runtime from the word count.
-2. **Audio assets** → `vo/`, `music_el/`, `sfx_el/` via the whip MCP (ElevenLabs). → `references/audio-elevenlabs.md`
-3. **Timeline** → `timeline.json` (lines + gaps + named visual slots stretched to a target length).
+2. **Audio assets** → `vo/`, `music_el/`, `sfx_el/` via the whip MCP (ElevenLabs), every take checked with a local
+   speech recogniser, every prompt written down. → `references/audio-elevenlabs.md`
+3. **Timeline** → `timeline.json` (lines + gaps + named visual slots stretched to a target length; slots that sit on a
+   measured music cue — a title hit, a finale grid — keep fixed lengths).
 4. **Performance** → `lipsync.json` (visemes/openness/emphasis at 24 fps) and `acting.json` (gestures, blinks, gaze).
 5. **Shot list** → `timeline.json["shots"]` + per-owner sheets; a shared world kit for any new environment.
 6. **Shots** → shot functions `T###_slug(cv, t, T, A)` in modules (you + parallel subagents, see §4).
 7. **Stills QC** → contact sheets of start/mid/end of every shot; fix; repeat. → `references/qc-checklist.md`
 8. **Render** → per-shot segments in the background (resumable), concat → `video.mp4`. → `references/render-and-delivery.md`
-9. **Mix** → `mix.wav` (per-voice chains, music + SFX ducked under dialogue, loudnorm −15 LUFS) + `.srt`.
+9. **Mix** → `mix.wav` (per-voice chains, music + SFX ducked under dialogue, loudnorm −15 LUFS) + `.srt`. The stems
+   are in by default (a voices-only mix once shipped); check a music-only window.
 10. **Encode + deliver** → `plan_parts.py` cut list, `split_parts.sh` (true-peak-limited audio, parts < 29.5 MB),
-    `qc_parts.py` on the encoded parts (sizes, loudness, true peak, contact sheets), SendUserFile, short report.
+    `qc_parts.py` on the encoded parts (sizes, loudness, true peak, dead air, contact sheets), SendUserFile, short
+    report. A fix that changes the mix means re-encoding every part.
 
 ## 4. Multi-agent shot production
 Use parallel subagents when the video has more than ~3 minutes of distinct set pieces:
-- Prepare FIRST: timeline, acting, shot list, per-owner sheet, a written brief (style formula, engine API, rules), and a
-  shared kit for any new world — test-rendered — so all authors match.
-- One module per author, one owner name per author, 45–80 s of screen time each, ≤7 authors on 4 cores, all spawned in
-  one message with `run_in_background: true`. Agent definitions: `.claude/agents/video-shot-author.md` (generic),
+- Prepare FIRST: timeline, acting, measured word timings, shot list, per-owner sheet, a written brief (style formula,
+  engine API, content rules, exact on-screen strings, one placement per shared prop, every hand-off between authors in
+  numbers, the music clocks), and a shared kit for any new world — test-rendered — so all authors match. Save each
+  author's full prompt to a file before spawning.
+- One module per author, one owner name per author, 35–80 s of screen time each, ≤7 authors on 4 cores, all spawned in
+  one message with `run_in_background: true` (an explicit lighter model when cost matters); authors render stills
+  through a shared slot wrapper (`flock`), a few at a time. Agent definitions: `.claude/agents/video-shot-author.md` (generic),
   `.claude/agents/boxed-shot-author.md` (BOXED); QC pass: `.claude/agents/video-qc-reviewer.md`.
 - Put per-shot creative direction in each prompt (what happens on which words). Authors must test their own stills and
   report render time per drawing.
 - While they work: write your own shots, the audio, the mix, and start rendering your finished shots at low priority.
-- When each reports back: review its stills yourself (contact sheet), request fixes via SendMessage if needed, then
-  render its segments.
+- When each reports back: review its stills yourself (contact sheets of every shot and both sides of every hand-off),
+  request fixes via SendMessage if needed, then render its segments. An author stopped by a usage limit resumes with
+  SendMessage; if authors stop for good (a spend limit), their saved modules can still be complete — import, review,
+  and finish what's missing yourself.
 
 ## 5. Environment essentials (details: `references/environment-gotchas.md`)
 - `python3 -m pip ...` (bare `pip` is another interpreter); skia needs `LD_LIBRARY_PATH=$B/lib` with libEGL/libGLESv2
@@ -56,6 +69,8 @@ Use parallel subagents when the video has more than ~3 minutes of distinct set p
 - whip MCP: call `whipgen_help` first; results spill to `tool-results/*.txt`; harvest with `scripts/grab.py`
   (Windows daemon paths, PCM rates handled).
 - Render on twos: 12 drawings/s, each written twice at 24 fps; deterministic per drawing so workers can split ranges.
+- `pgrep -f` / `pkill -f` match their own shell: wait on or kill PIDs. Hugging Face is blocked: fetch models from
+  GitHub releases.
 
 ## Scripts
 - `scripts/grab.py <dest> <prefix> [--rate 24000|48000]` — harvest whip/ElevenLabs spills into mp3/wav files.

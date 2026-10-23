@@ -15,6 +15,12 @@
 - Start with your finished shots while subagents are still writing theirs. Concat with the concat demuxer and
   `-c copy` (same encoder params everywhere) → `video.mp4`.
 - Wipes/transitions that straddle a cut are fine: each drawing knows its own time.
+- Never bake a placeholder into a delivered segment: the range renderer refuses a range owned by a shot with no
+  function yet (a broken module only warns at import). Before the concat, list segments older than the code and data
+  they were rendered from and re-render them; a container restart kills running renders, so re-run what they hadn't
+  reached (BOXED `stale.py`, `segcheck.py`).
+- To change a delivered video without re-rendering it (insert or replace a beat), shift by whole drawings and map each
+  output drawing to its source cut: the BOXED pipeline's §13 (Ep13's re-cut kept 73 of 76 shots' segments bit for bit).
 
 ## Encode for delivery (SendUserFile caps every file at 30 MiB)
 - **Where to cut — `scripts/plan_parts.py timeline.json --video video.mp4`.** Never cut while a line is running: the
@@ -32,8 +38,9 @@
   cover went 34.1 MiB → 26.98 MiB at 3.6 Mbps).
 - Verticals (1080×1920): render natively with a vertical layout rather than cropping when text/composition matter.
 - QC the ENCODED parts with `scripts/qc_parts.py out_dir prefix`: every file < 30 MiB, durations add up, loudness on
-  target, true peak <= −1 dBTP measured on the AAC; then READ its contact sheets (start / 25 / 50 / 75 / end of every
-  part: clean first and last frames, nothing cut mid-transition you didn't intend).
+  target, true peak <= −1 dBTP measured on the AAC, no dead air; then READ its contact sheets (start / 25 / 50 / 75 / end
+  of every part: clean first and last frames, nothing cut mid-transition you didn't intend). When a fix changes the mix,
+  re-encode every part (loudnorm carries state). A longer re-cut may need one more part to keep the bitrate floor.
 
 ## Sending
 - `SendUserFile(files=[...parts, .srt], status, display="attach" for the srt)` with a one-line caption; send parts

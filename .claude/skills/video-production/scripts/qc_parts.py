@@ -1,7 +1,9 @@
 #!/usr/bin/env python3
 """QC encoded delivery parts before sending: size vs the 30 MiB upload cap, duration (and the total), streams,
 integrated loudness and TRUE PEAK measured on the encoded AAC (the encoder adds overshoot the mix didn't have), plus
-frames at each part's start / 25% / 50% / 75% / end tiled into contact sheets to LOOK at.
+frames at each part's start / 25% / 50% / 75% / end tiled into contact sheets to LOOK at. It also flags dead air: a part
+with --silence-max seconds or more of near-silence (1 s windows below --silence-db) is what a mix rendered without its
+music / effects stems looks like (BOXED Ep9 first shipped voices-only: silent title, slots and finale).
 
   python3 qc_parts.py OUT_DIR PREFIX [--cap-mib 30] [--tp-max -1.0]
     e.g. python3 qc_parts.py $B/ep4/out boxed_ep04   ->   $B/ep4/out/qc_parts/sheet_*.png
@@ -43,12 +45,27 @@ def loudness(path):
     return (float(i.group(1)) if i else None), (float(p.group(1)) if p and p.group(1) != "-inf" else None)
 
 
+def dead_air(path, floor_db):
+    """Seconds (1 s windows, ignoring the first and last half second) whose RMS is below floor_db dBFS."""
+    import numpy as np
+    raw = subprocess.run([FF, "-v", "quiet", "-i", path, "-map", "0:a", "-ac", "1", "-ar", "8000", "-f", "f32le", "-"],
+                         capture_output=True).stdout
+    x = np.frombuffer(raw, np.float32)[4000:-4000]
+    n = len(x) // 8000
+    if n == 0:
+        return []
+    r = np.sqrt((x[:n * 8000].reshape(n, 8000) ** 2).mean(1))
+    return [round(0.5 + k, 1) for k in np.nonzero(20 * np.log10(r + 1e-12) < floor_db)[0]]
+
+
 def main():
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("out_dir")
     ap.add_argument("prefix")
     ap.add_argument("--cap-mib", type=float, default=30.0)
     ap.add_argument("--tp-max", type=float, default=-1.0, help="max true peak (dBTP) allowed on the encoded audio")
+    ap.add_argument("--silence-db", type=float, default=-60.0, help="a 1 s window below this RMS (dBFS) counts as dead air")
+    ap.add_argument("--silence-max", type=float, default=4.0, help="flag a part with this many seconds of dead air (0 = off; a stinger hush is ~2 s)")
     a = ap.parse_args()
     parts = sorted(glob.glob(os.path.join(a.out_dir, f"{a.prefix}_part*.mp4")),
                    key=lambda p: int(re.search(r"part(\d+)\.mp4$", p).group(1)))
@@ -70,6 +87,9 @@ def main():
             flags.append("TOO BIG")
         if tp is not None and tp > a.tp_max:
             flags.append(f"PEAK > {a.tp_max:g} dBTP")
+        quiet = dead_air(p, a.silence_db) if a.silence_max > 0 else []
+        if a.silence_max > 0 and len(quiet) >= a.silence_max:
+            flags.append(f"DEAD AIR {len(quiet)} s (from {quiet[0]} s; music/sfx stems missing?)")
         if flags:
             bad.append(os.path.basename(p))
         n = re.search(r"part(\d+)\.mp4$", p).group(1)
