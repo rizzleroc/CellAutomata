@@ -164,6 +164,22 @@ node docs/murmuration/tests/life.mjs  # needs three: InstancedMesh + wingbeat ri
 pytest -q
 ```
 
+## Agent tooling (`.claude/`) — not part of the site or the Python package
+
+Project skills + subagent definitions for Claude Code sessions in this repo:
+
+- `.claude/skills/video-production/` — the house video playbook (ElevenLabs voices/music/SFX through the whip MCP,
+  render-on-twos in resumable segments, mixing, delivery as files < 30 MiB, contact-sheet QC). Routes CA reels to
+  `tools/morphogenesis/` and BOXED work to the skill below.
+- `.claude/skills/boxed-episode/` — a pointer only: the BOXED animated series' skill (series bible, pipeline, season
+  one's lessons, templates and tools, the engine snapshot, every episode's source and the sound library) lives in the
+  **rizzleroc/boxed** repo. Attach it (`add_repo`, clone to `/home/user/boxed`) before any BOXED work, and save
+  episodes, sounds, lessons and engine changes there.
+- `.claude/agents/` — `boxed-shot-author`, `video-shot-author`, `video-qc-reviewer` (parallel shot production + QC);
+  copies of the boxed repo's definitions, like `video-production/` — update them there first, then here.
+
+CI lint/tests are scoped to `cellauto tests`, so nothing here affects the build.
+
 ## Conventions & gotchas
 
 - **Branch + PR flow.** Develop on a feature branch; open a PR; **never push to
